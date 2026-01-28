@@ -351,6 +351,7 @@ $WebAssemblyState = if ($NoWebassembly) { "OFF" } else { "ON" }
 # For ARM64, use the explicitly installed LLVM toolchain instead of VS's x64 LLVM
 # The VS Developer Shell adds VS's x64 LLVM to PATH which would be used otherwise
 if ($Platform -eq "ARM64") {
+    $ArchFlags = "/clang:-march=armv8-a,-mbranch-protection=standard"
     $ClangPath = "C:/LLVM/bin/clang-cl.exe"
     $LldLinkPath = "C:/LLVM/bin/lld-link.exe"
     # Note: The LLVM SEH unwind bug on Windows ARM64 (llvm/llvm-project#47432) is worked
@@ -359,39 +360,46 @@ if ($Platform -eq "ARM64") {
     $ARM64SehWorkaround = ""
     Write-Host ":: Using ARM64 LLVM toolchain: $ClangPath"
 } else {
+    $ArchFlags = "/clang:-march=x86-64-v3,-fcf-protection=full"
     $ClangPath = "clang-cl"
     $LldLinkPath = "lld-link"
     $ARM64SehWorkaround = ""
 }
 
+if ($CMAKE_BUILD_TYPE -eq "Release") {
+    $LTO = "ON"
+} else {
+    $LTO = "OFF"
+}
+
 cmake -S . -B $WebKitBuild `
     -DPORT="JSCOnly" `
-    -DENABLE_STATIC_JSC=ON `
+    -DENABLE_STATIC_JSC=OFF `
     -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON `
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" `
     -DUSE_THIN_ARCHIVES=OFF `
     -DENABLE_JIT=ON `
     -DENABLE_DFG_JIT=ON `
     -DENABLE_FTL_JIT=ON `
-    -DENABLE_WEBASSEMBLY_BBQJIT=ON `
-    -DENABLE_WEBASSEMBLY_OMGJIT=ON `
-    -DENABLE_SAMPLING_PROFILER=ON `
+    -DENABLE_WEBASSEMBLY=OFF `
+    -DENABLE_SAMPLING_PROFILER=OFF `
     "-DENABLE_WEBASSEMBLY=${WebAssemblyState}" `
-    -DUSE_BUN_JSC_ADDITIONS=ON `
-    -DUSE_BUN_EVENT_LOOP=ON `
-    -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON `
+    -DUSE_BUN_JSC_ADDITIONS=OFF `
+    -DUSE_BUN_EVENT_LOOP=OFF `
+    -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=OFF `
     "-DICU_ROOT=${ICU_STATIC_ROOT}" `
     "-DICU_LIBRARY=${ICU_STATIC_LIBRARY}" `
     "-DICU_INCLUDE_DIR=${ICU_STATIC_INCLUDE_DIR}" `
     "-DCMAKE_C_COMPILER=${ClangPath}" `
     "-DCMAKE_CXX_COMPILER=${ClangPath}" `
     "-DCMAKE_LINKER=${LldLinkPath}" `
-    "-DCMAKE_C_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG /DU_STATIC_IMPLEMENTATION ${ARM64SehWorkaround}" `
-    "-DCMAKE_CXX_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG /DU_STATIC_IMPLEMENTATION /clang:-fno-c++-static-destructors ${ARM64SehWorkaround}" `
-    "-DCMAKE_C_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 /DU_STATIC_IMPLEMENTATION ${ARM64SehWorkaround}" `
-    "-DCMAKE_CXX_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 /DU_STATIC_IMPLEMENTATION /clang:-fno-c++-static-destructors ${ARM64SehWorkaround}" `
-    -DENABLE_REMOTE_INSPECTOR=ON `
+    "-DCMAKE_C_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG ${ArchFlags} ${ARM64SehWorkaround}" `
+    "-DCMAKE_CXX_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
+    "-DCMAKE_C_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 ${ArchFlags} ${ARM64SehWorkaround}" `
+    "-DCMAKE_CXX_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
+    -DENABLE_REMOTE_INSPECTOR=OFF `
     "-DCMAKE_MSVC_RUNTIME_LIBRARY=${CmakeMsvcRuntimeLibrary}" `
+    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${LTO} `
     -G Ninja
 # TODO: "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" `
 if ($LASTEXITCODE -ne 0) { throw "cmake failed with exit code $LASTEXITCODE" }
@@ -408,7 +416,7 @@ foreach ($file in $batFiles) {
 }
 
 Write-Host ":: Building WebKit"
-cmake --build $WebKitBuild --config Release --target jsc --verbose
+cmake --build $WebKitBuild --config Release --verbose
 if ($LASTEXITCODE -ne 0) { throw "cmake --build failed with exit code $LASTEXITCODE" }
 
 Write-Host ":: Packaging ${output}"
@@ -421,6 +429,7 @@ Remove-Item -Recurse -ErrorAction SilentlyContinue $output
 $null = mkdir -ErrorAction SilentlyContinue $output
 $null = mkdir -ErrorAction SilentlyContinue $output/include
 $null = mkdir -ErrorAction SilentlyContinue $output/include/JavaScriptCore
+$null = mkdir -ErrorAction SilentlyContinue $output/include/JavaScriptCore/internal
 $null = mkdir -ErrorAction SilentlyContinue $output/include/wtf
 
 Copy-Item -Recurse $WebKitBuild/lib $output
@@ -448,17 +457,17 @@ if ($CMAKE_BUILD_TYPE -eq "Release") {
 
 Add-Content -Path $output/include/cmakeconfig.h -Value "`#define BUN_WEBKIT_VERSION `"$BUN_WEBKIT_VERSION`""
 
-Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/* $output/include/JavaScriptCore
+Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/* $output/include/JavaScriptCore/internal/
 Copy-Item -r -Force $WebKitBuild/JavaScriptCore/Headers/JavaScriptCore/* $output/include/JavaScriptCore/
-Copy-Item -r -Force $WebKitBuild/JavaScriptCore/PrivateHeaders/JavaScriptCore/* $output/include/JavaScriptCore/
-# Recursively copy all the .h files in DerivedSources to the root of include/JavaScriptCore, preserving the basename only.
-Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/*.h $output/include/JavaScriptCore/
-Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/*/*.h $output/include/JavaScriptCore/
+Copy-Item -r -Force $WebKitBuild/JavaScriptCore/PrivateHeaders/JavaScriptCore/* $output/include/JavaScriptCore/internal/
+# Recursively copy all the .h files in DerivedSources to the root of include/JavaScriptCore/internal, preserving the basename only.
+Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/*.h $output/include/JavaScriptCore/internal/
+Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/*/*.h $output/include/JavaScriptCore/internal/
 
 # Recursively copy all the .json files in DerivedSources to the root of the output directory, preserving the basename only.
 Copy-Item -r -Force $WebKitBuild/JavaScriptCore/DerivedSources/*.json $output/
 
-Copy-Item -r $WebKitBuild/WTF/DerivedSources/* $output/include/wtf/
+# Copy-Item -r $WebKitBuild/WTF/DerivedSources/* $output/include/wtf/
 Copy-Item -r $WebKitBuild/WTF/Headers/wtf/* $output/include/wtf/
 
 # Copy bmalloc headers if they exist (libpas support)

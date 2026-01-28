@@ -57,7 +57,6 @@ docker buildx build \
   --build-arg LTO_FLAG="$LTO_FLAG" \
   --build-arg RELEASE_FLAGS="$RELEASE_FLAGS" \
   --build-arg WEBKIT_RELEASE_TYPE=$WEBKIT_RELEASE_TYPE \
-  --build-arg RELEASE_FLAGS="${RELEASE_FLAGS:-"-O2 -DNDEBUG=1"}" \
   --progress=plain \
   --platform=linux/$BUILDKIT_ARCH \
   --target=artifact \
