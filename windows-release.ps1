@@ -399,7 +399,7 @@ cmake -S . -B $WebKitBuild `
     "-DCMAKE_SHARED_LINKER_FLAGS=${LINKFLAGS}" `
     -DENABLE_REMOTE_INSPECTOR=OFF `
     "-DCMAKE_MSVC_RUNTIME_LIBRARY=${CmakeMsvcRuntimeLibrary}" `
-    "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${ReleaseBool}" `
+    "-DLTO_MODE=${ReleaseBool}" `
     -G Ninja
 # TODO: "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" `
 if ($LASTEXITCODE -ne 0) { throw "cmake failed with exit code $LASTEXITCODE" }
