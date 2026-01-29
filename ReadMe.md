@@ -5,6 +5,7 @@ This fork has been modified to release shared libraries with the following addit
 - Requiring Haswell or newer (i.e. enabling AVX2 instructions) on x86, and enabling branch protection on both x86 and ARM
 - WebAssembly: OFF
 - BUN flags: OFF
+- ENABLE_JAVASCRIPT_SHELL: OFF
 - ENABLE_REMOTE_INSPECTOR: OFF
 - ENABLE_SAMPLING_PROFILER: OFF
 - ENABLE_STATIC_JSC: OFF

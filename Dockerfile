@@ -4,7 +4,7 @@ ARG CPU=native
 ARG LTO_FLAG="-flto=full -fwhole-program-vtables -fforce-emit-vtables "
 ARG RELEASE_FLAGS="-O3 -DNDEBUG=1"
 ARG LLVM_VERSION="19"
-ARG DEFAULT_CFLAGS="-mno-omit-leaf-frame-pointer -g -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables -DU_STATIC_IMPLEMENTATION=1 "
+ARG DEFAULT_CFLAGS="-mno-omit-leaf-frame-pointer -g -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables "
 ARG ENABLE_SANITIZERS=""
 
 # Use different base images for ARM64 vs x86_64
@@ -140,7 +140,7 @@ RUN for f in /usr/lib/llvm-${LLVM_VERSION}/bin/*; do ln -sf "$f" /usr/bin; done 
     && ln -sf /usr/bin/clang++ /usr/bin/c++
 
 ENV WEBKIT_OUT_DIR=/webkitbuild
-RUN mkdir -p /output/lib /output/include /output/include/JavaScriptCore /output/include/glibc /output/include/wtf /output/include/bmalloc /output/include/unicode
+RUN mkdir -p /output/lib /output/include/JavaScriptCore/internal /output/include/glibc /output/include/wtf /output/include/bmalloc /output/include/unicode
 
 # Set environment variables for toolchain
 ENV CC="clang-${LLVM_VERSION}"
@@ -197,16 +197,18 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     cd /webkitbuild && \
     cmake \
     -DPORT="JSCOnly" \
-    -DENABLE_STATIC_JSC=ON \
-    -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON \
+    -DENABLE_STATIC_JSC=OFF \
+    -DENABLE_JAVASCRIPT_SHELL=OFF \
+    -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=OFF \
     -DCMAKE_BUILD_TYPE=$WEBKIT_RELEASE_TYPE \
     -DUSE_THIN_ARCHIVES=OFF \
-    -DUSE_BUN_JSC_ADDITIONS=ON \
-    -DUSE_BUN_EVENT_LOOP=ON \
+    -DUSE_BUN_JSC_ADDITIONS=OFF \
+    -DUSE_BUN_EVENT_LOOP=OFF \
     -DENABLE_FTL_JIT=ON \
-    -DCMAKE_EXPORT_COMPILE_COMMANDS=ON \
+    -DENABLE_SAMPLING_PROFILER=OFF \
+    -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF \
     -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON \
-    -DENABLE_REMOTE_INSPECTOR=ON \
+    -DENABLE_REMOTE_INSPECTOR=OFF \
     -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
     -DCMAKE_AR=$(which llvm-ar) \
     -DCMAKE_RANLIB=$(which llvm-ranlib) \
@@ -220,17 +222,17 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     -G Ninja \
     /webkit && \
     cd /webkitbuild && \
-    cmake --build /webkitbuild --config $WEBKIT_RELEASE_TYPE --target "jsc" && \
-    cp -r $WEBKIT_OUT_DIR/lib/*.a /output/lib && \
-    cp $WEBKIT_OUT_DIR/*.h /output/include && \
+    cmake --build /webkitbuild --config $WEBKIT_RELEASE_TYPE && \
+    cp -r $WEBKIT_OUT_DIR/lib/*.a $WEBKIT_OUT_DIR/lib/*.so /output/lib/ && \
+    cp $WEBKIT_OUT_DIR/*.h /output/include/ && \
     cp -r $WEBKIT_OUT_DIR/bin /output/bin && \
-    cp $WEBKIT_OUT_DIR/*.json /output && \
-    find $WEBKIT_OUT_DIR/JavaScriptCore/DerivedSources/ -name "*.h" -exec sh -c 'cp "$1" "/output/include/JavaScriptCore/$(basename "$1")"' sh {} \; && \
+    cp $WEBKIT_OUT_DIR/*.json /output/ && \
+    find $WEBKIT_OUT_DIR/JavaScriptCore/DerivedSources/ -name "*.h" -exec sh -c 'cp "$1" "/output/include/JavaScriptCore/internal/$(basename "$1")"' sh {} \; && \
     find $WEBKIT_OUT_DIR/JavaScriptCore/DerivedSources/ -name "*.json" -exec sh -c 'cp "$1" "/output/$(basename "$1")"' sh {} \; && \
-    find $WEBKIT_OUT_DIR/JavaScriptCore/Headers/JavaScriptCore/ -name "*.h" -exec cp {} /output/include/JavaScriptCore/ \; && \
-    find $WEBKIT_OUT_DIR/JavaScriptCore/PrivateHeaders/JavaScriptCore/ -name "*.h" -exec cp {} /output/include/JavaScriptCore/ \; && \
-    cp -r $WEBKIT_OUT_DIR/WTF/Headers/wtf/ /output/include && \
-    cp -r $WEBKIT_OUT_DIR/bmalloc/Headers/bmalloc/ /output/include && \
+    cp -r $WEBKIT_OUT_DIR/JavaScriptCore/Headers/JavaScriptCore /output/include/ && \
+    cp -r $WEBKIT_OUT_DIR/JavaScriptCore/PrivateHeaders/JavaScriptCore /output/include/JavaScriptCore/internal && \
+    cp -r $WEBKIT_OUT_DIR/WTF/Headers/wtf /output/include/ && \
+    cp -r $WEBKIT_OUT_DIR/bmalloc/Headers/bmalloc /output/include/ && \
     mkdir -p /output/Source/JavaScriptCore && \
     cp -r /webkit/Source/JavaScriptCore/Scripts /output/Source/JavaScriptCore && \
     cp /webkit/Source/JavaScriptCore/create_hash_table /output/Source/JavaScriptCore
