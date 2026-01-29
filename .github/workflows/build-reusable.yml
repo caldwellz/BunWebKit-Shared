@@ -46,13 +46,13 @@ jobs:
             package_json_arch: "arm64"
             CMAKE_BUILD_TYPE: "Debug"
             RELEASE_FLAGS: "-Og"
-          - lto_flag: "-march=armv8-a -mbranch-protection=standard -Wl,-s -flto=full -fwhole-program-vtables -fforce-emit-vtables"
+          - lto_flag: "-march=armv8-a -mbranch-protection=standard -Wl,-s -flto=full"
             label: bun-webkit-linux-arm64
             os: ubuntu-24.04-arm
             package_json_arch: "arm64"
             CMAKE_BUILD_TYPE: "Release"
             RELEASE_FLAGS: "-O3 -DNDEBUG=1"
-          - lto_flag: "-march=x86-64-v3 -fcf-protection=full -Wl,-s -flto=full  -fwhole-program-vtables -fforce-emit-vtables"
+          - lto_flag: "-march=x86-64-v3 -fcf-protection=full -Wl,-s -flto=full"
             label: bun-webkit-linux-amd64
             os: ubuntu-latest
             package_json_arch: "x64"

@@ -385,8 +385,8 @@ cmake -S . -B $WebKitBuild `
     -DENABLE_DFG_JIT=ON `
     -DENABLE_FTL_JIT=ON `
     -DENABLE_SAMPLING_PROFILER=OFF `
-    -DENABLE_WEBASSEMBLY=ON `     # Currently required unless you want to disable both DFG and FTL
-    -DUSE_BUN_JSC_ADDITIONS=ON `  # Currently required to avoid build errors
+    -DENABLE_WEBASSEMBLY=ON `
+    -DUSE_BUN_JSC_ADDITIONS=ON `
     -DUSE_BUN_EVENT_LOOP=OFF `
     -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON `
     "-DICU_ROOT=${ICU_STATIC_ROOT}" `
