@@ -339,6 +339,7 @@ $env:PATH = $PathWithPerl
 
 $env:CFLAGS = "/Zi"
 $env:CXXFLAGS = "/Zi"
+$env:LINKFLAGS = "/FORCE:MULTIPLE"
 
 $CmakeMsvcRuntimeLibrary = "MultiThreaded"
 if ($CMAKE_BUILD_TYPE -eq "Debug") {
@@ -366,29 +367,28 @@ if ($Platform -eq "ARM64") {
     $ARM64SehWorkaround = ""
 }
 
-if ($CMAKE_BUILD_TYPE -eq "Release") {
-    $LTO = "ON"
+if ($CMAKE_BUILD_TYPE -eq "Debug") {
+    $DebugBool = "ON"
+    $ReleaseBool = "OFF"
 } else {
-    $LTO = "OFF"
+    $DebugBool = "OFF"
+    $ReleaseBool = "ON"
 }
-
 cmake -S . -B $WebKitBuild `
     -DPORT="JSCOnly" `
     -DENABLE_STATIC_JSC=OFF `
-    -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON `
+    "-DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=${DebugBool}" `
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" `
     -DUSE_THIN_ARCHIVES=OFF `
     -DENABLE_JAVASCRIPT_SHELL=OFF `
     -DENABLE_JIT=ON `
     -DENABLE_DFG_JIT=ON `
     -DENABLE_FTL_JIT=ON `
-    -DENABLE_WEBASSEMBLY=OFF `
     -DENABLE_SAMPLING_PROFILER=OFF `
-    "-DENABLE_WEBASSEMBLY=${WebAssemblyState}" `
-    -DUSE_BUN_JSC_ADDITIONS=OFF `
+    -DENABLE_WEBASSEMBLY=ON `     # Currently required unless you want to disable both DFG and FTL
+    -DUSE_BUN_JSC_ADDITIONS=ON `  # Currently required to avoid build errors
     -DUSE_BUN_EVENT_LOOP=OFF `
-    -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=OFF `
-    -DUSE_SYSTEM_MALLOC=ON `
+    -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON `
     "-DICU_ROOT=${ICU_STATIC_ROOT}" `
     "-DICU_LIBRARY=${ICU_STATIC_LIBRARY}" `
     "-DICU_INCLUDE_DIR=${ICU_STATIC_INCLUDE_DIR}" `
@@ -399,9 +399,10 @@ cmake -S . -B $WebKitBuild `
     "-DCMAKE_CXX_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
     "-DCMAKE_C_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 ${ArchFlags} ${ARM64SehWorkaround}" `
     "-DCMAKE_CXX_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
+    "-CMAKE_SHARED_LINKER_FLAGS=${LINKFLAGS}" `
     -DENABLE_REMOTE_INSPECTOR=OFF `
     "-DCMAKE_MSVC_RUNTIME_LIBRARY=${CmakeMsvcRuntimeLibrary}" `
-    "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${LTO}" `
+    "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${ReleaseBool}" `
     -G Ninja
 # TODO: "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" `
 if ($LASTEXITCODE -ne 0) { throw "cmake failed with exit code $LASTEXITCODE" }

@@ -36,25 +36,25 @@ jobs:
         include:
           - lto_flag: "-march=x86-64-v3 -fcf-protection=full"
             label: bun-webkit-linux-amd64-debug
-            os: linux-x64-gh
+            os: ubuntu-latest
             package_json_arch: "x64"
             CMAKE_BUILD_TYPE: "Debug"
             RELEASE_FLAGS: "-Og"
           - lto_flag: "-march=armv8-a -mbranch-protection=standard"
             label: bun-webkit-linux-arm64-debug
-            os: linux-arm64-gh
+            os: ubuntu-24.04-arm
             package_json_arch: "arm64"
             CMAKE_BUILD_TYPE: "Debug"
             RELEASE_FLAGS: "-Og"
           - lto_flag: "-march=armv8-a -mbranch-protection=standard -Wl,-s -flto=full -fwhole-program-vtables -fforce-emit-vtables"
             label: bun-webkit-linux-arm64
-            os: linux-arm64-gh
+            os: ubuntu-24.04-arm
             package_json_arch: "arm64"
             CMAKE_BUILD_TYPE: "Release"
             RELEASE_FLAGS: "-O3 -DNDEBUG=1"
           - lto_flag: "-march=x86-64-v3 -fcf-protection=full -Wl,-s -flto=full  -fwhole-program-vtables -fforce-emit-vtables"
             label: bun-webkit-linux-amd64
-            os: linux-x64-gh
+            os: ubuntu-latest
             package_json_arch: "x64"
             CMAKE_BUILD_TYPE: "Release"
             RELEASE_FLAGS: "-O3 -DNDEBUG=1"
@@ -160,7 +160,6 @@ jobs:
           } else {
             $env:Path = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.22621.0\x64\;" + $env:Path
           }
-          $env:NO_WEBASSEMBLY = "TRUE"
           $env:WEBKIT_OUTPUT_DIR = "bun-webkit"
           $env:BUN_WEBKIT_VERSION = "${{ inputs.build_ref }}"
           $env:CMAKE_BUILD_TYPE = "${{matrix.build-type}}"
