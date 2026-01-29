@@ -9,7 +9,7 @@ This fork has been modified to release shared libraries with the following addit
 - ENABLE_STATIC_JSC: OFF
 - U_STATIC_IMPLEMENTATION undefined (to export symbols)
 - USE_BUN_EVENT_LOOP: OFF (if you're actually building Bun, just use an upstream static build)
-- USE_BUN_JSC_ADDITIONS and ENABLE_WEBASSEMBLY are currently ON to avoid build errors on Windows, but may be disabled at some point
+- To avoid build errors, USE_BUN_JSC_ADDITIONS is currently ON, and (on Linux) ENABLE_WEBASSEMBLY and ENABLE_FTL_JIT are OFF.
 - DerivedSources and PrivateHeaders are now released in an 'internal' subdirectory (except WTF's, which are now skipped)
 
 If you're looking for *static* library builds for some reason, just use one of the upstream releases from [oven-sh/WebKit](https://github.com/oven-sh/WebKit/releases).

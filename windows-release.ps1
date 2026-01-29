@@ -96,10 +96,7 @@ function Patch-IcuVcxProj {
     # 3. Change RuntimeLibrary for Debug: MultiThreadedDebugDLL -> MultiThreadedDebug
     $content = $content -replace '<RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>', '<RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>'
 
-    # 4. Add U_STATIC_IMPLEMENTATION to preprocessor definitions (if not already present)
-    if ($content -notmatch 'U_STATIC_IMPLEMENTATION') {
-        $content = $content -replace '(<PreprocessorDefinitions>)', '$1U_STATIC_IMPLEMENTATION;'
-    }
+    # 4. (now skipped) Add U_STATIC_IMPLEMENTATION to preprocessor definitions
 
     # 5. Disable Whole Program Optimization (/GL) - required for lld-link compatibility
     # MSBuild with /GL generates LTCG object files that only work with MSVC's link.exe
@@ -399,7 +396,7 @@ cmake -S . -B $WebKitBuild `
     "-DCMAKE_CXX_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
     "-DCMAKE_C_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 ${ArchFlags} ${ARM64SehWorkaround}" `
     "-DCMAKE_CXX_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
-    "-CMAKE_SHARED_LINKER_FLAGS=${LINKFLAGS}" `
+    "-DCMAKE_SHARED_LINKER_FLAGS=${LINKFLAGS}" `
     -DENABLE_REMOTE_INSPECTOR=OFF `
     "-DCMAKE_MSVC_RUNTIME_LIBRARY=${CmakeMsvcRuntimeLibrary}" `
     "-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=${ReleaseBool}" `
