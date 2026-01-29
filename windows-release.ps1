@@ -351,7 +351,7 @@ $WebAssemblyState = if ($NoWebassembly) { "OFF" } else { "ON" }
 # For ARM64, use the explicitly installed LLVM toolchain instead of VS's x64 LLVM
 # The VS Developer Shell adds VS's x64 LLVM to PATH which would be used otherwise
 if ($Platform -eq "ARM64") {
-    $ArchFlags = "/clang:-march=armv8-a,-mbranch-protection=standard"
+    $ArchFlags = "/clang:-march=armv8-a /clang:-mbranch-protection=standard"
     $ClangPath = "C:/LLVM/bin/clang-cl.exe"
     $LldLinkPath = "C:/LLVM/bin/lld-link.exe"
     # Note: The LLVM SEH unwind bug on Windows ARM64 (llvm/llvm-project#47432) is worked
@@ -360,7 +360,7 @@ if ($Platform -eq "ARM64") {
     $ARM64SehWorkaround = ""
     Write-Host ":: Using ARM64 LLVM toolchain: $ClangPath"
 } else {
-    $ArchFlags = "/clang:-march=x86-64-v3,-fcf-protection=full"
+    $ArchFlags = "/clang:-march=x86-64-v3 /clang:-fcf-protection=full"
     $ClangPath = "clang-cl"
     $LldLinkPath = "lld-link"
     $ARM64SehWorkaround = ""

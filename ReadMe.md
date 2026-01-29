@@ -1,17 +1,16 @@
 # BunWebKit-Shared
 
 This fork has been modified to release shared libraries with the following additional configuration changes:
-- Mac, \*-asan, \*-musl, and \*-lto builds skipped (LTO is now always enabled for Release, and always disabled for Debug)
-- Requiring Haswell or newer (i.e. enabling AVX2 instructions) on x86, and enabling branch protection on both x86 and ARM
-- WebAssembly: OFF
-- BUN flags: OFF
-- ENABLE_JAVASCRIPT_SHELL: OFF
-- ENABLE_REMOTE_INSPECTOR: OFF
-- ENABLE_SAMPLING_PROFILER: OFF
+- Removed macos-\*, \*-asan, \*-musl, and \*-lto builds (LTO is now always on for Release and off for Debug)
+- Now requiring Haswell or newer (i.e. enabling AVX2 instructions) on x86, and enabling branch protection on both x86 and ARM
+- BUN flags: OFF (if you're actually building Bun, just use an upstream static build)
+- ENABLE_JAVASCRIPT_SHELL: OFF (the `jsc` executable target is no longer needed to build the libraries)
+- ENABLE_REMOTE_INSPECTOR: OFF (seems like it wasn't working anyway)
+- ENABLE_SAMPLING_PROFILER: OFF (saves ~1MB)
 - ENABLE_STATIC_JSC: OFF
-- CMAKE_INTERPROCEDURAL_OPTIMIZATION: ON
+- ENABLE_WEBASSEMBLY: OFF (shaves **\~25%** off of the final DLL size)
 - U_STATIC_IMPLEMENTATION undefined (to export symbols)
-- DerivedSources and PrivateHeaders are now in their own 'internal' subdirectory (except WTF's, which are now skipped)
+- DerivedSources and PrivateHeaders are now released in an 'internal' subdirectory (except WTF's, which are now skipped)
 
 If you're looking for *static* library builds for some reason, just use one of the upstream releases from [oven-sh/WebKit](https://github.com/oven-sh/WebKit/releases).
 
