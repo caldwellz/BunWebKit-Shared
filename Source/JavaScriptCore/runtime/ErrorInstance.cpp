@@ -108,6 +108,7 @@ String appendSourceToErrorMessage(CodeBlock* codeBlock, BytecodeIndex bytecodeIn
     return appender(message, codeBlock->source().provider()->getRange(start, stop), type, ErrorInstance::SourceTextWhereErrorOccurred::FoundApproximateSource);
 }
 
+#if USE(BUN_JSC_ADDITIONS)
 void ErrorInstance::setStackFrames(VM& vm, WTF::Vector<StackFrame>&& stackFrames)
 {
     std::unique_ptr<Vector<StackFrame>> stackTrace = makeUnique<Vector<StackFrame>>(WTF::move(stackFrames));
@@ -116,6 +117,7 @@ void ErrorInstance::setStackFrames(VM& vm, WTF::Vector<StackFrame>&& stackFrames
     m_stackTrace = WTF::move(stackTrace);
     vm.writeBarrier(this);
 }
+#endif
 
 size_t ErrorInstance::estimatedSize(JSCell* cell, VM& vm)
 {
@@ -368,6 +370,7 @@ void ErrorInstance::computeErrorInfo(VM& vm, bool allocationAllowed)
     DeferGCForAWhile deferGC(vm);
     UNUSED_PARAM(allocationAllowed);
 
+#if USE(BUN_JSC_ADDITIONS)
     if (m_stackTrace && !m_stackTrace->isEmpty()) {
         auto& fn = vm.onComputeErrorInfo();
         WTF::String stackString;
@@ -383,8 +386,8 @@ void ErrorInstance::computeErrorInfo(VM& vm, bool allocationAllowed)
             m_stackTrace = nullptr;
             m_stackString = WTF::move(stackString);
         }
-
     }
+#endif
 }
 
 bool ErrorInstance::materializeErrorInfoIfNeeded(VM& vm)

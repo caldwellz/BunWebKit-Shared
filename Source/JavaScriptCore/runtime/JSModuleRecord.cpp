@@ -63,7 +63,6 @@ JSModuleRecord::JSModuleRecord(VM& vm, Structure* structure, const Identifier& m
 {
 }
 
-#if USE(BUN_JSC_ADDITIONS)
 size_t JSModuleRecord::estimatedSize(JSCell* cell, VM& vm)
 {
     const auto& thisObject = jsCast<JSModuleRecord*>(cell);
@@ -71,10 +70,11 @@ size_t JSModuleRecord::estimatedSize(JSCell* cell, VM& vm)
     const SourceCode& sourceCode = thisObject->sourceCode();
     StringView view = sourceCode.provider() ? sourceCode.provider()->source() : StringView();
     size += view.length() * (view.is8Bit() ? sizeof(Latin1Character) : sizeof(UChar));
+#if USE(BUN_JSC_ADDITIONS)
     size += sourceCode.memoryCost();
+#endif
     return size;
 }
-#endif
 void JSModuleRecord::destroy(JSCell* cell)
 {
     JSModuleRecord* thisObject = static_cast<JSModuleRecord*>(cell);
@@ -146,7 +146,8 @@ void JSModuleRecord::instantiateDeclarations(JSGlobalObject* globalObject, Modul
             switch (resolution.type) {
             case Resolution::Type::NotFound: {
 #if USE(BUN_JSC_ADDITIONS)
-                if(m_isTypeScript) break;
+                if (m_isTypeScript)
+                    break;
 #endif
                 throwSyntaxError(globalObject, scope, makeString("export '"_s, StringView(exportEntry.exportName.impl()), "' not found in '"_s, StringView(exportEntry.moduleName.impl()), "'"_s));
                 return;
@@ -208,7 +209,7 @@ void JSModuleRecord::instantiateDeclarations(JSGlobalObject* globalObject, Modul
             switch (resolution.type) {
             case Resolution::Type::NotFound: {
 #if USE(BUN_JSC_ADDITIONS)
-                if(importEntry.type == AbstractModuleRecord::ImportEntryType::SingleTypeScript) {
+                if (importEntry.type == AbstractModuleRecord::ImportEntryType::SingleTypeScript) {
                     break;
                 }
 #endif
