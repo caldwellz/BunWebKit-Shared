@@ -52,8 +52,8 @@ echo "Building $CONTAINER_NAME to $temp/bun-webkit"
 docker buildx build \
   -f Dockerfile \
   -t $CONTAINER_NAME \
-  --build-arg DEFAULT_CFLAGS=$DEFAULT_CFLAGS \
-  --build-arg ENABLE_SANITIZERS=$ENABLE_SANITIZERS \
+  --build-arg DEFAULT_CFLAGS="$DEFAULT_CFLAGS" \
+  --build-arg ENABLE_SANITIZERS="$ENABLE_SANITIZERS" \
   --build-arg LLVM_VERSION=$LLVM_VERSION \
   --build-arg LTO_FLAG="$LTO_FLAG" \
   --build-arg RELEASE_FLAGS="$RELEASE_FLAGS" \
