@@ -1,26 +1,14 @@
-ARG MARCH_FLAG=""
-ARG WEBKIT_RELEASE_TYPE=Release
-ARG CPU=native
-ARG LTO_FLAG="-flto=full -fwhole-program-vtables -fforce-emit-vtables "
-ARG RELEASE_FLAGS="-O3 -DNDEBUG=1"
-ARG LLVM_VERSION="19"
-ARG DEFAULT_CFLAGS="-mno-omit-leaf-frame-pointer -g -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables "
-ARG ENABLE_SANITIZERS=""
-
 # Use different base images for ARM64 vs x86_64
 FROM --platform=$BUILDPLATFORM ubuntu:20.04 as base-arm64
 FROM --platform=$BUILDPLATFORM ubuntu:20.04 as base-amd64
 FROM base-$TARGETARCH as base
 
-ARG MARCH_FLAG
-ARG WEBKIT_RELEASE_TYPE
-ARG CPU
-ARG LTO_FLAG
-ARG RELEASE_FLAGS
+ARG WEBKIT_RELEASE_TYPE="Release"
+ARG LTO_FLAG=""
+ARG RELEASE_FLAGS=""
 ARG LLVM_VERSION
-ARG DEFAULT_CFLAGS
-ARG TARGETARCH
-ARG ENABLE_SANITIZERS
+ARG DEFAULT_CFLAGS=""
+ARG ENABLE_SANITIZERS=""
 
 # Prevent interactive prompts
 ENV DEBIAN_FRONTEND=noninteractive
@@ -148,14 +136,13 @@ ENV CXX="clang++-${LLVM_VERSION}"
 ENV AR="llvm-ar-${LLVM_VERSION}"
 ENV RANLIB="llvm-ranlib-${LLVM_VERSION}"
 ENV LD="lld-${LLVM_VERSION}"
-ENV LTO_FLAG="${LTO_FLAG}"
 ENV LD_LIBRARY_PATH="/usr/lib/gcc/x86_64-linux-gnu/13:/usr/lib/x86_64-linux-gnu"
 ENV LIBRARY_PATH="/usr/lib/gcc/x86_64-linux-gnu/13:/usr/lib/x86_64-linux-gnu"
 ENV CPLUS_INCLUDE_PATH="/usr/include/c++/13:/usr/include/x86_64-linux-gnu/c++/13"
 ENV C_INCLUDE_PATH="/usr/lib/gcc/x86_64-linux-gnu/13/include"
 
-ENV CFLAGS="${DEFAULT_CFLAGS} $CFLAGS -stdlib=libstdc++"
-ENV CXXFLAGS="${DEFAULT_CFLAGS} $CXXFLAGS -stdlib=libstdc++"
+ENV CFLAGS="${DEFAULT_CFLAGS} ${RELEASE_FLAGS} ${LTO_FLAG} -stdlib=libstdc++"
+ENV CXXFLAGS="${DEFAULT_CFLAGS} ${RELEASE_FLAGS} ${LTO_FLAG} -stdlib=libstdc++"
 ENV LDFLAGS="-fuse-ld=lld -L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/x86_64-linux-gnu"
 
 # Verify toolchain setup
@@ -167,8 +154,8 @@ RUN echo "#include <iostream>\n#include <numbers>\nint main() { std::cout << std
 # Download and build ICU
 ADD https://github.com/unicode-org/icu/releases/download/release-75-1/icu4c-75_1-src.tgz /icu.tgz
 RUN --mount=type=tmpfs,target=/icu \
-    export CFLAGS="$CFLAGS -Os -std=c17 $LTO_FLAG" && \
-    export CXXFLAGS="$CXXFLAGS -Os -DUCONFIG_NO_LEGACY_CONVERSION=1 -std=c++20 -fno-exceptions $LTO_FLAG -fno-c++-static-destructors " && \
+    export CFLAGS="$CFLAGS -Os -std=c17 " && \
+    export CXXFLAGS="$CXXFLAGS -Os -DUCONFIG_NO_LEGACY_CONVERSION=1 -std=c++20 -fno-exceptions -fno-c++-static-destructors " && \
     export LDFLAGS="-fuse-ld=lld " && \
     cd /icu && \
     tar -xf /icu.tgz --strip-components=1 && \
@@ -182,13 +169,9 @@ RUN --mount=type=tmpfs,target=/icu \
 COPY . /webkit
 WORKDIR /webkit
 
-ENV CPU=${CPU}
-ENV MARCH_FLAG=${MARCH_FLAG}
-ENV RELEASE_FLAGS=${RELEASE_FLAGS}
-
 RUN --mount=type=tmpfs,target=/webkitbuild \
-    export CFLAGS="$CFLAGS $LTO_FLAG -ffile-prefix-map=/webkit/Source=vendor/WebKit/Source  -ffile-prefix-map=/webkitbuild/=. " && \
-    export CXXFLAGS="$CXXFLAGS $LTO_FLAG -fno-c++-static-destructors -ffile-prefix-map=/webkit/Source=vendor/WebKit/Source -ffile-prefix-map=/webkitbuild/=. " && \
+    export CFLAGS="$CFLAGS -ffile-prefix-map=/webkit/Source=vendor/WebKit/Source  -ffile-prefix-map=/webkitbuild/=. " && \
+    export CXXFLAGS="$CXXFLAGS -fno-c++-static-destructors -ffile-prefix-map=/webkit/Source=vendor/WebKit/Source -ffile-prefix-map=/webkitbuild/=. " && \
     export ENABLE_ASSERTS="AUTO" && \
     export LDFLAGS="-fuse-ld=lld $LDFLAGS " && \
     if [ -n "$ENABLE_SANITIZERS" ]; then \
@@ -201,11 +184,11 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     -DENABLE_JAVASCRIPT_SHELL=OFF \
     -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON \
     -DCMAKE_BUILD_TYPE=$WEBKIT_RELEASE_TYPE \
-    -DENABLE_WEBASSEMBLY=OFF \
+    -DENABLE_WEBASSEMBLY=ON \
     -DUSE_THIN_ARCHIVES=OFF \
-    -DUSE_BUN_JSC_ADDITIONS=ON \
+    -DUSE_BUN_JSC_ADDITIONS=OFF \
     -DUSE_BUN_EVENT_LOOP=OFF \
-    -DENABLE_FTL_JIT=OFF \
+    -DENABLE_FTL_JIT=ON \
     -DENABLE_SAMPLING_PROFILER=OFF \
     -DCMAKE_EXPORT_COMPILE_COMMANDS=OFF \
     -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON \
@@ -213,16 +196,17 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     -DCMAKE_EXE_LINKER_FLAGS="-fuse-ld=lld" \
     -DCMAKE_AR=$(which llvm-ar) \
     -DCMAKE_RANLIB=$(which llvm-ranlib) \
-    -DCMAKE_C_FLAGS="$CFLAGS" \
-    -DCMAKE_CXX_FLAGS="$CXXFLAGS" \
-    -DCMAKE_C_FLAGS_RELEASE="$RELEASE_FLAGS" \
-    -DCMAKE_CXX_FLAGS_RELEASE="$RELEASE_FLAGS" \
+    -DCMAKE_C_FLAGS="$CFLAGS -DJS_EXPORT_PRIVATE=" \
+    -DCMAKE_CXX_FLAGS="$CXXFLAGS -DJS_EXPORT_PRIVATE=" \
+    -DCMAKE_C_FLAGS_RELEASE="$CFLAGS -DJS_EXPORT_PRIVATE=" \
+    -DCMAKE_CXX_FLAGS_RELEASE="$CXXFLAGS -DJS_EXPORT_PRIVATE=" \
     -DICU_ROOT=/icu \
     -DENABLE_SANITIZERS="$ENABLE_SANITIZERS" \
     -DENABLE_ASSERTS="$ENABLE_ASSERTS" \
+    -DBUILD_SHARED_LIBS=ON \
     -G Ninja \
     /webkit && \
-    cd /webkitbuild && \
+    python /webkit/Source/JavaScriptCore/wasm/generateWasmOpsHeader.py /webkit/Source/JavaScriptCore/wasm/wasm.json JavaScriptCore/DerivedSources/WasmOps.h && \
     cmake --build /webkitbuild --config $WEBKIT_RELEASE_TYPE && \
     cp -r $WEBKIT_OUT_DIR/lib/*.a $WEBKIT_OUT_DIR/lib/*.so /output/lib/ && \
     cp $WEBKIT_OUT_DIR/*.h /output/include/ && \

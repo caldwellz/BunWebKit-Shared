@@ -349,7 +349,7 @@ $WebAssemblyState = if ($NoWebassembly) { "OFF" } else { "ON" }
 # For ARM64, use the explicitly installed LLVM toolchain instead of VS's x64 LLVM
 # The VS Developer Shell adds VS's x64 LLVM to PATH which would be used otherwise
 if ($Platform -eq "ARM64") {
-    $ArchFlags = "/clang:-march=armv8-a /clang:-mbranch-protection=standard"
+    $ArchFlags = "/clang:-march=armv8-a /clang:-mbranch-protection=standard /clang:-fstack-protector-strong"
     $ClangPath = "C:/LLVM/bin/clang-cl.exe"
     $LldLinkPath = "C:/LLVM/bin/lld-link.exe"
     # Note: The LLVM SEH unwind bug on Windows ARM64 (llvm/llvm-project#47432) is worked
@@ -358,23 +358,21 @@ if ($Platform -eq "ARM64") {
     $ARM64SehWorkaround = ""
     Write-Host ":: Using ARM64 LLVM toolchain: $ClangPath"
 } else {
-    $ArchFlags = "/clang:-march=x86-64-v3 /clang:-fcf-protection=full"
+    $ArchFlags = "/clang:-march=x86-64-v3 /clang:-fcf-protection=full /clang:-fstack-protector-strong"
     $ClangPath = "clang-cl"
     $LldLinkPath = "lld-link"
     $ARM64SehWorkaround = ""
 }
 
 if ($CMAKE_BUILD_TYPE -eq "Debug") {
-    $DebugBool = "ON"
-    $ReleaseBool = "OFF"
+    $LTOMode = "OFF"
 } else {
-    $DebugBool = "OFF"
-    $ReleaseBool = "ON"
+    $LTOMode = "thin"
 }
 cmake -S . -B $WebKitBuild `
     -DPORT="JSCOnly" `
     -DENABLE_STATIC_JSC=OFF `
-    "-DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=${DebugBool}" `
+    -DALLOW_LINE_AND_COLUMN_NUMBER_IN_BUILTINS=ON `
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}" `
     -DUSE_THIN_ARCHIVES=OFF `
     -DENABLE_JAVASCRIPT_SHELL=OFF `
@@ -383,7 +381,7 @@ cmake -S . -B $WebKitBuild `
     -DENABLE_FTL_JIT=ON `
     -DENABLE_SAMPLING_PROFILER=OFF `
     -DENABLE_WEBASSEMBLY=ON `
-    -DUSE_BUN_JSC_ADDITIONS=ON `
+    -DUSE_BUN_JSC_ADDITIONS=OFF `
     -DUSE_BUN_EVENT_LOOP=OFF `
     -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON `
     "-DICU_ROOT=${ICU_STATIC_ROOT}" `
@@ -392,17 +390,21 @@ cmake -S . -B $WebKitBuild `
     "-DCMAKE_C_COMPILER=${ClangPath}" `
     "-DCMAKE_CXX_COMPILER=${ClangPath}" `
     "-DCMAKE_LINKER=${LldLinkPath}" `
-    "-DCMAKE_C_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG ${ArchFlags} ${ARM64SehWorkaround}" `
-    "-DCMAKE_CXX_FLAGS_RELEASE=/Zi /O2 /Ob2 /DNDEBUG /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
-    "-DCMAKE_C_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 ${ArchFlags} ${ARM64SehWorkaround}" `
-    "-DCMAKE_CXX_FLAGS_DEBUG=/Zi /FS /O0 /Ob0 /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
-    "-DCMAKE_SHARED_LINKER_FLAGS=${LINKFLAGS}" `
+    -DCMAKE_C_FLAGS_RELEASE="/Zi /O2 /Ob2 /DNDEBUG /DJS_EXPORT_PRIVATE= ${ArchFlags} ${ARM64SehWorkaround}" `
+    -DCMAKE_CXX_FLAGS_RELEASE="/Zi /O2 /Ob2 /DNDEBUG /DJS_EXPORT_PRIVATE= /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
+    -DCMAKE_C_FLAGS_DEBUG="/Zi /FS /O0 /Ob0 /DJS_EXPORT_PRIVATE= ${ArchFlags} ${ARM64SehWorkaround}" `
+    -DCMAKE_CXX_FLAGS_DEBUG="/Zi /FS /O0 /Ob0 /DJS_EXPORT_PRIVATE= /clang:-fno-c++-static-destructors ${ArchFlags} ${ARM64SehWorkaround}" `
+    "-DCMAKE_SHARED_LINKER_FLAGS=${env:LINKFLAGS}" `
     -DENABLE_REMOTE_INSPECTOR=OFF `
     "-DCMAKE_MSVC_RUNTIME_LIBRARY=${CmakeMsvcRuntimeLibrary}" `
-    "-DLTO_MODE=${ReleaseBool}" `
+    -DBUILD_SHARED_LIBS=ON
+    "-DLTO_MODE=${LTOMode}" `
     -G Ninja
-# TODO: "-DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded" `
 if ($LASTEXITCODE -ne 0) { throw "cmake failed with exit code $LASTEXITCODE" }
+
+# Sometimes WasmOps.h isn't generated during the CMake configure step for whatever reason, so manually regenerate it
+python Source\JavaScriptCore\wasm\generateWasmOpsHeader.py Source\JavaScriptCore\wasm\wasm.json WebKitBuild/JavaScriptCore/DerivedSources/WasmOps.h
+if ($LASTEXITCODE -ne 0) { throw "python failed with exit code $LASTEXITCODE" }
 
 # Workaround for what is probably a CMake bug
 $batFiles = Get-ChildItem -Path $WebKitBuild -Filter "*.bat" -File -Recurse
@@ -416,7 +418,7 @@ foreach ($file in $batFiles) {
 }
 
 Write-Host ":: Building WebKit"
-cmake --build $WebKitBuild --config Release --verbose
+cmake --build $WebKitBuild --config $CMAKE_BUILD_TYPE --verbose
 if ($LASTEXITCODE -ne 0) { throw "cmake --build failed with exit code $LASTEXITCODE" }
 
 Write-Host ":: Packaging ${output}"

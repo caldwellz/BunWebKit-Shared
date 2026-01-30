@@ -34,30 +34,32 @@ jobs:
     strategy:
       matrix:
         include:
-          - lto_flag: "-march=x86-64-v3 -fcf-protection=full"
-            label: bun-webkit-linux-amd64-debug
-            os: ubuntu-latest
-            package_json_arch: "x64"
-            CMAKE_BUILD_TYPE: "Debug"
-            RELEASE_FLAGS: "-Og"
-          - lto_flag: "-march=armv8-a -mbranch-protection=standard"
-            label: bun-webkit-linux-arm64-debug
-            os: ubuntu-24.04-arm
-            package_json_arch: "arm64"
-            CMAKE_BUILD_TYPE: "Debug"
-            RELEASE_FLAGS: "-Og"
-          - lto_flag: "-march=armv8-a -mbranch-protection=standard -Wl,-s -flto=full"
-            label: bun-webkit-linux-arm64
-            os: ubuntu-24.04-arm
-            package_json_arch: "arm64"
-            CMAKE_BUILD_TYPE: "Release"
-            RELEASE_FLAGS: "-O3 -DNDEBUG=1"
-          - lto_flag: "-march=x86-64-v3 -fcf-protection=full -Wl,-s -flto=full"
-            label: bun-webkit-linux-amd64
+          - label: bun-webkit-linux-amd64
             os: ubuntu-latest
             package_json_arch: "x64"
             CMAKE_BUILD_TYPE: "Release"
+            DEFAULT_CFLAGS: "-march=x86-64-v3 -fcf-protection=full -fstack-protector-strong"
+            LTO_FLAG: "-flto=thin"
             RELEASE_FLAGS: "-O3 -DNDEBUG=1"
+          - label: bun-webkit-linux-amd64-debug
+            os: ubuntu-latest
+            package_json_arch: "x64"
+            CMAKE_BUILD_TYPE: "Debug"
+            DEFAULT_CFLAGS: "-march=x86-64-v3 -fcf-protection=full -fstack-protector-strong"
+            RELEASE_FLAGS: "-Og -g -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables"
+          - label: bun-webkit-linux-arm64
+            os: ubuntu-24.04-arm
+            package_json_arch: "arm64"
+            CMAKE_BUILD_TYPE: "Release"
+            DEFAULT_CFLAGS: "-march=armv8-a -mbranch-protection=standard -fstack-protector-strong"
+            LTO_FLAG: "-flto=thin"
+            RELEASE_FLAGS: "-O3 -DNDEBUG=1"
+          - label: bun-webkit-linux-arm64-debug
+            os: ubuntu-24.04-arm
+            package_json_arch: "arm64"
+            CMAKE_BUILD_TYPE: "Debug"
+            DEFAULT_CFLAGS: "-march=armv8-a -mbranch-protection=standard -fstack-protector-strong"
+            RELEASE_FLAGS: "-Og -g -mno-omit-leaf-frame-pointer -fno-omit-frame-pointer -ffunction-sections -fdata-sections -faddrsig -fno-unwind-tables -fno-asynchronous-unwind-tables"
     timeout-minutes: 90
     steps:
       - uses: actions/checkout@v4
