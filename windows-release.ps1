@@ -50,17 +50,17 @@ $null = mkdir $WebKitBuild -ErrorAction SilentlyContinue
 
 # WebKit/JavaScriptCore requires ICU, but unlike the Bun upstream, we can just bundle prebuilt DLLs.
 $ICU_MAJOR_VERSION = "78"
+if ($Platform -eq "ARM64") {
+    $ICUPlatform = "ARM64"
+} else {
+    $ICUPlatform = "64"
+}
 $ICU_ROOT = Join-Path $WebKitBuild "icu"
-$ICU_BIN_DIR = Join-Path $ICU_ROOT "bin64"
-$ICU_LIB_DIR = Join-Path $ICU_ROOT "lib64"
+$ICU_BIN_DIR = Join-Path $ICU_ROOT "bin${ICUPlatform}"
+$ICU_LIB_DIR = Join-Path $ICU_ROOT "lib${ICUPlatform}"
 $ICU_INCLUDE_DIR = Join-Path $ICU_ROOT "include"
 if (!(Test-Path -Path $ICU_ROOT) -or !(Test-Path -Path "$ICU_LIB_DIR/icudt.lib")) {
-    if ($Platform -eq "ARM64") {
-        $ICUPlatform = "WinARM64"
-    } else {
-        $ICUPlatform = "Win64"
-    }
-    $ICU_ZIP = "icu4c-${ICU_MAJOR_VERSION}.1-${ICUPlatform}-MSVC2022.zip"
+    $ICU_ZIP = "icu4c-${ICU_MAJOR_VERSION}.1-Win${ICUPlatform}-MSVC2022.zip"
     $ICU_ZIP_PATH = Join-Path $WebKitBuild $ICU_ZIP
     $ICU_RELEASE_URL = "https://github.com/unicode-org/icu/releases/download/release-${ICU_MAJOR_VERSION}.1/${ICU_ZIP}"
 

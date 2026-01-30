@@ -141,8 +141,8 @@ ENV LIBRARY_PATH="/usr/lib/gcc/x86_64-linux-gnu/13:/usr/lib/x86_64-linux-gnu"
 ENV CPLUS_INCLUDE_PATH="/usr/include/c++/13:/usr/include/x86_64-linux-gnu/c++/13"
 ENV C_INCLUDE_PATH="/usr/lib/gcc/x86_64-linux-gnu/13/include"
 
-ENV CFLAGS="${DEFAULT_CFLAGS} ${RELEASE_FLAGS} ${LTO_FLAG} -stdlib=libstdc++"
-ENV CXXFLAGS="${DEFAULT_CFLAGS} ${RELEASE_FLAGS} ${LTO_FLAG} -stdlib=libstdc++"
+ENV CFLAGS="${DEFAULT_CFLAGS} ${RELEASE_FLAGS} ${LTO_FLAG} -fPIC -stdlib=libstdc++"
+ENV CXXFLAGS="${DEFAULT_CFLAGS} ${RELEASE_FLAGS} ${LTO_FLAG} -fPIC -stdlib=libstdc++"
 ENV LDFLAGS="-fuse-ld=lld -L/usr/lib/gcc/x86_64-linux-gnu/13 -L/usr/lib/x86_64-linux-gnu"
 
 # Verify toolchain setup
@@ -154,8 +154,8 @@ RUN echo "#include <iostream>\n#include <numbers>\nint main() { std::cout << std
 # Download and build ICU
 ADD https://github.com/unicode-org/icu/releases/download/release-75-1/icu4c-75_1-src.tgz /icu.tgz
 RUN --mount=type=tmpfs,target=/icu \
-    export CFLAGS="$CFLAGS -Os -std=c17 " && \
-    export CXXFLAGS="$CXXFLAGS -Os -DUCONFIG_NO_LEGACY_CONVERSION=1 -std=c++20 -fno-exceptions -fno-c++-static-destructors " && \
+    export CFLAGS="$CFLAGS -Os -std=c17 -fPIC " && \
+    export CXXFLAGS="$CXXFLAGS -Os -DUCONFIG_NO_LEGACY_CONVERSION=1 -std=c++20 -fPIC -fno-exceptions -fno-c++-static-destructors " && \
     export LDFLAGS="-fuse-ld=lld " && \
     cd /icu && \
     tar -xf /icu.tgz --strip-components=1 && \

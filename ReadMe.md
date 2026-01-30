@@ -3,7 +3,7 @@
 This fork has been modified to release shared libraries with the following additional configuration changes:
 - Removed macos-\*, \*-asan, \*-musl, and \*-lto builds (LTO is now always on for Release and off for Debug)
 - Now requires Haswell or newer (i.e. enables AVX2 instructions) on x86, and enables branch- and stack-smashing protection on both x86 and ARM (TODO: test all platform / build-type combos to make sure these don't break anything)
-- ENABLE_JAVASCRIPT_SHELL: OFF (the `jsc` executable requires private symbols not present in the shared library)
+- ENABLE_JAVASCRIPT_SHELL: OFF (the `jsc` executable requires private symbols not exposed in the shared library)
 - ENABLE_REMOTE_INSPECTOR: OFF (seems like it wasn't working anyway)
 - ENABLE_SAMPLING_PROFILER: OFF (saves ~1MB)
 - ENABLE_STATIC_JSC: OFF
