@@ -80,7 +80,7 @@ jobs:
           ENABLE_SANITIZERS: ${{matrix.ENABLE_SANITIZERS}}
         run: |
           rm -rf ${{runner.temp}}/bun-webkit ${{runner.temp}}/bun-webkit.tar.gz
-          WEBKIT_RELEASE_TYPE=${{matrix.CMAKE_BUILD_TYPE}} CPU="" cpu="" LTO_FLAG="${{matrix.lto_flag}}" temp=${{runner.temp}} ENABLE_SANITIZERS="${{matrix.ENABLE_SANITIZERS}}" bash release.sh
+          WEBKIT_RELEASE_TYPE=${{matrix.CMAKE_BUILD_TYPE}} LTO_FLAG="${{matrix.LTO_FLAG}}" LLVM_VERSION=${{env.LLVM_VERSION}} DEFAULT_CFLAGS="${{matrix.DEFAULT_CFLAGS}}" RELEASE_FLAGS="${{matrix.RELEASE_FLAGS}}" temp=${{runner.temp}} ENABLE_SANITIZERS="${{matrix.ENABLE_SANITIZERS}}" bash release.sh
           cd ${{runner.temp}}
           echo "#define BUN_WEBKIT_VERSION \"${{ inputs.build_ref }}\"" >> bun-webkit/include/cmakeconfig.h
           echo '{ "name": "${{matrix.label}}", "version": "0.0.1-${{ inputs.build_ref }}", "os": ["linux"], "cpu": ["${{matrix.package_json_arch}}"], "repository": "https://github.com/${{github.repository}}" }' > bun-webkit/package.json

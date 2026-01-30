@@ -6,7 +6,6 @@ export DOCKER_BUILDKIT=1
 
 export BUILDKIT_ARCH=$(uname -m)
 export ARCH=${BUILDKIT_ARCH}
-export LTO_FLAG="${LTO_FLAG:-""}"
 if [ "$BUILDKIT_ARCH" == "amd64" ]; then
     export BUILDKIT_ARCH="amd64"
     export ARCH=x64
@@ -53,7 +52,9 @@ echo "Building $CONTAINER_NAME to $temp/bun-webkit"
 docker buildx build \
   -f Dockerfile \
   -t $CONTAINER_NAME \
+  --build-arg DEFAULT_CFLAGS=$DEFAULT_CFLAGS \
   --build-arg ENABLE_SANITIZERS=$ENABLE_SANITIZERS \
+  --build-arg LLVM_VERSION=$LLVM_VERSION \
   --build-arg LTO_FLAG="$LTO_FLAG" \
   --build-arg RELEASE_FLAGS="$RELEASE_FLAGS" \
   --build-arg WEBKIT_RELEASE_TYPE=$WEBKIT_RELEASE_TYPE \
