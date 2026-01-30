@@ -128,7 +128,7 @@ cmake -S . -B $WebKitBuild `
     -DUSE_BUN_EVENT_LOOP=OFF `
     -DENABLE_BUN_SKIP_FAILING_ASSERTIONS=ON `
     -DICU_ROOT="${ICU_ROOT}" `
-    -DICU_LIB_DIR="${ICU_LIB_DIR}" `
+    -DICU_LIBRARY="${ICU_LIB_DIR}" `
     -DICU_INCLUDE_DIR="${ICU_INCLUDE_DIR}" `
     -DCMAKE_C_COMPILER="${ClangPath}" `
     -DCMAKE_CXX_COMPILER="${ClangPath}" `

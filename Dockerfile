@@ -206,7 +206,7 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     -DBUILD_SHARED_LIBS=ON \
     -G Ninja \
     /webkit && \
-    python /webkit/Source/JavaScriptCore/wasm/generateWasmOpsHeader.py /webkit/Source/JavaScriptCore/wasm/wasm.json JavaScriptCore/DerivedSources/WasmOps.h && \
+    python3 /webkit/Source/JavaScriptCore/wasm/generateWasmOpsHeader.py /webkit/Source/JavaScriptCore/wasm/wasm.json /webkitbuild/JavaScriptCore/DerivedSources/WasmOps.h && \
     cmake --build /webkitbuild --config $WEBKIT_RELEASE_TYPE && \
     cp -r $WEBKIT_OUT_DIR/lib/*.a $WEBKIT_OUT_DIR/lib/*.so /output/lib/ && \
     cp $WEBKIT_OUT_DIR/*.h /output/include/ && \
