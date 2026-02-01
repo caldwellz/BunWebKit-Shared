@@ -217,7 +217,7 @@ if (Test-Path -Path $WebKitBuild/bmalloc) {
 }
 
 (Get-Content -Path $output/include/JavaScriptCore/internal/JSValueInternal.h) `
-    -replace "#import <JavaScriptCore/JSValuePrivate.h>", "#include \"JSValuePrivate.h\"" `
+    -replace "#import <JavaScriptCore/JSValuePrivate.h>", '#include "JSValuePrivate.h"' `
 | Set-Content -Path $output/include/JavaScriptCore/internal/JSValueInternal.h
 
 # Copy ICU headers to output
