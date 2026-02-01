@@ -216,9 +216,9 @@ if (Test-Path -Path $WebKitBuild/bmalloc) {
     Copy-Item -r $WebKitBuild/bmalloc/Headers/bmalloc/* $output/include/bmalloc/
 }
 
-(Get-Content -Path $output/include/JavaScriptCore/JSValueInternal.h) `
-    -replace "#import <JavaScriptCore/JSValuePrivate.h>", "#include <JavaScriptCore/JSValuePrivate.h>" `
-| Set-Content -Path $output/include/JavaScriptCore/JSValueInternal.h
+(Get-Content -Path $output/include/JavaScriptCore/internal/JSValueInternal.h) `
+    -replace "#import <JavaScriptCore/JSValuePrivate.h>", "#include \"JSValuePrivate.h\"" `
+| Set-Content -Path $output/include/JavaScriptCore/internal/JSValueInternal.h
 
 # Copy ICU headers to output
 Copy-Item -r $ICU_INCLUDE_DIR/* $output/include/

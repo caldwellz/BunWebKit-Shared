@@ -211,7 +211,6 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     cp -r $WEBKIT_OUT_DIR/lib /output/lib && \
     cp $WEBKIT_OUT_DIR/*.h /output/include/ && \
     cp -r $WEBKIT_OUT_DIR/bin /output/bin && \
-    cp $WEBKIT_OUT_DIR/*.json /output/ && \
     find $WEBKIT_OUT_DIR/JavaScriptCore/DerivedSources/ -name "*.h" -exec sh -c 'cp "$1" "/output/include/JavaScriptCore/internal/$(basename "$1")"' sh {} \; && \
     find $WEBKIT_OUT_DIR/JavaScriptCore/DerivedSources/ -name "*.json" -exec sh -c 'cp "$1" "/output/$(basename "$1")"' sh {} \; && \
     cp -r $WEBKIT_OUT_DIR/JavaScriptCore/Headers/JavaScriptCore /output/include/ && \
