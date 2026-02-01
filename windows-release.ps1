@@ -48,6 +48,7 @@ $CMAKE_BUILD_TYPE = if ($env:CMAKE_BUILD_TYPE) { $env:CMAKE_BUILD_TYPE } else { 
 $BUN_WEBKIT_VERSION = if ($env:BUN_WEBKIT_VERSION) { $env:BUN_WEBKIT_VERSION } else { $(git rev-parse HEAD) }
 
 $null = mkdir $WebKitBuild -ErrorAction SilentlyContinue
+$null = mkdir $WebKitBuild\icu -ErrorAction SilentlyContinue
 
 # WebKit/JavaScriptCore requires ICU, but unlike the Bun upstream, we can just bundle prebuilt DLLs.
 $ICU_MAJOR_VERSION = "78"
@@ -56,7 +57,7 @@ if ($Platform -eq "ARM64") {
 } else {
     $ICUPlatform = "64"
 }
-$ICU_ROOT = Join-Path $WebKitBuild "icu"
+$ICU_ROOT = Resolve-Path "${WebKitBuild}\icu"
 $ICU_BIN_DIR = Join-Path $ICU_ROOT "bin${ICUPlatform}"
 $ICU_LIB_DIR = Join-Path $ICU_ROOT "lib${ICUPlatform}"
 $ICU_INCLUDE_DIR = Join-Path $ICU_ROOT "include"
@@ -73,6 +74,7 @@ if (!(Test-Path -Path $ICU_ROOT) -or !(Test-Path -Path "$ICU_LIB_DIR/icudt.lib")
     unzip $ICU_ZIP_PATH -d $ICU_ROOT
     if ($LASTEXITCODE -ne 0) { throw "unzip failed with exit code $LASTEXITCODE" }
 }
+Write-Host ":: Final ICU lib dir: ${ICU_LIB_DIR}"
 
 Write-Host ":: Configuring WebKit"
 
