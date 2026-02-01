@@ -105,16 +105,16 @@ jobs:
             package_json_arch: "x64"
             label: bun-webkit-windows-amd64-debug
             platform: x64
-          - runner: windows-11-arm
-            build-type: Release
-            package_json_arch: "arm64"
-            label: bun-webkit-windows-arm64
-            platform: ARM64
-          - runner: windows-11-arm
-            build-type: Debug
-            package_json_arch: "arm64"
-            label: bun-webkit-windows-arm64-debug
-            platform: ARM64
+#          - runner: windows-11-arm
+#            build-type: Release
+#            package_json_arch: "arm64"
+#            label: bun-webkit-windows-arm64
+#            platform: ARM64
+#          - runner: windows-11-arm
+#            build-type: Debug
+#            package_json_arch: "arm64"
+#            label: bun-webkit-windows-arm64-debug
+#            platform: ARM64
     runs-on: ${{ matrix.runner }}
     timeout-minutes: 90
     steps:
