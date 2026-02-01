@@ -1,8 +1,9 @@
 param(
     [ValidateSet("x64", "ARM64")]
-    [string]$Platform = "x64"
+    [string]$Platform
 )
 $ErrorActionPreference = "Stop"
+Write-Host ":: Platform: ${Platform}"
 
 # Set up MSVC environment variables. This is taken from Bun's 'scripts\env.ps1'
 if ($env:VSINSTALLDIR -eq $null) {
@@ -68,12 +69,9 @@ if (!(Test-Path -Path $ICU_ROOT) -or !(Test-Path -Path "$ICU_LIB_DIR/icudt.lib")
         Write-Host ":: Downloading ICU"
         Invoke-WebRequest -Uri $ICU_RELEASE_URL -OutFile $ICU_ZIP_PATH
     }
-
-    if (!(Test-Path $ICU_LIB_DIR)) {
-        Write-Host ":: Extracting ICU"
-        unzip $ICU_ZIP_PATH -d $ICU_ROOT
-        if ($LASTEXITCODE -ne 0) { throw "unzip failed with exit code $LASTEXITCODE" }
-    }
+    Write-Host ":: Extracting ICU"
+    unzip $ICU_ZIP_PATH -d $ICU_ROOT
+    if ($LASTEXITCODE -ne 0) { throw "unzip failed with exit code $LASTEXITCODE" }
 }
 
 Write-Host ":: Configuring WebKit"
