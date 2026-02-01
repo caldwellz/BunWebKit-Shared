@@ -223,14 +223,14 @@ jobs:
         with:
           name: bun-webkit-windows-amd64-debug
           path: ${{runner.temp}}/bun-webkit-windows-amd64-debug
-      - uses: actions/download-artifact@v4
-        with:
-          name: bun-webkit-windows-arm64
-          path: ${{runner.temp}}/bun-webkit-windows-arm64
-      - uses: actions/download-artifact@v4
-        with:
-          name: bun-webkit-windows-arm64-debug
-          path: ${{runner.temp}}/bun-webkit-windows-arm64-debug
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: bun-webkit-windows-arm64
+#          path: ${{runner.temp}}/bun-webkit-windows-arm64
+#      - uses: actions/download-artifact@v4
+#        with:
+#          name: bun-webkit-windows-arm64-debug
+#          path: ${{runner.temp}}/bun-webkit-windows-arm64-debug
 
       - name: Rename files
         run: |
@@ -240,9 +240,9 @@ jobs:
           mv ${{runner.temp}}/bun-webkit-linux-amd64-debug/bun-webkit.tar.gz ./out/bun-webkit-linux-amd64-debug.tar.gz
           mv ${{runner.temp}}/bun-webkit-linux-arm64-debug/bun-webkit.tar.gz ./out/bun-webkit-linux-arm64-debug.tar.gz
           mv ${{runner.temp}}/bun-webkit-windows-amd64/bun-webkit.tar.gz ./out/bun-webkit-windows-amd64.tar.gz
-          mv ${{runner.temp}}/bun-webkit-windows-arm64/bun-webkit.tar.gz ./out/bun-webkit-windows-arm64.tar.gz
+          echo mv ${{runner.temp}}/bun-webkit-windows-arm64/bun-webkit.tar.gz ./out/bun-webkit-windows-arm64.tar.gz
           mv ${{runner.temp}}/bun-webkit-windows-amd64-debug/bun-webkit.tar.gz ./out/bun-webkit-windows-amd64-debug.tar.gz
-          mv ${{runner.temp}}/bun-webkit-windows-arm64-debug/bun-webkit.tar.gz ./out/bun-webkit-windows-arm64-debug.tar.gz
+          echo mv ${{runner.temp}}/bun-webkit-windows-arm64-debug/bun-webkit.tar.gz ./out/bun-webkit-windows-arm64-debug.tar.gz
 
       - name: Set release info
         id: release_info
@@ -271,5 +271,5 @@ jobs:
           files: |
             ./out/bun-webkit-windows-amd64.tar.gz
             ./out/bun-webkit-windows-amd64-debug.tar.gz
-            ./out/bun-webkit-windows-arm64.tar.gz
-            ./out/bun-webkit-windows-arm64-debug.tar.gz
+#            ./out/bun-webkit-windows-arm64.tar.gz
+#            ./out/bun-webkit-windows-arm64-debug.tar.gz
