@@ -95,12 +95,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - runner: windows-11
+          - runner: windows-latest
             build-type: Release
             package_json_arch: "x64"
             label: bun-webkit-windows-amd64
             platform: x64
-          - runner: windows-11
+          - runner: windows-latest
             build-type: Debug
             package_json_arch: "x64"
             label: bun-webkit-windows-amd64-debug
