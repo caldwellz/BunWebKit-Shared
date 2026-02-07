@@ -208,7 +208,7 @@ RUN --mount=type=tmpfs,target=/webkitbuild \
     /webkit && \
     python3 /webkit/Source/JavaScriptCore/wasm/generateWasmOpsHeader.py /webkit/Source/JavaScriptCore/wasm/wasm.json /webkitbuild/JavaScriptCore/DerivedSources/WasmOps.h && \
     cmake --build /webkitbuild --config $WEBKIT_RELEASE_TYPE && \
-    cp -r $WEBKIT_OUT_DIR/lib /output/lib && \
+    cp $WEBKIT_OUT_DIR/lib/* /output/lib/ && \
     cp $WEBKIT_OUT_DIR/*.h /output/include/ && \
     cp -r $WEBKIT_OUT_DIR/bin /output/bin && \
     find $WEBKIT_OUT_DIR/JavaScriptCore/DerivedSources/ -name "*.h" -exec sh -c 'cp "$1" "/output/include/JavaScriptCore/internal/$(basename "$1")"' sh {} \; && \
