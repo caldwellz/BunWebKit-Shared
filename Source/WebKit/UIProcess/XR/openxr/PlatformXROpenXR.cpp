@@ -790,12 +790,10 @@ void OpenXRCoordinator::cleanupSessionAndAssociatedResources()
 {
     ASSERT(!RunLoop::isMain());
 
-#if ENABLE(WEBXR_HIT_TEST)
     if (m_viewerSpace != XR_NULL_HANDLE) {
         CHECK_XRCMD(xrDestroySpace(m_viewerSpace));
         m_viewerSpace = XR_NULL_HANDLE;
     }
-#endif
 
     if (m_localSpace != XR_NULL_HANDLE) {
         CHECK_XRCMD(xrDestroySpace(m_localSpace));
@@ -1075,9 +1073,7 @@ void OpenXRCoordinator::createReferenceSpacesIfNeeded(Box<RenderState> renderSta
         return referenceSpace;
     };
 
-#if ENABLE(WEBXR_HIT_TEST)
     m_viewerSpace = createReferenceSpace(XR_REFERENCE_SPACE_TYPE_VIEW);
-#endif
     m_localSpace = createReferenceSpace(XR_REFERENCE_SPACE_TYPE_LOCAL);
 
 #if defined(XR_EXT_local_floor)

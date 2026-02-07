@@ -729,7 +729,8 @@ static NSInteger swizzledEventButtonNumber()
     // FIXME: Silly hack to teach DRT to respect capturing mouse events outside the WebView.
     // The right solution is just to use NSApplication's built-in event sending methods,
     // instead of rolling our own algorithm for selecting an event target.
-    targetView = targetView ? targetView : [[mainFrame frameView] documentView];
+    if (!targetView)
+        targetView = [[mainFrame frameView] documentView];
     assert(targetView);
 #if !PLATFORM(IOS_FAMILY)
     [NSApp _setCurrentEvent:event.get()];

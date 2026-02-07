@@ -278,7 +278,7 @@ void HTMLDialogElement::runFocusingSteps()
     if (control->isFocusable())
         control->runFocusingStepsForAutofocus();
     else if (m_isModal)
-        protectedDocument()->setFocusedElement(nullptr); // Focus fixup rule
+        protect(document())->setFocusedElement(nullptr); // Focus fixup rule
 
     RefPtr topDocument = controlDocument->sameOriginTopLevelTraversable();
     if (!topDocument)

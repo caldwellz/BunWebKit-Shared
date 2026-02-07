@@ -24,6 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
 
+// https://drafts.csswg.org/css-transitions/#transitionevent
 [
     Exposed=Window,
     InterfaceName=TransitionEvent
@@ -35,9 +36,8 @@
     readonly attribute DOMString pseudoElement;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary TransitionEventInit : EventInit {
+// https://drafts.csswg.org/css-transitions/#dictdef-transitioneventinit
+dictionary TransitionEventInit : EventInit {
     DOMString propertyName = "";
     double elapsedTime = 0.0;
     DOMString pseudoElement = "";

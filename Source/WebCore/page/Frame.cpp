@@ -138,7 +138,7 @@ Frame::Frame(Page& page, FrameIdentifier frameID, FrameType frameType, HTMLFrame
 
 Frame::~Frame()
 {
-    protectedWindowProxy()->detachFromFrame();
+    protect(windowProxy())->detachFromFrame();
     protectedNavigationScheduler()->cancel();
 
 #if ASSERT_ENABLED
@@ -177,10 +177,10 @@ void Frame::takeWindowProxyAndOpenerFrom(Frame& frame)
 {
     ASSERT(is<LocalDOMWindow>(window()) != is<LocalDOMWindow>(frame.window()) || page() != frame.page());
     ASSERT(m_windowProxy->frame() == this);
-    protectedWindowProxy()->detachFromFrame();
+    protect(windowProxy())->detachFromFrame();
     m_windowProxy = frame.windowProxy();
     frame.resetWindowProxy();
-    protectedWindowProxy()->replaceFrame(*this);
+    protect(windowProxy())->replaceFrame(*this);
 
     ASSERT(!m_opener);
     m_opener = frame.m_opener;
@@ -334,8 +334,8 @@ std::optional<OwnerPermissionsPolicyData> Frame::ownerPermissionsPolicy() const
     if (!owner)
         return std::nullopt;
 
-    auto documentOrigin = owner->protectedDocument()->securityOrigin().data();
-    auto documentPolicy = owner->protectedDocument()->permissionsPolicy();
+    auto documentOrigin = protect(owner->document())->securityOrigin().data();
+    auto documentPolicy = protect(owner->document())->permissionsPolicy();
 
     RefPtr iframe = dynamicDowncast<HTMLIFrameElement>(owner);
     auto containerPolicy = iframe ? PermissionsPolicy::processPermissionsPolicyAttribute(*iframe) : PermissionsPolicy::PolicyDirective { };

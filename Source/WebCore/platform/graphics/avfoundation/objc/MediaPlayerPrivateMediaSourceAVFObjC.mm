@@ -811,6 +811,11 @@ void MediaPlayerPrivateMediaSourceAVFObjC::maybePurgeLastImage()
     m_lastVideoFrame = nullptr;
 }
 
+Ref<MediaPlayer::BitmapImagePromise> MediaPlayerPrivateMediaSourceAVFObjC::bitmapImageForCurrentTime()
+{
+    return m_renderer->currentBitmapImage();
+}
+
 void MediaPlayerPrivateMediaSourceAVFObjC::paint(GraphicsContext& context, const FloatRect& rect)
 {
     paintCurrentFrameInContext(context, rect);

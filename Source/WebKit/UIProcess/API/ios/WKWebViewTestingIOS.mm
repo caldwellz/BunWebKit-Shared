@@ -446,7 +446,7 @@ static void dumpUIView(TextStream& ts, UIView *view, bool traverse)
 {
 #if USE(SYSTEM_PREVIEW)
     if (_page) {
-        if (auto* previewController = _page->systemPreviewController())
+        if (RefPtr previewController = _page->systemPreviewController())
             previewController->triggerSystemPreviewActionWithTargetForTesting(elementID, documentID, pageID);
     }
 #endif

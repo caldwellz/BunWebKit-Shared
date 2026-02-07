@@ -339,8 +339,7 @@ SelectorChecker::MatchResult SelectorChecker::matchRecursively(CheckingContext& 
         switch (context.selector->pseudoElement()) {
         case CSSSelector::PseudoElement::UserAgentPart:
         case CSSSelector::PseudoElement::UserAgentPartLegacyAlias: {
-            // In functional pseudo class, custom pseudo elements are always disabled.
-            // FIXME: We should accept custom pseudo elements inside :is()/:matches().
+            // In functional pseudo-classes like :is()/where(), pseudo-elements are always disabled.
             if (context.inFunctionalPseudoClass)
                 return MatchResult::fails(Match::SelectorFailsCompletely);
             if (CheckedPtr root = context.element->containingShadowRoot()) {
@@ -354,6 +353,9 @@ SelectorChecker::MatchResult SelectorChecker::matchRecursively(CheckingContext& 
             break;
         }
         case CSSSelector::PseudoElement::Picker: {
+            // In functional pseudo-classes like :is()/where(), pseudo-elements are always disabled.
+            if (context.inFunctionalPseudoClass)
+                return MatchResult::fails(Match::SelectorFailsCompletely);
             CheckedPtr root = context.element->containingShadowRoot();
             if (!root || root->mode() != ShadowRootMode::UserAgent)
                 return MatchResult::fails(Match::SelectorFailsLocally);

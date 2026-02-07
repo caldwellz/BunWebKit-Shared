@@ -172,7 +172,7 @@ RefPtr<IPC::Connection> ServiceWorkerFetchTask::serviceWorkerConnection()
 template<typename Message> bool ServiceWorkerFetchTask::sendToClient(Message&& message)
 {
     Ref loader = *m_loader;
-    return loader->protectedConnectionToWebProcess()->connection().send(std::forward<Message>(message), loader->coreIdentifier()) == IPC::Error::NoError;
+    return protect(loader->connectionToWebProcess())->connection().send(std::forward<Message>(message), loader->coreIdentifier()) == IPC::Error::NoError;
 }
 
 void ServiceWorkerFetchTask::start(WebSWServerToContextConnection& serviceWorkerConnection)
@@ -367,7 +367,7 @@ void ServiceWorkerFetchTask::didFinish(const NetworkLoadMetrics& networkLoadMetr
         m_timeoutTimer->stop();
 
 #if ENABLE(CONTENT_FILTERING)
-    protectedLoader()->serviceWorkerDidFinish();
+    protect(m_loader)->serviceWorkerDidFinish();
 #endif
 
     sendToClient(Messages::WebResourceLoader::DidFinishResourceLoad { networkLoadMetrics });
@@ -385,7 +385,7 @@ void ServiceWorkerFetchTask::didFail(const ResourceError& error)
     cancelPreloadIfNecessary();
 
     SWFETCH_RELEASE_LOG_ERROR("didFail: (error.domain=%" PUBLIC_LOG_STRING ", error.code=%d)", error.domain().utf8().data(), error.errorCode());
-    protectedLoader()->didFailLoading(error);
+    protect(m_loader)->didFailLoading(error);
 }
 
 void ServiceWorkerFetchTask::didNotHandle()
@@ -404,7 +404,7 @@ void ServiceWorkerFetchTask::didNotHandle()
     }
 
     m_isDone = true;
-    protectedLoader()->serviceWorkerDidNotHandle(this);
+    protect(m_loader)->serviceWorkerDidNotHandle(this);
 }
 
 void ServiceWorkerFetchTask::usePreload()
@@ -419,7 +419,7 @@ void ServiceWorkerFetchTask::usePreload()
     }
 
     m_isDone = true;
-    protectedLoader()->serviceWorkerDidNotHandle(this);
+    protect(m_loader)->serviceWorkerDidNotHandle(this);
 }
 
 void ServiceWorkerFetchTask::cannotHandle()
@@ -500,7 +500,7 @@ void ServiceWorkerFetchTask::softUpdateIfNeeded()
     if (!m_shouldSoftUpdate)
         return;
     Ref loader = *m_loader;
-    RefPtr swConnection = loader->protectedConnectionToWebProcess()->swConnection();
+    RefPtr swConnection = protect(loader->connectionToWebProcess())->swConnection();
     if (!swConnection)
         return;
     RefPtr server = swConnection->server();
@@ -659,7 +659,7 @@ bool ServiceWorkerFetchTask::convertToDownload(DownloadManager& manager, Downloa
 
     // FIXME: We might want to keep the service worker alive until the download ends.
     RefPtr<ServiceWorkerDownloadTask> serviceWorkerDownloadTask;
-    auto serviceWorkerDownloadLoad = NetworkLoad::create(*protectedLoader(), *session, [&](auto& client) {
+    auto serviceWorkerDownloadLoad = NetworkLoad::create(*protect(m_loader), *session, [&](auto& client) {
         serviceWorkerDownloadTask = ServiceWorkerDownloadTask::create(*session, client, *serviceWorkerConnection, *m_serviceWorkerIdentifier, *m_serverConnectionIdentifier, m_fetchIdentifier, request, response, downloadID);
         return serviceWorkerDownloadTask.copyRef();
     });
@@ -679,11 +679,6 @@ bool ServiceWorkerFetchTask::convertToDownload(DownloadManager& manager, Downloa
 MonotonicTime ServiceWorkerFetchTask::startTime() const
 {
     return m_preloader ? m_preloader->startTime() : MonotonicTime { };
-}
-
-RefPtr<NetworkResourceLoader> ServiceWorkerFetchTask::protectedLoader() const
-{
-    return m_loader.get();
 }
 
 std::optional<SharedPreferencesForWebProcess> ServiceWorkerFetchTask::sharedPreferencesForWebProcess() const
@@ -752,7 +747,7 @@ void ServiceWorkerFetchTask::sendData(Ref<SharedBuffer>&& data)
     ASSERT(!m_timeoutTimer || !m_timeoutTimer->isActive());
 
 #if ENABLE(CONTENT_FILTERING)
-    if (!protectedLoader()->continueAfterServiceWorkerReceivedData(data))
+    if (!protect(m_loader)->continueAfterServiceWorkerReceivedData(data))
         return;
 #endif
     sendToClient(Messages::WebResourceLoader::DidReceiveData { IPC::SharedBufferReference(WTF::move(data)), 0 });

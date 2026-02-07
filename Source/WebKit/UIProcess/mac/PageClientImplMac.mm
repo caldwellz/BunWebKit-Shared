@@ -29,6 +29,7 @@
 #if PLATFORM(MAC)
 
 #import "APIHitTestResult.h"
+#import "APIPageConfiguration.h"
 #import "AppKitSPI.h"
 #import "DrawingAreaProxy.h"
 #import "Logging.h"
@@ -209,14 +210,16 @@ bool PageClientImpl::isViewVisible(NSView *view, NSWindow *viewWindow)
     if (!viewWindow)
         return false;
 
-    if (!viewWindow.isVisible)
-        return false;
-
     if (view.isHiddenOrHasHiddenAncestor)
         return false;
 
-    if (windowIsOccluded())
-        return false;
+    if (!m_impl || !m_impl->page().configuration().backgroundTextExtractionEnabled()) {
+        if (!viewWindow.isVisible)
+            return false;
+
+        if (windowIsOccluded())
+            return false;
+    }
 
     return true;
 }
@@ -641,7 +644,7 @@ void PageClientImpl::updateAcceleratedCompositingMode(const LayerTreeContext& la
 
 void PageClientImpl::setRemoteLayerTreeRootNode(RemoteLayerTreeNode* rootNode)
 {
-    checkedImpl()->setAcceleratedCompositingRootLayer(rootNode ? rootNode->protectedLayer().get() : nil);
+    checkedImpl()->setAcceleratedCompositingRootLayer(rootNode ? protect(rootNode->layer()).get() : nil);
 }
 
 CALayer *PageClientImpl::acceleratedCompositingRootLayer() const
@@ -829,7 +832,7 @@ bool PageClientImpl::isFullScreen()
     if (!impl->hasFullScreenWindowController())
         return false;
 
-    return impl->protectedFullScreenWindowController().get().isFullScreen;
+    return protect(impl->fullScreenWindowController()).get().isFullScreen;
 }
 
 void PageClientImpl::enterFullScreen(FloatSize, CompletionHandler<void(bool)>&& completionHandler)
@@ -1197,11 +1200,6 @@ void PageClientImpl::didChangeLocalInspectorAttachment()
 void PageClientImpl::showCaptionDisplaySettings(WebCore::HTMLMediaElementIdentifier identifier, const WebCore::ResolvedCaptionDisplaySettingsOptions& options, CompletionHandler<void(Expected<void, WebCore::ExceptionData>&&)>&& completionHandler)
 {
     checkedImpl()->showCaptionDisplaySettings(identifier, options, WTF::move(completionHandler));
-}
-
-RetainPtr<NSView> PageClient::protectedViewForPresentingRevealPopover() const
-{
-    return viewForPresentingRevealPopover();
 }
 
 } // namespace WebKit

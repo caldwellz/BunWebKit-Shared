@@ -53,6 +53,7 @@
 #import "_WKFrameHandleInternal.h"
 #import "_WKInspectorInternal.h"
 #import <WebCore/BoxSides.h>
+#import <WebCore/Color.h>
 #import <WebCore/NowPlayingInfo.h>
 #import <WebCore/ScrollingNodeID.h>
 #import <WebCore/ValidationBubble.h>
@@ -213,6 +214,9 @@ static void dumpCALayer(TextStream& ts, CALayer *layer, bool traverse)
 
     if (layer.opacity != 1.0)
         ts.dumpProperty("layer opacity"_s, makeString(layer.opacity));
+
+    if (layer.backgroundColor)
+        ts.dumpProperty("layer background color"_s, WebCore::Color::createAndPreserveColorSpace(RetainPtr { layer.backgroundColor }.get()));
 
     if (layer.cornerRadius != 0.0)
         ts.dumpProperty("layer cornerRadius"_s, makeString(layer.cornerRadius));
@@ -378,9 +382,9 @@ static void dumpCALayer(TextStream& ts, CALayer *layer, bool traverse)
 #if PLATFORM(MAC)
     return _impl->beginBackSwipeForTesting();
 #else
-    if (!_gestureController)
-        return NO;
-    return _gestureController->beginSimulatedSwipeInDirectionForTesting(WebKit::ViewGestureController::SwipeDirection::Back);
+    if (RefPtr gestureController = _gestureController)
+        return gestureController->beginSimulatedSwipeInDirectionForTesting(WebKit::ViewGestureController::SwipeDirection::Back);
+    return NO;
 #endif
 }
 
@@ -389,9 +393,9 @@ static void dumpCALayer(TextStream& ts, CALayer *layer, bool traverse)
 #if PLATFORM(MAC)
     return _impl->completeBackSwipeForTesting();
 #else
-    if (!_gestureController)
-        return NO;
-    return _gestureController->completeSimulatedSwipeInDirectionForTesting(WebKit::ViewGestureController::SwipeDirection::Back);
+    if (RefPtr gestureController = _gestureController)
+        return gestureController->completeSimulatedSwipeInDirectionForTesting(WebKit::ViewGestureController::SwipeDirection::Back);
+    return NO;
 #endif
 }
 
@@ -410,8 +414,8 @@ static void dumpCALayer(TextStream& ts, CALayer *layer, bool traverse)
     if (RefPtr gestureController = _impl->gestureController())
         gestureController->reset();
 #else
-    if (_gestureController)
-        _gestureController->reset();
+    if (RefPtr gestureController = _gestureController)
+        gestureController->reset();
 #endif
 }
 

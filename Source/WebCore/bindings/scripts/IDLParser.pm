@@ -287,7 +287,7 @@ sub assertExtendedAttributesValidForContext
     my @contexts = @_;
 
     for my $extendedAttribute (keys %{$extendedAttributeList}) {
-        # FIXME: Should this be done here, or when parsing the exteded attribute itself?
+        # FIXME: Should this be done here, or when parsing the extended attribute itself?
         # Either way, we should add validation of the values, if any, at the same place.
 
         if (!exists $self->{ExtendedAttributeMap}->{$extendedAttribute}) {
@@ -1411,6 +1411,16 @@ sub parseDictionaryMember
 
             my $type = $self->parseTypeWithExtendedAttributes();
             $member->type($type);
+
+            my $nameToken = $self->getToken();
+            $self->assertTokenType($nameToken, IdentifierToken);
+            $member->name(identifierRemoveNullablePrefix($nameToken->value));
+
+            $self->assertExtendedAttributesValidForContext($extendedAttributeList, "dictionary-member");
+            $member->extendedAttributes($extendedAttributeList);
+
+            $self->assertTokenValue($self->getToken(), ";", __LINE__);
+            return $member;
         } else {
             $member->isRequired(0);
 
@@ -1418,17 +1428,29 @@ sub parseDictionaryMember
             $self->moveExtendedAttributesApplicableToTypes($type, $extendedAttributeList);
             
             $member->type($type);
+
+            my $nameToken = $self->getToken();
+            $self->assertTokenType($nameToken, IdentifierToken);
+            $member->name(identifierRemoveNullablePrefix($nameToken->value));
+            $member->default($self->parseDefault());
+
+            $self->assertExtendedAttributesValidForContext($extendedAttributeList, "dictionary-member");
+
+            # Override `isRequired` if the `ImplementationRequired` extended attribute is set.
+            if (defined($extendedAttributeList->{ImplementationRequired})) {
+                $member->isRequired(1);
+            }
+
+            # Override `default` if the `ImplementationDefaultValue` extended attribute is set.
+            if (!defined($member->default) && defined($extendedAttributeList->{ImplementationDefaultValue})) {
+                $member->default($extendedAttributeList->{ImplementationDefaultValue});
+            }
+
+            $member->extendedAttributes($extendedAttributeList);
+
+            $self->assertTokenValue($self->getToken(), ";", __LINE__);
+            return $member;
         }
-
-        $self->assertExtendedAttributesValidForContext($extendedAttributeList, "dictionary-member");
-        $member->extendedAttributes($extendedAttributeList);
-
-        my $nameToken = $self->getToken();
-        $self->assertTokenType($nameToken, IdentifierToken);
-        $member->name(identifierRemoveNullablePrefix($nameToken->value));
-        $member->default($self->parseDefault());
-        $self->assertTokenValue($self->getToken(), ";", __LINE__);
-        return $member;
     }
     $self->assertUnexpectedToken($next->value(), __LINE__);
 }
@@ -2245,6 +2267,12 @@ sub parseArgumentsRest
         $argument->default($self->parseDefault());
 
         $self->assertExtendedAttributesValidForContext($extendedAttributeList, "argument");
+
+        # Substitute a value specified by the `ImplementationDefaultValue` extended attribute if necessary.
+        if (!defined($argument->default) && defined($extendedAttributeList->{ImplementationDefaultValue})) {
+            $argument->default($extendedAttributeList->{ImplementationDefaultValue});
+        }
+
         $argument->extendedAttributes($extendedAttributeList);
 
         return $argument;
@@ -2394,6 +2422,16 @@ sub parseExtendedAttributeRest2
         my @arguments = $self->parseIdentifierList();
         $self->assertTokenValue($self->getToken(), ")", __LINE__);
         return \@arguments;
+    }
+    if ($next->value() eq "[") {
+        $self->assertTokenValue($self->getToken(), "[", __LINE__);
+        $self->assertTokenValue($self->getToken(), "]", __LINE__);
+        return "[]";
+    }
+    if ($next->value() eq "{") {
+        $self->assertTokenValue($self->getToken(), "{", __LINE__);
+        $self->assertTokenValue($self->getToken(), "}", __LINE__);
+        return "{}";
     }
     if ($next->value() eq "*") {
         $self->assertTokenValue($self->getToken(), "*", __LINE__);

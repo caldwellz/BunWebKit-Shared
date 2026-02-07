@@ -30,9 +30,14 @@
 #import <WebKitAdditions/MediaDeviceRouteAdditions.h>
 #import <WebKitAdditions/WebMockMediaDeviceRouteAdditions.h>
 
+namespace WebCore {
+class MockMediaDeviceRouteURLCallback;
+}
+
 NS_ASSUME_NONNULL_BEGIN
 
 @interface WebMockMediaDeviceRoute : NSObject <WebMediaDevicePlatformRoute>
+@property (nonatomic, nullable, setter=setURLCallback:) WebCore::MockMediaDeviceRouteURLCallback* urlCallback;
 @end
 
 NS_ASSUME_NONNULL_END

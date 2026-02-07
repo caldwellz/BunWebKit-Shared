@@ -1558,8 +1558,10 @@ bool CDMInstanceSessionFairPlayStreamingAVFObjC::shouldRetryRequestForReason(AVC
 void CDMInstanceSessionFairPlayStreamingAVFObjC::sessionIdentifierChanged(NSData *sessionIdentifier)
 {
     String sessionId = emptyString();
-    if (sessionIdentifier)
-        sessionId = adoptNS([[NSString alloc] initWithData:sessionIdentifier encoding:NSUTF8StringEncoding]).get();
+    if (sessionIdentifier) {
+        Ref sessionIdentifierBuffer = SharedBuffer::create(sessionIdentifier);
+        sessionId = toHexString(sessionIdentifierBuffer->span());
+    }
 
     if (m_sessionId == sessionId)
         return;

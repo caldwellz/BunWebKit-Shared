@@ -43,8 +43,8 @@ MediaDeviceRouteController& MediaDeviceRouteController::singleton()
 }
 
 MediaDeviceRouteController::MediaDeviceRouteController()
-    : m_controller { adoptNS([[WebMediaDeviceRouteController alloc] init]) }
 #if HAVE(AVROUTING_FRAMEWORK)
+    : m_controller { adoptNS([[WebMediaDeviceRouteController alloc] init]) }
     , m_platformController { [WebMediaDevicePlatformRouteControllerClass sharedRoutingSystemController] }
 #endif
 {

@@ -37,22 +37,6 @@ class AccessibilityScrollbar;
 class Scrollbar;
 class ScrollView;
 
-#if ENABLE(ACCESSIBILITY_LOCAL_FRAME)
-// Visibility/hidden state from the hosting frame element.
-struct InheritedFrameState {
-    InheritedFrameState()
-        : isAXHidden(false)
-    { }
-
-    InheritedFrameState(bool isAXHidden)
-        : isAXHidden(isAXHidden)
-    { }
-
-    bool isAXHidden;
-    // FIXME: include inert and visibility state.
-};
-#endif
-
 class AccessibilityScrollView final : public AccessibilityObject {
 public:
     static Ref<AccessibilityScrollView> create(AXID, ScrollView&, AXObjectCache&);
@@ -73,16 +57,19 @@ public:
     AccessibilityObject* crossFrameParentObject() const final;
     AccessibilityObject* crossFrameChildObject() const final;
 
-    void setInheritedFrameState(InheritedFrameState state) { m_inheritedFrameState = state; }
+    void setInheritedFrameState(InheritedFrameState);
+    const InheritedFrameState& inheritedFrameState() const { return m_inheritedFrameState; }
     bool isAXHidden() const final;
     bool isARIAHidden() const final;
     void updateHostedFrameInheritedState();
 
     // Returns true if the iframe element (or ancestors) cause the content to be hidden.
     // We can't use isIgnored() because FrameHost scroll views are always ignored (see computeIsIgnored).
-    // FIXME: This should also consider inert and visibility.
     bool isHostingFrameHidden() const { return isAXHidden(); }
-#endif
+    bool isHostingFrameInert() const;
+    bool isHostingFrameRenderHidden() const;
+    bool isIgnoredFromHostingFrame() const { return isHostingFrameHidden() || isHostingFrameInert() || isHostingFrameRenderHidden(); }
+#endif // ENABLE(ACCESSIBLITY_LOCAL_FRAME)
 
 private:
     explicit AccessibilityScrollView(AXID, ScrollView&, AXObjectCache&);
@@ -120,6 +107,7 @@ private:
     AccessibilityObject* parentObject() const final;
     RefPtr<AccessibilityObject> protectedHorizontalScrollbar() const { return m_horizontalScrollbar; }
     RefPtr<AccessibilityObject> protectedVerticalScrollbar() const { return m_verticalScrollbar; }
+    HTMLFrameOwnerElement* frameOwnerElement() const { return m_frameOwnerElement; }
     RefPtr<HTMLFrameOwnerElement> protectedFrameOwnerElement() const { return m_frameOwnerElement; }
 
     AccessibilityObject* firstChild() const final { return webAreaObject(); }

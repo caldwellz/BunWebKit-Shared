@@ -187,7 +187,7 @@ TEST(FocusWebView, AdvanceFocusRelinquishToChrome)
     EXPECT_FALSE(textField.get().didSeeKeyDownEvent);
 }
 
-TEST(FocusWebView, DISABLED_MultipleFrames)
+TEST(FocusWebView, MultipleFrames)
 {
     auto exampleHTML = "<body>"
         "<input id='input'>"
@@ -197,7 +197,7 @@ TEST(FocusWebView, DISABLED_MultipleFrames)
 
     auto iframeHTML = "<script>"
         "onload = () => {"
-        "    document.getElementById('iframeInput').addEventListener('focus', () => {"
+        "    document.getElementById('iframeInput').addEventListener('focusin', (e) => {"
         "        alert(window.origin + ' focused');"
         "    });"
         "};"
@@ -212,14 +212,14 @@ TEST(FocusWebView, DISABLED_MultipleFrames)
     }, HTTPServer::Protocol::HttpsProxy);
 
     RetainPtr configuration = server.httpsProxyConfiguration();
-    [[configuration preferences] _setSiteIsolationEnabled:YES];
+    // FIXME: Enable site isolation here and make the test behave the same.
     auto [webView, navigationDelegate, uiDelegate] = makeWebViewAndDelegates(WTF::move(configuration));
 
     [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/example"]]];
     [navigationDelegate waitForDidFinishNavigation];
     [webView evaluateJavaScript:@""
         "let i = document.getElementById('input');"
-        "i.addEventListener('focus', () => {"
+        "i.addEventListener('focusin', (e) => {"
         "    alert('main frame focused');"
         "});"
         "i.focus()" completionHandler:nil];
@@ -228,13 +228,7 @@ TEST(FocusWebView, DISABLED_MultipleFrames)
     [webView typeCharacter:'\t'];
     EXPECT_WK_STREQ([uiDelegate waitForAlert], "https://webkit.org focused");
     [webView typeCharacter:'\t'];
-#if PLATFORM(MAC)
-    EXPECT_WK_STREQ([uiDelegate waitForAlert], "main frame focused"); // FIXME: This should be webkit.org like it is with site isolation off.
-#else
-    EXPECT_WK_STREQ([uiDelegate waitForAlert], "https://webkit.org focused"); // FIXME: This should be the same as it is on macOS.
-#endif
-    [webView typeCharacter:'\t'];
-    EXPECT_WK_STREQ([uiDelegate waitForAlert], "main frame focused"); // FIXME: This should be apple.com like it is with site isolation off
+    EXPECT_WK_STREQ([uiDelegate waitForAlert], "https://apple.com focused");
 }
 
 TEST(FocusWebView, DoNotFocusWebViewWhenUnparented)
@@ -357,24 +351,19 @@ void CrossOriginIframeRelinquishToChromeTests::runTest()
     };
     auto checkFocusState = [webView](FrameFocusState mainFrame, FrameFocusState innerFrame) {
         // FIXME: <rdar://161283373> This IPC round trip should not be necessary.
+
         [webView waitForNextPresentationUpdate];
 
         EXPECT_WK_STREQ([webView stringByEvaluatingJavaScript:@"document.activeElement.id"], mainFrame.activeElementID);
+
         EXPECT_EQ([[webView objectByEvaluatingJavaScript:@"document.hasFocus()"] boolValue], mainFrame.hasFocus);
 
         EXPECT_WK_STREQ([webView stringByEvaluatingJavaScript:@"document.activeElement.id" inFrame:[webView firstChildFrame]], innerFrame.activeElementID);
+
         EXPECT_EQ([[webView objectByEvaluatingJavaScript:@"document.hasFocus()" inFrame:[webView firstChildFrame]] boolValue], innerFrame.hasFocus);
     };
 
     checkFocusState({ "mainFrameBody", true }, { "iframeBody", false });
-
-#if PLATFORM(IOS_FAMILY)
-    // FIXME: Make this behavior the same on iOS as macOS.
-    // It may be related to differences in WebPage::elementDidFocus
-    // and WebPage::focusedElementInformation
-    if (siteIsolationEnabled())
-        return;
-#endif
 
     [webView typeCharacter:'\t'];
     Util::run(&didFocusMainFrameInput);

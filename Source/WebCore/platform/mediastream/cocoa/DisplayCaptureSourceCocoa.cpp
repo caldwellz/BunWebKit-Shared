@@ -49,10 +49,6 @@
 #include <wtf/TZoneMallocInlines.h>
 #include <wtf/spi/cocoa/IOSurfaceSPI.h>
 
-#if HAVE(REPLAYKIT)
-#include "ReplayKitCaptureSource.h"
-#endif
-
 #if HAVE(SCREEN_CAPTURE_KIT)
 #include "ScreenCaptureKitCaptureSource.h"
 #endif
@@ -69,16 +65,12 @@ CaptureSourceOrError DisplayCaptureSourceCocoa::create(const CaptureDevice& devi
 {
     switch (device.type()) {
     case CaptureDevice::DeviceType::Screen:
-#if HAVE(REPLAYKIT)
-        if (!ReplayKitCaptureSource::isAvailable())
-            return CaptureSourceOrError { CaptureSourceError { "Screen capture unavailable"_s, MediaAccessDenialReason::NoCaptureDevices } };
-
-        return create([] (auto& source) {
-            return makeUniqueRefWithoutRefCountedCheck<ReplayKitCaptureSource>(source);
-        }, device, WTF::move(hashSalts), constraints, pageIdentifier);
-#elif HAVE(SCREEN_CAPTURE_KIT)
+#if HAVE(SCREEN_CAPTURE_KIT)
         [[fallthrough]];
 #else
+        UNUSED_PARAM(hashSalts);
+        UNUSED_PARAM(constraints);
+        UNUSED_PARAM(pageIdentifier);
         ASSERT_NOT_REACHED();
         return { };
 #endif

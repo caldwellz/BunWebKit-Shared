@@ -458,7 +458,7 @@ void WorkerOrWorkletScriptController::linkAndEvaluateModule(WorkerScriptFetcher&
     }
 
     if (returnedException) {
-        if (protectedGlobalScope()->canIncludeErrorDetails(sourceCode.cachedScript(), sourceCode.url().string())) {
+        if (protect(globalScope())->canIncludeErrorDetails(sourceCode.cachedScript(), sourceCode.url().string())) {
             // FIXME: It's not great that this can run arbitrary code to string-ify the value of the exception.
             // Do we need to do anything to handle that properly, if it, say, raises another exception?
             if (returnedExceptionMessage)
@@ -472,11 +472,6 @@ void WorkerOrWorkletScriptController::linkAndEvaluateModule(WorkerScriptFetcher&
         JSLockHolder lock(vm);
         reportException(m_globalScopeWrapper.get(), returnedException);
     }
-}
-
-RefPtr<WorkerOrWorkletGlobalScope> WorkerOrWorkletScriptController::protectedGlobalScope() const
-{
-    return m_globalScope.get();
 }
 
 void WorkerOrWorkletScriptController::loadAndEvaluateModule(const URL& moduleURL, FetchOptions::Credentials credentials, CompletionHandler<void(std::optional<Exception>&&)>&& completionHandler)
@@ -625,7 +620,7 @@ void WorkerOrWorkletScriptController::initScriptWithSubclass()
     ASSERT(m_globalScopeWrapper->globalObject() == m_globalScopeWrapper);
     ASSERT(asObject(m_globalScopeWrapper->getPrototypeDirect())->globalObject() == m_globalScopeWrapper);
 
-    m_consoleClient = makeUnique<WorkerConsoleClient>(*protectedGlobalScope());
+    m_consoleClient = makeUnique<WorkerConsoleClient>(*protect(globalScope()));
     m_globalScopeWrapper->setConsoleClient(*m_consoleClient);
 }
 

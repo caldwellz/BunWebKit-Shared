@@ -34,6 +34,8 @@
 #import <wtf/Assertions.h>
 #import <wtf/BlockPtr.h>
 #import <wtf/RetainPtr.h>
+#import <wtf/RunLoop.h>
+#import <wtf/Seconds.h>
 #import <wtf/SoftLinking.h>
 #import <wtf/cocoa/TypeCastsCocoa.h>
 #import <wtf/darwin/DispatchExtras.h>
@@ -665,6 +667,17 @@ static bool isQuickboardViewController(UIViewController *viewController)
 - (_WKFocusStartsInputSessionPolicy)_webView:(WKWebView *)webView decidePolicyForFocusedElement:(id<_WKFocusedElementInfo>)info
 {
     return self.focusStartsInputSessionPolicy;
+}
+
+- (void)_webView:(WKWebView *)webView focusRequiresStrongPasswordAssistance:(id<_WKFocusedElementInfo>)info completionHandler:(void(^)(BOOL))completionHandler
+{
+    auto delay = Seconds { self.showKeyboardAfterElementFocusDelay };
+    if (!delay)
+        return completionHandler(NO);
+
+    RunLoop::mainSingleton().dispatchAfter(delay, [completionHandler = makeBlockPtr(completionHandler)] {
+        completionHandler(NO);
+    });
 }
 
 #pragma mark - UIGestureRecognizerDelegate

@@ -25,6 +25,9 @@
 
 #pragma once
 
+#import <wtf/Compiler.h>
+#import <wtf/Platform.h>
+
 DECLARE_SYSTEM_HEADER
 
 #if PLATFORM(MAC)
@@ -53,6 +56,10 @@ DECLARE_SYSTEM_HEADER
 
 #if HAVE(NSVIEW_CORNER_CONFIGURATION)
 #import <AppKit/NSViewCornerConfiguration_Private.h>
+#endif
+
+#if HAVE(APPKIT_GESTURES_SUPPORT)
+#import <AppKit/NSTextSelectionManager.h>
 #endif
 
 #else
@@ -199,5 +206,30 @@ typedef void (^NSWindowSnapshotReadinessHandler) (void);
 - (NSWindowSnapshotReadinessHandler)_holdResizeSnapshotWithReason:(NSString *)reason;
 @end
 #endif
+
+#if HAVE(APPKIT_GESTURES_SUPPORT)
+
+NS_HEADER_AUDIT_BEGIN(nullability, sendability)
+
+@protocol NSTextSelectionManagerDelegateForWebKit <NSObject>
+
+- (BOOL)isTextSelectedAtPoint:(NSPoint)point;
+- (void)moveInsertionCursorToPoint:(NSPoint)point;
+- (void)handleClickAtPoint:(NSPoint)point;
+- (void)showContextMenuAtPoint:(NSPoint)point;
+- (void)dragSelectionWithGesture:(NSGestureRecognizer *)gesture completionHandler:(void(^)(NSDraggingSession*))completionHandler;
+- (void)beginRangeSelectionAtPoint:(NSPoint)point withGranularity:(NSTextSelectionGranularity)granularity;
+- (void)continueRangeSelectionAtPoint:(NSPoint)point;
+- (void)endRangeSelectionAtPoint:(NSPoint)point;
+
+@end
+
+@interface NSTextSelectionManager (WebKit_SPI)
+@property (weak) id <NSTextSelectionManagerDelegateForWebKit> _webkitDelegate;
+@end
+
+NS_HEADER_AUDIT_END(nullability, sendability)
+
+#endif // HAVE(APPKIT_GESTURES_SUPPORT)
 
 #endif // PLATFORM(MAC)

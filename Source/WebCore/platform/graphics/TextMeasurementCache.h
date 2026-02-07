@@ -77,7 +77,7 @@ private:
         friend bool operator==(const SmallStringKey&, const SmallStringKey&) = default;
 
     private:
-        static constexpr unsigned s_capacity = 16;
+        static constexpr unsigned s_capacity = 64;
         static constexpr unsigned s_deletedValueLength = s_capacity + 1;
 
         template<typename CharacterType>

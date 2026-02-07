@@ -69,7 +69,7 @@ WebProcessActivityState::WebProcessActivityState(RemotePageProxy& page)
 
 void WebProcessActivityState::takeVisibleActivity()
 {
-    m_isVisibleActivity = protect(process())->protectedThrottler()->foregroundActivity("View is visible"_s);
+    m_isVisibleActivity = protect(protect(process())->throttler())->foregroundActivity("View is visible"_s);
 #if PLATFORM(MAC)
     m_wasRecentlyVisibleActivity->setActivity(nullptr);
 #endif
@@ -107,12 +107,12 @@ void WebProcessActivityState::dropTextExtractionAssertion()
 
 void WebProcessActivityState::takeAudibleActivity()
 {
-    m_isAudibleActivity = protect(process())->protectedThrottler()->foregroundActivity("View is playing audio"_s);
+    m_isAudibleActivity = protect(protect(process())->throttler())->foregroundActivity("View is playing audio"_s);
 }
 
 void WebProcessActivityState::takeCapturingActivity()
 {
-    m_isCapturingActivity = protect(process())->protectedThrottler()->foregroundActivity("View is capturing media"_s);
+    m_isCapturingActivity = protect(protect(process())->throttler())->foregroundActivity("View is capturing media"_s);
 }
 
 void WebProcessActivityState::takeMutedCaptureAssertion()
@@ -138,7 +138,7 @@ void WebProcessActivityState::takeMutedCaptureAssertion()
 void WebProcessActivityState::takeNetworkActivity()
 {
     RELEASE_LOG(Process, "Taking network activity on WebProcess with PID %d", protect(process())->processID());
-    m_networkActivity = protect(process())->protectedThrottler()->backgroundActivity("Page Load"_s);
+    m_networkActivity = protect(protect(process())->throttler())->backgroundActivity("Page Load"_s);
 }
 
 void WebProcessActivityState::reset()
@@ -159,9 +159,9 @@ void WebProcessActivityState::dropVisibleActivity()
 {
 #if PLATFORM(MAC)
     if (WTF::numberOfProcessorCores() > 4)
-        m_wasRecentlyVisibleActivity->setActivity(protect(process())->protectedThrottler()->backgroundActivity("View was recently visible"_s));
+        m_wasRecentlyVisibleActivity->setActivity(protect(protect(process())->throttler())->backgroundActivity("View was recently visible"_s));
     else
-        m_wasRecentlyVisibleActivity->setActivity(protect(process())->protectedThrottler()->foregroundActivity("View was recently visible"_s));
+        m_wasRecentlyVisibleActivity->setActivity(protect(protect(process())->throttler())->foregroundActivity("View was recently visible"_s));
 #endif
     m_isVisibleActivity = nullptr;
 }
@@ -215,7 +215,7 @@ bool WebProcessActivityState::hasValidMutedCaptureAssertion() const
 #if PLATFORM(IOS_FAMILY)
 void WebProcessActivityState::takeOpeningAppLinkActivity()
 {
-    m_openingAppLinkActivity = protect(process())->protectedThrottler()->backgroundActivity("Opening AppLink"_s);
+    m_openingAppLinkActivity = protect(protect(process())->throttler())->backgroundActivity("Opening AppLink"_s);
 }
 
 void WebProcessActivityState::dropOpeningAppLinkActivity()
@@ -262,7 +262,7 @@ void WebProcessActivityState::takeAccessibilityActivityWhenInWindow()
 
 void WebProcessActivityState::takeAccessibilityActivity()
 {
-    m_accessibilityActivity = protect(process())->protectedThrottler()->backgroundActivity("Remote AX element"_s);
+    m_accessibilityActivity = protect(protect(process())->throttler())->backgroundActivity("Remote AX element"_s);
 }
 
 bool WebProcessActivityState::hasAccessibilityActivityForTesting() const
@@ -294,11 +294,6 @@ WebProcessProxy& WebProcessActivityState::process() const
         else
             static_assert(std::is_same_v<T, std::false_type>, "Unhandled page type in WebProcessActivityState::process");
     }, m_page);
-}
-
-Ref<WebProcessProxy> WebProcessActivityState::protectedProcess() const
-{
-    return process();
 }
 
 } // namespace WebKit

@@ -1791,6 +1791,11 @@ window.UIHelper = class UIHelper {
         return new Promise(resolve => testRunner.runUIScript(`uiController.setHardwareKeyboardAttached(${attached ? "true" : "false"})`, resolve));
     }
 
+    static setShowKeyboardAfterElementFocusDelay(delay)
+    {
+        return new Promise(resolve => testRunner.runUIScript(`uiController.setShowKeyboardAfterElementFocusDelay(${delay})`, resolve));
+    }
+
     static setWebViewEditable(editable)
     {
         return new Promise(resolve => testRunner.runUIScript(`uiController.setWebViewEditable(${editable ? "true" : "false"})`, resolve));
@@ -2586,7 +2591,8 @@ window.UIHelper = class UIHelper {
                     debugText = debugText
                         .replace(/uid=((\d+_)+)?(\d+)/g, "uid=…")
                         .replace(/"uid":\"((\d+_)+)?(\d+)\"/g, "\"uid\":\"…\"")
-                        .replace(/\[\d+,\d+;\d+x\d+\]/g, "[…]")
+                        .replace(/contentSize=\[\d+×\d+\]/g, "contentSize=[…]")
+                        .replace(/\[\d+,\d+;\d+×\d+\]/g, "[…]")
                         .replace(/\t/g, "    ");
                 }
                 resolve(debugText);

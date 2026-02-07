@@ -151,24 +151,24 @@ static Position positionAvoidingPrecedingNodes(Position position)
     ASSERT(position.isNotNull());
 
     // If we're already on a break, it's probably a placeholder and we shouldn't change our position.
-    if (editingIgnoresContent(*position.protectedDeprecatedNode()))
+    if (editingIgnoresContent(*protect(position.deprecatedNode())))
         return position;
 
     // We also stop when changing block flow elements because even though the visual position is the
     // same.  E.g.,
     //   <div>foo^</div>^
     // The two positions above are the same visual position, but we want to stay in the same block.
-    RefPtr enclosingBlockNode { enclosingBlock(position.protectedContainerNode()) };
+    RefPtr enclosingBlockNode { enclosingBlock(protect(position.containerNode())) };
     for (Position nextPosition = position; nextPosition.containerNode() != enclosingBlockNode; position = nextPosition) {
         if (lineBreakExistsAtPosition(position))
             break;
 
         if (position.containerNode()->nonShadowBoundaryParentNode())
-            nextPosition = positionInParentAfterNode(position.protectedContainerNode().get());
+            nextPosition = positionInParentAfterNode(protect(position.containerNode()).get());
 
         if (nextPosition == position)
             break;
-        if (enclosingBlock(nextPosition.protectedContainerNode()) != enclosingBlockNode)
+        if (enclosingBlock(protect(nextPosition.containerNode())) != enclosingBlockNode)
             break;
         if (VisiblePosition(position) != VisiblePosition(nextPosition))
             break;
@@ -1123,7 +1123,7 @@ static bool isInlineNodeWithStyle(const Node& node)
 
 inline RefPtr<Node> nodeToSplitToAvoidPastingIntoInlineNodesWithStyle(const Position& insertionPos)
 {
-    auto containingBlock = enclosingBlock(insertionPos.protectedContainerNode());
+    auto containingBlock = enclosingBlock(protect(insertionPos.containerNode()));
     return highestEnclosingNodeOfType(insertionPos, isInlineNodeWithStyle, CannotCrossEditingBoundary, containingBlock.get());
 }
 
@@ -1181,7 +1181,7 @@ void ReplaceSelectionCommand::doApply()
     bool selectionEndWasEndOfParagraph = isEndOfParagraph(visibleEnd);
     bool selectionStartWasStartOfParagraph = isStartOfParagraph(visibleStart);
 
-    RefPtr startBlock { enclosingBlock(visibleStart.deepEquivalent().protectedDeprecatedNode()) };
+    RefPtr startBlock { enclosingBlock(protect(visibleStart.deepEquivalent().deprecatedNode())) };
 
     Position insertionPos = selection.start();
     bool shouldHandleMailBlockquote = enclosingNodeOfType(insertionPos, isMailBlockquote, CanCrossEditingBoundary) && !m_ignoreMailBlockquote;
@@ -1264,7 +1264,7 @@ void ReplaceSelectionCommand::doApply()
     if (endBR)
         originalVisPosBeforeEndBR = VisiblePosition(positionBeforeNode(endBR.get())).previous();
     
-    RefPtr<Node> insertionBlock = enclosingBlock(insertionPos.protectedDeprecatedNode());
+    RefPtr<Node> insertionBlock = enclosingBlock(protect(insertionPos.deprecatedNode()));
     
     // Adjust insertionPos to prevent nesting.
     // If the start was in a Mail blockquote, we will have already handled adjusting insertionPos above.
@@ -1345,7 +1345,7 @@ void ReplaceSelectionCommand::doApply()
     if (refNode)
         fragment.removeNode(*refNode);
 
-    RefPtr blockStart { enclosingBlock(insertionPos.protectedDeprecatedNode()) };
+    RefPtr blockStart { enclosingBlock(protect(insertionPos.deprecatedNode())) };
     bool isInsertingIntoList = (isListHTMLElement(refNode.get()) || (isLegacyAppleStyleSpan(refNode.get()) && isListHTMLElement(refNode->firstChild())))
     && blockStart && blockStart->renderer()->isRenderListItem() && blockStart->parentNode()->hasEditableStyle();
     if (isInsertingIntoList)
@@ -1490,7 +1490,7 @@ void ReplaceSelectionCommand::doApply()
         if (selectionEndWasEndOfParagraph || !isEndOfParagraph(endOfInsertedContent) || next.isNull()) {
             if (!isStartOfParagraph(endOfInsertedContent)) {
                 setEndingSelection(endOfInsertedContent);
-                RefPtr enclosingNode = enclosingBlock(endOfInsertedContent.deepEquivalent().protectedDeprecatedNode());
+                RefPtr enclosingNode = enclosingBlock(protect(endOfInsertedContent.deepEquivalent().deprecatedNode()));
                 if (enclosingNode && isListItem(*enclosingNode)) {
                     auto newListItem = HTMLLIElement::create(document());
                     insertNodeAfter(newListItem.copyRef(), *enclosingNode);

@@ -676,7 +676,7 @@ bool MediaElementSession::canShowControlsManager(PlaybackControlsPurpose purpose
     if (purpose == MediaElementSession::PlaybackControlsPurpose::NowPlaying
         && hasBehaviorRestriction(RequirePageVisibilityForVideoToBeNowPlaying)
         && element->isVideo()
-        && !element->protectedDocument()->protectedPage()->isVisibleAndActive()) {
+        && !protect(protect(element->document())->page())->isVisibleAndActive()) {
         INFO_LOG(LOGIDENTIFIER, "returning FALSE: NowPlaying restricted for video in a page that is not visible");
         return false;
     }
@@ -1216,7 +1216,7 @@ static bool isElementMainContentForPurposesOfAutoplay(const HTMLMediaElement& el
     OptionSet<HitTestRequest::Type> hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::AllowChildFrameContent, HitTestRequest::Type::IgnoreClipping, HitTestRequest::Type::DisallowUserAgentShadowContent };
     HitTestResult result(rectRelativeToTopDocument.center());
 
-    localMainFrame->protectedDocument()->hitTest(hitType, result);
+    protect(localMainFrame->document())->hitTest(hitType, result);
     result.setToNonUserAgentShadowAncestor();
     return result.targetElement() == &element;
 }

@@ -146,7 +146,7 @@ bool ValidatedFormListedElement::reportValidity()
 
     // Needs to update layout now because we'd like to call isFocusable(),
     // which has !renderer()->needsLayout() assertion.
-    asHTMLElement().protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(asHTMLElement().document())->updateLayoutIgnorePendingStylesheets();
     if (auto validationAnchor = focusableValidationAnchorElement())
         focusAndShowValidationMessage(validationAnchor.releaseNonNull());
     else

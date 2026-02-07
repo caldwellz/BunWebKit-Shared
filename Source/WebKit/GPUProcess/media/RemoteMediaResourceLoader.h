@@ -98,7 +98,7 @@ private:
     void loadFailed(RemoteMediaResourceIdentifier, const WebCore::ResourceError&);
     void loadFinished(RemoteMediaResourceIdentifier, const WebCore::NetworkLoadMetrics&);
 
-    WeakPtr<RemoteMediaPlayerProxy> m_remoteMediaPlayerProxy;
+    WeakPtr<RemoteMediaPlayerProxy> m_remoteMediaPlayerProxy WTF_GUARDED_BY_CAPABILITY(mainRunLoop);
     const Ref<IPC::Connection> m_connection;
 
     Lock m_lock;

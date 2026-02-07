@@ -393,6 +393,7 @@ bool TestController::platformResetStateToConsistentValues(const TestOptions& opt
         webView.suppressInputAccessoryView = options.suppressInputAccessoryView();
         webView.scrollView.showsVerticalScrollIndicator = options.showsScrollIndicators();
         webView.scrollView.showsHorizontalScrollIndicator = options.showsScrollIndicators();
+        webView.showKeyboardAfterElementFocusDelay = 0;
 
 #if HAVE(UIFINDINTERACTION)
         webView.findInteractionEnabled = options.findInteractionEnabled();

@@ -107,6 +107,7 @@ enum class WebCore::UserInterfaceLayoutDirection : bool;
     bool useDarkAppearance;
     bool useElevatedUserInterfaceLevel;
     bool allowPostingLegacySynchronousMessages;
+    bool backgroundTextExtractionEnabled;
 
 #if PLATFORM(MAC)
     std::optional<WebCore::DestinationColorSpace> colorSpace;
@@ -255,9 +256,6 @@ enum class WebCore::UserInterfaceLayoutDirection : bool;
     WebCore::SandboxFlags initialSandboxFlags;
     WebCore::ReferrerPolicy initialReferrerPolicy;
     std::optional<WebCore::WindowFeatures> windowFeatures;
-    bool statusBarIsVisible;
-    bool menuBarIsVisible;
-    bool toolbarsAreVisible;
 
 #if ENABLE(ADVANCED_PRIVACY_PROTECTIONS)
     Vector<WebCore::LinkDecorationFilteringData> linkDecorationFilteringData;
@@ -293,6 +291,8 @@ enum class WebCore::UserInterfaceLayoutDirection : bool;
 #endif
 
     std::optional<WebKit::TextManipulationParameters> textManipulationParameters;
+
+    bool isPopup;
 }
 
 [Nested] struct WebKit::RemotePageParameters {

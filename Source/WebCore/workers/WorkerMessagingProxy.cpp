@@ -164,7 +164,7 @@ void WorkerMessagingProxy::startWorkerGlobalScope(const URL& scriptURL, PAL::Ses
         scriptExecutionContext->advancedPrivacyProtections(),
         scriptExecutionContext->noiseInjectionHashSalt()
     };
-    auto thread = DedicatedWorkerThread::create(params, sourceCode, *this, *this, *this, *this, startMode, scriptExecutionContext->protectedTopOrigin(), proxy.get(), socketProvider.get(), runtimeFlags);
+    auto thread = DedicatedWorkerThread::create(params, sourceCode, *this, *this, *this, *this, startMode, protect(scriptExecutionContext->topOrigin()), proxy.get(), socketProvider.get(), runtimeFlags);
 
     if (parentWorkerGlobalScope) {
         parentWorkerGlobalScope->thread()->addChildThread(thread);

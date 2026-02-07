@@ -177,7 +177,6 @@ enum class AXLoadingEvent : uint8_t;
 enum class AXNotification : uint8_t;
 enum class AXTextChange : uint8_t;
 enum class BroadcastFocusedElement : bool;
-enum class CookieConsentDecisionResult : uint8_t;
 enum class DidFilterLinkDecoration : bool { No, Yes };
 enum class IsLoggedIn : uint8_t;
 enum class LinkDecorationFilteringTrigger : uint8_t;
@@ -252,10 +251,7 @@ public:
     virtual bool canRunModal() const = 0;
     virtual void runModal() = 0;
 
-    virtual bool toolbarsVisible() const = 0;
-    virtual bool statusbarVisible() const = 0;
-    virtual bool scrollbarsVisible() const = 0;
-    virtual bool menubarVisible() const = 0;
+    virtual bool isPopup() const = 0;
 
     virtual void setResizable(bool) = 0;
 
@@ -733,8 +729,6 @@ public:
 #endif
 
     virtual void didAddOrRemoveViewportConstrainedObjects() { }
-
-    virtual void requestCookieConsent(CompletionHandler<void(CookieConsentDecisionResult)>&&) = 0;
 
     virtual bool isUsingUISideCompositing() const { return false; }
     

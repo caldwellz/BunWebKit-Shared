@@ -17,7 +17,6 @@ if (USE_MIMALLOC)
 endif ()
 
 set(bmalloc_SOURCES
-    bmalloc/AvailableMemory.cpp
     bmalloc/CryptoRandom.cpp
     bmalloc/SystemHeap.cpp
     bmalloc/Environment.cpp
@@ -30,8 +29,6 @@ set(bmalloc_SOURCES
     bmalloc/TZoneLog.cpp
     bmalloc/bmalloc.cpp
     bmalloc/VMAllocate.cpp
-
-    bmalloc/uv_get_constrained_memory.cpp
 
     libpas/src/libpas/bmalloc_heap.c
     libpas/src/libpas/bmalloc_heap_config.c
@@ -208,7 +205,6 @@ set(bmalloc_PUBLIC_HEADERS
     bmalloc/Algorithm.h
     bmalloc/AllocationCounts.h
     bmalloc/CompactAllocationMode.h
-    bmalloc/AvailableMemory.h
     bmalloc/BAssert.h
     bmalloc/BCompiler.h
     bmalloc/BExport.h
@@ -632,6 +628,7 @@ endif ()
 
 if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     list(APPEND bmalloc_SOURCES
+        bmalloc/LibcxxHashMemoryShim.cpp
         bmalloc/TZoneLog.cpp
     )
 endif ()

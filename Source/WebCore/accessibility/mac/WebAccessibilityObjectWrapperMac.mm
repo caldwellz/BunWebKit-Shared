@@ -2652,7 +2652,7 @@ static RenderObject* rendererForView(NSView* view)
     if (!frame)
         return nullptr;
 
-    RefPtr<Node> node = frame->protectedDocument()->ownerElement();
+    RefPtr<Node> node = protect(frame->document())->ownerElement();
     if (!node)
         return nullptr;
 
@@ -2665,7 +2665,7 @@ static RenderObject* rendererForView(NSView* view)
     if (!renderer)
         return nil;
 
-    CheckedPtr cache = renderer->protectedDocument()->axObjectCache();
+    CheckedPtr cache = protect(renderer->document())->axObjectCache();
     RefPtr object = cache ? cache->getOrCreate(*renderer) : nil;
     RefPtr parent = object ? object->parentObjectUnignored() : nil;
     return parent ? parent->wrapper() : nil;

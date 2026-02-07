@@ -26,6 +26,11 @@
 #import "config.h"
 #import "WebViewImpl.h"
 
+// FIXME: https://bugs.webkit.org/show_bug.cgi?id=306415
+#if ENABLE(BACK_FORWARD_LIST_SWIFT)
+#include "WebKit-Swift.h"
+#endif
+
 #if PLATFORM(MAC)
 
 #import "APIAttachment.h"
@@ -71,6 +76,7 @@
 #import "WKRevealItemPresenter.h"
 #import "WKTextAnimationManagerMac.h"
 #import "WKTextPlaceholder.h"
+#import "WKTextSelectionController.h"
 #import "WKViewLayoutStrategy.h"
 #import "WKWebViewMac.h"
 #import "WebBackForwardList.h"
@@ -1231,7 +1237,7 @@ static void* imageOverlayObservationContext = &imageOverlayObservationContext;
     if (!_impl)
         return NO;
 
-    for (RetainPtr view = dynamic_objc_cast<NSView>(CheckedPtr { _impl.get() }->protectedView().get().window.firstResponder); view; view = view.get().superview) {
+    for (RetainPtr view = dynamic_objc_cast<NSView>(protect(CheckedPtr { _impl.get() }->view()).get().window.firstResponder); view; view = view.get().superview) {
         if (view == _overlayView.get())
             return YES;
     }
@@ -1251,7 +1257,7 @@ static void* imageOverlayObservationContext = &imageOverlayObservationContext;
         return CGRectMake(0, 0, 1, 1);
 
     auto unitInteractionRect = _impl->imageAnalysisInteractionBounds();
-    WebCore::FloatRect unobscuredRect = CheckedPtr { _impl.get() }->protectedView().get().bounds;
+    WebCore::FloatRect unobscuredRect = protect(CheckedPtr { _impl.get() }->view()).get().bounds;
     unitInteractionRect.moveBy(-unobscuredRect.location());
     unitInteractionRect.scale(1 / unobscuredRect.size());
     return unitInteractionRect;
@@ -1395,7 +1401,10 @@ WebViewImpl::WebViewImpl(WKWebView *view, WebProcessPool& processPool, Ref<API::
             checkedImpl->pageScrollingHysteresisFired(state);
     }, viewStateHysteresis);
 
+#if HAVE(APPKIT_GESTURES_SUPPORT)
     m_appKitGestureController = adoptNS([[WKAppKitGestureController alloc] initWithPage:m_page viewImpl:*this]);
+    m_textSelectionController = adoptNS([[WKTextSelectionController alloc] initWithView:view]);
+#endif
 
     WebProcessPool::statistics().wkViewCount++;
 }
@@ -2405,7 +2414,7 @@ void WebViewImpl::pageDidScroll(const IntPoint& scrollPosition)
 
     bool pageIsScrolledToTopDidChange = (scrollPosition.y() <= 0) != pageIsScrolledToTop();
     if (pageIsScrolledToTopDidChange)
-        [protectedView() willChangeValueForKey:@"hasScrolledContentsUnderTitlebar"];
+        [protect(view()) willChangeValueForKey:@"hasScrolledContentsUnderTitlebar"];
 
     m_lastPageScrollPosition = scrollPosition;
     m_pageScrollingHysteresis->impulse();
@@ -2415,7 +2424,7 @@ void WebViewImpl::pageDidScroll(const IntPoint& scrollPosition)
         updateScrollPocketVisibilityWhenScrolledToTop();
         updatePrefersSolidColorHardPocket();
 #endif
-        [protectedView() didChangeValueForKey:@"hasScrolledContentsUnderTitlebar"];
+        [protect(view()) didChangeValueForKey:@"hasScrolledContentsUnderTitlebar"];
     }
 }
 
@@ -2726,11 +2735,6 @@ WKFullScreenWindowController *WebViewImpl::fullScreenWindowController()
         m_fullScreenWindowController = adoptNS([[WKFullScreenWindowController alloc] initWithWindow:RetainPtr { fullScreenWindow() }.get() webView:m_view.get().get() page:m_page.get()]);
 
     return m_fullScreenWindowController.get();
-}
-
-RetainPtr<WKFullScreenWindowController> WebViewImpl::protectedFullScreenWindowController()
-{
-    return fullScreenWindowController();
 }
 
 void WebViewImpl::closeFullScreenWindowController()
@@ -3616,8 +3620,10 @@ void WebViewImpl::preferencesDidChange()
 {
     updateNeedsViewFrameInWindowCoordinatesIfNeeded();
 
+#if HAVE(APPKIT_GESTURES_SUPPORT)
     if (RetainPtr appKitGestureController = m_appKitGestureController)
         [appKitGestureController enableGesturesIfNeeded];
+#endif
 }
 
 CALayer* WebViewImpl::textIndicatorInstallationLayer()
@@ -3806,7 +3812,7 @@ void WebViewImpl::videoControlsManagerDidChange()
 
 #if ENABLE(FULLSCREEN_API)
     if (hasFullScreenWindowController())
-        [protectedFullScreenWindowController() videoControlsManagerDidChange];
+        [protect(fullScreenWindowController()) videoControlsManagerDidChange];
 #endif
 }
 
@@ -4056,7 +4062,7 @@ RetainPtr<id> WebViewImpl::toolTipOwnerForSendingMouseEvents() const
     if (RetainPtr<id> owner = m_trackingRectOwner.get())
         return owner;
 
-    for (NSTrackingArea *trackingArea in protectedView().get().trackingAreas) {
+    for (NSTrackingArea *trackingArea in protect(view()).get().trackingAreas) {
         static Class managerClass = NSClassFromString(@"NSToolTipManager");
         RetainPtr<id> owner = trackingArea.owner;
         if ([owner class] == managerClass)
@@ -4718,7 +4724,7 @@ void WebViewImpl::provideDataForPasteboard(NSPasteboard *pasteboard, NSString *t
         return;
 
     if ([type isEqual:promisedImage->uti().createNSString().get()] && promisedImage->data()) {
-        if (auto platformData = promisedImage->protectedData()->makeContiguous()->createNSData())
+        if (auto platformData = protect(promisedImage->data())->makeContiguous()->createNSData())
             [pasteboard setData:(__bridge NSData *)platformData.get() forType:type];
     }
 
@@ -4756,7 +4762,7 @@ static RetainPtr<NSString> pathWithUniqueFilenameForPath(NSString *path)
 
         for (unsigned i = 1; ; i++) {
             RetainPtr pathWithAppendedNumber = adoptNS([[NSString alloc] initWithFormat:@"%@-%d", pathWithoutExtensions.get(), i]);
-            updatedPath = [extensions length] ? [pathWithAppendedNumber stringByAppendingPathExtension:extensions.get()] : pathWithAppendedNumber;
+            updatedPath = [extensions length] ? [pathWithAppendedNumber stringByAppendingPathExtension:extensions.get()] : pathWithAppendedNumber.get();
             if (!fileExists(updatedPath.get()))
                 break;
         }
@@ -4771,7 +4777,7 @@ NSArray *WebViewImpl::namesOfPromisedFilesDroppedAtDestination(NSURL *dropDestin
     RetainPtr<NSData> data;
 
     if (RefPtr promisedImage = m_promisedImage) {
-        data = promisedImage->protectedData()->makeContiguous()->createNSData();
+        data = protect(promisedImage->data())->makeContiguous()->createNSData();
         wrapper = adoptNS([[NSFileWrapper alloc] initRegularFileWithContents:data.get()]);
     } else
         wrapper = adoptNS([[NSFileWrapper alloc] initWithURL:adoptNS([[NSURL alloc] initWithString:m_promisedURL.createNSString().get()]).get() options:NSFileWrapperReadingImmediate error:nil]);
@@ -5089,7 +5095,7 @@ FloatRect WebViewImpl::windowRelativeBoundsForCustomSwipeViews() const
     if (!m_gestureController)
         return { };
 
-    return protectedGestureController()->windowRelativeBoundsForCustomSwipeViews();
+    return protect(gestureController())->windowRelativeBoundsForCustomSwipeViews();
 }
 
 FloatBoxExtent WebViewImpl::customSwipeViewsObscuredContentInsets() const
@@ -5098,11 +5104,6 @@ FloatBoxExtent WebViewImpl::customSwipeViewsObscuredContentInsets() const
         return { };
 
     return m_gestureController->customSwipeViewsObscuredContentInsets();
-}
-
-RefPtr<ViewGestureController> WebViewImpl::protectedGestureController() const
-{
-    return m_gestureController;
 }
 
 void WebViewImpl::setCustomSwipeViewsObscuredContentInsets(FloatBoxExtent&& insets)
@@ -7029,7 +7030,7 @@ CocoaImageAnalyzer* WebViewImpl::ensureImageAnalyzer()
     if (!m_imageAnalyzer) {
         lazyInitialize(m_imageAnalyzerQueue, WorkQueue::create("WebKit image analyzer queue"_s));
         lazyInitialize(m_imageAnalyzer, createImageAnalyzer());
-        [m_imageAnalyzer setCallbackQueue:m_imageAnalyzerQueue->protectedDispatchQueue().get()];
+        [m_imageAnalyzer setCallbackQueue:protect(m_imageAnalyzerQueue->dispatchQueue()).get()];
     }
     return m_imageAnalyzer.get();
 }
@@ -7402,6 +7403,13 @@ void WebViewImpl::showCaptionDisplaySettings(WebCore::HTMLMediaElementIdentifier
     completionHandler({ });
 }
 #endif
+
+#if HAVE(APPKIT_GESTURES_SUPPORT)
+void WebViewImpl::addTextSelectionManager()
+{
+    [m_textSelectionController addTextSelectionManager];
+}
+#endif // HAVE(APPKIT_GESTURES_SUPPORT)
 
 } // namespace WebKit
 

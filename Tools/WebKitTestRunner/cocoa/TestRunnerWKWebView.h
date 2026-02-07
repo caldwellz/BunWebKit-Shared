@@ -74,6 +74,8 @@
 @property (nonatomic, readonly, getter=isInteractingWithFormControl) BOOL interactingWithFormControl;
 @property (nonatomic) _WKFocusStartsInputSessionPolicy focusStartsInputSessionPolicy;
 
+@property (nonatomic) NSTimeInterval showKeyboardAfterElementFocusDelay;
+
 @property (nonatomic, readonly) BOOL didCallEnsurePositionInformationIsUpToDateSinceLastCheck;
 - (void)clearEnsurePositionInformationIsUpToDateTracking;
 

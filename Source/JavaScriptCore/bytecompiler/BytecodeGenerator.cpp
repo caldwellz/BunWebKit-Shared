@@ -2649,12 +2649,6 @@ std::optional<Variable> BytecodeGenerator::tryResolveVariable(ExpressionNode* ex
     return std::nullopt;
 }
 
-RegisterID* BytecodeGenerator::emitOverridesHasInstance(RegisterID* dst, RegisterID* constructor, RegisterID* hasInstanceValue)
-{
-    OpOverridesHasInstance::emit(this, dst, constructor, hasInstanceValue);
-    return dst;
-}
-
 // Indicates the least upper bound of resolve type based on local scope. The bytecode linker
 // will start with this ResolveType and compute the least upper bound including intercepting scopes.
 ResolveType BytecodeGenerator::resolveType()
@@ -3988,12 +3982,6 @@ RegisterID* BytecodeGenerator::emitReturn(RegisterID* src)
     return src;
 }
 
-RegisterID* BytecodeGenerator::emitEnd(RegisterID* src)
-{
-    OpEnd::emit(this, src);
-    return src;
-}
-
 template<typename ConstructOp>
 RegisterID* BytecodeGenerator::emitConstructImpl(RegisterID* dst, RegisterID* func, RegisterID* lazyThis, ExpectedFunction expectedFunction, CallArguments& callArguments, const JSTextPosition& divot, const JSTextPosition& divotStart, const JSTextPosition& divotEnd)
 {
@@ -5026,10 +5014,7 @@ void BytecodeGenerator::popForInScope(RegisterID* localRegister)
 
 RegisterID* BytecodeGenerator::emitRestParameter(RegisterID* result, unsigned numParametersToSkip)
 {
-    RefPtr<RegisterID> restArrayLength = newTemporary();
-    OpGetRestLength::emit(this, restArrayLength.get(), numParametersToSkip);
-
-    OpCreateRest::emit(this, result, restArrayLength.get(), numParametersToSkip);
+    OpCreateRest::emit(this, result, numParametersToSkip);
 
     return result;
 }

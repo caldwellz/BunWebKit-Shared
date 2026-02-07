@@ -94,7 +94,7 @@ std::optional<IPC::AsyncReplyID> WebPasteboardProxy::grantAccessToCurrentData(We
         return std::nullopt;
     }
     auto processIdentifier = process.coreProcessIdentifier();
-    return protect(process.websiteDataStore())->protectedNetworkProcess()->sendWithAsyncReply(Messages::NetworkProcess::AllowFilesAccessFromWebProcess(processIdentifier, paths), WTF::move(completionHandler));
+    return protect(protect(process.websiteDataStore())->networkProcess())->sendWithAsyncReply(Messages::NetworkProcess::AllowFilesAccessFromWebProcess(processIdentifier, paths), WTF::move(completionHandler));
 }
 
 void WebPasteboardProxy::grantAccess(WebProcessProxy& process, const String& pasteboardName, PasteboardAccessType type)

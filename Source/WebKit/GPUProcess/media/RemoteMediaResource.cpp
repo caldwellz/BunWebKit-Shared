@@ -58,13 +58,25 @@ RemoteMediaResource::~RemoteMediaResource()
 
 void RemoteMediaResource::shutdown()
 {
+    // This call must be thread-safe, so protect against simultaneous calls
+    // on multiple threads and dispatch to the loader's queue if necessary.
     if (m_shutdown.exchange(true))
         return;
 
     setClient(nullptr);
 
-    if (RefPtr loader = m_remoteMediaResourceLoader.get())
+    RefPtr loader = m_remoteMediaResourceLoader.get();
+    if (!loader)
+        return;
+
+    if (RemoteMediaResourceLoader::defaultQueue()->isCurrent()) {
         loader->removeMediaResource(m_id);
+        return;
+    }
+
+    RemoteMediaResourceLoader::defaultQueue()->dispatchSync([loader = WTF::move(loader), id = m_id] {
+        loader->removeMediaResource(id);
+    });
 }
 
 bool RemoteMediaResource::didPassAccessControlCheck() const
@@ -82,11 +94,8 @@ void RemoteMediaResource::responseReceived(const ResourceResponse& response, boo
 
     m_didPassAccessControlCheck = didPassAccessControlCheck;
     client->responseReceived(*this, response, [protectedThis = Ref { *this }, completionHandler = WTF::move(completionHandler)](auto shouldContinue) mutable {
-        if (shouldContinue == ShouldContinuePolicyCheck::No) {
-            ensureOnMainThread([protectedThis] {
-                protectedThis->shutdown();
-            });
-        }
+        if (shouldContinue == ShouldContinuePolicyCheck::No)
+            protectedThis->shutdown();
 
         completionHandler(shouldContinue);
     });

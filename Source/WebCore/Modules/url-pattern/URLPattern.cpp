@@ -393,7 +393,7 @@ ExceptionOr<std::optional<URLPatternResult>> URLPattern::match(ScriptExecutionCo
         matchHelperAssignInputsFromURL(*inputURL, protocol, username, password, hostname, port, pathname, search, hash);
         result.inputs = Vector<URLPatternInput> { String { inputURL->string() } };
     } else {
-        URLPatternInput* inputPattern = std::get_if<URLPatternInput>(&input);
+        auto* inputPattern = std::get_if<URLPatternInput>(&input);
         result.inputs.append(*inputPattern);
 
         auto hasError = WTF::switchOn(*inputPattern, [&](const URLPatternInit& value) -> ExceptionOr<bool> {

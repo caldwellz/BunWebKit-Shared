@@ -5,7 +5,6 @@ flags:
   Atomics: useSharedArrayBuffer
   Temporal: useTemporal
   ShadowRealm: useShadowRealm
-  Math.sumPrecise: useMathSumPreciseMethod
   json-parse-with-source: useJSONSourceTextAccess
   iterator-sequencing: useIteratorSequencing
   explicit-resource-management: useExplicitResourceManagement

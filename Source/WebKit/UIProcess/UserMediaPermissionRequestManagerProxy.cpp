@@ -155,11 +155,6 @@ WebPageProxy* UserMediaPermissionRequestManagerProxy::page() const
     return m_page.get();
 }
 
-RefPtr<WebPageProxy> UserMediaPermissionRequestManagerProxy::protectedPage() const
-{
-    return m_page.get();
-}
-
 void UserMediaPermissionRequestManagerProxy::invalidatePendingRequests()
 {
     if (RefPtr currentUserMediaRequest = std::exchange(m_currentUserMediaRequest, nullptr))

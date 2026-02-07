@@ -599,7 +599,7 @@ void ComplexTextController::advance(unsigned offset, GlyphBuffer* glyphBuffer, G
         unsigned glyphIndexIntoCurrentRun = ltr ? m_glyphInCurrentRun : glyphCount - 1 - m_glyphInCurrentRun;
         unsigned glyphIndexIntoComplexTextController = indexOfLeftmostGlyphInCurrentRun + glyphIndexIntoCurrentRun;
         if (fallbackFonts && &complexTextRun->font() != m_fontCascade->primaryFont().ptr())
-            fallbackFonts->add(complexTextRun->protectedFont());
+            fallbackFonts->add(protect(complexTextRun->font()));
 
         // We must store the initial advance for the first glyph we are going to draw.
         // When leftmostGlyph is 0, it represents the first glyph to draw, taking into
@@ -645,7 +645,7 @@ void ComplexTextController::advance(unsigned offset, GlyphBuffer* glyphBuffer, G
                     setHeight(paintAdvance, height(paintAdvance) - glyphOrigin(glyphIndexIntoComplexTextController + 1).y() + m_complexTextRuns[currentRunIndex + 1]->initialAdvance().height());
                 }
                 setHeight(paintAdvance, -height(paintAdvance)); // Increasing y points down
-                glyphBuffer->add(m_adjustedGlyphs[glyphIndexIntoComplexTextController], complexTextRun->protectedFont(), paintAdvance, complexTextRun->indexAt(m_glyphInCurrentRun) + complexTextRun->stringLocation(), FloatPoint(textAutoSpaceSpacing, 0));
+                glyphBuffer->add(m_adjustedGlyphs[glyphIndexIntoComplexTextController], protect(complexTextRun->font()), paintAdvance, complexTextRun->indexAt(m_glyphInCurrentRun) + complexTextRun->stringLocation(), FloatPoint(textAutoSpaceSpacing, 0));
             }
 
             unsigned oldCharacterInCurrentGlyph = m_characterInCurrentGlyph;
@@ -935,7 +935,7 @@ ComplexTextController::ComplexTextRun::ComplexTextRun(const Font& font, std::spa
     // Synthesize a run of missing glyphs.
     m_glyphs.fill(0, m_glyphCount);
     // Synthetic bold will be handled later in adjustGlyphsAndAdvances().
-    m_baseAdvances.fill(FloatSize(protectedFont()->widthForGlyph(0, Font::SyntheticBoldInclusion::Exclude), 0), m_glyphCount);
+    m_baseAdvances.fill(FloatSize(protect(font)->widthForGlyph(0, Font::SyntheticBoldInclusion::Exclude), 0), m_glyphCount);
 }
 
 ComplexTextController::ComplexTextRun::ComplexTextRun(const Vector<FloatSize>& advances, const Vector<FloatPoint>& origins, const Vector<Glyph>& glyphs, const Vector<unsigned>& stringIndices, FloatSize initialAdvance, const Font& font, std::span<const char16_t> characters, unsigned stringLocation, unsigned indexBegin, unsigned indexEnd, bool ltr)

@@ -328,7 +328,7 @@ void InlineItemsBuilder::collectInlineItems(InlineItemList& inlineItemList, Inli
             else if (layoutBox->isFloatingPositioned())
                 inlineItemList.append({ layoutBox, InlineItem::Type::Float });
             else if (layoutBox->isBlockLevelBox()) {
-                ASSERT(m_root.rendererForIntegration()->settings().blocksInInlineLayoutEnabled());
+                ASSERT(m_root.rendererForIntegration()->settings().blocksInInlineLayoutEnabled() || m_root.rendererForIntegration()->settings().anonymousBlockGenerationDisabled());
                 inlineItemList.append({ layoutBox, InlineItem::Type::Block });
             } else
                 ASSERT_NOT_REACHED();

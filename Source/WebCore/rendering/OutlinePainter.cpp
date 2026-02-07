@@ -43,6 +43,7 @@
 #include "PathUtilities.h"
 #include "RenderBlockFlow.h"
 #include "RenderChildIterator.h"
+#include "RenderElementStyleInlines.h"
 #include "RenderInline.h"
 #include "RenderListBox.h"
 #include "RenderObjectDocument.h"
@@ -61,7 +62,7 @@ OutlinePainter::OutlinePainter(const PaintInfo& paintInfo)
 
 static float deviceScaleFactor(const RenderElement& renderer)
 {
-    return renderer.protectedDocument()->deviceScaleFactor();
+    return protect(renderer.document())->deviceScaleFactor();
 }
 
 void OutlinePainter::paintOutline(const RenderElement& renderer, const LayoutRect& paintRect) const
@@ -699,7 +700,7 @@ void OutlinePainter::addPDFURLAnnotationForLink(const RenderElement& renderer, c
             return;
         }
     }
-    m_paintInfo.context().setURLForRect(element->protectedDocument()->completeURL(href), urlRect);
+    m_paintInfo.context().setURLForRect(protect(element->document())->completeURL(href), urlRect);
 }
 
 } // namespace WebCore

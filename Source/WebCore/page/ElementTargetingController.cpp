@@ -724,7 +724,7 @@ static HashSet<URL> collectMediaAndLinkURLs(const Element& element)
 enum class IsNearbyTarget : bool { No, Yes };
 static std::optional<TargetedElementInfo> targetedElementInfo(Element& element, IsNearbyTarget isNearbyTarget, ElementSelectorCache& cache, const WeakHashSet<Element, WeakPtrImplWithEventTargetData>& adjustedElements)
 {
-    element.protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(element.document())->updateLayoutIgnorePendingStylesheets();
 
     FloatRect boundsInClientCoordinates;
     RectEdges<bool> offsetEdges;
@@ -2087,7 +2087,7 @@ RefPtr<Image> ElementTargetingController::snapshotIgnoringVisibilityAdjustment(N
         return { };
 
     ClearVisibilityAdjustmentForScope clearAdjustmentScope { *element };
-    element->protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(element->document())->updateLayoutIgnorePendingStylesheets();
 
     CheckedPtr renderer = element->renderer();
     if (!renderer)

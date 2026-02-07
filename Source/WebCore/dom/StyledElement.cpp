@@ -137,12 +137,12 @@ void StyledElement::setInlineStyleFromString(const AtomString& newStyleString)
     // We reconstruct the property set instead of mutating if there is no CSSOM wrapper.
     // This makes wrapperless property sets immutable and so cacheable.
     if (RefPtr mutableStyleProperties = dynamicDowncast<MutableStyleProperties>(inlineStyle))
-        mutableStyleProperties->parseDeclaration(newStyleString, protectedDocument().get());
+        mutableStyleProperties->parseDeclaration(newStyleString, protect(document()).get());
     else
         inlineStyle = CSSParser::parseInlineStyleDeclaration(newStyleString, *this);
 
     if (usesStyleBasedEditability(*inlineStyle))
-        protectedDocument()->setHasElementUsingStyleBasedEditability();
+        protect(document())->setHasElementUsingStyleBasedEditability();
 }
 
 void StyledElement::styleAttributeChanged(const AtomString& newStyleString, AttributeModificationReason reason)
@@ -181,7 +181,7 @@ void StyledElement::invalidateStyleAttribute()
 {
     if (RefPtr inlineStyle = this->inlineStyle()) {
         if (usesStyleBasedEditability(*inlineStyle))
-            protectedDocument()->setHasElementUsingStyleBasedEditability();
+            protect(document())->setHasElementUsingStyleBasedEditability();
     }
 
     elementData()->setStyleAttributeIsDirty(true);
@@ -207,11 +207,6 @@ void StyledElement::invalidateStyleAttribute()
             setSynchronizedLazyAttribute(styleAttr, newValue);
         }
     }
-}
-
-RefPtr<StyleProperties> StyledElement::protectedInlineStyle() const
-{
-    return elementData() ? elementData()->m_inlineStyle : nullptr;
 }
 
 void StyledElement::inlineStyleChanged()
@@ -386,7 +381,7 @@ void StyledElement::addPropertyToPresentationalHintStyle(MutableStyleProperties&
     
 void StyledElement::addPropertyToPresentationalHintStyle(MutableStyleProperties& style, CSSPropertyID propertyID, const String& value)
 {
-    style.setProperty(propertyID, value, protectedDocument()->cssParserContext());
+    style.setProperty(propertyID, value, protect(document())->cssParserContext());
 }
 
 void StyledElement::addPropertyToPresentationalHintStyle(MutableStyleProperties& style, CSSPropertyID propertyID, Ref<CSSValue>&& value)

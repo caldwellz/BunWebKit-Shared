@@ -50,6 +50,11 @@ WebMediaDevicePlatformRoute *MockMediaDeviceRoute::platformRoute() const
     return m_platformRoute.get();
 }
 
+void MockMediaDeviceRoute::setURLCallback(MockMediaDeviceRouteURLCallback* urlCallback)
+{
+    [m_platformRoute setURLCallback:urlCallback];
+}
+
 } // namespace WebCore
 
 #endif // ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)

@@ -970,84 +970,58 @@ private:
             int64_t firstValue = cases[start].caseValue();
             int64_t lastValue = cases[end - 1].caseValue();
             if ((lastValue - firstValue + 1) / (end - start) < densityLimit) {
-                BasicBlock* switchBlock = m_blockInsertionSet.insertAfter(m_block);
-                Value* index = before->appendNew<Value>(
-                    m_proc, Sub, m_origin, child,
-                    before->appendIntConstant(m_proc, m_origin, type, firstValue));
-                before->appendNew<Value>(
-                    m_proc, Branch, m_origin,
-                    before->appendNew<Value>(
-                        m_proc, Above, m_origin, index,
-                        before->appendIntConstant(m_proc, m_origin, type, lastValue - firstValue)));
-                before->setSuccessors(fallThrough, FrequentedBlock(switchBlock));
-                
-                size_t tableSize = lastValue - firstValue + 1;
-                
-                if (index->type() != pointerType() && index->type() == Int32)
-                    index = switchBlock->appendNew<Value>(m_proc, ZExt32, m_origin, index);
-                
-                PatchpointValue* patchpoint =
-                    switchBlock->appendNew<PatchpointValue>(m_proc, Void, m_origin);
+                size_t tableSize = lastValue - firstValue + 1 + 1; // + 1 for fallthrough
+                Value* index = before->appendNew<Value>(m_proc, Sub, m_origin, child, before->appendIntConstant(m_proc, m_origin, type, firstValue));
+                Value* fallthroughIndex = before->appendIntConstant(m_proc, m_origin, type, tableSize - 1);
+                index = before->appendNew<B3::Value>(m_proc, Select, m_origin, before->appendNew<Value>(m_proc, AboveEqual, m_origin, index, fallthroughIndex), fallthroughIndex, index);
 
-                // Even though this loads from the jump table, the jump table is immutable. For the
-                // purpose of alias analysis, reading something immutable is like reading nothing.
+                if (index->type() != pointerType() && index->type() == Int32)
+                    index = before->appendNew<Value>(m_proc, ZExt32, m_origin, index);
+
+                using JumpTableCodePtr = CodePtr<JSSwitchPtrTag>;
+                JumpTableCodePtr* jumpTable = static_cast<JumpTableCodePtr*>(m_proc.addDataSection(sizeof(JumpTableCodePtr) * tableSize));
+                auto* tableValue = before->appendIntConstant(m_proc, m_origin, pointerType(), std::bit_cast<uintptr_t>(jumpTable));
+                auto* shifted = before->appendNew<Value>(m_proc, Shl, m_origin, index, before->appendIntConstant(m_proc, m_origin, Int32, getLSBSet(sizeof(JumpTableCodePtr))));
+                auto* address = before->appendNew<Value>(m_proc, Add, pointerType(), m_origin, shifted, tableValue);
+                auto* load = before->appendNew<MemoryValue>(m_proc, Load, pointerType(), m_origin, address);
+                load->setControlDependent(false);
+                load->setReadsMutability(B3::Mutability::Immutable);
+                PatchpointValue* patchpoint = before->appendNew<PatchpointValue>(m_proc, Void, m_origin, cloningForbidden(Patchpoint));
+
                 patchpoint->effects = Effects();
                 patchpoint->effects.terminal = true;
-                
-                patchpoint->appendSomeRegister(index);
-                patchpoint->numGPScratchRegisters = 2;
-                // Technically, we don't have to clobber macro registers on X86_64. This is probably
-                // OK though.
+                patchpoint->appendSomeRegister(load);
+                // Technically, we don't have to clobber macro registers on X86_64. This is probably OK though.
                 patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
-                
+
+                before->clearSuccessors();
                 BitVector handledIndices;
                 for (unsigned i = start; i < end; ++i) {
                     FrequentedBlock block = cases[i].target();
                     int64_t value = cases[i].caseValue();
-                    switchBlock->appendSuccessor(block);
+                    before->appendSuccessor(block);
                     size_t index = value - firstValue;
                     ASSERT(!handledIndices.get(index));
                     handledIndices.set(index);
                 }
-                
-                bool hasUnhandledIndex = false;
-                for (unsigned i = 0; i < tableSize; ++i) {
-                    if (!handledIndices.get(i)) {
-                        hasUnhandledIndex = true;
-                        break;
-                    }
-                }
-                
-                if (hasUnhandledIndex)
-                    switchBlock->appendSuccessor(fallThrough);
+                before->appendSuccessor(fallThrough);
 
                 patchpoint->setGenerator(
-                    [=] (CCallHelpers& jit, const StackmapGenerationParams& params) {
+                    [=](CCallHelpers& jit, const StackmapGenerationParams& params) {
                         AllowMacroScratchRegisterUsage allowScratch(jit);
 
-                        using JumpTableCodePtr = CodePtr<JSSwitchPtrTag>;
-                        JumpTableCodePtr* jumpTable = static_cast<JumpTableCodePtr*>(
-                            params.proc().addDataSection(sizeof(JumpTableCodePtr) * tableSize));
-
-                        GPRReg index = params[0].gpr();
-                        GPRReg scratch = params.gpScratch(0);
-
-                        jit.move(CCallHelpers::TrustedImmPtr(jumpTable), scratch);
-                        jit.loadPtr(CCallHelpers::BaseIndex(scratch, index, CCallHelpers::ScalePtr), scratch);
-                        jit.farJump(scratch, JSSwitchPtrTag);
+                        GPRReg target = params[0].gpr();
+                        jit.farJump(target, JSSwitchPtrTag);
 
                         // These labels are guaranteed to be populated before either late paths or
                         // link tasks run.
                         Vector<Box<CCallHelpers::Label>> labels = params.successorLabels();
-                        
+
                         jit.addLinkTask(
                             [=] (LinkBuffer& linkBuffer) {
-                                if (hasUnhandledIndex) {
-                                    JumpTableCodePtr fallThrough = linkBuffer.locationOf<JSSwitchPtrTag>(*labels.last());
-                                    for (unsigned i = tableSize; i--;)
-                                        jumpTable[i] = fallThrough;
-                                }
-                                
+                                JumpTableCodePtr fallThrough = linkBuffer.locationOf<JSSwitchPtrTag>(*labels.last());
+                                for (unsigned i = 0; i < tableSize; ++i)
+                                    jumpTable[i] = fallThrough;
                                 unsigned labelIndex = 0;
                                 for (unsigned tableIndex : handledIndices)
                                     jumpTable[tableIndex] = linkBuffer.locationOf<JSSwitchPtrTag>(*labels[labelIndex++]);
@@ -1328,6 +1302,7 @@ private:
         } else {
             ([&] {
                 MemoryValue* rtt;
+                auto* targetRTTPointer = constant(Int64, std::bit_cast<uintptr_t>(targetRTT));
                 if (targetRTT->kind() == Wasm::RTTKind::Function)
                     rtt = currentBlock->appendNew<MemoryValue>(m_proc, wrapTrapping(B3::Load), Int64, m_origin, value, safeCast<int32_t>(WebAssemblyFunctionBase::offsetOfRTT()));
                 else {
@@ -1341,8 +1316,13 @@ private:
                     }
 
                     rtt = currentBlock->appendNew<MemoryValue>(m_proc, B3::Load, pointerType(), m_origin, value, safeCast<int32_t>(WebAssemblyGCObjectBase::offsetOfRTT()));
+                    if (targetRTT->isFinalType()) {
+                        // If signature is final type and pointer equality failed, this value must not be a subtype.
+                        emitCheckOrBranchForCast(castKind, currentBlock->appendNew<Value>(m_proc, NotEqual, m_origin, rtt, targetRTTPointer), castFailure, falseBlock);
+                        return;
+                    }
+
                     if (targetRTT->displaySizeExcludingThis() < Wasm::RTT::inlinedDisplaySize) {
-                        auto* targetRTTPointer = constant(Int64, std::bit_cast<uintptr_t>(targetRTT));
                         auto* pointer = currentBlock->appendNew<MemoryValue>(m_proc, B3::Load, Int64, m_origin, rtt, safeCast<int32_t>(Wasm::RTT::offsetOfData() + targetRTT->displaySizeExcludingThis() * sizeof(RefPtr<const Wasm::RTT>)));
                         pointer->setReadsMutability(B3::Mutability::Immutable);
                         pointer->setControlDependent(false);
@@ -1350,10 +1330,8 @@ private:
                         emitCheckOrBranchForCast(castKind, currentBlock->appendNew<Value>(m_proc, NotEqual, m_origin, pointer, targetRTTPointer), castFailure, falseBlock);
                         return;
                     }
-
                 }
 
-                auto* targetRTTPointer = constant(Int64, std::bit_cast<uintptr_t>(targetRTT));
                 BasicBlock* equalBlock;
                 if (isCast)
                     equalBlock = continuation;

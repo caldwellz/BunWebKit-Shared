@@ -9134,6 +9134,10 @@
                     "value": "base",
                     "settings-flag": "cssAppearanceBaseEnabled"
                 },
+                {
+                    "value": "base-select",
+                    "settings-flag": "htmlEnhancedSelectPseudoElementsEnabled"
+                },
                 "auto",
                 "none",
                 {

@@ -66,7 +66,7 @@ WebFrameInspectorTargetProxy::~WebFrameInspectorTargetProxy() = default;
 void WebFrameInspectorTargetProxy::connect(Inspector::FrontendChannel::ConnectionType connectionType)
 {
     if (RefPtr provisionalFrame = m_provisionalFrame.get()) {
-        protect(provisionalFrame->process())->send(Messages::WebFrame::ConnectInspector(connectionType), provisionalFrame->protectedFrame()->frameID());
+        protect(provisionalFrame->process())->send(Messages::WebFrame::ConnectInspector(connectionType), protect(provisionalFrame->frame())->frameID());
         return;
     }
 
@@ -80,7 +80,7 @@ void WebFrameInspectorTargetProxy::disconnect()
         resume();
 
     if (RefPtr provisionalFrame = m_provisionalFrame.get()) {
-        protect(provisionalFrame->process())->send(Messages::WebFrame::DisconnectInspector(), provisionalFrame->protectedFrame()->frameID());
+        protect(provisionalFrame->process())->send(Messages::WebFrame::DisconnectInspector(), protect(provisionalFrame->frame())->frameID());
         return;
     }
 
@@ -91,7 +91,7 @@ void WebFrameInspectorTargetProxy::disconnect()
 void WebFrameInspectorTargetProxy::sendMessageToTargetBackend(const String& message)
 {
     if (RefPtr provisionalFrame = m_provisionalFrame.get()) {
-        protect(provisionalFrame->process())->send(Messages::WebFrame::SendMessageToInspectorTarget(message), provisionalFrame->protectedFrame()->frameID());
+        protect(provisionalFrame->process())->send(Messages::WebFrame::SendMessageToInspectorTarget(message), protect(provisionalFrame->frame())->frameID());
         return;
     }
 

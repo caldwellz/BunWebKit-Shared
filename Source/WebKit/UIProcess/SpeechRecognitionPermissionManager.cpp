@@ -85,11 +85,6 @@ SpeechRecognitionPermissionManager::~SpeechRecognitionPermissionManager()
         protect(request)->complete(WebCore::SpeechRecognitionError { WebCore::SpeechRecognitionErrorType::NotAllowed, "Permission manager has exited"_s });
 }
 
-RefPtr<WebPageProxy> SpeechRecognitionPermissionManager::protectedPage() const
-{
-    return m_page.get();
-}
-
 void SpeechRecognitionPermissionManager::request(WebCore::SpeechRecognitionRequest& request, FrameInfoData&& frameInfo, SpeechRecognitionPermissionRequestCallback&& completiontHandler)
 {
     m_requests.append({ SpeechRecognitionPermissionRequest::create(request, WTF::move(completiontHandler)), WTF::move(frameInfo) });

@@ -1567,6 +1567,11 @@ void UIScriptControllerIOS::setHardwareKeyboardAttached(bool attached)
     TestController::singleton().setIsInHardwareKeyboardMode(attached);
 }
 
+void UIScriptControllerIOS::setShowKeyboardAfterElementFocusDelay(double delay)
+{
+    webView().showKeyboardAfterElementFocusDelay = delay;
+}
+
 void UIScriptControllerIOS::setAllowsViewportShrinkToFit(bool allows)
 {
     webView()._allowsViewportShrinkToFit = allows;

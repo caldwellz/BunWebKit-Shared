@@ -381,6 +381,7 @@ bool JSModuleNamespaceObject::overrideExportValue(JSGlobalObject* globalObject, 
     auto scope = DECLARE_THROW_SCOPE(vm);
     JSC::Identifier identifier = Identifier::fromUid(vm, name.uid());
     auto resolution = moduleRecord()->resolveExport(globalObject, identifier);
+    RETURN_IF_EXCEPTION(scope, false);
 
     // FIXME: figure out how to do this
     // Support setting a default export value when it wasn't already exported.

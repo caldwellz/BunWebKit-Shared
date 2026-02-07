@@ -207,7 +207,6 @@ rendering/RenderIterator.h
 rendering/RenderLayer.cpp
 rendering/RenderLayerBacking.cpp
 rendering/RenderLayerCompositor.cpp
-rendering/RenderLayerFilters.cpp
 rendering/RenderLayerModelObject.cpp
 rendering/RenderLayerScrollableArea.cpp
 rendering/RenderLayoutState.cpp
@@ -221,7 +220,6 @@ rendering/RenderMultiColumnFlow.cpp
 rendering/RenderMultiColumnSet.cpp
 rendering/RenderObject.cpp
 rendering/RenderObject.h
-rendering/RenderProgress.cpp
 rendering/RenderQuote.cpp
 rendering/RenderReplaced.cpp
 rendering/RenderTable.cpp
@@ -317,7 +315,6 @@ rendering/updating/RenderTreeBuilderMultiColumn.cpp
 rendering/updating/RenderTreeBuilderRuby.cpp
 rendering/updating/RenderTreeBuilderSVG.cpp
 rendering/updating/RenderTreeBuilderTable.cpp
-rendering/updating/RenderTreePosition.cpp
 rendering/updating/RenderTreeUpdater.cpp
 rendering/updating/RenderTreeUpdaterGeneratedContent.cpp
 rendering/updating/RenderTreeUpdaterViewTransition.cpp
@@ -329,14 +326,11 @@ style/InlineTextBoxStyle.cpp
 style/MatchResultCache.cpp
 style/StyleAdjuster.cpp
 style/StyleBuilder.cpp
-style/StyleBuilderCustom.h
 style/StyleBuilderStateInlines.h
 style/StyleDifference.cpp
 style/StyleExtractor.cpp
 style/StyleExtractorCustom.h
-style/StyleInvalidationFunctions.h
 style/StylePendingResources.cpp
-style/StyleRelations.cpp
 style/StyleResolveForDocument.cpp
 style/StyleResolver.cpp
 style/StyleScope.cpp

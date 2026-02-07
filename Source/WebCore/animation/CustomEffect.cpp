@@ -52,14 +52,14 @@ ExceptionOr<Ref<CustomEffect>> CustomEffect::create(Document& document, Ref<Cust
                 return Exception { ExceptionCode::TypeError };
 
             return OptionalEffectTiming {
-                *convertedDuration,
-                effectTimingOptions.iterations,
                 effectTimingOptions.delay,
                 effectTimingOptions.endDelay,
-                effectTimingOptions.iterationStart,
-                effectTimingOptions.easing,
                 effectTimingOptions.fill,
-                effectTimingOptions.direction
+                effectTimingOptions.iterationStart,
+                effectTimingOptions.iterations,
+                *convertedDuration,
+                effectTimingOptions.direction,
+                effectTimingOptions.easing
             };
         }
     );

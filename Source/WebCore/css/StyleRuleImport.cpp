@@ -156,12 +156,12 @@ void StyleRuleImport::requestStyleSheet()
 
         request.setOptions(WTF::move(options));
 
-        m_cachedSheet = document->protectedCachedResourceLoader()->requestUserCSSStyleSheet(*page, WTF::move(request));
+        m_cachedSheet = protect(document->cachedResourceLoader())->requestUserCSSStyleSheet(*page, WTF::move(request));
     } else {
         auto options = request.options();
         options.loadedFromOpaqueSource = m_parentStyleSheet->loadedFromOpaqueSource();
         request.setOptions(WTF::move(options));
-        m_cachedSheet = document->protectedCachedResourceLoader()->requestCSSStyleSheet(WTF::move(request)).value_or(nullptr);
+        m_cachedSheet = protect(document->cachedResourceLoader())->requestCSSStyleSheet(WTF::move(request)).value_or(nullptr);
     }
     if (m_cachedSheet) {
         // if the import rule is issued dynamically, the sheet may be

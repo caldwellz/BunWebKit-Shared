@@ -595,8 +595,13 @@ bool RenderTreeUpdater::textRendererIsNeeded(const Text& textNode)
         if (!previousRenderer)
             return !parentRenderer.childrenInline();
 
-        if (previousRenderer->parent() == &parentRenderer)
-            return !parentRenderer.childrenInline() && !previousRenderer->isInline();
+        if (previousRenderer->parent() == &parentRenderer) {
+            if (!parentRenderer.childrenInline())
+                return !previousRenderer->isInline();
+            if (parentRenderer.isAnonymous())
+                return false;
+            return !previousRenderer->isInline() && !previousRenderer->isOutOfFlowPositioned() && !previousRenderer->isFloating();
+        }
 
         if (CheckedPtr parent = previousRenderer->parent(); parent->isAnonymous())
             return !parent->childrenInline() && !previousRenderer->isInline();

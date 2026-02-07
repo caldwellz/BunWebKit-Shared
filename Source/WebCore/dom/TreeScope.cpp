@@ -426,7 +426,7 @@ RefPtr<Node> TreeScope::nodeFromPoint(const LayoutPoint& clientPoint, LayoutPoin
 
 RefPtr<Element> TreeScope::elementFromPoint(double clientX, double clientY, HitTestSource source)
 {
-    if (!protectedDocumentScope()->hasLivingRenderTree())
+    if (!protect(documentScope())->hasLivingRenderTree())
         return nullptr;
 
     auto node = nodeFromPoint(LayoutPoint { clientX, clientY }, nullptr, source);
@@ -795,11 +795,6 @@ RefPtr<SVGElement> TreeScope::takeElementFromPendingSVGResourcesForRemovalMap(co
         svgResourcesMap().pendingResourcesForRemoval.remove(id);
 
     return firstElement;
-}
-
-Ref<Document> TreeScope::protectedDocumentScope() const
-{
-    return m_documentScope.get();
 }
 
 } // namespace WebCore

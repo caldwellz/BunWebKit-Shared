@@ -547,12 +547,11 @@ NS_ASSUME_NONNULL_END
 
 - (void)sendH2Ping:(NSURL *)url pongHandler:(void (^)(NSError *error, NSTimeInterval interval))pongHandler
 {
-    callOnMainThread([self, strongSelf = retainPtr(self), url = retainPtr(url), pongHandler = makeBlockPtr(pongHandler)] () mutable {
-
+    _targetDispatcher->dispatch([protectedSelf = retainPtr(self), self, url = retainPtr(url), pongHandler = makeBlockPtr(pongHandler)] () mutable {
         if (self.invalidated)
             return pongHandler(adoptNS([[NSError alloc] initWithDomain:NSURLErrorDomain code:NSURLErrorUnknown userInfo:nil]).get(), 0);
 
-        Ref { self.loader }->sendH2Ping(url.get(), [self, strongSelf = WTF::move(strongSelf), pongHandler = WTF::move(pongHandler)] (Expected<Seconds, ResourceError>&& result) mutable {
+        Ref { self.loader }->sendH2Ping(url.get(), [self, protectedSelf = WTF::move(protectedSelf), pongHandler = WTF::move(pongHandler)] (Expected<Seconds, ResourceError>&& result) mutable {
             NSTimeInterval interval = 0;
             RetainPtr<NSError> error;
             if (result)
@@ -560,9 +559,7 @@ NS_ASSUME_NONNULL_END
             else
                 error = result.error();
             [self addDelegateOperation:[pongHandler = WTF::move(pongHandler), error = WTF::move(error), interval] () mutable {
-                callOnMainThread([pongHandler = WTF::move(pongHandler), error = WTF::move(error), interval] {
-                    pongHandler(error.get(), interval);
-                });
+                pongHandler(error.get(), interval);
             }];
         });
     });

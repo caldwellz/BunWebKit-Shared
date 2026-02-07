@@ -73,19 +73,19 @@ struct HeapSnapshotEdge {
 
     HeapSnapshotEdge(JSCell* fromCell, JSCell* toCell, EdgeType type, UniquedStringImpl* name)
         : type(type)
+        , name(name)
     {
         ASSERT(type == EdgeType::Property || type == EdgeType::Variable);
         from.cell = fromCell;
         to.cell = toCell;
-        u.name = name;
     }
 
     HeapSnapshotEdge(JSCell* fromCell, JSCell* toCell, uint32_t index)
         : type(EdgeType::Index)
+        , index(index)
     {
         from.cell = fromCell;
         to.cell = toCell;
-        u.index = index;
     }
 
     union {
@@ -98,12 +98,9 @@ struct HeapSnapshotEdge {
         NodeIdentifier identifier;
     } to;
 
-    union {
-        UniquedStringImpl* name;
-        uint32_t index;
-    } u;
-
     EdgeType type;
+    RefPtr<UniquedStringImpl> name;
+    uint32_t index { 0 };
 };
 
 class JS_EXPORT_PRIVATE HeapSnapshotBuilder final : public HeapAnalyzer {

@@ -46,11 +46,6 @@ WebContextMenuProxy::WebContextMenuProxy(WebPageProxy& page, FrameInfoData&& fra
 
 WebContextMenuProxy::~WebContextMenuProxy() = default;
 
-RefPtr<WebPageProxy> WebContextMenuProxy::protectedPage() const
-{
-    return page();
-}
-
 Vector<Ref<WebContextMenuItem>> WebContextMenuProxy::proposedItems() const
 {
     return WTF::map(m_context.menuItems(), [](auto& item) {
@@ -69,7 +64,7 @@ void WebContextMenuProxy::show()
     Ref contextMenuListener = WebContextMenuListenerProxy::create(*this);
     m_contextMenuListener = contextMenuListener.copyRef();
     page->contextMenuClient().getContextMenuFromProposedMenu(*page, proposedItems(), contextMenuListener, m_context.webHitTestResultData().value(),
-        protect(page->legacyMainFrameProcess())->transformHandlesToObjects(m_userData.protectedObject().get()).get());
+        protect(page->legacyMainFrameProcess())->transformHandlesToObjects(protect(m_userData.object()).get()).get());
 }
 
 void WebContextMenuProxy::useContextMenuItems(Vector<Ref<WebContextMenuItem>>&& items)

@@ -121,11 +121,6 @@ WebPageProxy* DrawingAreaProxy::page() const
     return m_webPageProxy.get();
 }
 
-RefPtr<WebPageProxy> DrawingAreaProxy::protectedPage() const
-{
-    return page();
-}
-
 #if PLATFORM(COCOA)
 MachSendRight DrawingAreaProxy::createFence()
 {

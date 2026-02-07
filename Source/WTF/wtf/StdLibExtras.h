@@ -1291,6 +1291,10 @@ template<typename Functor, typename Signature> concept Invocable = requires(std:
     { expected = std::move(f) };
 };
 
+template<typename Functor, typename Signature> concept ConstInvocable = requires(const std::decay_t<Functor>& f, std::function<Signature> expected) {
+    { expected = f };
+};
+
 // Concept for constraining to user-defined "Tuple-like" types.
 //
 // Based on exposition-only text in https://www.open-std.org/jtc1/sc22/wg21/docs/papers/2021/p2165r3.pdf

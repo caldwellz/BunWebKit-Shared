@@ -129,6 +129,8 @@ WebFrameProxy::WebFrameProxy(WebPageProxy& page, FrameProcess& process, FrameIde
     WebProcessPool::statistics().wkFrameCount++;
 
     page.inspectorController().createWebFrameInspectorTarget(*this, WebFrameInspectorTarget::toTargetID(frameID));
+
+    protect(m_frameProcess)->incrementFrameCount();
 }
 
 WebFrameProxy::~WebFrameProxy()
@@ -146,6 +148,8 @@ WebFrameProxy::~WebFrameProxy()
 
     ASSERT(allFrames().get(m_frameID) == this);
     allFrames().remove(m_frameID);
+
+    protect(m_frameProcess)->decrementFrameCount();
 }
 
 template<typename M, typename C> void WebFrameProxy::sendWithAsyncReply(M&& message, C&& completionHandler)
@@ -437,7 +441,7 @@ bool WebFrameProxy::didHandleContentFilterUnblockNavigation(const ResourceReques
                 m_contentFilterUnblockHandler.configurationPath()
 #endif
             };
-            protect(page->websiteDataStore())->protectedNetworkProcess()->allowEvaluatedURL(parameters, [page](bool unblocked) {
+            protect(protect(page->websiteDataStore())->networkProcess())->allowEvaluatedURL(parameters, [page](bool unblocked) {
                 if (unblocked)
                     page->reload({ });
             });
@@ -529,7 +533,7 @@ void WebFrameProxy::prepareForProvisionalLoadInProcess(WebProcessProxy& process,
 
     m_provisionalFrame = nullptr;
     m_provisionalFrame = adoptRef(*new ProvisionalFrameProxy(*this, group.ensureProcessForSite(site, mainFrameSite, process, protect(page->preferences())), commitTiming));
-    protect(page->websiteDataStore())->protectedNetworkProcess()->addAllowedFirstPartyForCookies(process, mainFrameDomain, LoadedWebArchive::No, [pageID = page->webPageIDInProcess(process), completionHandler = WTF::move(completionHandler)] mutable {
+    protect(protect(page->websiteDataStore())->networkProcess())->addAllowedFirstPartyForCookies(process, mainFrameDomain, LoadedWebArchive::No, [pageID = page->webPageIDInProcess(process), completionHandler = WTF::move(completionHandler)] mutable {
         completionHandler(pageID);
     });
 }
@@ -539,9 +543,11 @@ void WebFrameProxy::commitProvisionalFrame(IPC::Connection& connection, FrameIde
     ASSERT(m_page);
     if (m_provisionalFrame) {
         protect(process())->send(Messages::WebPage::LoadDidCommitInAnotherProcess(frameID, m_layerHostingContextIdentifier), *webPageIDInCurrentProcess());
+
         if (RefPtr process = std::exchange(m_provisionalFrame, nullptr)->takeFrameProcess())
-            m_frameProcess = process.releaseNonNull();
+            setProcess(process.releaseNonNull());
     }
+
     protect(page())->didCommitLoadForFrame(connection, frameID, WTF::move(frameInfo), WTF::move(request), navigationID, WTF::move(mimeType), frameHasCustomContentProvider, frameLoadType, certificateInfo, usedLegacyTLS, privateRelayed, WTF::move(proxyName), source, containsPluginDocument, hasInsecureContent, mouseEventPolicy, WTF::move(documentSecurityPolicy), userData);
 }
 
@@ -622,7 +628,10 @@ FrameTreeCreationParameters WebFrameProxy::frameTreeCreationParameters() const
 void WebFrameProxy::setProcess(FrameProcess& process)
 {
     ASSERT(m_frameProcess.ptr() != &process);
+
+    protect(m_frameProcess)->decrementFrameCount();
     m_frameProcess = process;
+    protect(m_frameProcess)->incrementFrameCount();
 }
 
 void WebFrameProxy::removeChildFrames()
@@ -856,7 +865,7 @@ void WebFrameProxy::setAppBadge(const WebCore::SecurityOriginData& origin, std::
         webPageProxy->uiClient().updateAppBadge(*webPageProxy, origin, badge);
 }
 
-void WebFrameProxy::findFocusableElementDescendingIntoRemoteFrame(WebCore::FocusDirection direction, const WebCore::FocusEventData& focusEventData, CompletionHandler<void(WebCore::FoundElementInRemoteFrame)>&& completionHandler)
+void WebFrameProxy::findFocusableElementDescendingIntoRemoteFrame(WebCore::FocusDirection direction, const WebCore::FocusEventData& focusEventData, WebCore::ShouldFocusElement shouldFocusElement, CompletionHandler<void(WebCore::FoundElementInRemoteFrame)>&& completionHandler)
 {
     RefPtr page = m_page.get();
     if (!page) {
@@ -864,7 +873,7 @@ void WebFrameProxy::findFocusableElementDescendingIntoRemoteFrame(WebCore::Focus
         return;
     }
 
-    sendWithAsyncReply(Messages::WebFrame::FindFocusableElementDescendingIntoRemoteFrame(direction, focusEventData), WTF::move(completionHandler));
+    sendWithAsyncReply(Messages::WebFrame::FindFocusableElementDescendingIntoRemoteFrame(direction, focusEventData, shouldFocusElement), WTF::move(completionHandler));
 }
 
 std::optional<SharedPreferencesForWebProcess> WebFrameProxy::sharedPreferencesForWebProcess() const
@@ -886,7 +895,7 @@ void WebFrameProxy::sendMessageToInspectorFrontend(const String& targetId, const
         page->inspectorController().sendMessageToInspectorFrontend(targetId, message);
 }
 
-void WebFrameProxy::requestTextExtraction(WebCore::TextExtraction::Request&& request, CompletionHandler<void(WebCore::TextExtraction::Item&&)>&& completion)
+void WebFrameProxy::requestTextExtraction(WebCore::TextExtraction::Request&& request, CompletionHandler<void(WebCore::TextExtraction::Result&&)>&& completion)
 {
     if (RefPtr page = m_page.get(); !page || !page->hasRunningProcess())
         return completion({ });

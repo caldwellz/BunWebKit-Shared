@@ -388,41 +388,6 @@ class UpdateSwiftCheckouts(steps.ShellSequence, ShellMixin):
         return {'step': self.summary}
 
 
-class BuildSwift(shell.ShellCommand):
-    name = 'build-swift'
-
-    def __init__(self, **kwargs):
-        super().__init__(logEnviron=False, workdir=SWIFT_DIR, **kwargs)
-
-    @defer.inlineCallbacks
-    def run(self):
-        # FIXME: Upload logs to S3 before adding this step to a running factory.
-        self.log_observer = logobserver.BufferLogObserver()
-        self.addLogObserver('stdio', self.log_observer)
-        self.command = ['utils/build-script', '--skip-build-benchmarks', '--swift-darwin-supported-archs', self.getProperty('architecture'), '--release', '--no-assertions', '--swift-disable-dead-stripping', '--bootstrapping=hosttools']
-        rc = yield super().run()
-        if rc != SUCCESS:
-            if self.getProperty('current_swift_tag', ''):
-                return WARNINGS
-            self.build.buildFinished(['Failed to set up swift, retrying update'], RETRY)
-
-        return defer.returnValue(rc)
-
-    def getResultSummary(self):
-        if self.results == SKIPPED:
-            return {'step': 'Swift executable already exists'}
-        elif self.results == WARNINGS:
-            return {'step': 'Failed to update swift, using previous checkout'}
-        elif self.results != SUCCESS:
-            return {'step': 'Failed to build Swift'}
-        return {'step': 'Successfully built Swift'}
-
-    def doStepIf(self, step):
-        if not self.getProperty('has_swift_executable'):
-            return True
-        return self.getProperty('canonical_swift_tag') and self.getProperty('current_swift_tag', '') != self.getProperty('canonical_swift_tag')
-
-
 class CheckOutLLVMProject(git.Git, AddToLogMixin):
     name = 'checkout-llvm-project'
     directory = 'llvm-project'

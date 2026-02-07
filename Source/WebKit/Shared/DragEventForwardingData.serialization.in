@@ -27,3 +27,5 @@ header: "DragEventForwardingData.h"
     WebKit::SandboxExtensionHandle sandboxExtensionHandle;
     Vector<WebKit::SandboxExtensionHandle> sandboxExtensionsForUpload;
 };
+
+using WebKit::DragOperationResult = Variant<bool, WebKit::DragEventForwardingData>;

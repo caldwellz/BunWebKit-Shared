@@ -35,11 +35,6 @@ namespace API {
 
 DataTask::~DataTask() = default;
 
-Ref<DataTaskClient> DataTask::protectedClient() const
-{
-    return m_client;
-}
-
 void DataTask::setClient(Ref<DataTaskClient>&& client)
 {
     m_client = WTF::move(client);
@@ -57,7 +52,7 @@ void DataTask::cancel()
 void DataTask::networkProcessCrashed()
 {
     m_activity = nullptr;
-    protectedClient()->didCompleteWithError(*this, WebCore::internalError(m_originalURL));
+    protect(client())->didCompleteWithError(*this, WebCore::internalError(m_originalURL));
 }
 
 DataTask::DataTask(std::optional<WebKit::DataTaskIdentifier> identifier, WeakPtr<WebKit::WebPageProxy>&& page, WTF::URL&& originalURL, bool shouldRunAtForegroundPriority)
@@ -69,13 +64,13 @@ DataTask::DataTask(std::optional<WebKit::DataTaskIdentifier> identifier, WeakPtr
     , m_client(DataTaskClient::create())
 {
     if (RefPtr networkProcess = m_networkProcess.get())
-        m_activity = shouldRunAtForegroundPriority ? networkProcess->protectedThrottler()->foregroundActivity("WKDataTask"_s) : networkProcess->protectedThrottler()->backgroundActivity("WKDataTask"_s);
+        m_activity = shouldRunAtForegroundPriority ? protect(networkProcess->throttler())->foregroundActivity("WKDataTask"_s) : protect(networkProcess->throttler())->backgroundActivity("WKDataTask"_s);
 }
 
 void DataTask::didCompleteWithError(WebCore::ResourceError&& error)
 {
     m_activity = nullptr;
-    protectedClient()->didCompleteWithError(*this, WTF::move(error));
+    protect(client())->didCompleteWithError(*this, WTF::move(error));
 }
 
 } // namespace API

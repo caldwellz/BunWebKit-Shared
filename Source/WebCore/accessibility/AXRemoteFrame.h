@@ -39,7 +39,8 @@ public:
 #if PLATFORM(COCOA)
     void initializePlatformElementWithRemoteToken(AccessibilityRemoteToken, int);
     AccessibilityRemoteToken generateRemoteToken() const;
-    RetainPtr<id> remoteFramePlatformElement() const { return m_remoteFramePlatformElement; }
+    RetainPtr<id> remoteFramePlatformElement() const final { return m_remoteFramePlatformElement; }
+    pid_t remoteFrameProcessIdentifier() const final { return m_processIdentifier; }
     pid_t processIdentifier() const { return m_processIdentifier; }
     std::optional<FrameIdentifier> frameID() const { return m_frameID; }
     void setFrameID(FrameIdentifier frameID) { m_frameID = frameID; }

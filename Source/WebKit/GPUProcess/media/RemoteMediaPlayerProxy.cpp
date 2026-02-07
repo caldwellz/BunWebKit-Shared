@@ -811,7 +811,7 @@ RefPtr<ArrayBuffer> RemoteMediaPlayerProxy::mediaPlayerCachedKeyForKeyId(const S
     if (!m_legacySession)
         return nullptr;
 
-    if (RefPtr cdmSession = manager->gpuConnectionToWebProcess()->protectedLegacyCdmFactoryProxy()->getSession(*m_legacySession))
+    if (RefPtr cdmSession = protect(manager->gpuConnectionToWebProcess()->legacyCdmFactoryProxy())->getSession(*m_legacySession))
         return cdmSession->getCachedKeyForKeyId(keyId);
     return nullptr;
 }
@@ -1006,6 +1006,23 @@ void RemoteMediaPlayerProxy::videoFrameForCurrentTimeIfChanged(CompletionHandler
     completionHandler(WTF::move(result), changed);
 }
 
+void RemoteMediaPlayerProxy::bitmapImageForCurrentTime(CompletionHandler<void(std::optional<WebCore::ShareableBitmap::Handle>&&)>&& completionHandler)
+{
+    RefPtr player = m_player;
+    if (!player) {
+        completionHandler({ });
+        return;
+    }
+
+    player->bitmapImageForCurrentTime()->whenSettled(RunLoop::mainSingleton(), [completionHandler = WTF::move(completionHandler)](auto&& result) mutable {
+        if (!result) {
+            completionHandler({ });
+            return;
+        }
+        completionHandler((*result)->createHandle());
+    });
+}
+
 void RemoteMediaPlayerProxy::setShouldDisableHDR(bool shouldDisable)
 {
     if (m_configuration.shouldDisableHDR == shouldDisable)
@@ -1055,15 +1072,15 @@ void RemoteMediaPlayerProxy::setLegacyCDMSession(std::optional<RemoteLegacyCDMSe
     RefPtr player = m_player;
 
     if (m_legacySession) {
-        if (RefPtr cdmSession = manager->gpuConnectionToWebProcess()->protectedLegacyCdmFactoryProxy()->getSession(*m_legacySession))
+        if (RefPtr cdmSession = protect(manager->gpuConnectionToWebProcess()->legacyCdmFactoryProxy())->getSession(*m_legacySession))
             player->setCDMSession(nullptr);
     }
 
     m_legacySession = instanceId;
 
     if (m_legacySession) {
-        if (RefPtr cdmSession = manager->gpuConnectionToWebProcess()->protectedLegacyCdmFactoryProxy()->getSession(*m_legacySession))
-            player->setCDMSession(cdmSession->protectedSession().get());
+        if (RefPtr cdmSession = protect(manager->gpuConnectionToWebProcess()->legacyCdmFactoryProxy())->getSession(*m_legacySession))
+            player->setCDMSession(protect(cdmSession->session()).get());
     }
 }
 
@@ -1081,7 +1098,7 @@ void RemoteMediaPlayerProxy::cdmInstanceAttached(RemoteCDMInstanceIdentifier&& i
     if (!manager || !manager->gpuConnectionToWebProcess())
         return;
 
-    if (RefPtr instanceProxy = manager->gpuConnectionToWebProcess()->protectedCdmFactoryProxy()->getInstance(instanceId))
+    if (RefPtr instanceProxy = protect(manager->gpuConnectionToWebProcess()->cdmFactoryProxy())->getInstance(instanceId))
         protectedPlayer()->cdmInstanceAttached(instanceProxy->instance());
 }
 
@@ -1092,7 +1109,7 @@ void RemoteMediaPlayerProxy::cdmInstanceDetached(RemoteCDMInstanceIdentifier&& i
     if (!manager || !manager->gpuConnectionToWebProcess())
         return;
 
-    if (RefPtr instanceProxy = manager->gpuConnectionToWebProcess()->protectedCdmFactoryProxy()->getInstance(instanceId))
+    if (RefPtr instanceProxy = protect(manager->gpuConnectionToWebProcess()->cdmFactoryProxy())->getInstance(instanceId))
         protectedPlayer()->cdmInstanceDetached(instanceProxy->instance());
 }
 
@@ -1103,7 +1120,7 @@ void RemoteMediaPlayerProxy::attemptToDecryptWithInstance(RemoteCDMInstanceIdent
     if (!manager || !manager->gpuConnectionToWebProcess())
         return;
 
-    if (RefPtr instanceProxy = manager->gpuConnectionToWebProcess()->protectedCdmFactoryProxy()->getInstance(instanceId))
+    if (RefPtr instanceProxy = protect(manager->gpuConnectionToWebProcess()->cdmFactoryProxy())->getInstance(instanceId))
         protectedPlayer()->attemptToDecryptWithInstance(instanceProxy->instance());
 }
 #endif

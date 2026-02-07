@@ -332,7 +332,7 @@ bool scrollInDirection(LocalFrame* frame, FocusDirection direction)
 {
     ASSERT(frame);
 
-    if (frame && canScrollInDirection(*frame->protectedDocument(), direction)) {
+    if (frame && canScrollInDirection(*protect(frame->document()), direction)) {
         LayoutUnit dx;
         LayoutUnit dy;
         switch (direction) {

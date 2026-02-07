@@ -21,7 +21,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
 
-#if HAVE_CORE_ANIMATION_SEPARATED_LAYERS && compiler(>=6.0)
+#if HAVE_CORE_ANIMATION_SEPARATED_LAYERS
 
 import os
 @_weakLinked internal import RealityKit
@@ -41,7 +41,7 @@ extension WKSeparatedImageView {
             self.portalEntity?.components[ImagePresentationComponent.self]?.desiredViewingMode =
                 desiredViewingModeSpatial ? .spatial3D : .mono
             if let imageHash = self.imageHash {
-                ImagePresentationCache.shared.updateDesiredViewingMode(for: imageHash, desiredViewingModeSpatial)
+                ImagePresentationCache.shared[imageHash]?.desiredViewingModeSpatial = desiredViewingModeSpatial
             }
             #endif
         }

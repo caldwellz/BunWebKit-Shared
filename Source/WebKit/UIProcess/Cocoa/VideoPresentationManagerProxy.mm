@@ -120,7 +120,7 @@
 }
 
 - (CALayerHost *)layerHost {
-    return (CALayerHost *)[self layer];
+    return checked_objc_cast<CALayerHost>([self layer]);
 }
 
 - (BOOL)clipsToBounds {
@@ -388,7 +388,7 @@ UIViewController *VideoPresentationModelContext::presentingViewController()
     if (!m_manager || !m_manager->m_page)
         return nullptr;
 
-    if (RefPtr pageClient = m_manager->m_page->pageClient())
+    if (RefPtr pageClient = protect(m_manager)->m_page->pageClient())
         return pageClient->presentingViewController();
     return nullptr;
 }
@@ -641,7 +641,7 @@ void VideoPresentationManagerProxy::invalidateInterface(WebCore::PlatformVideoPr
     }
 
 #if PLATFORM(IOS_FAMILY)
-    if (auto *playerLayerView = interface.playerLayerView()) {
+    if (RetainPtr playerLayerView = interface.playerLayerView()) {
         [playerLayerView removeFromSuperview];
         interface.setPlayerLayerView(nullptr);
     }
@@ -985,7 +985,7 @@ RetainPtr<WKVideoView> VideoPresentationManagerProxy::createViewWithID(PlaybackS
 
         model->setVideoDimensions(nativeSize);
 
-        RetainPtr playerLayer { (WebAVPlayerLayer *)[playerView layer] };
+        RetainPtr playerLayer { checked_objc_cast<WebAVPlayerLayer>([playerView layer]) };
         [playerLayer setVideoDimensions:nativeSize];
         [playerLayer setPresentationModel:model.ptr()];
         [playerLayer setVideoSublayer:[view layer]];
@@ -1096,7 +1096,7 @@ void VideoPresentationManagerProxy::setupFullscreenWithID(PlaybackSessionContext
     ASSERT(interface->videoView());
 #endif
 
-    RetainPtr view = interface->layerHostView() ? static_cast<WKLayerHostView*>(interface->layerHostView()) : createLayerHostViewWithID(contextId, hostingContext, initialSize, hostingDeviceScaleFactor);
+    RetainPtr view = interface->layerHostView() ? RetainPtr { static_cast<WKLayerHostView*>(interface->layerHostView()) } : createLayerHostViewWithID(contextId, hostingContext, initialSize, hostingDeviceScaleFactor);
 #if USE(EXTENSIONKIT)
     RefPtr pageClient = page->pageClient();
     if (RetainPtr visibilityPropagationView = pageClient ? pageClient->createVisibilityPropagationView() : nil)
@@ -1106,9 +1106,9 @@ void VideoPresentationManagerProxy::setupFullscreenWithID(PlaybackSessionContext
 #endif
 
 #if PLATFORM(IOS_FAMILY)
-    auto* rootNode = downcast<RemoteLayerTreeDrawingAreaProxy>(*page->drawingArea()).remoteLayerTreeHost().rootNode();
-    UIView *parentView = rootNode ? rootNode->uiView() : nil;
-    interface->setupFullscreen(screenRect, videoDimensions, parentView, videoFullscreenMode, allowsPictureInPicture, standby, blocksReturnToFullscreenFromPictureInPicture);
+    RefPtr rootNode = downcast<RemoteLayerTreeDrawingAreaProxy>(*page->drawingArea()).remoteLayerTreeHost().rootNode();
+    RetainPtr parentView = rootNode ? rootNode->uiView() : nil;
+    interface->setupFullscreen(screenRect, videoDimensions, parentView.get(), videoFullscreenMode, allowsPictureInPicture, standby, blocksReturnToFullscreenFromPictureInPicture);
 #else
     UNUSED_PARAM(videoDimensions);
     UNUSED_PARAM(blocksReturnToFullscreenFromPictureInPicture);
@@ -1448,10 +1448,10 @@ void VideoPresentationManagerProxy::returnVideoView(PlaybackSessionContextIdenti
 {
 #if PLATFORM(IOS_FAMILY)
     Ref interface = ensureInterface(contextId);
-    auto *playerView = interface->playerLayerView();
-    auto *videoView = interface->layerHostView();
+    RetainPtr playerView = interface->playerLayerView();
+    RetainPtr videoView = interface->layerHostView();
     if (playerView && videoView) {
-        [playerView addSubview:videoView];
+        [playerView addSubview:videoView.get()];
         [playerView setNeedsLayout];
         [playerView layoutIfNeeded];
     }
@@ -1538,7 +1538,7 @@ void VideoPresentationManagerProxy::didCleanupFullscreen(PlaybackSessionContextI
         setVisibilityPropagationViewForLayerHostView(nil, layerHostView.get());
 #endif
 
-    [interface->protectedLayerHostView() removeFromSuperview];
+    [protect(interface->layerHostView()) removeFromSuperview];
     interface->removeCaptionsLayer();
     if (RetainPtr playerLayer = interface->playerLayer()) {
         // Return the video layer to the player layer
@@ -1547,7 +1547,7 @@ void VideoPresentationManagerProxy::didCleanupFullscreen(PlaybackSessionContextI
         [playerLayer layoutSublayers];
     } else {
         [CATransaction flush];
-        [interface->protectedLayerHostView() removeFromSuperview];
+        [protect(interface->layerHostView()) removeFromSuperview];
         interface->setLayerHostView(nullptr);
     }
 
@@ -1572,14 +1572,14 @@ void VideoPresentationManagerProxy::setVideoLayerFrame(PlaybackSessionContextIde
     WTF::MachSendRightAnnotated sendRightAnnotated;
 #if PLATFORM(IOS_FAMILY)
 #if USE(EXTENSIONKIT)
-    auto view = dynamic_objc_cast<WKLayerHostView>(interface->layerHostView());
-    if (view && view->_hostingView) {
-        auto hostingUpdateCoordinator = [BELayerHierarchyHostingTransactionCoordinator coordinatorWithError:nil];
-        [hostingUpdateCoordinator addLayerHierarchyHostingView:view->_hostingView.get()];
+    RetainPtr view = dynamic_objc_cast<WKLayerHostView>(interface->layerHostView());
+    if (view && view.get()->_hostingView) {
+        RetainPtr hostingUpdateCoordinator = [BELayerHierarchyHostingTransactionCoordinator coordinatorWithError:nil];
+        [hostingUpdateCoordinator addLayerHierarchyHostingView:view.get()->_hostingView.get()];
 #if ENABLE(MACH_PORT_LAYER_HOSTING)
-        sendRightAnnotated = LayerHostingContext::fence(hostingUpdateCoordinator);
+        sendRightAnnotated = LayerHostingContext::fence(hostingUpdateCoordinator.get());
 #else
-        XPCObjectPtr<xpc_object_t> xpcRepresentationHostingCoordinator = [hostingUpdateCoordinator createXPCRepresentation];
+        OSObjectPtr<xpc_object_t> xpcRepresentationHostingCoordinator = [hostingUpdateCoordinator createXPCRepresentation];
         sendRightAnnotated.sendRight = MachSendRight::adopt(xpc_dictionary_copy_mach_send(xpcRepresentationHostingCoordinator.get(), machPortKey));
 #endif
         RELEASE_LOG(Media, "VideoPresentationManagerProxy::setVideoLayerFrame: x=%f y=%f w=%f h=%f send right %d, fence data size %lu", frame.x(), frame.y(), frame.width(), frame.height(), sendRightAnnotated.sendRight.sendRight(), sendRightAnnotated.data.size());
@@ -1688,7 +1688,7 @@ RefPtr<PlatformVideoPresentationInterface> VideoPresentationManagerProxy::bestVi
     if (!m_page)
         return nullptr;
 
-    RefPtr pageClient = m_page->pageClient();
+    RefPtr pageClient = protect(m_page)->pageClient();
     if (!pageClient)
         return nullptr;
 

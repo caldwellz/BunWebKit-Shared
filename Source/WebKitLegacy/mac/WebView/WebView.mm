@@ -2228,7 +2228,7 @@ static NSMutableSet *knownPluginMIMETypes()
 
 + (void)_setAlwaysUsesComplexTextCodePath:(BOOL)f
 {
-    WebCore::FontCascade::setCodePath(f ? WebCore::FontCascade::CodePath::Complex : WebCore::FontCascade::CodePath::Auto);
+    WebCore::FontCascade::setForcedCodePath(f ? Markable(WebCore::FontCascade::CodePath::Complex) : std::nullopt);
 }
 
 + (BOOL)canCloseAllWebViews

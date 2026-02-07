@@ -45,16 +45,12 @@
 #include <drm/drm_fourcc.h>
 #endif
 
-#if USE(SKIA)
 WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_BEGIN
 #include <skia/core/SkColorSpace.h>
 #include <skia/core/SkPixmap.h>
 #include <skia/core/SkStream.h>
-WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN // Skia port
 #include <skia/encode/SkPngEncoder.h>
-WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_END
-#endif
 
 namespace WebKit {
 
@@ -215,7 +211,6 @@ void AcceleratedBackingStore::frame(uint64_t bufferID, Rects&& damageRects, WTF:
         m_fenceMonitor.addFileDescriptor(WTF::move(renderingFenceFD));
 }
 
-#if USE(SKIA)
 static Expected<SkImageInfo, String> getImageInfoFromBuffer(const  GRefPtr<WPEBuffer>& buffer)
 {
     auto width = wpe_buffer_get_width(buffer.get());
@@ -282,8 +277,6 @@ Expected<Ref<ViewSnapshot>, String> AcceleratedBackingStore::takeSnapshot(std::o
 
     return saveBufferSnapshot(m_committedBuffer ? m_committedBuffer : m_pendingBuffer, WTF::move(clipRect));
 }
-
-#endif
 
 void AcceleratedBackingStore::renderPendingBuffer()
 {

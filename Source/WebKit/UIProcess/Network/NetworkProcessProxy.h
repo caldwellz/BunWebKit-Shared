@@ -447,7 +447,6 @@ private:
 #endif
 
 #if ENABLE(LEGACY_CUSTOM_PROTOCOL_MANAGER)
-    Ref<LegacyCustomProtocolManagerProxy> protectedCustomProtocolManagerProxy() { return m_customProtocolManagerProxy; }
 #endif
 
     const std::unique_ptr<DownloadProxyMap> m_downloadProxyMap;
@@ -480,7 +479,7 @@ private:
     private:
         WeakPtr<NetworkProcessProxy> m_networkProcess;
     };
-    XPCObjectPtr<xpc_object_t> m_endpointMessage;
+    OSObjectPtr<xpc_object_t> m_endpointMessage;
 #endif
 
     WeakHashSet<WebsiteDataStore> m_websiteDataStores;

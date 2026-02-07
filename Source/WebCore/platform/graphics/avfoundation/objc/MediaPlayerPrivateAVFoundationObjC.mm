@@ -431,6 +431,9 @@ MediaPlayerPrivateAVFoundationObjC::MediaPlayerPrivateAVFoundationObjC(MediaPlay
 {
     ALWAYS_LOG(LOGIDENTIFIER);
     m_muted = player.muted();
+    m_volume = player.volume();
+    m_isVideoPlayer = player.isVideoPlayer();
+
 #if HAVE(SPATIAL_TRACKING_LABEL)
     m_defaultSpatialTrackingLabel = player.defaultSpatialTrackingLabel();
     m_spatialTrackingLabel = player.spatialTrackingLabel();
@@ -464,7 +467,7 @@ void MediaPlayerPrivateAVFoundationObjC::cancelLoad()
     ALWAYS_LOG(LOGIDENTIFIER);
     tearDownVideoRendering();
 
-    [[NSNotificationCenter defaultCenter] removeObserver:m_objcObserver.get()];
+    [[NSNotificationCenter defaultCenter] removeObserver:m_objcObserver];
     [m_objcObserver disconnect];
 
     // Tell our observer to do nothing when our cancellation of pending loading calls its completion handler.
@@ -478,7 +481,7 @@ void MediaPlayerPrivateAVFoundationObjC::cancelLoad()
 
     if (m_legibleOutput) {
         if (m_avPlayerItem)
-            [m_avPlayerItem removeOutput:m_legibleOutput.get()];
+            [m_avPlayerItem removeOutput:m_legibleOutput];
         m_legibleOutput = nil;
     }
 
@@ -491,7 +494,7 @@ void MediaPlayerPrivateAVFoundationObjC::cancelLoad()
 
     if (m_metadataOutput) {
         if (m_avPlayerItem)
-            [m_avPlayerItem removeOutput:m_metadataOutput.get()];
+            [m_avPlayerItem removeOutput:m_metadataOutput];
         m_metadataOutput = nil;
     }
 
@@ -503,11 +506,11 @@ void MediaPlayerPrivateAVFoundationObjC::cancelLoad()
     }
     if (m_avPlayer) {
         if (m_timeObserver)
-            [m_avPlayer removeTimeObserver:m_timeObserver.get()];
+            [m_avPlayer removeTimeObserver:m_timeObserver];
         m_timeObserver = nil;
 
         for (NSString *keyName in playerKVOProperties())
-            [m_avPlayer removeObserver:m_objcObserver.get() forKeyPath:keyName];
+            [m_avPlayer removeObserver:m_objcObserver forKeyPath:keyName];
 
         setShouldObserveTimeControlStatus(false);
 
@@ -517,17 +520,17 @@ void MediaPlayerPrivateAVFoundationObjC::cancelLoad()
 #endif
 
         if (m_currentTimeObserver)
-            [m_avPlayer removeTimeObserver:m_currentTimeObserver.get()];
+            [m_avPlayer removeTimeObserver:m_currentTimeObserver];
         m_currentTimeObserver = nil;
 
         if (m_videoFrameMetadataGatheringObserver) {
-            [m_avPlayer removeTimeObserver:m_videoFrameMetadataGatheringObserver.get()];
+            [m_avPlayer removeTimeObserver:m_videoFrameMetadataGatheringObserver];
             m_videoFrameMetadataGatheringObserver = nil;
         }
 
 #if ENABLE(LINEAR_MEDIA_PLAYER)
     if (m_videoTarget)
-        [m_avPlayer removeVideoTarget:m_videoTarget.get()];
+        [m_avPlayer removeVideoTarget:m_videoTarget];
 #endif
 
         m_avPlayer = nil;
@@ -582,7 +585,7 @@ void MediaPlayerPrivateAVFoundationObjC::createImageGenerator()
     if (!m_avAsset || m_imageGenerator)
         return;
 
-    m_imageGenerator = [PAL::getAVAssetImageGeneratorClassSingleton() assetImageGeneratorWithAsset:m_avAsset.get()];
+    m_imageGenerator = [PAL::getAVAssetImageGeneratorClassSingleton() assetImageGeneratorWithAsset:m_avAsset];
 
     [m_imageGenerator setApertureMode:AVAssetImageGeneratorApertureModeCleanAperture];
     [m_imageGenerator setAppliesPreferredTrackTransform:YES];
@@ -644,7 +647,7 @@ void MediaPlayerPrivateAVFoundationObjC::createAVPlayerLayer()
     ALWAYS_LOG(LOGIDENTIFIER);
 
     m_videoLayer = adoptNS([PAL::allocAVPlayerLayerInstance() init]);
-    [m_videoLayer setPlayer:m_avPlayer.get()];
+    [m_videoLayer setPlayer:m_avPlayer];
 
     [m_videoLayer setName:@"MediaPlayerPrivate AVPlayerLayer"];
     [m_videoLayer addObserver:m_objcObserver.get() forKeyPath:@"readyForDisplay" options:NSKeyValueObservingOptionNew context:(void *)MediaPlayerAVFoundationObservationContextAVPlayerLayer];
@@ -1009,7 +1012,7 @@ void MediaPlayerPrivateAVFoundationObjC::createAVAssetForURL(const URL& url, Ret
 
     resourceLoader.URLSession = (NSURLSession *)adoptNS([[WebCoreNSURLSession alloc] initWithResourceLoader:m_mediaResourceLoader delegate:resourceLoader.URLSessionDataDelegate delegateQueue:resourceLoader.URLSessionDataDelegateQueue]).get();
 
-    [[NSNotificationCenter defaultCenter] addObserver:m_objcObserver.get() selector:@selector(chapterMetadataDidChange:) name:AVAssetChapterMetadataGroupsDidChangeNotification object:m_avAsset.get()];
+    [[NSNotificationCenter defaultCenter] addObserver:m_objcObserver selector:@selector(chapterMetadataDidChange:) name:AVAssetChapterMetadataGroupsDidChangeNotification object:m_avAsset.get()];
 
     m_haveCheckedPlayability = false;
 
@@ -1102,12 +1105,17 @@ void MediaPlayerPrivateAVFoundationObjC::createAVPlayer()
         m_avPlayer.get().preventsAutomaticBackgroundingDuringVideoPlayback = NO;
 #endif
 
-    if (m_muted) {
+    [m_avPlayer setVolume:m_volume];
+
+    if (m_muted)
         [m_avPlayer setMuted:m_muted];
 
-        if (player->isVideoPlayer())
-            m_avPlayer.get().suppressesAudioRendering = YES;
-    }
+    if (m_isVideoPlayer)
+        [m_avPlayer _setSuppressesAudioRendering:!m_isAudible];
+
+#if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
+    [m_avPlayer setParticipatesInAudioSession:m_isAudible completionHandler:nil];
+#endif
 
 #if HAVE(SPATIAL_TRACKING_LABEL)
     updateSpatialTrackingLabel();
@@ -1151,7 +1159,7 @@ void MediaPlayerPrivateAVFoundationObjC::createAVPlayer()
 #if ENABLE(LINEAR_MEDIA_PLAYER)
     if (m_videoTarget) {
         INFO_LOG(LOGIDENTIFIER, "Setting videoTarget");
-        [m_avPlayer addVideoTarget:m_videoTarget.get()];
+        [m_avPlayer addVideoTarget:m_videoTarget];
     }
 #endif
 
@@ -1171,9 +1179,9 @@ void MediaPlayerPrivateAVFoundationObjC::createAVPlayerItem()
     ALWAYS_LOG(LOGIDENTIFIER);
 
     // Create the player item so we can load media data.
-    m_avPlayerItem = adoptNS([PAL::allocAVPlayerItemInstance() initWithAsset:m_avAsset.get()]);
+    m_avPlayerItem = adoptNS([PAL::allocAVPlayerItemInstance() initWithAsset:m_avAsset]);
 
-    [[NSNotificationCenter defaultCenter] addObserver:m_objcObserver.get() selector:@selector(didEnd:) name:AVPlayerItemDidPlayToEndTimeNotification object:m_avPlayerItem.get()];
+    [[NSNotificationCenter defaultCenter] addObserver:m_objcObserver selector:@selector(didEnd:) name:AVPlayerItemDidPlayToEndTimeNotification object:m_avPlayerItem.get()];
 
     for (NSString *keyName in itemKVOProperties()) {
         NSKeyValueObservingOptions options = NSKeyValueObservingOptionNew | NSKeyValueObservingOptionPrior;
@@ -1201,10 +1209,10 @@ ALLOW_NEW_API_WITHOUT_GUARDS_END
     m_legibleOutput = adoptNS([PAL::allocAVPlayerItemLegibleOutputInstance() initWithMediaSubtypesForNativeRepresentation:subtypes.get()]);
     [m_legibleOutput setSuppressesPlayerRendering:YES];
 
-    [m_legibleOutput setDelegate:m_objcObserver.get() queue:mainDispatchQueueSingleton()];
+    [m_legibleOutput setDelegate:m_objcObserver queue:mainDispatchQueueSingleton()];
     [m_legibleOutput setAdvanceIntervalForDelegateInvocation:avPlayerOutputAdvanceInterval];
     [m_legibleOutput setTextStylingResolution:AVPlayerItemLegibleOutputTextStylingResolutionSourceAndRulesOnly];
-    [m_avPlayerItem addOutput:m_legibleOutput.get()];
+    [m_avPlayerItem addOutput:m_legibleOutput];
 
 #if ENABLE(WEB_AUDIO) && USE(MEDIATOOLBOX)
     if (RefPtr provider = m_provider) {
@@ -1214,13 +1222,13 @@ ALLOW_NEW_API_WITHOUT_GUARDS_END
 #endif
 
     m_metadataCollector = adoptNS([PAL::allocAVPlayerItemMetadataCollectorInstance() initWithIdentifiers:nil classifyingLabels:nil]);
-    [m_metadataCollector setDelegate:m_objcObserver.get() queue:mainDispatchQueueSingleton()];
-    [m_avPlayerItem addMediaDataCollector:m_metadataCollector.get()];
+    [m_metadataCollector setDelegate:m_objcObserver queue:mainDispatchQueueSingleton()];
+    [m_avPlayerItem addMediaDataCollector:m_metadataCollector];
 
     m_metadataOutput = adoptNS([PAL::allocAVPlayerItemMetadataOutputInstance() initWithIdentifiers:nil]);
-    [m_metadataOutput setDelegate:m_objcObserver.get() queue:mainDispatchQueueSingleton()];
+    [m_metadataOutput setDelegate:m_objcObserver queue:mainDispatchQueueSingleton()];
     [m_metadataOutput setAdvanceIntervalForDelegateInvocation:avPlayerOutputAdvanceInterval];
-    [m_avPlayerItem addOutput:m_metadataOutput.get()];
+    [m_avPlayerItem addOutput:m_metadataOutput];
 }
 
 #if ENABLE(ENCRYPTED_MEDIA) && HAVE(AVCONTENTKEYSESSION)
@@ -1633,6 +1641,10 @@ void MediaPlayerPrivateAVFoundationObjC::setVolume(float volume)
     if (m_volumeLocked)
         return;
 
+    if (m_volume == volume)
+        return;
+    m_volume = volume;
+
     if (!m_avPlayer)
         return;
 
@@ -1649,13 +1661,12 @@ void MediaPlayerPrivateAVFoundationObjC::setMuted(bool muted)
     ALWAYS_LOG(LOGIDENTIFIER, muted);
 
     m_muted = muted;
+    updateIsAudible();
 
     if (!m_avPlayer)
         return;
 
     [m_avPlayer setMuted:m_muted];
-    if (!m_muted)
-        m_avPlayer.get().suppressesAudioRendering = NO;
 }
 
 void MediaPlayerPrivateAVFoundationObjC::setRateDouble(double rate)
@@ -2277,6 +2288,24 @@ void MediaPlayerPrivateAVFoundationObjC::updateVideoLayerGravity(ShouldAnimate s
     [CATransaction commit];
 
     syncTextTrackBounds();
+}
+
+void MediaPlayerPrivateAVFoundationObjC::updateIsAudible()
+{
+    bool isAudible = hasAudio() && !m_muted && m_volume;
+    if (m_isAudible == isAudible)
+        return;
+    m_isAudible = isAudible;
+
+    if (!m_avPlayer)
+        return;
+
+    if (m_isVideoPlayer)
+        [m_avPlayer _setSuppressesAudioRendering:!m_isAudible];
+
+#if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
+    [m_avPlayer setParticipatesInAudioSession:m_isAudible completionHandler:nil];
+#endif
 }
 
 void MediaPlayerPrivateAVFoundationObjC::metadataLoaded()
@@ -3318,7 +3347,7 @@ bool MediaPlayerPrivateAVFoundationObjC::isCurrentPlaybackTargetWireless() const
 
 #if !PLATFORM(IOS_FAMILY) || ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
     if (RefPtr playbackTarget = m_playbackTarget) {
-        if (playbackTarget->type() == MediaPlaybackTarget::Type::WirelessPlayback)
+        if (playbackTarget->targetType() == MediaPlaybackTarget::Type::AVOutputContext)
             wirelessTarget = m_avPlayer && m_avPlayer.get().externalPlaybackActive;
         else
             wirelessTarget = m_shouldPlayToPlaybackTarget && playbackTarget->hasActiveRoute();
@@ -3427,7 +3456,7 @@ String MediaPlayerPrivateAVFoundationObjC::wirelessPlaybackTargetName() const
 #if !PLATFORM(IOS_FAMILY) || ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
     if (RefPtr playbackTarget = m_playbackTarget) {
 #if HAVE(MEDIAEXPERIENCE_AVSYSTEMCONTROLLER)
-        if (playbackTarget->type() == MediaPlaybackTarget::Type::AVOutputContext)
+        if (playbackTarget->targetType() == MediaPlaybackTarget::Type::AVOutputContext)
             wirelessTargetName = externalDeviceDisplayNameForPlayer(m_avPlayer.get()).get();
         else
 #endif
@@ -3504,7 +3533,7 @@ void MediaPlayerPrivateAVFoundationObjC::setShouldPlayToPlaybackTarget(bool shou
     INFO_LOG(LOGIDENTIFIER, shouldPlay);
 
 #if !PLATFORM(IOS_FAMILY)
-    if (playbackTarget->type() == MediaPlaybackTarget::Type::AVOutputContext) {
+    if (playbackTarget->targetType() == MediaPlaybackTarget::Type::AVOutputContext) {
         RetainPtr<AVOutputContext> newContext = shouldPlay ? m_outputContext.get() : nil;
 
         if (!m_avPlayer)
@@ -4155,14 +4184,14 @@ void MediaPlayerPrivateAVFoundationObjC::setVideoTarget(const PlatformVideoTarge
 
     ALWAYS_LOG(LOGIDENTIFIER, !!videoTarget);
     if (m_videoTarget)
-        [m_avPlayer removeVideoTarget:m_videoTarget.get()];
+        [m_avPlayer removeVideoTarget:m_videoTarget];
 
     m_videoTarget = videoTarget;
 
     if (m_videoTarget)
-        [m_avPlayer addVideoTarget:m_videoTarget.get()];
+        [m_avPlayer addVideoTarget:m_videoTarget];
     else
-        [m_videoLayer setPlayer:m_avPlayer.get()];
+        [m_videoLayer setPlayer:m_avPlayer];
 #else
     UNUSED_PARAM(videoTarget);
 #endif
@@ -4180,7 +4209,7 @@ void MediaPlayerPrivateAVFoundationObjC::isInFullscreenOrPictureInPictureChanged
     else if (RetainPtr videoTarget = std::exchange(m_videoTarget, nullptr)) {
         INFO_LOG(LOGIDENTIFIER, "Clearing videoTarget");
         [m_avPlayer removeVideoTarget:videoTarget.get()];
-        [m_videoLayer setPlayer:m_avPlayer.get()];
+        [m_videoLayer setPlayer:m_avPlayer];
     }
 #else
     UNUSED_PARAM(isInFullscreenOrPictureInPicture);

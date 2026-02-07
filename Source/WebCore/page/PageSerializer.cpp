@@ -202,7 +202,7 @@ void PageSerializer::serializeFrame(LocalFrame* frame)
 
     Vector<Ref<Node>> serializedNodes;
     SerializerMarkupAccumulator accumulator(*this, *document, &serializedNodes);
-    String text = accumulator.serializeNodes(*document->protectedDocumentElement(), SerializedNodes::SubtreeIncludingNode);
+    String text = accumulator.serializeNodes(*protect(document->documentElement()), SerializedNodes::SubtreeIncludingNode);
     m_resources.append({ url, document->suggestedMIMEType(), SharedBuffer::create(textEncoding.encode(text, PAL::UnencodableHandling::Entities)) });
     m_resourceURLs.add(url);
 
@@ -212,7 +212,7 @@ void PageSerializer::serializeFrame(LocalFrame* frame)
             continue;
         // We have to process in-line style as it might contain some resources (typically background images).
         if (RefPtr styledElement = dynamicDowncast<StyledElement>(*element))
-            retrieveResourcesForProperties(styledElement->protectedInlineStyle().get(), document.get());
+            retrieveResourcesForProperties(protect(styledElement->inlineStyle()).get(), document.get());
 
         if (RefPtr imageElement = dynamicDowncast<HTMLImageElement>(*element)) {
             auto url = document->completeURL(imageElement->attributeWithoutSynchronization(HTMLNames::srcAttr));

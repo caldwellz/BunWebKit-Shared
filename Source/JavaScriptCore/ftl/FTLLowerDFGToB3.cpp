@@ -1163,6 +1163,9 @@ private:
         case DefineDataProperty:
             compileDefineDataProperty();
             break;
+        case ObjectDefineProperty:
+            compileObjectDefineProperty();
+            break;
         case DefineAccessorProperty:
             compileDefineAccessorProperty();
             break;
@@ -1223,12 +1226,6 @@ private:
             break;
         case NewObject:
             compileNewObject();
-            break;
-        case NewGenerator:
-            compileNewGenerator();
-            break;
-        case NewAsyncGenerator:
-            compileNewAsyncGenerator();
             break;
         case NewInternalFieldObject:
             compileNewInternalFieldObject();
@@ -1363,6 +1360,9 @@ private:
             break;
         case StringIndexOf:
             compileStringIndexOf();
+            break;
+        case StringStartsWith:
+            compileStringStartsWith();
             break;
         case GetByOffset:
         case GetGetterSetterByOffset:
@@ -1655,6 +1655,9 @@ private:
         case ExtractValueFromWeakMapGet:
             compileExtractValueFromWeakMapGet();
             break;
+        case MapOrSetSize:
+            compileMapOrSetSize();
+            break;
         case SetAdd:
             compileSetAdd();
             break;
@@ -1772,9 +1775,6 @@ private:
             break;
         case CreateRest:
             compileCreateRest();
-            break;
-        case GetRestLength:
-            compileGetRestLength();
             break;
         case RegExpExec:
             compileRegExpExec();
@@ -5451,6 +5451,15 @@ private:
         default:
             RELEASE_ASSERT_NOT_REACHED();
         }
+    }
+
+    void compileObjectDefineProperty()
+    {
+        JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        LValue target = lowObject(m_node->child1());
+        LValue key = lowJSValue(m_node->child2());
+        LValue descriptor = lowObject(m_node->child3());
+        vmCall(Void, operationObjectDefineProperty, weakPointer(globalObject), target, key, descriptor);
     }
 
     void compileDefineAccessorProperty()
@@ -9200,16 +9209,19 @@ IGNORE_CLANG_WARNINGS_END
     void compileCreateRest()
     {
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        InlineCallFrame* inlineCallFrame = m_origin.semantic.inlineCallFrame();
+        unsigned numberOfArgumentsToSkip = m_node->numberOfArgumentsToSkip();
+        LValue arrayLength = getSpreadLengthFromInlineCallFrame(inlineCallFrame, numberOfArgumentsToSkip);
         if (m_graph.isWatchingHavingABadTimeWatchpoint(m_node)) {
             LBasicBlock continuation = m_out.newBlock();
-            LValue arrayLength = lowInt32(m_node->child1());
             LBasicBlock loopStart = m_out.newBlock();
+
             RegisteredStructure structure = m_graph.registerStructure(globalObject->originalRestParameterStructure());
             ArrayValues arrayValues = allocateUninitializedContiguousJSArray(arrayLength, structure);
             LValue array = arrayValues.array;
             LValue butterfly = arrayValues.butterfly;
             ValueFromBlock startLength = m_out.anchor(arrayLength);
-            LValue argumentRegion = m_out.add(getArgumentsStart(), m_out.constInt64(sizeof(Register) * m_node->numberOfArgumentsToSkip()));
+            LValue argumentRegion = m_out.add(getArgumentsStart(), m_out.constInt64(sizeof(Register) * numberOfArgumentsToSkip));
             m_out.branch(m_out.equal(arrayLength, m_out.constInt32(0)),
                 unsure(continuation), unsure(loopStart));
 
@@ -9228,31 +9240,9 @@ IGNORE_CLANG_WARNINGS_END
             return;
         }
 
-        LValue arrayLength = lowInt32(m_node->child1());
         LValue argumentStart = getArgumentsStart();
-        LValue numberOfArgumentsToSkip = m_out.constInt32(m_node->numberOfArgumentsToSkip());
         setJSValue(vmCall(
-            Int64, operationCreateRest, weakPointer(globalObject), argumentStart, numberOfArgumentsToSkip, arrayLength));
-    }
-
-    void compileGetRestLength()
-    {
-        LBasicBlock nonZeroLength = m_out.newBlock();
-        LBasicBlock continuation = m_out.newBlock();
-
-        ValueFromBlock zeroLengthResult = m_out.anchor(m_out.constInt32(0));
-
-        LValue numberOfArgumentsToSkip = m_out.constInt32(m_node->numberOfArgumentsToSkip());
-        LValue argumentsLength = getArgumentsLength().value;
-        m_out.branch(m_out.above(argumentsLength, numberOfArgumentsToSkip),
-            unsure(nonZeroLength), unsure(continuation));
-
-        LBasicBlock lastNext = m_out.appendTo(nonZeroLength, continuation);
-        ValueFromBlock nonZeroLengthResult = m_out.anchor(m_out.sub(argumentsLength, numberOfArgumentsToSkip));
-        m_out.jump(continuation);
-
-        m_out.appendTo(continuation, lastNext);
-        setInt32(m_out.phi(Int32, zeroLengthResult, nonZeroLengthResult));
+            Int64, operationCreateRest, weakPointer(globalObject), argumentStart, m_out.constInt32(numberOfArgumentsToSkip), arrayLength));
     }
 
     const AbstractHeap& abstractHeapForOwnPropertyKeysCache(NodeType type)
@@ -9483,16 +9473,6 @@ IGNORE_CLANG_WARNINGS_END
         setJSValue(m_out.phi(pointerType(), fastResult, slowResult));
     }
 
-    void compileNewGenerator()
-    {
-        compileNewInternalFieldObjectImpl<JSGenerator>(operationNewGenerator);
-    }
-
-    void compileNewAsyncGenerator()
-    {
-        compileNewInternalFieldObjectImpl<JSAsyncGenerator>(operationNewAsyncGenerator);
-    }
-
     void compileNewInternalFieldObject()
     {
         switch (m_node->structure()->typeInfo().type()) {
@@ -9516,6 +9496,12 @@ IGNORE_CLANG_WARNINGS_END
             break;
         case JSRegExpStringIteratorType:
             compileNewInternalFieldObjectImpl<JSRegExpStringIterator>(operationNewRegExpStringIterator);
+            break;
+        case JSGeneratorType:
+            compileNewInternalFieldObjectImpl<JSGenerator>(operationNewGenerator);
+            break;
+        case JSAsyncGeneratorType:
+            compileNewInternalFieldObjectImpl<JSAsyncGenerator>(operationNewAsyncGenerator);
             break;
         case JSPromiseType:
             if (m_node->structure()->classInfoForCells() == JSInternalPromise::info())
@@ -11607,6 +11593,17 @@ IGNORE_CLANG_WARNINGS_END
             setInt32(vmCall(Int32, operationStringIndexOfWithOneChar, weakPointer(globalObject), base, m_out.constInt32(character.value())));
         else
             setInt32(vmCall(Int32, operationStringIndexOf, weakPointer(globalObject), base, search));
+    }
+
+    void compileStringStartsWith()
+    {
+        LValue base = lowString(m_node->child1());
+        LValue search = lowString(m_node->child2());
+        auto* globalObject = m_graph.globalObjectFor(m_origin.semantic);
+        if (m_node->child3())
+            setBoolean(vmCall(Int32, operationStringStartsWithWithIndex, weakPointer(globalObject), base, search, lowInt32(m_node->child3())));
+        else
+            setBoolean(vmCall(Int32, operationStringStartsWith, weakPointer(globalObject), base, search));
     }
 
     void compileGetByOffset()
@@ -15782,6 +15779,37 @@ IGNORE_CLANG_WARNINGS_END
             value));
     }
 
+    void compileMapOrSetSize()
+    {
+        LValue mapOrSet;
+        if (m_node->child1().useKind() == MapObjectUse)
+            mapOrSet = lowMapObject(m_node->child1());
+        else {
+            ASSERT(m_node->child1().useKind() == SetObjectUse);
+            mapOrSet = lowSetObject(m_node->child1());
+        }
+
+        LValue storage = m_out.loadPtr(mapOrSet,
+            m_node->child1().useKind() == MapObjectUse ? m_heaps.JSMap_storage : m_heaps.JSSet_storage);
+
+        LBasicBlock hasStorage = m_out.newBlock();
+        LBasicBlock continuation = m_out.newBlock();
+
+        ValueFromBlock noStorageResult = m_out.anchor(m_out.constInt32(0));
+        m_out.branch(m_out.isNull(storage), unsure(continuation), unsure(hasStorage));
+
+        LBasicBlock lastNext = m_out.appendTo(hasStorage, continuation);
+        LValue butterfly = toButterfly(storage);
+        // aliveEntryCountIndex() is the same for both JSSet::Helper and JSMap::Helper.
+        LValue size = m_out.load32(m_out.baseIndex(m_heaps.indexedContiguousProperties, butterfly,
+            m_out.constIntPtr(JSSet::Helper::aliveEntryCountIndex())));
+        ValueFromBlock hasStorageResult = m_out.anchor(size);
+        m_out.jump(continuation);
+
+        m_out.appendTo(continuation, lastNext);
+        setInt32(m_out.phi(Int32, noStorageResult, hasStorageResult));
+    }
+
     void compileSetAdd()
     {
         JSGlobalObject* globalObject = m_graph.globalObjectFor(m_origin.semantic);
@@ -18104,6 +18132,12 @@ IGNORE_CLANG_WARNINGS_END
             break;
         case JSRegExpStringIteratorType:
             compileMaterializeNewInternalFieldObjectImpl<JSRegExpStringIterator>(operationNewRegExpStringIterator);
+            break;
+        case JSGeneratorType:
+            compileMaterializeNewInternalFieldObjectImpl<JSGenerator>(operationNewGenerator);
+            break;
+        case JSAsyncGeneratorType:
+            compileMaterializeNewInternalFieldObjectImpl<JSAsyncGenerator>(operationNewAsyncGenerator);
             break;
         case JSPromiseType:
             if (m_node->structure()->classInfoForCells() == JSInternalPromise::info())

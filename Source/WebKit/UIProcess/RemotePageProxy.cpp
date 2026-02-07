@@ -69,6 +69,11 @@
 #include "WebDeviceOrientationUpdateProviderProxy.h"
 #endif
 
+// FIXME: https://bugs.webkit.org/show_bug.cgi?id=306415
+#if ENABLE(BACK_FORWARD_LIST_SWIFT)
+#include "WebKit-Swift.h"
+#endif
+
 namespace WebKit {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(RemotePageProxy);
@@ -86,9 +91,9 @@ RemotePageProxy::RemotePageProxy(WebPageProxy& page, WebProcessProxy& process, c
     , m_processActivityState(makeUniqueRef<WebProcessActivityState>(*this))
 {
     if (registrationToTransfer)
-        m_messageReceiverRegistration.transferMessageReceivingFrom(*registrationToTransfer, *this, page.backForwardList());
+        m_messageReceiverRegistration.transferMessageReceivingFrom(*registrationToTransfer, *this, page.backForwardListMessageReceiver());
     else
-        m_messageReceiverRegistration.startReceivingMessages(m_process, m_webPageID, *this, page.backForwardList());
+        m_messageReceiverRegistration.startReceivingMessages(m_process, m_webPageID, *this, page.backForwardListMessageReceiver());
 
     m_process->addRemotePageProxy(*this);
 }
@@ -204,7 +209,7 @@ void RemotePageProxy::didReceiveMessage(IPC::Connection& connection, IPC::Decode
 
     if (RefPtr page = m_page.get()) {
         if (decoder.messageReceiverName() == Messages::WebBackForwardList::messageReceiverName())
-            page->backForwardList().didReceiveMessage(connection, decoder);
+            page->backForwardListMessageReceiver().didReceiveMessage(connection, decoder);
         else
             page->didReceiveMessage(connection, decoder);
     }
@@ -214,15 +219,10 @@ void RemotePageProxy::didReceiveSyncMessage(IPC::Connection& connection, IPC::De
 {
     if (RefPtr page = m_page.get()) {
         if (decoder.messageReceiverName() == Messages::WebBackForwardList::messageReceiverName())
-            page->backForwardList().didReceiveSyncMessage(connection, decoder, encoder);
+            page->backForwardListMessageReceiver().didReceiveSyncMessage(connection, decoder, encoder);
         else
             page->didReceiveSyncMessage(connection, decoder, encoder);
     }
-}
-
-RefPtr<WebPageProxy> RemotePageProxy::protectedPage() const
-{
-    return m_page.get();
 }
 
 WebPageProxy* RemotePageProxy::page() const

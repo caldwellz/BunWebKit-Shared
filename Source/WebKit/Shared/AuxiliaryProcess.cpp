@@ -239,7 +239,7 @@ void AuxiliaryProcess::platformStopRunLoop()
 
 void AuxiliaryProcess::terminate()
 {
-    protectedParentProcessConnection()->invalidate();
+    protect(parentProcessConnection())->invalidate();
 
     stopRunLoop();
 }

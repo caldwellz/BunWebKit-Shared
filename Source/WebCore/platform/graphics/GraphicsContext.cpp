@@ -542,6 +542,11 @@ void GraphicsContext::drawPath(const Path& path)
     strokePath(path);
 }
 
+void GraphicsContext::strokeArc(const PathArc& arc)
+{
+    strokePath(Path({ PathSegment { arc } }));
+}
+
 void GraphicsContext::fillEllipseAsPath(const FloatRect& ellipse)
 {
     Path path;

@@ -54,6 +54,7 @@ typedef (ReadableStreamDefaultReader or ReadableStreamBYOBReader) ReadableStream
     PublicIdentifier
 ] interface ReadableStream {
     [CallWith=CurrentGlobalObject] constructor(optional object underlyingSource, optional object options);
+    [EnabledBySetting=ReadableStreamFromEnabled, CallWith=CurrentGlobalObject] static ReadableStream from(any asyncIterable);
 
     [ImplementedAs=isLocked] readonly attribute boolean locked;
 

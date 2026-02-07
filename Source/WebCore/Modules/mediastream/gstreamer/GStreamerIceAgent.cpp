@@ -631,7 +631,7 @@ void webkitGstWebRTCIceAgentClosed(WebKitGstIceAgent* agent)
     agent->priv->closePromise.clear();
 }
 
-#if GST_CHECK_VERSION(1, 27, 0)
+#if GST_CHECK_VERSION(1, 28, 0)
 static void webkitGstWebRTCIceAgentClose(GstWebRTCICE* ice, GstPromise* promise)
 {
     auto backend = WEBKIT_GST_WEBRTC_ICE_BACKEND(ice);
@@ -741,7 +741,7 @@ static void webkit_gst_webrtc_ice_backend_class_init(WebKitGstIceAgentClass* kla
     iceClass->set_http_proxy = webkitGstWebRTCIceAgentSetHttpProxy;
     iceClass->get_http_proxy = webkitGstWebRTCIceAgentGetHttpProxy;
     iceClass->get_selected_pair = webkitGstWebRTCIceAgentGetSelectedPair;
-#if GST_CHECK_VERSION(1, 27, 0)
+#if GST_CHECK_VERSION(1, 28, 0)
     iceClass->close = webkitGstWebRTCIceAgentClose;
 #endif
 }

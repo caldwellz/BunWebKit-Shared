@@ -8,7 +8,6 @@
 
 /* Begin PBXBuildFile section */
 		070BEE2D2F0381BF00392FEA /* module.modulemap in Headers */ = {isa = PBXBuildFile; fileRef = 94C759022B990D31000CC511 /* module.modulemap */; settings = {ATTRIBUTES = (Private, ); }; };
-		071C00372707EDF000D027C7 /* ReplayKitSoftLink.mm in Sources */ = {isa = PBXBuildFile; fileRef = 071C00352707EDF000D027C7 /* ReplayKitSoftLink.mm */; };
 		071CFF4F2F0614FB00E07A47 /* pal.swift in Sources */ = {isa = PBXBuildFile; fileRef = 071CFF4E2F0614FB00E07A47 /* pal.swift */; };
 		07611DB7243FA5BF00D80704 /* UsageTrackingSoftLink.mm in Sources */ = {isa = PBXBuildFile; fileRef = 07611DB5243FA5BF00D80704 /* UsageTrackingSoftLink.mm */; };
 		077121B62C1E8B4400FACBF9 /* WritingToolsSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 077121B52C1E8B4400FACBF9 /* WritingToolsSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -144,7 +143,6 @@
 		DD20DD2727BC90D60093D175 /* CryptoDigest.h in Headers */ = {isa = PBXBuildFile; fileRef = 1C09D0521E31C44100725F18 /* CryptoDigest.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DDC027BC90D70093D175 /* ManagedConfigurationSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 5C7C787123AC3E770065F47E /* ManagedConfigurationSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DDC127BC90D70093D175 /* QuickLookSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 4450FC9E21F5F602004DFA56 /* QuickLookSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		DD20DDC227BC90D70093D175 /* ReplayKitSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 071C00362707EDF000D027C7 /* ReplayKitSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DDC327BC90D70093D175 /* SystemStatusSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 079D1D9526950DD700883577 /* SystemStatusSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DDC427BC90D70093D175 /* UIKitSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = 2E1342CA215AA10A007199D2 /* UIKitSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DDC527BC90D70093D175 /* DataDetectorsSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = F4E08759266ACA53000F814A /* DataDetectorsSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -263,7 +261,6 @@
 		DD20DE3D27BC90D80093D175 /* NSWindowSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C7785841F45130F00F4EBB6 /* NSWindowSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DE3E27BC90D80093D175 /* PIPSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C7785851F45130F00F4EBB6 /* PIPSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DE3F27BC90D80093D175 /* QuickLookMacSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C7785871F45130F00F4EBB6 /* QuickLookMacSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
-		DD20DE4027BC90D80093D175 /* ScreenCaptureKitSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 07035D3027A9B32E00FB03E4 /* ScreenCaptureKitSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DE4127BC90D80093D175 /* SystemPreviewSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 71B1141F26823ACD004D6701 /* SystemPreviewSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DE4227BC90D80093D175 /* TelephonyUtilitiesSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = 0C7785881F45130F00F4EBB6 /* TelephonyUtilitiesSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		DD20DE4327BC90D80093D175 /* SleepDisablerCocoa.h in Headers */ = {isa = PBXBuildFile; fileRef = A3AB6E5F1F3D1E39009C14B1 /* SleepDisablerCocoa.h */; settings = {ATTRIBUTES = (Private, ); }; };
@@ -461,9 +458,6 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
-		07035D3027A9B32E00FB03E4 /* ScreenCaptureKitSPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ScreenCaptureKitSPI.h; sourceTree = "<group>"; };
-		071C00352707EDF000D027C7 /* ReplayKitSoftLink.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = ReplayKitSoftLink.mm; sourceTree = "<group>"; };
-		071C00362707EDF000D027C7 /* ReplayKitSoftLink.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ReplayKitSoftLink.h; sourceTree = "<group>"; };
 		071CFF4E2F0614FB00E07A47 /* pal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = pal.swift; sourceTree = "<group>"; };
 		07611DB4243FA5BE00D80704 /* UsageTrackingSoftLink.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UsageTrackingSoftLink.h; sourceTree = "<group>"; };
 		07611DB5243FA5BF00D80704 /* UsageTrackingSoftLink.mm */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.objcpp; path = UsageTrackingSoftLink.mm; sourceTree = "<group>"; };
@@ -1023,7 +1017,6 @@
 				E34F26F52846B7550076E549 /* PowerLogSPI.h */,
 				5CB898B1286274FA00CA3485 /* QuarantineSPI.h */,
 				0C7785871F45130F00F4EBB6 /* QuickLookMacSPI.h */,
-				07035D3027A9B32E00FB03E4 /* ScreenCaptureKitSPI.h */,
 				71B1141F26823ACD004D6701 /* SystemPreviewSPI.h */,
 				0C7785881F45130F00F4EBB6 /* TelephonyUtilitiesSPI.h */,
 			);
@@ -1238,8 +1231,6 @@
 				5C7C787223AC3E770065F47E /* ManagedConfigurationSoftLink.mm */,
 				4450FC9E21F5F602004DFA56 /* QuickLookSoftLink.h */,
 				4450FC9D21F5F602004DFA56 /* QuickLookSoftLink.mm */,
-				071C00362707EDF000D027C7 /* ReplayKitSoftLink.h */,
-				071C00352707EDF000D027C7 /* ReplayKitSoftLink.mm */,
 				079D1D9526950DD700883577 /* SystemStatusSoftLink.h */,
 				079D1D9626950DD700883577 /* SystemStatusSoftLink.mm */,
 				2E1342CA215AA10A007199D2 /* UIKitSoftLink.h */,
@@ -1585,13 +1576,11 @@
 				DD20DDC127BC90D70093D175 /* QuickLookSoftLink.h in Headers */,
 				DD20DE1827BC90D80093D175 /* QuickLookSPI.h in Headers */,
 				DD20DDC727BC90D70093D175 /* QuickLookUISoftLink.h in Headers */,
-				DD20DDC227BC90D70093D175 /* ReplayKitSoftLink.h in Headers */,
 				DD20DD2327BC90D60093D175 /* RevealSoftLink.h in Headers */,
 				DD20DE0627BC90D80093D175 /* RevealSPI.h in Headers */,
 				41E9EE2628BCA19E006A2298 /* SBSStatusBarSPI.h in Headers */,
 				DD20DE0727BC90D80093D175 /* SceneKitSPI.h in Headers */,
 				DD20DDC827BC90D70093D175 /* ScreenCaptureKitSoftLink.h in Headers */,
-				DD20DE4027BC90D80093D175 /* ScreenCaptureKitSPI.h in Headers */,
 				6D45AA352D026F760002871B /* ScreenTimeSoftLink.h in Headers */,
 				DD20DE0827BC90D80093D175 /* SecKeyProxySPI.h in Headers */,
 				DD20DE0927BC90D80093D175 /* ServersSPI.h in Headers */,
@@ -1858,7 +1847,6 @@
 				F4C85A4E2658551A005B89CC /* QuickLookUISoftLink.mm in Sources */,
 				DD5697F92DC1303C00050321 /* rdar150228472.swift in Sources */,
 				41832D362F16454200103096 /* RegexpHelper.swift in Sources */,
-				071C00372707EDF000D027C7 /* ReplayKitSoftLink.mm in Sources */,
 				F4974EA4265EEA2200B49B8C /* RevealSoftLink.mm in Sources */,
 				07789181273B14FF00E408D1 /* ScreenCaptureKitSoftLink.mm in Sources */,
 				6D45AA372D026F8F0002871B /* ScreenTimeSoftLink.mm in Sources */,

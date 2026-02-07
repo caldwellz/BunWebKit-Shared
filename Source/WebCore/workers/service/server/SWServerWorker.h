@@ -84,7 +84,7 @@ public:
     bool isNotRunning() const { return m_state == State::NotRunning; }
     void setState(State);
 
-    SWServer* server() { return m_server.get(); }
+    SWServer* server() const { return m_server.get(); }
     const ServiceWorkerRegistrationKey& registrationKey() const { return m_registrationKey; }
     RegistrableDomain firstPartyForCookies() const { return m_registrationKey.firstPartyForCookies(); }
     const URL& scriptURL() const { return m_data.scriptURL; }
@@ -177,8 +177,6 @@ private:
     void callTerminationCallbacks();
     void terminateIfPossible();
     bool shouldBeTerminated() const;
-
-    RefPtr<SWServer> protectedServer() const;
 
     WeakPtr<SWServer> m_server;
     ServiceWorkerRegistrationKey m_registrationKey;

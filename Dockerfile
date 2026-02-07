@@ -59,10 +59,10 @@ RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-13 130 \
     --slave /usr/bin/gcc-nm gcc-nm /usr/bin/gcc-nm-13 \
     --slave /usr/bin/gcc-ranlib gcc-ranlib /usr/bin/gcc-ranlib-13
 
-# Install LLVM 19
+# Install LLVM 21
 RUN wget https://apt.llvm.org/llvm.sh \
     && chmod +x llvm.sh \
-    && ./llvm.sh 19 all \
+    && ./llvm.sh 21 all \
     && rm llvm.sh \
     && rm -rf /var/lib/apt/lists/*
 

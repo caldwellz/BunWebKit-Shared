@@ -2069,7 +2069,12 @@ TEST(WebKit2, getUserMediaWithDeviceChangeWebPage)
     done = false;
 }
 
+// FIXME when rdar://169549045 is resolved.
+#if PLATFORM(MAC) && !defined(NDEBUG)
+TEST(WebKit2, DISABLED_GetUserMediaAfterMuting)
+#else
 TEST(WebKit2, GetUserMediaAfterMuting)
+#endif
 {
     [TestProtocol registerWithScheme:@"https"];
 

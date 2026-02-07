@@ -852,6 +852,16 @@ static_assert(IsIncreasing<
     , offsetof(TestObj::Dictionary, requiredBufferSourceValue)
     , offsetof(TestObj::Dictionary, annotatedTypeInUnionMember)
     , offsetof(TestObj::Dictionary, annotatedTypeInSequenceMember)
+    , offsetof(TestObj::Dictionary, integerWithImplementationDefaultValue)
+    , offsetof(TestObj::Dictionary, sequenceWithImplementationDefaultValue)
+    , offsetof(TestObj::Dictionary, dictionaryWithImplementationDefaultValue)
+    , offsetof(TestObj::Dictionary, nullableIntegerWithImplementationDefaultValue)
+    , offsetof(TestObj::Dictionary, nullableNodeWithImplementationDefaultValue)
+    , offsetof(TestObj::Dictionary, integerWithImplementationRequired)
+    , offsetof(TestObj::Dictionary, sequenceWithImplementationRequired)
+    , offsetof(TestObj::Dictionary, dictionaryWithImplementationRequired)
+    , offsetof(TestObj::Dictionary, nullableIntegerWithImplementationRequired)
+    , offsetof(TestObj::Dictionary, nullableNodeWithImplementationRequired)
 >);
 
 IGNORE_WARNINGS_END
@@ -966,6 +976,30 @@ template<> ConversionResult<IDLDictionary<TestObj::Dictionary>> convertDictionar
     auto dictionaryMemberWithDefaultConversionResult = convert<IDLDictionary<TestObj::ParentDictionary>>(lexicalGlobalObject, dictionaryMemberWithDefaultValue);
     if (dictionaryMemberWithDefaultConversionResult.hasException(throwScope)) [[unlikely]]
         return ConversionResultException { };
+    JSValue dictionaryWithImplementationDefaultValueValue;
+    if (isNullOrUndefined)
+        dictionaryWithImplementationDefaultValueValue = jsUndefined();
+    else {
+        dictionaryWithImplementationDefaultValueValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "dictionaryWithImplementationDefaultValue"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    auto dictionaryWithImplementationDefaultValueConversionResult = convert<IDLDictionary<TestObj::ParentDictionary>>(lexicalGlobalObject, dictionaryWithImplementationDefaultValueValue);
+    if (dictionaryWithImplementationDefaultValueConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue dictionaryWithImplementationRequiredValue;
+    if (isNullOrUndefined)
+        dictionaryWithImplementationRequiredValue = jsUndefined();
+    else {
+        dictionaryWithImplementationRequiredValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "dictionaryWithImplementationRequired"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    if (dictionaryWithImplementationRequiredValue.isUndefined()) {
+        throwRequiredMemberTypeError(lexicalGlobalObject, throwScope, "dictionaryWithImplementationRequired"_s, "TestDictionary"_s, "ParentDictionary"_s);
+        return ConversionResultException { };
+    }
+    auto dictionaryWithImplementationRequiredConversionResult = convert<IDLDictionary<TestObj::ParentDictionary>>(lexicalGlobalObject, dictionaryWithImplementationRequiredValue);
+    if (dictionaryWithImplementationRequiredConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
     JSValue enumerationValueWithDefaultValue;
     if (isNullOrUndefined)
         enumerationValueWithDefaultValue = jsUndefined();
@@ -1036,6 +1070,30 @@ template<> ConversionResult<IDLDictionary<TestObj::Dictionary>> convertDictionar
     auto integerWithDefaultConversionResult = convert<IDLLong>(lexicalGlobalObject, integerWithDefaultValue);
     if (integerWithDefaultConversionResult.hasException(throwScope)) [[unlikely]]
         return ConversionResultException { };
+    JSValue integerWithImplementationDefaultValueValue;
+    if (isNullOrUndefined)
+        integerWithImplementationDefaultValueValue = jsUndefined();
+    else {
+        integerWithImplementationDefaultValueValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "integerWithImplementationDefaultValue"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    auto integerWithImplementationDefaultValueConversionResult = convert<IDLLong>(lexicalGlobalObject, integerWithImplementationDefaultValueValue);
+    if (integerWithImplementationDefaultValueConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue integerWithImplementationRequiredValue;
+    if (isNullOrUndefined)
+        integerWithImplementationRequiredValue = jsUndefined();
+    else {
+        integerWithImplementationRequiredValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "integerWithImplementationRequired"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    if (integerWithImplementationRequiredValue.isUndefined()) {
+        throwRequiredMemberTypeError(lexicalGlobalObject, throwScope, "integerWithImplementationRequired"_s, "TestDictionary"_s, "long"_s);
+        return ConversionResultException { };
+    }
+    auto integerWithImplementationRequiredConversionResult = convert<IDLLong>(lexicalGlobalObject, integerWithImplementationRequiredValue);
+    if (integerWithImplementationRequiredConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
     JSValue largeIntegerValue;
     if (isNullOrUndefined)
         largeIntegerValue = jsUndefined();
@@ -1076,6 +1134,30 @@ template<> ConversionResult<IDLDictionary<TestObj::Dictionary>> convertDictionar
     auto nullableIntegerWithDefaultConversionResult = convertOptionalWithDefault<IDLNullable<IDLLong>>(lexicalGlobalObject, nullableIntegerWithDefaultValue, [&] -> ConversionResult<IDLNullable<IDLLong>> { return typename Converter<IDLNullable<IDLLong>>::ReturnType { std::nullopt }; });
     if (nullableIntegerWithDefaultConversionResult.hasException(throwScope)) [[unlikely]]
         return ConversionResultException { };
+    JSValue nullableIntegerWithImplementationDefaultValueValue;
+    if (isNullOrUndefined)
+        nullableIntegerWithImplementationDefaultValueValue = jsUndefined();
+    else {
+        nullableIntegerWithImplementationDefaultValueValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "nullableIntegerWithImplementationDefaultValue"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    auto nullableIntegerWithImplementationDefaultValueConversionResult = convertOptionalWithDefault<IDLNullable<IDLLong>>(lexicalGlobalObject, nullableIntegerWithImplementationDefaultValueValue, [&] -> ConversionResult<IDLNullable<IDLLong>> { return typename Converter<IDLNullable<IDLLong>>::ReturnType { std::nullopt }; });
+    if (nullableIntegerWithImplementationDefaultValueConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue nullableIntegerWithImplementationRequiredValue;
+    if (isNullOrUndefined)
+        nullableIntegerWithImplementationRequiredValue = jsUndefined();
+    else {
+        nullableIntegerWithImplementationRequiredValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "nullableIntegerWithImplementationRequired"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    if (nullableIntegerWithImplementationRequiredValue.isUndefined()) {
+        throwRequiredMemberTypeError(lexicalGlobalObject, throwScope, "nullableIntegerWithImplementationRequired"_s, "TestDictionary"_s, "long"_s);
+        return ConversionResultException { };
+    }
+    auto nullableIntegerWithImplementationRequiredConversionResult = convert<IDLNullable<IDLLong>>(lexicalGlobalObject, nullableIntegerWithImplementationRequiredValue);
+    if (nullableIntegerWithImplementationRequiredConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
     JSValue nullableNodeValue;
     if (isNullOrUndefined)
         nullableNodeValue = jsUndefined();
@@ -1085,6 +1167,30 @@ template<> ConversionResult<IDLDictionary<TestObj::Dictionary>> convertDictionar
     }
     auto nullableNodeConversionResult = convert<IDLNullable<IDLInterface<Node>>>(lexicalGlobalObject, nullableNodeValue);
     if (nullableNodeConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue nullableNodeWithImplementationDefaultValueValue;
+    if (isNullOrUndefined)
+        nullableNodeWithImplementationDefaultValueValue = jsUndefined();
+    else {
+        nullableNodeWithImplementationDefaultValueValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "nullableNodeWithImplementationDefaultValue"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    auto nullableNodeWithImplementationDefaultValueConversionResult = convert<IDLNullable<IDLInterface<Node>>>(lexicalGlobalObject, nullableNodeWithImplementationDefaultValueValue);
+    if (nullableNodeWithImplementationDefaultValueConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue nullableNodeWithImplementationRequiredValue;
+    if (isNullOrUndefined)
+        nullableNodeWithImplementationRequiredValue = jsUndefined();
+    else {
+        nullableNodeWithImplementationRequiredValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "nullableNodeWithImplementationRequired"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    if (nullableNodeWithImplementationRequiredValue.isUndefined()) {
+        throwRequiredMemberTypeError(lexicalGlobalObject, throwScope, "nullableNodeWithImplementationRequired"_s, "TestDictionary"_s, "Node"_s);
+        return ConversionResultException { };
+    }
+    auto nullableNodeWithImplementationRequiredConversionResult = convert<IDLNullable<IDLInterface<Node>>>(lexicalGlobalObject, nullableNodeWithImplementationRequiredValue);
+    if (nullableNodeWithImplementationRequiredConversionResult.hasException(throwScope)) [[unlikely]]
         return ConversionResultException { };
     JSValue nullableStringWithDefaultValue;
     if (isNullOrUndefined)
@@ -1169,6 +1275,30 @@ template<> ConversionResult<IDLDictionary<TestObj::Dictionary>> convertDictionar
     }
     auto sequenceOfStringsConversionResult = convert<IDLOptional<IDLSequence<IDLDOMString>>>(lexicalGlobalObject, sequenceOfStringsValue);
     if (sequenceOfStringsConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue sequenceWithImplementationDefaultValueValue;
+    if (isNullOrUndefined)
+        sequenceWithImplementationDefaultValueValue = jsUndefined();
+    else {
+        sequenceWithImplementationDefaultValueValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "sequenceWithImplementationDefaultValue"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    auto sequenceWithImplementationDefaultValueConversionResult = convertOptionalWithDefault<IDLSequence<IDLDOMString>>(lexicalGlobalObject, sequenceWithImplementationDefaultValueValue, [&] -> ConversionResult<IDLSequence<IDLDOMString>> { return Converter<IDLSequence<IDLDOMString>>::ReturnType { }; });
+    if (sequenceWithImplementationDefaultValueConversionResult.hasException(throwScope)) [[unlikely]]
+        return ConversionResultException { };
+    JSValue sequenceWithImplementationRequiredValue;
+    if (isNullOrUndefined)
+        sequenceWithImplementationRequiredValue = jsUndefined();
+    else {
+        sequenceWithImplementationRequiredValue = object->get(&lexicalGlobalObject, Identifier::fromString(vm, "sequenceWithImplementationRequired"_s));
+        RETURN_IF_EXCEPTION(throwScope, ConversionResultException { });
+    }
+    if (sequenceWithImplementationRequiredValue.isUndefined()) {
+        throwRequiredMemberTypeError(lexicalGlobalObject, throwScope, "sequenceWithImplementationRequired"_s, "TestDictionary"_s, "sequence"_s);
+        return ConversionResultException { };
+    }
+    auto sequenceWithImplementationRequiredConversionResult = convert<IDLSequence<IDLDOMString>>(lexicalGlobalObject, sequenceWithImplementationRequiredValue);
+    if (sequenceWithImplementationRequiredConversionResult.hasException(throwScope)) [[unlikely]]
         return ConversionResultException { };
     JSValue smallIntegerClampedValue;
     if (isNullOrUndefined)
@@ -1388,6 +1518,16 @@ template<> ConversionResult<IDLDictionary<TestObj::Dictionary>> convertDictionar
         requiredBufferSourceValueConversionResult.releaseReturnValue(),
         annotatedTypeInUnionMemberConversionResult.releaseReturnValue(),
         annotatedTypeInSequenceMemberConversionResult.releaseReturnValue(),
+        integerWithImplementationDefaultValueConversionResult.releaseReturnValue(),
+        sequenceWithImplementationDefaultValueConversionResult.releaseReturnValue(),
+        dictionaryWithImplementationDefaultValueConversionResult.releaseReturnValue(),
+        nullableIntegerWithImplementationDefaultValueConversionResult.releaseReturnValue(),
+        nullableNodeWithImplementationDefaultValueConversionResult.releaseReturnValue(),
+        integerWithImplementationRequiredConversionResult.releaseReturnValue(),
+        sequenceWithImplementationRequiredConversionResult.releaseReturnValue(),
+        dictionaryWithImplementationRequiredConversionResult.releaseReturnValue(),
+        nullableIntegerWithImplementationRequiredConversionResult.releaseReturnValue(),
+        nullableNodeWithImplementationRequiredConversionResult.releaseReturnValue(),
     };
 }
 
@@ -1438,6 +1578,12 @@ JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, J
     auto dictionaryMemberWithDefaultValue = toJS<IDLDictionary<TestObj::ParentDictionary>>(lexicalGlobalObject, globalObject, throwScope, dictionary.dictionaryMemberWithDefault);
     RETURN_IF_EXCEPTION(throwScope, { });
     result->putDirect(vm, JSC::Identifier::fromString(vm, "dictionaryMemberWithDefault"_s), dictionaryMemberWithDefaultValue);
+    auto dictionaryWithImplementationDefaultValueValue = toJS<IDLDictionary<TestObj::ParentDictionary>>(lexicalGlobalObject, globalObject, throwScope, dictionary.dictionaryWithImplementationDefaultValue);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "dictionaryWithImplementationDefaultValue"_s), dictionaryWithImplementationDefaultValueValue);
+    auto dictionaryWithImplementationRequiredValue = toJS<IDLDictionary<TestObj::ParentDictionary>>(lexicalGlobalObject, globalObject, throwScope, dictionary.dictionaryWithImplementationRequired);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "dictionaryWithImplementationRequired"_s), dictionaryWithImplementationRequiredValue);
     auto enumerationValueWithDefaultValue = toJS<IDLEnumeration<TestObj::EnumType>>(lexicalGlobalObject, throwScope, dictionary.enumerationValueWithDefault);
     RETURN_IF_EXCEPTION(throwScope, { });
     result->putDirect(vm, JSC::Identifier::fromString(vm, "enumerationValueWithDefault"_s), enumerationValueWithDefaultValue);
@@ -1463,6 +1609,12 @@ JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, J
     auto integerWithDefaultValue = toJS<IDLLong>(lexicalGlobalObject, throwScope, dictionary.integerWithDefault);
     RETURN_IF_EXCEPTION(throwScope, { });
     result->putDirect(vm, JSC::Identifier::fromString(vm, "integerWithDefault"_s), integerWithDefaultValue);
+    auto integerWithImplementationDefaultValueValue = toJS<IDLLong>(lexicalGlobalObject, throwScope, dictionary.integerWithImplementationDefaultValue);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "integerWithImplementationDefaultValue"_s), integerWithImplementationDefaultValueValue);
+    auto integerWithImplementationRequiredValue = toJS<IDLLong>(lexicalGlobalObject, throwScope, dictionary.integerWithImplementationRequired);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "integerWithImplementationRequired"_s), integerWithImplementationRequiredValue);
     if (!IDLLongLong::isNullValue(dictionary.largeInteger)) {
         auto largeIntegerValue = toJS<IDLLongLong>(lexicalGlobalObject, throwScope, IDLLongLong::extractValueFromNullable(dictionary.largeInteger));
         RETURN_IF_EXCEPTION(throwScope, { });
@@ -1477,9 +1629,21 @@ JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, J
     auto nullableIntegerWithDefaultValue = toJS<IDLNullable<IDLLong>>(lexicalGlobalObject, throwScope, dictionary.nullableIntegerWithDefault);
     RETURN_IF_EXCEPTION(throwScope, { });
     result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableIntegerWithDefault"_s), nullableIntegerWithDefaultValue);
+    auto nullableIntegerWithImplementationDefaultValueValue = toJS<IDLNullable<IDLLong>>(lexicalGlobalObject, throwScope, dictionary.nullableIntegerWithImplementationDefaultValue);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableIntegerWithImplementationDefaultValue"_s), nullableIntegerWithImplementationDefaultValueValue);
+    auto nullableIntegerWithImplementationRequiredValue = toJS<IDLNullable<IDLLong>>(lexicalGlobalObject, throwScope, dictionary.nullableIntegerWithImplementationRequired);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableIntegerWithImplementationRequired"_s), nullableIntegerWithImplementationRequiredValue);
     auto nullableNodeValue = toJS<IDLNullable<IDLInterface<Node>>>(lexicalGlobalObject, globalObject, throwScope, dictionary.nullableNode);
     RETURN_IF_EXCEPTION(throwScope, { });
     result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableNode"_s), nullableNodeValue);
+    auto nullableNodeWithImplementationDefaultValueValue = toJS<IDLNullable<IDLInterface<Node>>>(lexicalGlobalObject, globalObject, throwScope, dictionary.nullableNodeWithImplementationDefaultValue);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableNodeWithImplementationDefaultValue"_s), nullableNodeWithImplementationDefaultValueValue);
+    auto nullableNodeWithImplementationRequiredValue = toJS<IDLNullable<IDLInterface<Node>>>(lexicalGlobalObject, globalObject, throwScope, dictionary.nullableNodeWithImplementationRequired);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableNodeWithImplementationRequired"_s), nullableNodeWithImplementationRequiredValue);
     auto nullableStringWithDefaultValue = toJS<IDLNullable<IDLDOMString>>(lexicalGlobalObject, throwScope, dictionary.nullableStringWithDefault);
     RETURN_IF_EXCEPTION(throwScope, { });
     result->putDirect(vm, JSC::Identifier::fromString(vm, "nullableStringWithDefault"_s), nullableStringWithDefaultValue);
@@ -1510,6 +1674,12 @@ JSC::JSObject* convertDictionaryToJS(JSC::JSGlobalObject& lexicalGlobalObject, J
         RETURN_IF_EXCEPTION(throwScope, { });
         result->putDirect(vm, JSC::Identifier::fromString(vm, "sequenceOfStrings"_s), sequenceOfStringsValue);
     }
+    auto sequenceWithImplementationDefaultValueValue = toJS<IDLSequence<IDLDOMString>>(lexicalGlobalObject, globalObject, throwScope, dictionary.sequenceWithImplementationDefaultValue);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "sequenceWithImplementationDefaultValue"_s), sequenceWithImplementationDefaultValueValue);
+    auto sequenceWithImplementationRequiredValue = toJS<IDLSequence<IDLDOMString>>(lexicalGlobalObject, globalObject, throwScope, dictionary.sequenceWithImplementationRequired);
+    RETURN_IF_EXCEPTION(throwScope, { });
+    result->putDirect(vm, JSC::Identifier::fromString(vm, "sequenceWithImplementationRequired"_s), sequenceWithImplementationRequiredValue);
     if (!IDLClampAdaptor<IDLByte>::isNullValue(dictionary.smallIntegerClamped)) {
         auto smallIntegerClampedValue = toJS<IDLClampAdaptor<IDLByte>>(lexicalGlobalObject, throwScope, IDLClampAdaptor<IDLByte>::extractValueFromNullable(dictionary.smallIntegerClamped));
         RETURN_IF_EXCEPTION(throwScope, { });

@@ -405,7 +405,7 @@ void RenderBlockFlow::computeColumnCountAndWidth()
     LayoutUnit desiredColumnWidth = contentBoxLogicalWidth();
 
     // For now, we don't support multi-column layouts when printing, since we have to do a lot of work for proper pagination.
-    if (protectedDocument()->paginated() || (style().columnCount().isAuto() && style().columnWidth().isAuto()) || !style().hasInlineColumnAxis()) {
+    if (protect(document())->paginated() || (style().columnCount().isAuto() && style().columnWidth().isAuto()) || !style().hasInlineColumnAxis()) {
         setComputedColumnCountAndWidth(desiredColumnCount, desiredColumnWidth);
         return;
     }
@@ -1239,7 +1239,7 @@ void RenderBlockFlow::adjustOutOfFlowBlock(RenderBox& child, const MarginInfo& m
         logicalTop += collapsedBeforePos - collapsedBeforeNeg;
     }
 
-    RenderLayer* childLayer = child.layer();
+    CheckedPtr childLayer = child.layer();
     if (childLayer->staticBlockPosition() != logicalTop) {
         childLayer->setStaticBlockPosition(logicalTop);
         if (hasStaticBlockPosition)
@@ -3758,7 +3758,7 @@ PositionWithAffinity RenderBlockFlow::positionForPointWithInlineChildren(const L
         }
     }
 
-    bool moveCaretToBoundary = protectedFrame()->protectedEditor()->behavior().shouldMoveCaretToHorizontalBoundaryWhenPastTopOrBottom();
+    bool moveCaretToBoundary = protect(protectedFrame()->editor())->behavior().shouldMoveCaretToHorizontalBoundaryWhenPastTopOrBottom();
 
     if (!moveCaretToBoundary && !closestBox && lastLineBoxWithChildren) {
         // y coordinate is below last root line box, pretend we hit it
@@ -3921,7 +3921,7 @@ void RenderBlockFlow::invalidateLineLayout(InvalidationReason invalidationReason
 
     switch (invalidationReason) {
     case InvalidationReason::InternalMove:
-        if (AXObjectCache* cache = protectedDocument()->existingAXObjectCache())
+        if (AXObjectCache* cache = protect(document())->existingAXObjectCache())
             cache->deferRecomputeIsIgnored(protectedElement().get());
         break;
     case InvalidationReason::ContentChange: {
@@ -3995,6 +3995,7 @@ bool RenderBlockFlow::layoutSimpleBlockContentInInline(MarginInfo& marginInfo)
             return false;
         blockRenderer->setLogicalTop(logicalTop);
     }
+    inlineLayout()->updateOverflow();
     return true;
 }
 
@@ -4114,7 +4115,7 @@ RenderBlockFlow::InlineContentStatus RenderBlockFlow::markInlineContentDirtyForL
             renderer.clearNeedsLayout();
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
-        if (CheckedPtr cache = protectedDocument()->existingAXObjectCache())
+        if (CheckedPtr cache = protect(document())->existingAXObjectCache())
             cache->onTextRunsChanged(renderer);
 #endif
 
@@ -4244,7 +4245,7 @@ void RenderBlockFlow::layoutInlineContent(RelayoutChildren relayoutChildren, Lay
     setLogicalHeight(borderBoxLogicalHeight);
     updateRepaintTopAndBottomAfterLayout(relayoutChildren, partialRepaintRect, oldContentTopAndBottomIncludingInkOverflow, repaintLogicalTop, repaintLogicalBottom);
 
-    if (CheckedPtr cache = protectedDocument()->existingAXObjectCache())
+    if (CheckedPtr cache = protect(document())->existingAXObjectCache())
         cache->onLaidOutInlineContent(*this);
 }
 
@@ -4267,16 +4268,16 @@ void RenderBlockFlow::setStaticPositionsForSimpleOutOfFlowContent()
 
     for (auto walker = InlineWalker(*this); !walker.atEnd(); walker.advance()) {
         auto& renderer = downcast<RenderBox>(*walker.current());
-        auto& layer = *renderer.layer();
+        CheckedRef layer = *renderer.layer();
 
         ASSERT(renderer.isOutOfFlowPositioned());
 
-        auto previousStaticPosition = LayoutPoint { layer.staticInlinePosition(), layer.staticBlockPosition() };
+        auto previousStaticPosition = LayoutPoint { layer->staticInlinePosition(), layer->staticBlockPosition() };
         auto delta = staticPosition - previousStaticPosition;
         auto hasStaticInlinePositioning = renderer.style().hasStaticInlinePosition(isHorizontalWritingMode());
 
-        layer.setStaticInlinePosition(staticPosition.x());
-        layer.setStaticBlockPosition(staticPosition.y());
+        layer->setStaticInlinePosition(staticPosition.x());
+        layer->setStaticBlockPosition(staticPosition.y());
 
         if (!delta.isZero() && hasStaticInlinePositioning)
             renderer.setChildNeedsLayout(MarkOnlyThis);
@@ -4434,7 +4435,7 @@ void RenderBlockFlow::adjustComputedFontSizes(float size, float visibleWidth)
             float candidateNewSize = roundf(std::min(minFontSize, specifiedSize * lineTextMultiplier));
 
             if (candidateNewSize > specifiedSize && candidateNewSize != fontDescription.computedSize() && text.textNode() && oldStyle.textSizeAdjust().isAuto())
-                protectedDocument()->textAutoSizing().addTextNode(*text.protectedTextNode(), candidateNewSize);
+                protect(document())->textAutoSizing().addTextNode(*text.protectedTextNode(), candidateNewSize);
         }
 
         descendant = RenderObjectTraversal::nextSkippingChildren(text, this);

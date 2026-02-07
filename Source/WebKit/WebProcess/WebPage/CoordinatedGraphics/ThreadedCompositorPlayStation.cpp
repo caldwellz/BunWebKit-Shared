@@ -27,7 +27,7 @@
 #include "ThreadedCompositorPlayStation.h"
 
 #if USE(COORDINATED_GRAPHICS)
-#include "AcceleratedSurface.h"
+#include "AcceleratedSurfacePlayStation.h"
 #include "CompositingRunLoop.h"
 #include "CoordinatedSceneState.h"
 #include "LayerTreeHostPlayStation.h"

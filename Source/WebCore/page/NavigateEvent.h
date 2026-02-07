@@ -61,16 +61,16 @@ class NavigateEvent final : public Event {
 public:
     struct Init : EventInit {
         NavigationNavigationType navigationType { NavigationNavigationType::Push };
-        RefPtr<NavigationDestination> destination;
-        RefPtr<AbortSignal> signal;
-        RefPtr<DOMFormData> formData;
-        String downloadRequest;
-        JSC::JSValue info;
-        RefPtr<Element> sourceElement;
+        Ref<NavigationDestination> destination;
         bool canIntercept { false };
         bool userInitiated { false };
         bool hashChange { false };
+        Ref<AbortSignal> signal;
+        RefPtr<DOMFormData> formData;
+        String downloadRequest;
+        JSC::JSValue info;
         bool hasUAVisualTransition { false };
+        RefPtr<Element> sourceElement;
     };
 
     enum class NavigationFocusReset : bool {

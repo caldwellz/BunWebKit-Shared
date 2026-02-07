@@ -50,8 +50,7 @@ DownloadManager::~DownloadManager() = default;
 
 void DownloadManager::startDownload(PAL::SessionID sessionID, DownloadID downloadID, const ResourceRequest& request, const std::optional<WebCore::SecurityOriginData>& topOrigin, std::optional<NavigatingToAppBoundDomain> isNavigatingToAppBoundDomain, const String& suggestedName, FromDownloadAttribute fromDownloadAttribute, std::optional<WebCore::FrameIdentifier> frameID, std::optional<WebCore::PageIdentifier> pageID, std::optional<WebCore::ProcessIdentifier> webProcessID)
 {
-    Ref client = m_client.get();
-    CheckedPtr networkSession = client->networkSession(sessionID);
+    CheckedPtr networkSession = m_client->networkSession(sessionID);
     if (!networkSession)
         return;
 
@@ -65,11 +64,11 @@ void DownloadManager::startDownload(PAL::SessionID sessionID, DownloadID downloa
     parameters.isNavigatingToAppBoundDomain = isNavigatingToAppBoundDomain;
     if (request.url().protocolIsBlob()) {
         parameters.topOrigin = topOrigin ? topOrigin->securityOrigin().ptr() : nullptr;
-        parameters.blobFileReferences = client->networkSession(sessionID)->blobRegistry().filesInBlob(request.url(), topOrigin);
+        parameters.blobFileReferences = m_client->networkSession(sessionID)->blobRegistry().filesInBlob(request.url(), topOrigin);
     }
     parameters.storedCredentialsPolicy = sessionID.isEphemeral() ? StoredCredentialsPolicy::DoNotUse : StoredCredentialsPolicy::Use;
 
-    m_pendingDownloads.add(downloadID, PendingDownload::create(client->protectedParentProcessConnectionForDownloads().get(), WTF::move(parameters), downloadID, *networkSession, suggestedName, fromDownloadAttribute, webProcessID));
+    m_pendingDownloads.add(downloadID, PendingDownload::create(protect(m_client->parentProcessConnectionForDownloads()).get(), WTF::move(parameters), downloadID, *networkSession, suggestedName, fromDownloadAttribute, webProcessID));
 }
 
 void DownloadManager::dataTaskBecameDownloadTask(DownloadID downloadID, Ref<Download>&& download)
@@ -88,7 +87,7 @@ void DownloadManager::dataTaskBecameDownloadTask(DownloadID downloadID, Ref<Down
 void DownloadManager::convertNetworkLoadToDownload(DownloadID downloadID, Ref<NetworkLoad>&& networkLoad, ResponseCompletionHandler&& completionHandler, Vector<Ref<WebCore::BlobDataFileReference>>&& blobFileReferences, const ResourceRequest& request, const ResourceResponse& response)
 {
     ASSERT(!m_pendingDownloads.contains(downloadID));
-    m_pendingDownloads.add(downloadID, PendingDownload::create(protectedClient()->protectedParentProcessConnectionForDownloads().get(), WTF::move(networkLoad), WTF::move(completionHandler), downloadID, request, response));
+    m_pendingDownloads.add(downloadID, PendingDownload::create(protect(m_client->parentProcessConnectionForDownloads()).get(), WTF::move(networkLoad), WTF::move(completionHandler), downloadID, request, response));
 }
 
 void DownloadManager::downloadDestinationDecided(DownloadID downloadID, Ref<NetworkDataTask>&& networkDataTask)
@@ -102,7 +101,7 @@ void DownloadManager::resumeDownload(PAL::SessionID sessionID, DownloadID downlo
 #if !PLATFORM(COCOA)
     notImplemented();
 #else
-    CheckedPtr networkSession = protectedClient()->networkSession(sessionID);
+    CheckedPtr networkSession = m_client->networkSession(sessionID);
     if (!networkSession)
         return;
     Ref download = Download::create(*this, downloadID, nullptr, *networkSession);
@@ -167,32 +166,22 @@ void DownloadManager::downloadFinished(Download& download)
 
 void DownloadManager::didCreateDownload()
 {
-    protectedClient()->didCreateDownload();
+    m_client->didCreateDownload();
 }
 
 void DownloadManager::didDestroyDownload()
 {
-    protectedClient()->didDestroyDownload();
+    m_client->didDestroyDownload();
 }
 
 IPC::Connection* DownloadManager::downloadProxyConnection()
 {
-    return protectedClient()->downloadProxyConnection();
+    return m_client->downloadProxyConnection();
 }
 
 AuthenticationManager& DownloadManager::downloadsAuthenticationManager()
 {
-    return protectedClient()->downloadsAuthenticationManager();
-}
-
-RefPtr<IPC::Connection> DownloadManager::Client::protectedParentProcessConnectionForDownloads()
-{
-    return parentProcessConnectionForDownloads();
-}
-
-Ref<AuthenticationManager> WebKit::DownloadManager::Client::protectedDownloadsAuthenticationManager()
-{
-    return downloadsAuthenticationManager();
+    return m_client->downloadsAuthenticationManager();
 }
 
 void DownloadManager::applicationDidEnterBackground()

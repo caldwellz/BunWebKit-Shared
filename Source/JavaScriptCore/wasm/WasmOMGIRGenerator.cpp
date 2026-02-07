@@ -100,8 +100,6 @@ void dumpProcedure(void* ptr)
     proc->dump(WTF::dataFile());
 }
 
-#if USE(JSVALUE64)
-
 namespace JSC { namespace Wasm {
 
 using namespace B3;
@@ -914,7 +912,7 @@ private:
     void emitExceptionCheck(CCallHelpers&, Origin, ExceptionType);
 
     void emitWriteBarrierForJSWrapper();
-    void emitWriteBarrier(Value* cell, Value* instanceCell);
+    void emitWriteBarrier(Value* cell);
     Value* emitCheckAndPreparePointer(Value* pointer, uint32_t offset, uint32_t sizeOfOp);
     B3::Kind memoryKind(B3::Opcode memoryOp);
     Value* emitLoadOp(LoadOpType, Value* pointer, uint32_t offset);
@@ -1081,12 +1079,18 @@ private:
     bool m_hasExceptionHandlers;
 
     Value* m_instanceValue { nullptr };
+    MemoryValue* m_vmValue { nullptr };
     Value* m_baseMemoryValue { nullptr };
     Value* m_boundsCheckingSizeValue { nullptr };
 
     Value* instanceValue()
     {
         return m_instanceValue;
+    }
+
+    Value* vmValue()
+    {
+        return m_vmValue;
     }
 
     Value* baseMemoryValue()
@@ -1208,6 +1212,7 @@ OMGIRGenerator::OMGIRGenerator(AbstractHeapRepository& heaps, CompilationContext
     m_rootBlocks.append({ m_proc.addBlock(), m_info.usesSIMD(m_functionIndex) });
     m_currentBlock = m_rootBlocks[0].block;
     m_instanceValue = rootCaller.m_instanceValue;
+    m_vmValue = rootCaller.m_vmValue;
     m_baseMemoryValue = rootCaller.m_baseMemoryValue;
     m_boundsCheckingSizeValue = rootCaller.m_boundsCheckingSizeValue;
     if (parentCaller.m_hasExceptionHandlers)
@@ -1272,6 +1277,10 @@ OMGIRGenerator::OMGIRGenerator(AbstractHeapRepository& heaps, CompilationContext
         getInstance->resultConstraints = { ValueRep::reg(GPRInfo::wasmContextInstancePointer) };
         getInstance->setGenerator([=] (CCallHelpers&, const B3::StackmapGenerationParams&) { });
         m_instanceValue = getInstance;
+        m_vmValue = m_topLevelBlock->appendNew<MemoryValue>(m_proc, Load, pointerType(), origin(), instanceValue(), safeCast<int32_t>(JSWebAssemblyInstance::offsetOfVM()));
+        m_heaps.decorateMemory(&m_heaps.JSWebAssemblyInstance_vm, m_vmValue);
+        m_vmValue->setControlDependent(false);
+        m_vmValue->setReadsMutability(B3::Mutability::Immutable);
 
         if (!!m_info.memory) {
             if (useSignalingMemory() || m_info.memory.isShared()) {
@@ -2232,10 +2241,7 @@ auto OMGIRGenerator::setGlobal(uint32_t index, ExpressionType value) -> PartialR
             Value* cellState = m_currentBlock->appendNew<MemoryValue>(m_proc, Load8Z, Int32, origin(), cell, safeCast<int32_t>(JSCell::cellStateOffset()));
             m_heaps.decorateMemory(&m_heaps.JSCell_cellState, cellState);
 
-            auto* vm = m_currentBlock->appendNew<MemoryValue>(m_proc, Load, pointerType(), origin(), instanceValue(), safeCast<int32_t>(JSWebAssemblyInstance::offsetOfVM()));
-            m_heaps.decorateMemory(&m_heaps.JSWebAssemblyInstance_vm, vm);
-            vm->setControlDependent(false);
-
+            auto* vm = vmValue();
             Value* threshold = m_currentBlock->appendNew<MemoryValue>(m_proc, Load, Int32, origin(), vm, safeCast<int32_t>(VM::offsetOfHeapBarrierThreshold()));
             m_heaps.decorateMemory(&m_heaps.VM_heap_barrierThreshold, threshold);
 
@@ -2290,18 +2296,15 @@ auto OMGIRGenerator::setGlobal(uint32_t index, ExpressionType value) -> PartialR
 
 inline void OMGIRGenerator::emitWriteBarrierForJSWrapper()
 {
-    emitWriteBarrier(instanceValue(), instanceValue());
+    emitWriteBarrier(instanceValue());
 }
 
-inline void OMGIRGenerator::emitWriteBarrier(Value* cell, Value* instanceCell)
+inline void OMGIRGenerator::emitWriteBarrier(Value* cell)
 {
     Value* cellState = m_currentBlock->appendNew<MemoryValue>(m_proc, Load8Z, Int32, origin(), cell, safeCast<int32_t>(JSCell::cellStateOffset()));
     m_heaps.decorateMemory(&m_heaps.JSCell_cellState, cellState);
 
-    auto* vm = m_currentBlock->appendNew<MemoryValue>(m_proc, Load, pointerType(), origin(), instanceCell, safeCast<int32_t>(JSWebAssemblyInstance::offsetOfVM()));
-    m_heaps.decorateMemory(&m_heaps.JSWebAssemblyInstance_vm, vm);
-    vm->setControlDependent(false);
-
+    auto* vm = vmValue();
     Value* threshold = m_currentBlock->appendNew<MemoryValue>(m_proc, Load, Int32, origin(), vm, safeCast<int32_t>(VM::offsetOfHeapBarrierThreshold()));
     m_heaps.decorateMemory(&m_heaps.VM_heap_barrierThreshold, threshold);
 
@@ -3642,7 +3645,7 @@ bool OMGIRGenerator::emitArraySetUncheckedWithoutWriteBarrier(uint32_t typeIndex
 void OMGIRGenerator::emitArraySetUnchecked(uint32_t typeIndex, Value* arrayref, Value* index, Value* setValue)
 {
     if (emitArraySetUncheckedWithoutWriteBarrier(typeIndex, arrayref, index, setValue))
-        emitWriteBarrier(pointerOfWasmRef(arrayref), instanceValue());
+        emitWriteBarrier(pointerOfWasmRef(arrayref));
 }
 
 
@@ -3916,7 +3919,7 @@ auto OMGIRGenerator::addStructSet(TypedExpression structReference, const StructT
 
     bool needsWriteBarrier = emitStructSet(canTrap, structValue, fieldIndex, structType, rtt, valueValue);
     if (needsWriteBarrier)
-        emitWriteBarrier(pointerOfWasmRef(structValue), instanceValue());
+        emitWriteBarrier(pointerOfWasmRef(structValue));
     return { };
 }
 
@@ -4121,10 +4124,7 @@ void OMGIRGenerator::mutatorFence()
     auto* slowPath = m_proc.addBlock();
     auto* continuation = m_proc.addBlock();
 
-    auto* vm = m_currentBlock->appendNew<MemoryValue>(m_proc, Load, pointerType(), origin(), instanceValue(), safeCast<int32_t>(JSWebAssemblyInstance::offsetOfVM()));
-    m_heaps.decorateMemory(&m_heaps.JSWebAssemblyInstance_vm, vm);
-    vm->setControlDependent(false);
-
+    auto* vm = vmValue();
     Value* shouldFence = m_currentBlock->appendNew<MemoryValue>(m_proc, Load8Z, Int32, origin(), vm, safeCast<int32_t>(VM::offsetOfHeapMutatorShouldBeFenced()));
     m_heaps.decorateMemory(&m_heaps.VM_heap_mutatorShouldBeFenced, shouldFence);
 
@@ -6428,7 +6428,7 @@ Expected<std::unique_ptr<InternalFunction>, String> parseAndCompileOMG(Compilati
         ionGraphFunction = JSON::Object::create();
         auto passes = JSON::Array::create();
         ionGraphPasses = passes.get();
-        ionGraphFunction->setString("name"_s, makeString(IndexOrName(functionIndexSpace, info.nameSection->get(functionIndexSpace))));
+        ionGraphFunction->setString("name"_s, callee.nameWithHash());
         ionGraphFunction->setArray("passes"_s, WTF::move(passes));
     }
     auto result = makeUnique<InternalFunction>();
@@ -7002,5 +7002,4 @@ auto OMGIRGenerator::addI64TruncUF32(ExpressionType argVar, ExpressionType& resu
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 
-#endif // USE(JSVALUE64)
 #endif // ENABLE(WEBASSEMBLY_OMGJIT)

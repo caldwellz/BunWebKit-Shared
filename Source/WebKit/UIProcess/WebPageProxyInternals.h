@@ -175,7 +175,6 @@ struct SpeechSynthesisData {
     CompletionHandler<void()> speakingPausedCompletionHandler;
     CompletionHandler<void()> speakingResumedCompletionHandler;
 
-    Ref<WebCore::PlatformSpeechSynthesizer> protectedSynthesizer() { return synthesizer; }
 };
 #endif
 
@@ -457,9 +456,13 @@ public:
 #endif
 
     // WebPopupMenuProxy::Client
+#if !PLATFORM(IOS_FAMILY)
     void valueChangedForPopupMenu(WebPopupMenuProxy*, int32_t newSelectedIndex) final;
-    void setTextFromItemForPopupMenu(WebPopupMenuProxy*, int32_t index) final;
     NativeWebMouseEvent* currentlyProcessedMouseDownEvent() final;
+#endif
+#if !PLATFORM(COCOA)
+    void setTextFromItemForPopupMenu(WebPopupMenuProxy*, int32_t index) final;
+#endif
 #if PLATFORM(GTK)
     void failedToShowPopupMenu() final;
 #endif
@@ -520,12 +523,8 @@ public:
     RetainPtr<CocoaView> platformView() const final;
 #endif
 
-    Ref<PageLoadState> protectedPageLoadState() { return pageLoadState; }
-    Ref<WebNotificationManagerMessageHandler> protectedNotificationManagerMessageHandler() { return notificationManagerMessageHandler; }
 #if ENABLE(WINDOW_PROXY_PROPERTY_ACCESS_NOTIFICATION)
-    RefPtr<WebPageProxyFrameLoadStateObserver> protectedFrameLoadStateObserver() { return frameLoadStateObserver; }
 #endif
-    Ref<GeolocationPermissionRequestManagerProxy> protectedGeolocationPermissionRequestManager() { return geolocationPermissionRequestManager; }
 
     std::optional<WebCore::SecurityOriginData> openerOrigin;
 };

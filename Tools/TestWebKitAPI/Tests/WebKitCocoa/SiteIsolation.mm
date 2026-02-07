@@ -810,6 +810,33 @@ TEST(SiteIsolation, NavigationAfterWindowOpen)
         Util::spinRunLoop();
 }
 
+TEST(SiteIsolation, CrossSiteIFrameWindowOpensMainFrameSite)
+{
+    HTTPServer server({
+        { "/example"_s, { "<iframe src='https://webkit.org/iframe'></iframe>"_s } },
+        { "/iframe"_s, { "<script>w = window.open('https://example.com/opened')</script>"_s } },
+        { "/opened"_s, { "hi"_s } }
+    }, HTTPServer::Protocol::HttpsProxy);
+
+    auto [opener, opened] = openerAndOpenedViews(server);
+
+    checkFrameTreesInProcesses(opener.webView.get(), {
+        { // example.com process
+            "https://example.com"_s, // Main frame
+            Vector<ExpectedFrameTree> { { RemoteFrame } } // Child frame
+        },
+        { // webkit.org process
+            RemoteFrame, // Main frame
+            Vector<ExpectedFrameTree> { { "https://webkit.org"_s } } // Child frame
+        }
+    });
+
+    checkFrameTreesInProcesses(opened.webView.get(), {
+        { RemoteFrame },
+        { "https://example.com"_s }
+    });
+}
+
 TEST(SiteIsolation, OpenBeforeInitialLoad)
 {
     HTTPServer server({
@@ -3931,7 +3958,7 @@ TEST(SiteIsolation, ValidateSessionRestoreWithoutNavigating)
     EXPECT_TRUE([newIsolatedSessionState isEqualForTesting:normalSessionState.get()]);
 }
 
-TEST(SiteIsolation, DiscardUncachedBackItemForNavigatedOverIframe)
+TEST(SiteIsolation, BackNavigationOverCrossSiteIframeWithoutBFCache)
 {
     HTTPServer server({
         { "/example"_s, { "<iframe src='https://webkit.org/a'></iframe>"_s } },
@@ -3956,7 +3983,7 @@ TEST(SiteIsolation, DiscardUncachedBackItemForNavigatedOverIframe)
     EXPECT_WK_STREQ("c", [webView _test_waitForAlert]);
 
     [webView goBack];
-    EXPECT_WK_STREQ("a", [webView _test_waitForAlert]);
+    EXPECT_WK_STREQ("b", [webView _test_waitForAlert]);
 }
 
 TEST(SiteIsolation, ProtocolProcessSeparation)
@@ -6546,6 +6573,55 @@ TEST(SiteIsolation, SharedProcessWithResourceLoadStatistics)
     });
 }
 
+TEST(SiteIsolation, PartitionWebProcessCache)
+{
+    HTTPServer server({
+        { "/empty"_s, { ""_s } },
+        { "/first"_s, { "<!DOCTYPE html><iframe src='https://webkit.org/webkit'></iframe>"_s } },
+        { "/second"_s, { "<!DOCTYPE html><iframe src='https://example.com/empty'></iframe>"_s } },
+        { "/webkit"_s, { "webkit"_s } },
+    }, HTTPServer::Protocol::HttpsProxy);
+
+    auto [webView, navigationDelegate] = siteIsolatedViewWithSharedProcess(server, EnableProcessCache::Yes);
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/first"]]];
+    [navigationDelegate waitForDidFinishNavigation];
+
+    checkFrameTreesInProcesses(webView.get(), {
+        {
+            "https://example.com"_s,
+            { { RemoteFrame } }
+        },
+        {
+            RemoteFrame,
+            { { "https://webkit.org"_s } }
+        },
+    });
+    auto mainFrameProcess = [webView mainFrame].info._processIdentifier;
+    auto childFrameProcess = [webView mainFrame].childFrames[0].info._processIdentifier;
+    EXPECT_NE(childFrameProcess, mainFrameProcess);
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example2.com/second"]]];
+    [navigationDelegate waitForDidFinishNavigation];
+
+    checkFrameTreesInProcesses(webView.get(), {
+        {
+            "https://example2.com"_s,
+            { { RemoteFrame } }
+        },
+        {
+            RemoteFrame,
+            { { "https://example.com"_s } }
+        },
+    });
+    auto mainFrameProcessB = [webView mainFrame].info._processIdentifier;
+    auto childFrameProcessB = [webView mainFrame].childFrames[0].info._processIdentifier;
+    EXPECT_NE(mainFrameProcessB, mainFrameProcess);
+    EXPECT_NE(childFrameProcessB, childFrameProcess);
+
+    EXPECT_NE(mainFrameProcess, childFrameProcessB);
+}
+
+
 #if PLATFORM(MAC)
 
 TEST(SiteIsolation, SharedProcessAfterClick)
@@ -7206,11 +7282,6 @@ TEST(SiteIsolation, StatusBarVisibility)
     auto [opener, opened] = openerAndOpenedViews(server);
     NSString *statusBarVisible = @"window.statusbar.visible";
     EXPECT_TRUE([[opener.webView objectByEvaluatingJavaScript:statusBarVisible] boolValue]);
-    EXPECT_FALSE([[opened.webView objectByEvaluatingJavaScript:statusBarVisible] boolValue]);
-    EXPECT_FALSE([[opened.webView objectByEvaluatingJavaScript:statusBarVisible inFrame:[opened.webView firstChildFrame]] boolValue]);
-    EXPECT_TRUE([opener.webView _statusBarIsVisible]);
-    EXPECT_FALSE([opened.webView _statusBarIsVisible]);
-    [opened.webView _setStatusBarIsVisible:YES];
     EXPECT_TRUE([[opened.webView objectByEvaluatingJavaScript:statusBarVisible] boolValue]);
     EXPECT_TRUE([[opened.webView objectByEvaluatingJavaScript:statusBarVisible inFrame:[opened.webView firstChildFrame]] boolValue]);
 }

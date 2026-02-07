@@ -113,7 +113,7 @@ inline const URL& Document::maskedURLForBindingsIfNeeded(const URL& url) const
 
 inline URL Element::getURLAttributeForBindings(const QualifiedName& name) const
 {
-    return protectedDocument()->maskedURLForBindingsIfNeeded(getURLAttribute(name));
+    return protect(document())->maskedURLForBindingsIfNeeded(getURLAttribute(name));
 }
 
 inline bool Element::hasAttributesWithoutUpdate() const

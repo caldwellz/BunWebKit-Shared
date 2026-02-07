@@ -35,7 +35,6 @@ class HTMLImageElement;
 class HTMLVideoElement;
 class RegistrableDomain;
 enum class BroadcastFocusedElement : bool;
-enum class CookieConsentDecisionResult : uint8_t;
 enum class DidFilterLinkDecoration : bool;
 enum class IsLoggedIn : uint8_t;
 enum class PointerLockRequestResult : uint8_t;
@@ -99,10 +98,7 @@ private:
 
     void reportProcessCPUTime(Seconds, WebCore::ActivityStateForCPUSampling) final;
 
-    bool toolbarsVisible() const final;
-    bool statusbarVisible() const final;
-    bool scrollbarsVisible() const final;
-    bool menubarVisible() const final;
+    bool isPopup() const final;
     
     void setResizable(bool) final;
     
@@ -304,7 +300,7 @@ private:
     RefPtr<WebCore::ScrollingCoordinator> createScrollingCoordinator(WebCore::Page&) const final;
 #endif
 
-#if PLATFORM(MAC)
+#if PLATFORM(MAC) || USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
     void ensureScrollbarsController(WebCore::Page&, WebCore::ScrollableArea&, bool update = false) const final;
 #endif
 
@@ -521,8 +517,6 @@ private:
     void beginSystemPreview(const URL&, const WebCore::SecurityOriginData& topOrigin, const WebCore::SystemPreviewInfo&, CompletionHandler<void()>&&) final;
 #endif
 
-    void requestCookieConsent(CompletionHandler<void(WebCore::CookieConsentDecisionResult)>&&) final;
-    
     bool isUsingUISideCompositing() const;
 
     bool isInStableState() const final;

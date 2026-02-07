@@ -321,6 +321,10 @@ struct TextUnderElementMode {
     DescendIntoContainers descendIntoContainers { DescendIntoContainers::No };
     TrimWhitespace trimWhitespace { TrimWhitespace::Yes };
     CheckedPtr<Node> ignoredChildNode { nullptr };
+    // Tracks nodes that have already been referenced via aria-labelledby during
+    // the current name computation. These nodes should be skipped when encountered
+    // directly in the tree to avoid double-counting.
+    HashSet<const Node*>* nodesReferencedViaLabeledby { nullptr };
 
     bool isHidden() { return considerHiddenState && inHiddenSubtree; }
 };
@@ -622,8 +626,10 @@ public:
     bool isScrollbar() const { return role() == AccessibilityRole::ScrollBar; }
     bool isRemoteFrame() const { return role() == AccessibilityRole::RemoteFrame; }
     bool isLocalFrame() const { return role() == AccessibilityRole::LocalFrame; }
+    bool isFrame() const;
 #if PLATFORM(COCOA)
     virtual RetainPtr<id> remoteFramePlatformElement() const = 0;
+    virtual pid_t remoteFrameProcessIdentifier() const = 0;
 #endif
     virtual bool hasRemoteFrameChild() const = 0;
 
@@ -1497,6 +1503,12 @@ inline void AXCoreObject::detachWrapper(AccessibilityDetachmentType detachmentTy
 inline Vector<AXID> AXCoreObject::childrenIDs(bool updateChildrenIfNeeded)
 {
     return axIDs(children(updateChildrenIfNeeded));
+}
+
+inline bool AXCoreObject::isFrame() const
+{
+    auto role = this->role();
+    return role == AccessibilityRole::LocalFrame || role == AccessibilityRole::RemoteFrame;
 }
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)

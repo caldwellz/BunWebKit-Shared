@@ -23,16 +23,12 @@
 * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary TextDecoderOptions {
+dictionary TextDecoderOptions {
     boolean fatal = false;
     boolean ignoreBOM = false;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary TextDecodeOptions {
+dictionary TextDecodeOptions {
     boolean stream = false;
 };
 

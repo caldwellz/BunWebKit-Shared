@@ -47,6 +47,7 @@
 #include <WebCore/MessageClientForTesting.h>
 #include <WebCore/PlatformDynamicRangeLimit.h>
 #include <WebCore/PlatformMediaResourceLoader.h>
+#include <WebCore/ShareableBitmap.h>
 #include <optional>
 #include <wtf/LoggerHelper.h>
 #include <wtf/RefPtr.h>
@@ -375,6 +376,7 @@ private:
     void colorSpace(CompletionHandler<void(WebCore::DestinationColorSpace)>&&);
 #endif
     void videoFrameForCurrentTimeIfChanged(CompletionHandler<void(std::optional<RemoteVideoFrameProxy::Properties>&&, bool)>&&);
+    void bitmapImageForCurrentTime(CompletionHandler<void(std::optional<WebCore::ShareableBitmap::Handle>&&)>&&);
 
     void setShouldDisableHDR(bool);
     using LayerHostingContextCallback = WebCore::MediaPlayer::LayerHostingContextCallback;

@@ -277,6 +277,8 @@ protected:
     virtual void updateVideoLayerGravity() = 0;
     virtual void resolvedURLChanged() = 0;
 
+    virtual void updateIsAudible() = 0;
+
     virtual bool isHLS() const { return false; }
 
     void updateStates();

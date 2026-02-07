@@ -30,6 +30,7 @@
 
 #import "APIData.h"
 #import "APIOpenPanelParameters.h"
+#import "APIPageConfiguration.h"
 #import "APIUIClient.h"
 #import "ApplicationStateTracker.h"
 #import "DrawingAreaProxy.h"
@@ -136,8 +137,8 @@ void PageClientImpl::requestScroll(const FloatPoint& scrollPosition, const IntPo
 
 WebCore::FloatPoint PageClientImpl::viewScrollPosition()
 {
-    if (UIScrollView *scroller = [contentView() _scroller])
-        return scroller.contentOffset;
+    if (RetainPtr scroller = [contentView() _scroller])
+        return scroller.get().contentOffset;
 
     return { };
 }
@@ -165,7 +166,18 @@ bool PageClientImpl::isActiveViewVisible()
     if (!webView)
         return false;
 
-    if (isViewInWindow() && ![webView _isBackground])
+    auto page = webView->_page;
+    auto shouldTreatAsForeground = [&] {
+        if (![webView _isBackground])
+            return true;
+
+        if (page && page->configuration().backgroundTextExtractionEnabled())
+            return true;
+
+        return false;
+    };
+
+    if (isViewInWindow() && shouldTreatAsForeground())
         return true;
     
     if ([webView _isShowingVideoPictureInPicture])
@@ -175,7 +187,6 @@ bool PageClientImpl::isActiveViewVisible()
         return true;
 
 #if ENABLE(WEBXR) && !USE(OPENXR)
-    auto page = webView->_page;
     if (page && page->xrSystem() && page->xrSystem()->hasActiveSession())
         return true;
 #endif
@@ -224,6 +235,14 @@ bool PageClientImpl::isViewVisibleOrOccluded()
 bool PageClientImpl::isVisuallyIdle()
 {
     return !isActiveViewVisible();
+}
+
+WebCore::DestinationColorSpace PageClientImpl::colorSpace()
+{
+    if (!m_colorSpace)
+        m_colorSpace = screenColorSpace(nullptr);
+
+    return *m_colorSpace;
 }
 
 void PageClientImpl::processDidExit()
@@ -393,8 +412,8 @@ void PageClientImpl::handleSmartMagnificationInformationForPotentialTap(WebKit::
 
 double PageClientImpl::minimumZoomScale() const
 {
-    if (UIScrollView *scroller = [webView() scrollView])
-        return scroller.minimumZoomScale;
+    if (RetainPtr scroller = [webView() scrollView])
+        return scroller.get().minimumZoomScale;
 
     return 1;
 }
@@ -424,7 +443,7 @@ void PageClientImpl::registerEditCommand(Ref<WebEditCommandProxy>&& command, Und
     auto actionName = command->label();
     auto commandObjC = adoptNS([[WKEditCommand alloc] initWithWebEditCommandProxy:WTF::move(command)]);
     
-    NSUndoManager *undoManager = [contentView() undoManagerForWebView];
+    RetainPtr undoManager = [contentView() undoManagerForWebView];
     [undoManager registerUndoWithTarget:m_undoTarget.get() selector:((undoOrRedo == UndoOrRedo::Undo) ? @selector(undoEditing:) : @selector(redoEditing:)) object:commandObjC.get()];
     if (!actionName.isEmpty())
         [undoManager setActionName:actionName.createNSString().get()];
@@ -616,6 +635,11 @@ void PageClientImpl::doneDeferringTouchEnd(bool preventNativeGestures)
 }
 
 #endif // ENABLE(IOS_TOUCH_EVENTS)
+
+UIScreen *PageClientImpl::screen()
+{
+    return [contentView() _screen];
+}
 
 #if ENABLE(IMAGE_ANALYSIS)
 
@@ -816,7 +840,7 @@ bool PageClientImpl::handleRunOpenPanel(const WebPageProxy& page, const WebFrame
 #if ENABLE(MEDIA_CAPTURE)
     if (parameters.mediaCaptureType() != WebCore::MediaCaptureType::MediaCaptureTypeNone) {
         if (auto pid = page.configuration().processPool().configuration().presentingApplicationPID())
-            WebCore::MediaSessionHelper::sharedHelper().providePresentingApplicationPID(pid);
+            protect(WebCore::MediaSessionHelper::sharedHelper())->providePresentingApplicationPID(pid);
     }
 #endif
 
@@ -1018,7 +1042,7 @@ void PageClientImpl::navigationGestureDidBegin()
 {
     if (auto webView = this->webView()) {
         [webView _navigationGestureDidBegin];
-        if (auto* navigationState = NavigationState::fromWebPage(*webView->_page))
+        if (RefPtr navigationState = NavigationState::fromWebPage(*webView->_page))
             navigationState->navigationGestureDidBegin();
     }
 }
@@ -1026,7 +1050,7 @@ void PageClientImpl::navigationGestureDidBegin()
 void PageClientImpl::navigationGestureWillEnd(bool willNavigate, WebBackForwardListItem& item)
 {
     if (auto webView = this->webView()) {
-        if (auto* navigationState = NavigationState::fromWebPage(*webView->_page))
+        if (RefPtr navigationState = NavigationState::fromWebPage(*webView->_page))
             navigationState->navigationGestureWillEnd(willNavigate, item);
     }
 }
@@ -1034,7 +1058,7 @@ void PageClientImpl::navigationGestureWillEnd(bool willNavigate, WebBackForwardL
 void PageClientImpl::navigationGestureDidEnd(bool willNavigate, WebBackForwardListItem& item)
 {
     if (auto webView = this->webView()) {
-        if (auto* navigationState = NavigationState::fromWebPage(*webView->_page))
+        if (RefPtr navigationState = NavigationState::fromWebPage(*webView->_page))
             navigationState->navigationGestureDidEnd(willNavigate, item);
         [webView _navigationGestureDidEnd];
     }
@@ -1048,7 +1072,7 @@ void PageClientImpl::navigationGestureDidEnd()
 void PageClientImpl::willRecordNavigationSnapshot(WebBackForwardListItem& item)
 {
     if (auto webView = this->webView()) {
-        if (auto* navigationState = NavigationState::fromWebPage(*webView->_page))
+        if (RefPtr navigationState = NavigationState::fromWebPage(*webView->_page))
             navigationState->willRecordNavigationSnapshot(item);
     }
 }
@@ -1056,7 +1080,7 @@ void PageClientImpl::willRecordNavigationSnapshot(WebBackForwardListItem& item)
 void PageClientImpl::didRemoveNavigationGestureSnapshot()
 {
     if (auto webView = this->webView()) {
-        if (auto* navigationState = NavigationState::fromWebPage(*webView->_page))
+        if (RefPtr navigationState = NavigationState::fromWebPage(*webView->_page))
             navigationState->navigationGestureSnapshotWasRemoved();
     }
 }
@@ -1280,8 +1304,8 @@ FloatBoxExtent PageClientImpl::computedObscuredInset() const
 WebCore::Color PageClientImpl::contentViewBackgroundColor()
 {
     WebCore::Color color;
-    [[webView() traitCollection] performAsCurrentTraitCollection:[&]() {
-        color = WebCore::roundAndClampToSRGBALossy([contentView() backgroundColor].CGColor);
+    [[webView() traitCollection] performAsCurrentTraitCollection:[&, protectedThis = Ref { *this }]() {
+        color = WebCore::roundAndClampToSRGBALossy([protectedThis->contentView() backgroundColor].CGColor);
         if (color.isValid())
             return;
         color = WebCore::roundAndClampToSRGBALossy(UIColor.systemBackgroundColor.CGColor);

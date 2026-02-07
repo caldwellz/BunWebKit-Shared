@@ -19,6 +19,7 @@ set(WTF_PUBLIC_HEADERS
     Atomics.h
     AutodrainedPool.h
     AutomaticThread.h
+    AvailableMemory.h
     BackwardsGraph.h
     Bag.h
     BagToHashMap.h
@@ -541,6 +542,8 @@ set(WTF_SOURCES
     ApproximateTime.cpp
     Assertions.cpp
     AutomaticThread.cpp
+    AvailableMemory.cpp
+    uv_get_constrained_memory.cpp
     BitVector.cpp
     BloomFilter.cpp
     CPUTime.cpp

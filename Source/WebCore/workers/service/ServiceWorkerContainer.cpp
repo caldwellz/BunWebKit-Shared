@@ -26,7 +26,6 @@
 #include "config.h"
 #include "ServiceWorkerContainer.h"
 
-#include "AddEventListenerOptionsInlines.h"
 #include "ContentSecurityPolicy.h"
 #include "ContextDestructionObserverInlines.h"
 #include "CookieChangeSubscription.h"

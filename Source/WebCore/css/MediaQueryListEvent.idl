@@ -25,7 +25,6 @@
  */
 
 // https://drafts.csswg.org/cssom-view/#mediaquerylistevent
-
 [
     Exposed=Window
 ] interface MediaQueryListEvent : Event {
@@ -34,9 +33,9 @@
     readonly attribute boolean matches;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary MediaQueryListEventInit : EventInit {
+// https://drafts.csswg.org/cssom-view/#dictdef-mediaquerylisteventinit
+dictionary MediaQueryListEventInit : EventInit {
+    // FIXME: `media` should be of type `CSSOMString`.
     DOMString media = "";
     boolean matches = false;
 };

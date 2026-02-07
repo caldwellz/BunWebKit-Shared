@@ -34,9 +34,7 @@
     [EnabledBySetting=UAVisualTransitionDetectionEnabled] readonly attribute boolean hasUAVisualTransition;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary PopStateEventInit : EventInit {
+dictionary PopStateEventInit : EventInit {
     any state = null;
     [EnabledBySetting=UAVisualTransitionDetectionEnabled] boolean hasUAVisualTransition = false;
 };

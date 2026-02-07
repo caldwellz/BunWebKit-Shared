@@ -1912,7 +1912,43 @@ void Editor::capitalizeWord()
     if (client())
         client()->capitalizeWord();
 }
-    
+
+bool Editor::canApplyCaseTransformations(const String& selection)
+{
+    if (client())
+        return client()->canApplyCaseTransformations(selection);
+
+    return true;
+}
+
+bool Editor::canConvertToSimplifiedChinese(const String& selection)
+{
+    if (client())
+        return client()->canConvertToSimplifiedChinese(selection);
+
+    return false;
+}
+
+bool Editor::canConvertToTraditionalChinese(const String& selection)
+{
+    if (client())
+        return client()->canConvertToTraditionalChinese(selection);
+
+    return false;
+}
+
+void Editor::convertToTraditionalChinese()
+{
+    if (client())
+        client()->convertToTraditionalChinese();
+}
+
+void Editor::convertToSimplifiedChinese()
+{
+    if (client())
+        client()->convertToSimplifiedChinese();
+}
+
 #endif
 
 #if USE(AUTOMATIC_TEXT_REPLACEMENT)
@@ -3895,7 +3931,7 @@ static inline void collapseCaretWidth(IntRect& rect)
 
 IntRect Editor::firstRectForRange(const SimpleRange& range) const
 {
-    range.start.protectedDocument()->updateLayout();
+    protect(range.start.document())->updateLayout();
 
     VisiblePosition start(makeDeprecatedLegacyPosition(range.start));
 
@@ -4415,7 +4451,7 @@ static RefPtr<Node> findFirstMarkable(Node* startingNode)
 
 bool Editor::selectionStartHasMarkerFor(DocumentMarkerType markerType, int from, int length) const
 {
-    auto node = findFirstMarkable(document().selection().selection().start().protectedDeprecatedNode().get());
+    auto node = findFirstMarkable(protect(document().selection().selection().start().deprecatedNode()).get());
     if (!node)
         return false;
 
@@ -4435,7 +4471,7 @@ bool Editor::selectionStartHasMarkerFor(DocumentMarkerType markerType, int from,
 
 void Editor::selectionStartSetMarkerForTesting(DocumentMarkerType markerType, int from, int length, const String& data)
 {
-    RefPtr node = findFirstMarkable(document().selection().selection().start().protectedDeprecatedNode().get());
+    RefPtr node = findFirstMarkable(protect(document().selection().selection().start().deprecatedNode()).get());
     if (!node)
         return;
 

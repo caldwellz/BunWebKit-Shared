@@ -395,6 +395,20 @@ extension WKRKEntity {
         #endif
     }
 
+    #if ENABLE_MODEL_ELEMENT_IMMERSIVE
+    func ensureSceneUnderstanding() {
+        applySceneUnderstandingComponentRecursively(to: entity)
+    }
+
+    @nonobjc
+    private final func applySceneUnderstandingComponentRecursively(to entity: Entity) {
+        entity.components[SceneUnderstandingComponent.self] = .init(entityType: .meshChunk)
+        for child in entity.children {
+            applySceneUnderstandingComponentRecursively(to: child)
+        }
+    }
+    #endif
+
     private func animationPlaybackStateDidUpdate() {
         delegate?.entityAnimationPlaybackStateDidUpdate?(self)
     }

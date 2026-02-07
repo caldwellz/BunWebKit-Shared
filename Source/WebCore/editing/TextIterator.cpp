@@ -370,7 +370,7 @@ TextIterator::TextIterator(const SimpleRange& range, TextIteratorBehaviors behav
 {
     ASSERT(!m_behaviors.contains(TextIteratorBehavior::EmitsObjectReplacementCharacters) || !m_behaviors.contains(TextIteratorBehavior::EmitsObjectReplacementCharactersForImages));
 
-    range.start.protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(range.start.document())->updateLayoutIgnorePendingStylesheets();
 
     m_startContainer = range.start.container.ptr();
     m_startOffset = range.start.offset;
@@ -387,7 +387,7 @@ TextIterator::TextIterator(const SimpleRange& range, TextIteratorBehaviors behav
 void TextIterator::init()
 {
     RefPtr currentNode = m_currentNode;
-    if (isClippedByFrameAncestor(currentNode->protectedDocument(), m_behaviors))
+    if (isClippedByFrameAncestor(protect(currentNode->document()), m_behaviors))
         return;
 
     setUpFullyClippedStack(m_fullyClippedStack, *currentNode, m_behaviors);
@@ -795,7 +795,7 @@ bool TextIterator::handleReplacedElement()
         return false;
 
     if (m_lastTextNodeEndedWithCollapsedSpace) {
-        emitCharacter(' ', m_lastTextNode->protectedParentNode(), m_lastTextNode.copyRef(), 1, 1);
+        emitCharacter(' ', protect(m_lastTextNode->parentNode()), m_lastTextNode.copyRef(), 1, 1);
         return false;
     }
 
@@ -837,7 +837,7 @@ bool TextIterator::handleReplacedElement()
     }();
 
     if (shouldEmitObjectReplacementCharacter) {
-        emitCharacter(objectReplacementCharacter, m_currentNode->protectedParentNode(), protectedCurrentNode(), 0, 1);
+        emitCharacter(objectReplacementCharacter, protect(m_currentNode->parentNode()), protectedCurrentNode(), 0, 1);
         // Don't process subtrees for embedded objects. If the text there is required,
         // it must be explicitly asked by specifying a range falling inside its boundaries.
         m_handledChildren = true;
@@ -845,10 +845,10 @@ bool TextIterator::handleReplacedElement()
     }
 
     if (m_behaviors.contains(TextIteratorBehavior::EmitsCharactersBetweenAllVisiblePositions)) {
-        // We want replaced elements to behave like punctuation for boundary 
-        // finding, and to simply take up space for the selection preservation 
+        // We want replaced elements to behave like punctuation for boundary
+        // finding, and to simply take up space for the selection preservation
         // code in moveParagraphs, so we use a comma.
-        emitCharacter(',', m_currentNode->protectedParentNode(), protectedCurrentNode(), 0, 1);
+        emitCharacter(',', protect(m_currentNode->parentNode()), protectedCurrentNode(), 0, 1);
         return true;
     }
 
@@ -1151,14 +1151,14 @@ void TextIterator::exitNode(Node* exitedNode)
         // contain a VisiblePosition when doing selection preservation.
         if (m_lastCharacter != '\n') {
             // insert a newline with a position following this block's contents.
-            emitCharacter('\n', baseNode->protectedParentNode(), baseNode.copyRef(), 1, 1);
+            emitCharacter('\n', protect(baseNode->parentNode()), baseNode.copyRef(), 1, 1);
             // remember whether to later add a newline for the current node
             ASSERT(!m_nodeForAdditionalNewline);
             if (addNewline)
                 m_nodeForAdditionalNewline = baseNode.get();
         } else if (addNewline)
             // insert a newline with a position following this block's contents.
-            emitCharacter('\n', baseNode->protectedParentNode(), baseNode.copyRef(), 1, 1);
+            emitCharacter('\n', protect(baseNode->parentNode()), baseNode.copyRef(), 1, 1);
     }
     
     // If nothing was emitted, see if we need to emit a space.
@@ -1253,7 +1253,7 @@ void TextIterator::showTreeForThis() const
 
 SimplifiedBackwardsTextIterator::SimplifiedBackwardsTextIterator(const SimpleRange& range)
 {
-    range.start.protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(range.start.document())->updateLayoutIgnorePendingStylesheets();
 
     RefPtr startNode = range.start.container.ptr();
     RefPtr endNode = range.end.container.ptr();
@@ -1335,7 +1335,7 @@ void SimplifiedBackwardsTextIterator::advance()
 
             // Exit all other containers.
             while (!m_node->previousSibling()) {
-                if (!advanceRespectingRange(m_node->protectedParentOrShadowHostNode().get()))
+                if (!advanceRespectingRange(protect(m_node->parentOrShadowHostNode()).get()))
                     break;
                 m_fullyClippedStack.pop();
                 exitNode();
@@ -1347,7 +1347,7 @@ void SimplifiedBackwardsTextIterator::advance()
             }
 
             m_fullyClippedStack.pop();
-            if (advanceRespectingRange(m_node->protectedPreviousSibling().get()))
+            if (advanceRespectingRange(protect(m_node->previousSibling()).get()))
                 pushFullyClippedState(m_fullyClippedStack, *protectedNode(), m_behaviors);
             else
                 m_node = nullptr;
@@ -1437,11 +1437,11 @@ RenderText* SimplifiedBackwardsTextIterator::handleFirstLetter(int& startOffset,
 bool SimplifiedBackwardsTextIterator::handleReplacedElement()
 {
     unsigned index = m_node->computeNodeIndex();
-    // We want replaced elements to behave like punctuation for boundary 
-    // finding, and to simply take up space for the selection preservation 
+    // We want replaced elements to behave like punctuation for boundary
+    // finding, and to simply take up space for the selection preservation
     // code in moveParagraphs, so we use a comma. Unconditionally emit
     // here because this iterator is only used for boundary finding.
-    emitCharacter(',', m_node->protectedParentNode(), index, index + 1);
+    emitCharacter(',', protect(m_node->parentNode()), index, index + 1);
     return true;
 }
 
@@ -1450,14 +1450,14 @@ bool SimplifiedBackwardsTextIterator::handleNonTextNode()
     RefPtr currentNode = m_node;
     if (shouldEmitTabBeforeNode(*currentNode)) {
         unsigned index = currentNode->computeNodeIndex();
-        emitCharacter('\t', currentNode->protectedParentNode(), index + 1, index + 1);
+        emitCharacter('\t', protect(currentNode->parentNode()), index + 1, index + 1);
     } else if (shouldEmitNewlineForNode(currentNode.get(), m_behaviors.contains(TextIteratorBehavior::EmitsOriginalText)) || shouldEmitNewlineAfterNode(*m_node)) {
         if (m_lastCharacter != '\n') {
             // Corresponds to the same check in TextIterator::exitNode.
             unsigned index = currentNode->computeNodeIndex();
             // The start of this emitted range is wrong. Ensuring correctness would require
             // VisiblePositions and so would be slow. previousBoundary expects this.
-            emitCharacter('\n', currentNode->protectedParentNode(), index + 1, index + 1);
+            emitCharacter('\n', protect(currentNode->parentNode()), index + 1, index + 1);
         }
     }
     return true;

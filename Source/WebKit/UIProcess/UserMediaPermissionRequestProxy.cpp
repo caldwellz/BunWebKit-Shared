@@ -64,11 +64,6 @@ UserMediaPermissionRequestManagerProxy* UserMediaPermissionRequestProxy::manager
     return m_manager.get();
 }
 
-RefPtr<UserMediaPermissionRequestManagerProxy> UserMediaPermissionRequestProxy::protectedManager() const
-{
-    return m_manager.get();
-}
-
 #if ENABLE(MEDIA_STREAM)
 static inline void setDeviceAsFirst(Vector<CaptureDevice>& devices, const String& deviceID)
 {

@@ -538,7 +538,9 @@ TEST(WKNavigation, DecidePolicyForPageCacheNavigation)
 - (void)webView:(WKWebView *)webView decidePolicyForNavigationAction:(WKNavigationAction *)navigationAction decisionHandler:(void (^)(WKNavigationActionPolicy))decisionHandler
 {
     EXPECT_TRUE(!!navigationAction._mainFrameNavigation);
+    EXPECT_TRUE(!!navigationAction.mainFrameNavigation);
     EXPECT_EQ(navigationAction._mainFrameNavigation, navigation);
+    EXPECT_EQ(navigationAction.mainFrameNavigation, navigation);
     decisionHandler(WKNavigationActionPolicyAllow);
 }
 
@@ -809,6 +811,7 @@ TEST(WKNavigation, ShouldGoToBackForwardListItem)
     if (isSiteIsolationEnabled(webView.get()))
         return;
 
+    navigationComplete = false;
     auto delegate = adoptNS([[BackForwardDelegateWithShouldGo alloc] init]);
     [webView setNavigationDelegate:delegate.get()];
     [webView loadRequest:[NSURLRequest requestWithURL:[NSBundle.test_resourcesBundle URLForResource:@"simple" withExtension:@"html"]]];
@@ -1928,7 +1931,7 @@ TEST(WKNavigation, HTTPSOnlyNonHTTPSSecureSchemes)
 
     auto url = [NSURL URLWithString:@"secure://bundle-file/simple.html"];
 
-    [webView loadRequest:[NSURLRequest requestWithURL:url]];
+    [webView loadURL:url];
     Util::run(&didFailNavigation);
 
     EXPECT_FALSE(finishedSuccessfully);
@@ -1941,7 +1944,7 @@ TEST(WKNavigation, HTTPSOnlyNonHTTPSSecureSchemes)
 
     [webView.get().configuration.processPool _registerURLSchemeAsSecure:secureScheme];
 
-    [webView loadRequest:[NSURLRequest requestWithURL:url]];
+    [webView loadURL:url];
     Util::run(&finishedSuccessfully);
 
     EXPECT_FALSE(didFailNavigation);

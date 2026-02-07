@@ -29,6 +29,7 @@
 
 #include <WebCore/DOMPasteAccess.h>
 #include <WebCore/Frame.h>
+#include <WebCore/HitTestRequest.h>
 #include <WebCore/ScrollbarMode.h>
 #include <wtf/CheckedRef.h>
 #include <wtf/HashSet.h>
@@ -276,6 +277,7 @@ public:
     WEBCORE_EXPORT String displayStringModifiedByEncoding(const String&) const;
 
     WEBCORE_EXPORT VisiblePosition visiblePositionForPoint(const IntPoint& framePoint) const;
+    HitTestResult hitTestResultAtPoint(IntPoint, OptionSet<HitTestRequest::Type>);
     Document* documentAtPoint(const IntPoint& windowPoint);
     WEBCORE_EXPORT std::optional<SimpleRange> rangeForPoint(const IntPoint& framePoint);
 

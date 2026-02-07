@@ -505,8 +505,14 @@ AccessibilityRole AccessibilityNodeObject::determineAccessibilityRoleFromNode(Tr
 
     if (element->isLink())
         return AccessibilityRole::Link;
-    if (RefPtr selectElement = dynamicDowncast<HTMLSelectElement>(*element))
+    if (RefPtr selectElement = dynamicDowncast<HTMLSelectElement>(*element)) {
+#if PLATFORM(IOS_FAMILY)
+        // On iOS, all select elements (including multiple) use popup menus, so use PopUpButton role.
+        return AccessibilityRole::PopUpButton;
+#else
         return selectElement->multiple() ? AccessibilityRole::ListBox : AccessibilityRole::PopUpButton;
+#endif
+    }
     if (is<HTMLImageElement>(*element) && element->hasAttributeWithoutSynchronization(usemapAttr))
         return AccessibilityRole::ImageMap;
 
@@ -825,6 +831,16 @@ void AccessibilityNodeObject::addChildren()
     for (auto* child = node->firstChild(); child; child = child->nextSibling())
         addChild(cache->getOrCreate(*child));
 #else
+    // For listbox selects, use listItems() to get option elements instead of
+    // composedTreeChildren which would return shadow DOM content.
+    if (RefPtr selectElement = dynamicDowncast<HTMLSelectElement>(node); selectElement && !selectElement->usesMenuList()) {
+        for (const auto& listItem : selectElement->listItems()) {
+            if (listItem)
+                addChild(cache->getOrCreate(*listItem));
+        }
+        return;
+    }
+
     if (RefPtr containerNode = dynamicDowncast<ContainerNode>(*node)) {
         // Specify an InlineContextCapacity template parameter of 0 to avoid allocating ComposedTreeIterator's
         // internal vector on the stack. See comment in AccessibilityRenderObject::addChildren() for a full
@@ -886,8 +902,6 @@ AXCoreObject::AccessibilityChildrenVector AccessibilityNodeObject::visibleChildr
     // Only listboxes are asked for their visible children.
     CheckedPtr renderListBox = dynamicDowncast<RenderListBox>(renderer());
     if (!renderListBox && ariaRoleAttribute() == AccessibilityRole::ListBox) {
-        if (!childrenInitialized())
-            addChildren();
         AccessibilityChildrenVector result;
         for (const auto& child : unignoredChildren()) {
             if (!child->isOffScreen())
@@ -896,13 +910,24 @@ AXCoreObject::AccessibilityChildrenVector AccessibilityNodeObject::visibleChildr
         return result;
     }
 
+    // For HTMLSelectElement with arbitrary renderer use the size attribute as approximation.
+    if (RefPtr selectElement = dynamicDowncast<HTMLSelectElement>(node()); selectElement && !selectElement->usesMenuList()) {
+        const auto& children = const_cast<AccessibilityNodeObject*>(this)->unignoredChildren();
+        AccessibilityChildrenVector result;
+        unsigned visibleCount = selectElement->size();
+        if (!visibleCount)
+            visibleCount = 4; // Default size for multiple select is 4
+        size_t count = std::min(static_cast<size_t>(visibleCount), children.size());
+        result.reserveInitialCapacity(count);
+        for (size_t i = 0; i < count; i++)
+            result.append(children[i]);
+        return result;
+    }
+
     // Handle native listboxes (RenderListBox).
     if (renderListBox && role() == AccessibilityRole::ListBox) {
-        if (!childrenInitialized())
-            addChildren();
-
         const auto& children = const_cast<AccessibilityNodeObject*>(this)->unignoredChildren();
-        AXCoreObject::AccessibilityChildrenVector result;
+        AccessibilityChildrenVector result;
         size_t size = children.size();
         for (size_t i = 0; i < size; i++) {
             if (renderListBox->listIndexIsVisible(i))
@@ -3447,6 +3472,11 @@ void AccessibilityNodeObject::visibleText(Vector<AccessibilityText>& textOrder) 
         if (isHeading())
             mode.includeFocusableContent = true;
 
+        // Track nodes referenced via aria-labelledby to avoid double-counting them
+        // when they're encountered again in the tree.
+        HashSet<const Node*> nodesReferencedViaLabeledby;
+        mode.nodesReferencedViaLabeledby = &nodesReferencedViaLabeledby;
+
         String text = textUnderElement(mode);
         if (!text.isEmpty())
             textOrder.append(AccessibilityText(WTF::move(text), AccessibilityTextSource::Children));
@@ -3880,6 +3910,11 @@ String AccessibilityNodeObject::textUnderElement(TextUnderElementMode mode) cons
         if (!shouldUseAccessibilityObjectInnerText(*child, mode))
             continue;
 
+        // Skip this child if it was already referenced via aria-labelledby by a sibling.
+        // This prevents double-counting elements that were already included via labelledby.
+        if (mode.nodesReferencedViaLabeledby && child->node() && mode.nodesReferencedViaLabeledby->contains(child->node()))
+            continue;
+
         if (RefPtr accessibilityNodeObject = dynamicDowncast<AccessibilityNodeObject>(*child)) {
             // We should ignore the child if it's labeled by this node.
             // This could happen when this node labels multiple child nodes and we didn't
@@ -3891,6 +3926,12 @@ String AccessibilityNodeObject::textUnderElement(TextUnderElementMode mode) cons
             Vector<AccessibilityText> textOrder;
             accessibilityNodeObject->alternativeText(textOrder);
             if (textOrder.size() > 0 && textOrder[0].text.length()) {
+                // If this child has aria-labelledby, track the referenced elements so we can
+                // skip them if encountered later in the tree (to avoid double-counting).
+                if (mode.nodesReferencedViaLabeledby && !labeledByElements.isEmpty()) {
+                    for (auto& element : labeledByElements)
+                        mode.nodesReferencedViaLabeledby->add(element.ptr());
+                }
                 appendNameToStringBuilder(builder, WTF::move(textOrder[0].text));
                 // Alternative text (e.g. from aria-label, aria-labelledby, alt, etc) requires space separation.
                 previousRequiresSpace = true;

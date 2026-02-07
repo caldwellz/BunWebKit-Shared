@@ -149,7 +149,10 @@ class VoidCallback;
 class WebAnimation;
 class WebGLRenderingContext;
 class WindowProxy;
+class WritableStream;
 class XMLHttpRequest;
+
+struct VideoConfiguration;
 
 enum class DocumentMarkerType : uint32_t;
 
@@ -1143,20 +1146,20 @@ public:
 
     struct ImageOverlayText {
         String text;
-        RefPtr<DOMPointReadOnly> topLeft;
-        RefPtr<DOMPointReadOnly> topRight;
-        RefPtr<DOMPointReadOnly> bottomRight;
-        RefPtr<DOMPointReadOnly> bottomLeft;
+        Ref<DOMPointReadOnly> topLeft;
+        Ref<DOMPointReadOnly> topRight;
+        Ref<DOMPointReadOnly> bottomRight;
+        Ref<DOMPointReadOnly> bottomLeft;
         bool hasLeadingWhitespace { true };
 
         ~ImageOverlayText();
     };
 
     struct ImageOverlayLine {
-        RefPtr<DOMPointReadOnly> topLeft;
-        RefPtr<DOMPointReadOnly> topRight;
-        RefPtr<DOMPointReadOnly> bottomRight;
-        RefPtr<DOMPointReadOnly> bottomLeft;
+        Ref<DOMPointReadOnly> topLeft;
+        Ref<DOMPointReadOnly> topRight;
+        Ref<DOMPointReadOnly> bottomRight;
+        Ref<DOMPointReadOnly> bottomLeft;
         Vector<ImageOverlayText> children;
         bool hasTrailingNewline { true };
         bool isVertical { false };
@@ -1166,19 +1169,19 @@ public:
 
     struct ImageOverlayBlock {
         String text;
-        RefPtr<DOMPointReadOnly> topLeft;
-        RefPtr<DOMPointReadOnly> topRight;
-        RefPtr<DOMPointReadOnly> bottomRight;
-        RefPtr<DOMPointReadOnly> bottomLeft;
+        Ref<DOMPointReadOnly> topLeft;
+        Ref<DOMPointReadOnly> topRight;
+        Ref<DOMPointReadOnly> bottomRight;
+        Ref<DOMPointReadOnly> bottomLeft;
 
         ~ImageOverlayBlock();
     };
 
     struct ImageOverlayDataDetector {
-        RefPtr<DOMPointReadOnly> topLeft;
-        RefPtr<DOMPointReadOnly> topRight;
-        RefPtr<DOMPointReadOnly> bottomRight;
-        RefPtr<DOMPointReadOnly> bottomLeft;
+        Ref<DOMPointReadOnly> topLeft;
+        Ref<DOMPointReadOnly> topRight;
+        Ref<DOMPointReadOnly> bottomRight;
+        Ref<DOMPointReadOnly> bottomLeft;
 
         ~ImageOverlayDataDetector();
     };
@@ -1204,8 +1207,17 @@ public:
     bool usingAppleInternalSDK() const;
     bool usingGStreamer() const;
 
-    using NowPlayingInfoArtwork = WebCore::NowPlayingInfoArtwork;
-    using NowPlayingMetadata = WebCore::NowPlayingMetadata;
+    struct NowPlayingInfoArtwork {
+        String src;
+        String mimeType;
+    };
+    struct NowPlayingMetadata {
+        String title;
+        String artist;
+        String album;
+        String sourceApplicationIdentifier;
+        std::optional<NowPlayingInfoArtwork> artwork;
+    };
     std::optional<NowPlayingMetadata> nowPlayingMetadata() const;
 
     struct NowPlayingState {
@@ -1218,6 +1230,7 @@ public:
         bool haveEverRegisteredAsNowPlayingApplication;
     };
     ExceptionOr<NowPlayingState> nowPlayingState() const;
+    ExceptionOr<double> nowPlayingUpdateInterval() const;
     void setNowPlayingUpdateInterval(double);
 
     struct MediaUsageState {
@@ -1329,7 +1342,7 @@ public:
     std::optional<AV1CodecConfigurationRecord> parseAV1CodecParameters(const String&);
     String createAV1CodecParametersString(const AV1CodecConfigurationRecord&);
     bool validateAV1ConfigurationRecord(const String&);
-    bool validateAV1PerLevelConstraints(const String&, const VideoConfiguration&);
+    bool validateAV1PerLevelConstraints(const String&, VideoConfiguration&&);
 
     struct CookieData {
         String name;
@@ -1345,24 +1358,23 @@ public:
         bool isSameSiteLax { false };
         bool isSameSiteStrict { false };
 
-        CookieData(Cookie cookie)
-            : name(cookie.name)
-            , value(cookie.value)
-            , domain(cookie.domain)
-            , path(cookie.path)
-            , expires(cookie.expires)
-            , isHttpOnly(cookie.httpOnly)
-            , isSecure(cookie.secure)
-            , isSession(cookie.session)
-            , isSameSiteNone(cookie.sameSite == Cookie::SameSitePolicy::None)
-            , isSameSiteLax(cookie.sameSite == Cookie::SameSitePolicy::Lax)
-            , isSameSiteStrict(cookie.sameSite == Cookie::SameSitePolicy::Strict)
+        static CookieData fromCookie(Cookie cookie)
         {
-            ASSERT(!(isSameSiteLax && isSameSiteStrict) && !(isSameSiteLax && isSameSiteNone) && !(isSameSiteStrict && isSameSiteNone));
-        }
-
-        CookieData()
-        {
+            auto cookieData = CookieData {
+                WTF::move(cookie.name),
+                WTF::move(cookie.value),
+                WTF::move(cookie.domain),
+                WTF::move(cookie.path),
+                cookie.expires,
+                cookie.httpOnly,
+                cookie.secure,
+                cookie.session,
+                cookie.sameSite == Cookie::SameSitePolicy::None,
+                cookie.sameSite == Cookie::SameSitePolicy::Lax,
+                cookie.sameSite == Cookie::SameSitePolicy::Strict
+            };
+            ASSERT(!(cookieData.isSameSiteLax && cookieData.isSameSiteStrict) && !(cookieData.isSameSiteLax && cookieData.isSameSiteNone) && !(cookieData.isSameSiteStrict && cookieData.isSameSiteNone));
+            return cookieData;
         }
 
         static Cookie toCookie(CookieData&& cookieData)
@@ -1671,6 +1683,9 @@ public:
     ExceptionOr<Vector<FrameDamage>> getFrameDamageHistory() const;
 #endif // ENABLE(DAMAGE_TRACKING)
 
+    ExceptionOr<Ref<ReadableStream>> readableStreamFromMessagePort(JSDOMGlobalObject&, MessagePort&);
+    ExceptionOr<Ref<WritableStream>> writableStreamFromMessagePort(JSDOMGlobalObject&, MessagePort&);
+
 #if ENABLE(MODEL_ELEMENT)
     void disableModelLoadDelaysForTesting();
     String modelElementState(HTMLModelElement&);
@@ -1682,6 +1697,9 @@ public:
     bool hasMediaSessionManager() const;
 
     size_t fileConnectionHandleCount(const FileSystemHandle&) const;
+
+    using IteratorResultPromise = DOMPromiseDeferred<IDLSequence<IDLAny>>;
+    void testAsyncIterator(JSDOMGlobalObject&, JSC::JSValue, IteratorResultPromise&&);
 
 #if ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
     MockMediaDeviceRouteController& mockMediaDeviceRouteController();

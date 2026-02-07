@@ -186,7 +186,7 @@ static inline RefPtr<Node> findRootNode(Node* node)
     if (RefPtr attr = dynamicDowncast<Attr>(*current))
         current = attr->ownerElement();
     if (current->isConnected())
-        return current->protectedDocument();
+        return protect(current->document());
     for (RefPtr parent = current->parentNode(); parent; parent = current->parentNode())
         current = WTF::move(parent);
     return current;

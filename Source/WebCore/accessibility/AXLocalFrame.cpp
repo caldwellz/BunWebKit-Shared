@@ -53,7 +53,7 @@ bool AXLocalFrame::computeIsIgnored() const
 {
 #if ENABLE(ACCESSIBILITY_LOCAL_FRAME)
     if (RefPtr hostingScrollView = dynamicDowncast<AccessibilityScrollView>(parentObject()))
-        return hostingScrollView->isHostingFrameHidden();
+        return hostingScrollView->isIgnoredFromHostingFrame();
 #endif
     return false;
 }

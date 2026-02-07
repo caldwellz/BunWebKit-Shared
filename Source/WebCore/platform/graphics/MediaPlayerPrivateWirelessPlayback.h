@@ -35,6 +35,7 @@
 #include <wtf/RefCounted.h>
 #include <wtf/TZoneMalloc.h>
 #include <wtf/ThreadSafeWeakPtr.h>
+#include <wtf/URL.h>
 
 namespace WebCore {
 
@@ -61,6 +62,11 @@ private:
 
     explicit MediaPlayerPrivateWirelessPlayback(MediaPlayer&);
 
+    void updateURLIfNeeded();
+
+    void setNetworkState(MediaPlayer::NetworkState);
+    void setReadyState(MediaPlayer::ReadyState);
+
     // MediaPlayerPrivateInterface
     constexpr MediaPlayerType mediaPlayerType() const final { return MediaPlayerType::WirelessPlayback; }
     void load(const String&) final;
@@ -80,8 +86,8 @@ private:
     void seekToTarget(const SeekTarget&) final { }
     bool seeking() const final { return false; }
     bool paused() const final { return true; }
-    MediaPlayer::NetworkState networkState() const final { return MediaPlayer::NetworkState::Empty; }
-    MediaPlayer::ReadyState readyState() const final { return MediaPlayer::ReadyState::HaveNothing; }
+    MediaPlayer::NetworkState networkState() const final { return m_networkState; }
+    MediaPlayer::ReadyState readyState() const final { return m_readyState; }
     const PlatformTimeRanges& buffered() const final { return m_buffered; }
     bool didLoadingProgress() const final { return false; }
     void paint(GraphicsContext&, const FloatRect&) final { }
@@ -99,8 +105,6 @@ private:
     void setShouldPlayToPlaybackTarget(bool) final;
 #endif
 
-    void updateURLStringIfNeeded();
-
 #if !RELEASE_LOG_DISABLED
     // LoggerHelper
     const Logger& logger() const final { return m_logger.get(); }
@@ -111,7 +115,9 @@ private:
 
     ThreadSafeWeakPtr<MediaPlayer> m_player;
     PlatformTimeRanges m_buffered;
-    String m_urlString;
+    URL m_url;
+    MediaPlayer::NetworkState m_networkState { MediaPlayer::NetworkState::Empty };
+    MediaPlayer::ReadyState m_readyState { MediaPlayer::ReadyState::HaveNothing };
 #if ENABLE(WIRELESS_PLAYBACK_TARGET)
     bool m_allowsWirelessVideoPlayback { true };
     bool m_shouldPlayToTarget { false };

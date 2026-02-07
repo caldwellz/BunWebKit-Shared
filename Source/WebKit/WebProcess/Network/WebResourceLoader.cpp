@@ -94,7 +94,7 @@ IPC::Connection* WebResourceLoader::messageSenderConnection() const
 uint64_t WebResourceLoader::messageSenderDestinationID() const
 {
     RELEASE_ASSERT(RunLoop::isMain());
-    return protectedResourceLoader()->identifier()->toUInt64();
+    return protect(resourceLoader())->identifier()->toUInt64();
 }
 
 void WebResourceLoader::detachFromCoreLoader()
@@ -152,7 +152,7 @@ void WebResourceLoader::willSendRequest(ResourceRequest&& proposedRequest, IPC::
 
 void WebResourceLoader::didSendData(uint64_t bytesSent, uint64_t totalBytesToBeSent)
 {
-    protectedResourceLoader()->didSendData(bytesSent, totalBytesToBeSent);
+    protect(resourceLoader())->didSendData(bytesSent, totalBytesToBeSent);
 }
 
 static ASCIILiteral toString(WebCore::RouterSourceEnum source)
@@ -401,7 +401,7 @@ void WebResourceLoader::stopLoadingAfterXFrameOptionsOrContentSecurityPolicyDeni
     LOG(Network, "(WebProcess) WebResourceLoader::stopLoadingAfterXFrameOptionsOrContentSecurityPolicyDenied for '%s'", coreLoader->url().string().latin1().data());
     WEBRESOURCELOADER_RELEASE_LOG(WEBRESOURCELOADER_STOPLOADINGAFTERSECURITYPOLICYDENIED);
 
-    coreLoader->protectedDocumentLoader()->stopLoadingAfterXFrameOptionsOrContentSecurityPolicyDenied(*coreLoader->identifier(), response);
+    protect(coreLoader->documentLoader())->stopLoadingAfterXFrameOptionsOrContentSecurityPolicyDenied(*coreLoader->identifier(), response);
 }
 
 #if ENABLE(SHAREABLE_RESOURCE)
@@ -459,11 +459,6 @@ size_t WebResourceLoader::calculateBytesTransferredOverNetworkDelta(size_t bytes
 
     m_bytesTransferredOverNetwork = bytesTransferredOverNetwork;
     return delta;
-}
-
-RefPtr<WebCore::ResourceLoader> WebResourceLoader::protectedResourceLoader() const
-{
-    return RefPtr { m_coreLoader };
 }
 
 } // namespace WebKit

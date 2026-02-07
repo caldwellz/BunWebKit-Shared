@@ -220,6 +220,7 @@ LocalFrameView::LocalFrameView(LocalFrame& frame)
     ScrollableArea::setVerticalScrollElasticity(verticalElasticity);
     ScrollableArea::setHorizontalScrollElasticity(horizontalElasticity);
 #endif
+
     if (m_frame->document() && m_frame->document()->settings().cssScrollAnchoringEnabled())
         m_scrollAnchoringController = WTF::makeUnique<ScrollAnchoringController>(*this);
 }
@@ -906,7 +907,7 @@ void LocalFrameView::updateSnapOffsets()
     LayoutRect viewport = LayoutRect(IntPoint(), baseLayoutViewportSize());
     viewport.move(-rootRenderer->marginLeft(), -rootRenderer->marginTop());
 
-    updateSnapOffsetsForScrollableArea(*this, *rootRenderer, *styleToUse, viewport, rootRenderer->style().writingMode(), m_frame->document()->protectedFocusedElement().get());
+    updateSnapOffsetsForScrollableArea(*this, *rootRenderer, *styleToUse, viewport, rootRenderer->style().writingMode(), protect(m_frame->document()->focusedElement()).get());
 }
 
 bool LocalFrameView::isScrollSnapInProgress() const
@@ -1943,10 +1944,8 @@ void LocalFrameView::setLayoutViewportOverrideRect(std::optional<LayoutRect> rec
     m_layoutViewportOverrideRect = rect;
     LayoutRect newRect = layoutViewportRect();
 
-    if (oldRect != newRect) {
-        invalidateScrollAnchoringElement();
+    if (oldRect != newRect)
         updateScrollAnchoringElement();
-    }
 
     // Triggering layout on height changes is necessary to make bottom-fixed elements behave correctly.
     if (oldRect.height() != newRect.height())
@@ -3124,7 +3123,7 @@ bool LocalFrameView::scrollToAnchorFragment(StringView fragmentIdentifier)
     if (anchorElement) {
         // If the anchor accepts keyboard focus, move focus there to aid users relying on keyboard navigation.
         if (anchorElement->isFocusable())
-            document->setFocusedElement(anchorElement.get(), { { }, { }, { }, { }, FocusVisibility::Visible });
+            document->setFocusedElement(anchorElement.get(), { { }, { }, { }, { }, { }, { }, FocusVisibility::Visible });
         else {
             document->setFocusedElement(nullptr);
             document->setFocusNavigationStartingNode(anchorElement.get());
@@ -3172,7 +3171,7 @@ void LocalFrameView::maintainScrollPositionAtScrollToTextFragmentRange(SimpleRan
 
 void LocalFrameView::scrollElementToRect(const Element& element, const IntRect& rect)
 {
-    m_frame->protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(m_frame->document())->updateLayoutIgnorePendingStylesheets();
 
     LayoutRect bounds;
     if (RenderElement* renderer = element.renderer())
@@ -3453,7 +3452,7 @@ TemporarySelectionChange LocalFrameView::revealRangeWithTemporarySelection(const
         TemporarySelectionOption::UserTriggered,
         TemporarySelectionOption::ForceCenterScroll
     };
-    return { range.startContainer().protectedDocument(), { range }, defaultOptions | extraOptions };
+    return { protect(range.startContainer().document()), { range }, defaultOptions | extraOptions };
 }
 
 static ScrollPositionChangeOptions scrollPositionChangeOptionsForElement(const LocalFrameView& frameView, Element* element, const ScrollRectToVisibleOptions& options)
@@ -3626,7 +3625,6 @@ void LocalFrameView::scrollOffsetChangedViaPlatformWidgetImpl(const ScrollOffset
     updateCompositingLayersAfterScrolling();
     repaintSlowRepaintObjects();
     scrollPositionChanged(scrollPositionFromOffset(oldOffset), scrollPositionFromOffset(newOffset));
-    invalidateScrollAnchoringElement();
     updateScrollAnchoringElement();
 
     if (auto* renderView = this->renderView()) {
@@ -4430,7 +4428,7 @@ bool LocalFrameView::safeToPropagateScrollToParent() const
     if (!parentDocument)
         return false;
 
-    return document->protectedSecurityOrigin()->isSameOriginDomain(parentDocument->protectedSecurityOrigin());
+    return protect(document->securityOrigin())->isSameOriginDomain(protect(parentDocument->securityOrigin()));
 }
 
 void LocalFrameView::scheduleScrollToAnchorAndTextFragment()
@@ -4578,9 +4576,9 @@ void LocalFrameView::scrollToPendingTextFragmentRange()
                 return;
         }
         if (m_haveCreatedTextIndicator)
-            document->protectedPage()->chrome().client().updateTextIndicator(WTF::move(textIndicator));
+            protect(document->page())->chrome().client().updateTextIndicator(WTF::move(textIndicator));
         else {
-            document->protectedPage()->chrome().client().setTextIndicator(WTF::move(textIndicator));
+            protect(document->page())->chrome().client().setTextIndicator(WTF::move(textIndicator));
             m_haveCreatedTextIndicator = true;
         }
     }
@@ -4724,18 +4722,18 @@ void LocalFrameView::queueScrollableAreaForScrollAnchoringUpdate(ScrollableArea&
 
 void LocalFrameView::updateScrollAnchoringElementsForScrollableAreas()
 {
-    updateScrollAnchoringElement();
+    updateScrollAnchoringElement(ComputeNewScrollAnchor::No);
     if (!m_scrollableAreas)
         return;
     for (auto& scrollableArea : *m_scrollableAreas)
         scrollableArea.updateScrollAnchoringElement();
 }
 
-void LocalFrameView::updateScrollAnchoringPositionForScrollableAreas()
+void LocalFrameView::adjustScrollAnchoringPositionForScrollableAreas()
 {
     auto scrollableAreasNeedingUpdate = std::exchange(m_scrollableAreasWithScrollAnchoringControllersNeedingUpdate, { });
     for (auto& scrollableArea : scrollableAreasNeedingUpdate)
-        scrollableArea.updateScrollPositionForScrollAnchoringController();
+        scrollableArea.adjustScrollAnchoringPosition();
 }
 
 void LocalFrameView::updateAnchorPositionedAfterScroll()
@@ -4800,7 +4798,6 @@ void LocalFrameView::scheduleResizeEventIfNeeded()
     }
 
     // TODO: move this to a method called for all scrollable areas
-    invalidateScrollAnchoringElement();
     updateScrollAnchoringElement();
 
     LOG_WITH_STREAM(Events, stream << "LocalFrameView " << this << " scheduleResizeEventIfNeeded scheduling resize event for document" << document << ", size " << currentSize);
@@ -5325,7 +5322,7 @@ void LocalFrameView::updateScrollCorner()
         m_scrollCorner = nullptr;
     else {
         if (!m_scrollCorner) {
-            m_scrollCorner = createRenderer<RenderScrollbarPart>(renderer->protectedDocument(), WTF::move(*cornerStyle));
+            m_scrollCorner = createRenderer<RenderScrollbarPart>(protect(renderer->document()), WTF::move(*cornerStyle));
             m_scrollCorner->initializeStyle();
         } else
             m_scrollCorner->setStyle(WTF::move(*cornerStyle));
@@ -7109,24 +7106,6 @@ float LocalFrameView::deviceScaleFactor() const
 void LocalFrameView::writeRenderTreeAsText(TextStream& ts, OptionSet<RenderAsTextFlag> behavior)
 {
     externalRepresentationForLocalFrame(ts, frame(), behavior);
-}
-
-void LocalFrameView::updateScrollAnchoringElement()
-{
-    if (m_scrollAnchoringController)
-        m_scrollAnchoringController->updateAnchorElement();
-}
-
-void LocalFrameView::updateScrollPositionForScrollAnchoringController()
-{
-    if (m_scrollAnchoringController)
-        m_scrollAnchoringController->adjustScrollPositionForAnchoring();
-}
-
-void LocalFrameView::invalidateScrollAnchoringElement()
-{
-    if (m_scrollAnchoringController)
-        m_scrollAnchoringController->invalidateAnchorElement();
 }
 
 void LocalFrameView::scrollbarStyleDidChange()

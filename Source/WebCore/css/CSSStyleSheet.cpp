@@ -343,7 +343,7 @@ bool CSSStyleSheet::canAccessRules() const
     if (!document)
         return false;
 
-    return document->protectedSecurityOrigin()->canRequest(baseURL, OriginAccessPatternsForWebProcess::singleton());
+    return protect(document->securityOrigin())->canRequest(baseURL, OriginAccessPatternsForWebProcess::singleton());
 }
 
 ExceptionOr<unsigned> CSSStyleSheet::insertRule(const String& ruleString, unsigned index)

@@ -199,9 +199,4 @@ std::optional<WebCore::Exception> WebScreenOrientationManagerProxy::platformShou
 }
 #endif
 
-Ref<WebPageProxy> WebScreenOrientationManagerProxy::protectedPage() const
-{
-    return m_page.get();
-}
-
 } // namespace WebKit

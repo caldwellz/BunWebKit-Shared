@@ -188,6 +188,15 @@ NSDictionary *WKPageGetAccessibilityWebProcessDebugInfo(WKPageRef pageRef)
 #endif
 }
 
+NSArray *WKPageGetAccessibilityWebProcessDebugInfoForAllProcesses(WKPageRef pageRef)
+{
+#if PLATFORM(MAC)
+    return WebKit::toProtectedImpl(pageRef)->getAccessibilityWebProcessDebugInfoForAllProcesses();
+#else
+    return nil;
+#endif
+}
+
 void WKPageAccessibilityClearIsolatedTree(WKPageRef pageRef)
 {
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)

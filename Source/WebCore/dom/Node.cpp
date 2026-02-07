@@ -1287,19 +1287,9 @@ Element* Node::shadowHost() const
     return nullptr;
 }
 
-RefPtr<Element> Node::protectedShadowHost() const
-{
-    return shadowHost();
-}
-
 ShadowRoot* Node::containingShadowRoot() const
 {
     return dynamicDowncast<ShadowRoot>(treeScope().rootNode());
-}
-
-RefPtr<ShadowRoot> Node::protectedContainingShadowRoot() const
-{
-    return containingShadowRoot();
 }
 
 #if ASSERT_ENABLED
@@ -2236,7 +2226,6 @@ void Node::moveTreeToNewScope(Node& root, TreeScope& oldScope, TreeScope& newSco
                 shadowRoot.moveShadowRootToNewParentScope(newScope, newDocument);
                 return moveShadowTreeToNewDocumentFastCase(shadowRoot, oldDocument, newDocument);
             });
-//            UNUSED_PARAM(nodeCount);
             newDocument->incrementReferencingNodeCount(nodeCount);
             oldDocument->decrementReferencingNodeCount(nodeCount);
         } else {

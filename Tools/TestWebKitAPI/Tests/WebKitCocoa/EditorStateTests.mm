@@ -620,6 +620,9 @@ TEST(EditorStateTests, UnionRectInVisibleSelectedRangeAndDocumentVisibleRect)
     [webView mouseDownAtPoint:NSMakePoint(15, 390) simulatePressure:NO];
     [webView mouseDragToPoint:NSMakePoint(300, 390)];
     [webView mouseUpAtPoint:NSMakePoint(300, 390)];
+    [webView waitForPendingMouseEvents];
+    [webView waitForNextPresentationUpdate];
+
     [webView stringByEvaluatingJavaScript:@"document.execCommand('selectAll', true)"];
     [webView waitForNextPresentationUpdate];
 

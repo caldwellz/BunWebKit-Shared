@@ -121,6 +121,7 @@ inline bool MutableCSSSelector::needsImplicitShadowCombinatorForMatching() const
             || pseudoElement() == CSSSelector::PseudoElement::Cue
 #endif
             || pseudoElement() == CSSSelector::PseudoElement::Part
+            || pseudoElement() == CSSSelector::PseudoElement::Picker
             || pseudoElement() == CSSSelector::PseudoElement::Slotted
             || pseudoElement() == CSSSelector::PseudoElement::UserAgentPartLegacyAlias
             || pseudoElement() == CSSSelector::PseudoElement::WebKitUnknown);

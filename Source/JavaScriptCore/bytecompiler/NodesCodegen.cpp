@@ -5384,7 +5384,7 @@ static void emitProgramNodeBytecode(BytecodeGenerator& generator, ScopeNode& sco
     scopeNode.emitStatementsBytecode(generator, dstRegister.get());
 
     generator.emitDebugHook(DidExecuteProgram, JSTextPosition(scopeNode.lastLine(), scopeNode.startOffset(), scopeNode.lineStartOffset()));
-    generator.emitEnd(dstRegister.get());
+    generator.emitReturn(dstRegister.get());
 }
 
 // ------------------------------ ProgramNode -----------------------------
@@ -5412,7 +5412,7 @@ void EvalNode::emitBytecode(BytecodeGenerator& generator, RegisterID*)
     emitStatementsBytecode(generator, dstRegister.get());
 
     generator.emitDebugHook(DidExecuteProgram, JSTextPosition(lastLine(), startOffset(), lineStartOffset()));
-    generator.emitEnd(dstRegister.get());
+    generator.emitReturn(dstRegister.get());
 }
 
 // ------------------------------ FunctionNode -----------------------------

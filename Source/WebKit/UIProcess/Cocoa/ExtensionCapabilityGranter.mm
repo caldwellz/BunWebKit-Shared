@@ -98,7 +98,7 @@ static Ref<ExtensionCapabilityGrantsPromise> grantCapabilityInternal(const Exten
     });
 
 #if USE(EXTENSIONKIT)
-    return invokeAsync(granterQueue(), [capability = capability.platformCapability(), capabilityGrants = crossThreadCopy(WTF::move(capabilityGrants))] mutable {
+    return invokeAsync(protect(granterQueue()), [capability = capability.platformCapability(), capabilityGrants = crossThreadCopy(WTF::move(capabilityGrants))] mutable {
         for (auto& capabilityGrant : capabilityGrants)
             capabilityGrant.grant.setPlatformGrant(grantCapability(capability, capabilityGrant.extensionProcess));
         return ExtensionCapabilityGrantsPromise::createAndResolve(WTF::move(capabilityGrants));
@@ -133,7 +133,7 @@ static Vector<Ref<AuxiliaryProcessProxy>> auxiliaryProcessesForPage(WebPageProxy
     // FIXME: If we've made it this far we assume at least one process is playing media, but we
     // don't have the metadata to know that the main frame process is *not* one of those processes.
     // We should fix that, perhaps by storing mediaState on a per-frame basis.
-    auxiliaryProcesses.append(page.legacyMainFrameProcess());
+    auxiliaryProcesses.append(protect(page.legacyMainFrameProcess()));
 
     protect(page.browsingContextGroup())->forEachRemotePage(page, [&](auto& remotePage) {
         if (WebCore::MediaProducer::needsMediaCapability(remotePage.mediaState()))
@@ -264,7 +264,7 @@ void ExtensionCapabilityGranter::setMediaCapabilityActive(MediaCapability& capab
 
     GRANTER_RELEASE_LOG(capability.environmentIdentifier(), "%{public}s", isActive ? "activating" : "deactivating");
 
-    invokeAsync(granterQueue(), [platformCapability = capability.platformCapability(), platformMediaEnvironment = RetainPtr { capability.platformMediaEnvironment() }, isActive] {
+    invokeAsync(protect(granterQueue()), [platformCapability = capability.platformCapability(), platformMediaEnvironment = RetainPtr { capability.platformMediaEnvironment() }, isActive] {
 #if USE(EXTENSIONKIT)
         NSError *error = nil;
         if (isActive)
@@ -278,7 +278,7 @@ void ExtensionCapabilityGranter::setMediaCapabilityActive(MediaCapability& capab
 #endif
         return ExtensionCapabilityActivationPromise::createAndReject(ExtensionCapabilityGrantError::PlatformError);
     })->whenSettled(RunLoop::mainSingleton(), [weakCapability = WeakPtr { capability }, isActive](auto&& result) {
-        auto capability = weakCapability.get();
+        RefPtr capability = weakCapability.get();
         if (!capability)
             return;
 
@@ -309,7 +309,7 @@ void ExtensionCapabilityGranter::setMediaCapabilityActive(MediaCapability& capab
 
 void ExtensionCapabilityGranter::invalidateGrants(Vector<ExtensionCapabilityGrant>&& grants)
 {
-    granterQueue().dispatch([grants = crossThreadCopy(WTF::move(grants))]() mutable {
+    protect(granterQueue())->dispatch([grants = crossThreadCopy(WTF::move(grants))]() mutable {
         for (auto& grant : grants)
             grant.setPlatformGrant({ });
     });

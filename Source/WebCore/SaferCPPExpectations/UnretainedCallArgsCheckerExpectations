@@ -32,8 +32,6 @@ page/cocoa/WebTextIndicatorLayer.mm
 [ Mac ] page/scrolling/mac/ScrollingTreeOverflowScrollingNodeMac.mm
 [ Mac ] page/scrolling/mac/ScrollingTreePluginScrollingNodeMac.mm
 [ Mac ] page/scrolling/mac/ScrollingTreeScrollingNodeDelegateMac.mm
-platform/audio/cocoa/AudioFileReaderCocoa.cpp
-platform/audio/cocoa/PlatformRawAudioDataCocoa.cpp
 [ iOS ] platform/audio/ios/MediaSessionHelperIOS.mm
 platform/cf/KeyedDecoderCF.cpp
 platform/cf/KeyedEncoderCF.cpp
@@ -121,7 +119,6 @@ platform/ios/WebAVPlayerController.mm
 [ iOS ] platform/ios/wak/WebCoreThread.mm
 [ iOS ] platform/ios/wak/WebCoreThreadRun.cpp
 platform/mediarecorder/MediaRecorderPrivateEncoder.cpp
-[ iOS ] platform/mediastream/ios/ReplayKitCaptureSource.mm
 platform/mediastream/mac/AVVideoCaptureSource.mm
 [ Mac ] platform/mediastream/mac/ScreenCaptureKitCaptureSource.mm
 [ Mac ] platform/mediastream/mac/ScreenCaptureKitSharingSessionManager.mm

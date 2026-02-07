@@ -199,7 +199,7 @@ auto AbstractModuleRecord::resolveImport(JSGlobalObject* globalObject, const Ide
 
     AbstractModuleRecord* importedModule = hostResolveImportedModule(globalObject, importEntry.moduleRequest);
     RETURN_IF_EXCEPTION(scope, Resolution::error());
-    return importedModule->resolveExport(globalObject, importEntry.importName);
+    RELEASE_AND_RETURN(scope, importedModule->resolveExport(globalObject, importEntry.importName));
 }
 
 struct AbstractModuleRecord::ResolveQuery {

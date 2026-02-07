@@ -85,6 +85,7 @@ OBJC_CLASS WKRevealItemPresenter;
 OBJC_CLASS _WKWarningView;
 OBJC_CLASS WKShareSheet;
 OBJC_CLASS WKTextAnimationManager;
+OBJC_CLASS WKTextSelectionController;
 OBJC_CLASS WKViewLayoutStrategy;
 OBJC_CLASS WKWebView;
 OBJC_CLASS WKWindowVisibilityObserver;
@@ -247,7 +248,6 @@ public:
     WebPageProxy& page() { return m_page.get(); }
 
     WKWebView *view() const { return m_view.getAutoreleased(); }
-    RetainPtr<WKWebView> protectedView() const { return m_view.get(); };
 
     void processWillSwap();
     void processDidExit();
@@ -416,7 +416,6 @@ public:
 #if ENABLE(FULLSCREEN_API)
     bool hasFullScreenWindowController() const;
     WKFullScreenWindowController *fullScreenWindowController();
-    RetainPtr<WKFullScreenWindowController> protectedFullScreenWindowController();
     void closeFullScreenWindowController();
 #endif
     NSView *fullScreenPlaceholderView();
@@ -482,6 +481,8 @@ public:
     void uppercaseWord();
     void lowercaseWord();
     void capitalizeWord();
+    void convertToTraditionalChinese();
+    void convertToSimplifiedChinese();
 
     void requestCandidatesForSelectionIfNeeded();
 
@@ -607,8 +608,7 @@ public:
 
     _WKWarningView *warningView() { return m_warningView.get(); }
 
-    ViewGestureController* gestureController() { return m_gestureController.get(); }
-    RefPtr<ViewGestureController> protectedGestureController() const;
+    ViewGestureController* gestureController() const { return m_gestureController.get(); }
     ViewGestureController& ensureGestureController();
     Ref<ViewGestureController> ensureProtectedGestureController();
     void setAllowsBackForwardNavigationGestures(bool);
@@ -835,6 +835,10 @@ public:
 
 #if ENABLE(VIDEO)
     void showCaptionDisplaySettings(WebCore::HTMLMediaElementIdentifier, const WebCore::ResolvedCaptionDisplaySettingsOptions&, CompletionHandler<void(Expected<void, WebCore::ExceptionData>&&)>&&);
+#endif
+
+#if HAVE(APPKIT_GESTURES_SUPPORT)
+    void addTextSelectionManager();
 #endif
 
 private:
@@ -1131,7 +1135,11 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     bool m_inlinePredictionsEnabled { false };
 #endif
 
+    // FIXME: Perhaps merge these types at some point?
+#if HAVE(APPKIT_GESTURES_SUPPORT)
     RetainPtr<WKAppKitGestureController> m_appKitGestureController;
+    RetainPtr<WKTextSelectionController> m_textSelectionController;
+#endif
 };
 
 } // namespace WebKit

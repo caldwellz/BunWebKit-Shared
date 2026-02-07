@@ -530,7 +530,7 @@ RetainPtr<id> IOSurface::asCAIOSurfaceLayerContents() const
         if (m_contentEDRHeadroom && *m_contentEDRHeadroom != 1 && PAL::canLoad_QuartzCore_CAIOSurfaceReloadColorAttributes())
             CAIOSurfaceReloadColorAttributes(result.get());
 #endif
-        return bridge_id_cast(result);
+        return bridge_id_cast(WTF::move(result));
     }
     return asLayerContents();
 }

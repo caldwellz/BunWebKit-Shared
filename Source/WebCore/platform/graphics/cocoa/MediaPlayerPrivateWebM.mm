@@ -50,6 +50,7 @@
 #import "ResourceResponse.h"
 #import "SampleMap.h"
 #import "SecurityOrigin.h"
+#import "ShareableBitmap.h"
 #import "TrackBuffer.h"
 #import "VP9UtilitiesCocoa.h"
 #import "VideoFrameCV.h"
@@ -756,6 +757,11 @@ DestinationColorSpace MediaPlayerPrivateWebM::colorSpace()
     updateLastImage();
     RefPtr lastImage = m_lastImage;
     return lastImage ? lastImage->colorSpace() : DestinationColorSpace::SRGB();
+}
+
+Ref<MediaPlayer::BitmapImagePromise> MediaPlayerPrivateWebM::bitmapImageForCurrentTime()
+{
+    return m_renderer->currentBitmapImage();
 }
 
 void MediaPlayerPrivateWebM::setNaturalSize(FloatSize size)

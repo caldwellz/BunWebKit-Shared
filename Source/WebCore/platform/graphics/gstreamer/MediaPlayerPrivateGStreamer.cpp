@@ -3765,7 +3765,11 @@ void MediaPlayerPrivateGStreamer::pushTextureToCompositor(bool isDuplicateSample
     if (!m_videoInfo)
         m_videoInfo = VideoFrameGStreamer::infoFromCaps(GRefPtr(gst_sample_get_caps(m_sample.get())));
 
-    m_contentsBufferProxy->setDisplayBuffer(CoordinatedPlatformLayerBufferVideo::create(m_sample.get(), &m_videoInfo->info, m_videoInfo->dmaBufFormat, m_videoDecoderPlatform, !m_isUsingFallbackVideoSink, m_textureMapperFlags));
+    VideoFrameGStreamer::CreateOptions options;
+    options.info = m_videoInfo;
+    auto frame = VideoFrameGStreamer::createWrappedSample(m_sample, options);
+
+    m_contentsBufferProxy->setDisplayBuffer(CoordinatedPlatformLayerBufferVideo::create(WTF::move(frame), m_videoDecoderPlatform, !m_isUsingFallbackVideoSink, m_textureMapperFlags));
 }
 #endif // USE(COORDINATED_GRAPHICS)
 
@@ -4743,6 +4747,7 @@ bool MediaPlayerPrivateGStreamer::applyAudioSinkDevice(GstElement* audioSink, Gs
 
 void MediaPlayerPrivateGStreamer::audioOutputDeviceChanged()
 {
+#if ENABLE(MEDIA_STREAM)
     RefPtr player = m_player.get();
     if (!player)
         return;
@@ -4774,6 +4779,7 @@ void MediaPlayerPrivateGStreamer::audioOutputDeviceChanged()
         GST_WARNING_OBJECT(pipeline(), "Could not obtain GstDevice for identifier '%s'", deviceId.utf8().data());
 
     GST_DEBUG_OBJECT(pipeline(), "%s to audio output device '%s'", changed ? "Changed" : "Could not change", deviceId.utf8().data());
+#endif
 }
 
 String MediaPlayerPrivateGStreamer::codecForStreamId(TrackID streamId)

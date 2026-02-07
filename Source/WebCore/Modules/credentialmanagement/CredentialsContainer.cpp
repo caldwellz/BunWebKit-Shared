@@ -55,15 +55,16 @@ void CredentialsContainer::get(CredentialRequestOptions&& options, CredentialPro
         return;
     }
 
+    Ref document = *this->document();
     if (options.digital) {
 #if HAVE(DIGITAL_CREDENTIALS_UI)
-        DigitalCredential::discoverFromExternalSource(*document(), WTF::move(promise), WTF::move(options));
+        DigitalCredential::discoverFromExternalSource(document, WTF::move(promise), WTF::move(options));
 #else
         promise.resolve(nullptr);
 #endif
         return;
     }
-    document()->page()->authenticatorCoordinator().discoverFromExternalSource(*document(), WTF::move(options), WTF::move(promise));
+    document->page()->authenticatorCoordinator().discoverFromExternalSource(document, WTF::move(options), WTF::move(promise));
 }
 
 void CredentialsContainer::store(const BasicCredential&, CredentialPromise&& promise)
@@ -77,13 +78,14 @@ void CredentialsContainer::isCreate(CredentialCreationOptions&& options, Credent
         return;
 
     // Extra.
-    if (!document()->hasFocus()) {
+    Ref document = *this->document();
+    if (!document->hasFocus()) {
         promise.reject(Exception { ExceptionCode::NotAllowedError, "The document is not focused."_s });
         return;
     }
 
     if (options.publicKey) {
-        document()->page()->authenticatorCoordinator().create(*document(), WTF::move(options), WTF::move(options.signal), WTF::move(promise));
+        document->page()->authenticatorCoordinator().create(document, WTF::move(options), WTF::move(options.signal), WTF::move(promise));
         return;
     }
 

@@ -3492,12 +3492,25 @@ private:
 
         case WasmRefCast: {
             auto* cast = m_value->as<WasmRefTypeCheckValue>();
+            auto* child = cast->child(0);
+            if (child->opcode() == WasmStructNew) {
+                auto* structNew = child->as<WasmStructNewValue>();
+                auto rtt = structNew->rtt();
+                int32_t toHeapType = cast->targetHeapType();
+                SUPPRESS_UNCOUNTED_LOCAL const Wasm::RTT* targetRTT = cast->targetRTT();
+                if (!Wasm::typeIndexIsType(static_cast<Wasm::TypeIndex>(toHeapType))) {
+                    if (targetRTT->isSubRTT(rtt)) {
+                        replaceWithIdentity(structNew);
+                        break;
+                    }
+                }
+            }
+
             auto replaceWithNullTrapping = [&] {
                 auto flags = cast->flags();
                 flags.remove(WasmRefTypeCheckFlag::AllowNull);
                 SUPPRESS_UNCOUNTED_ARG Value* newValue = m_insertionSet.insert<WasmRefTypeCheckValue>(m_index, trapping(WasmRefCast), Int64, cast->origin(), cast->targetHeapType(), flags, cast->targetRTT(), cast->child(0));
-                m_value->replaceWithIdentity(newValue);
-                m_changed = true;
+                replaceWithIdentity(newValue);
             };
 
             if (cast->allowNull()) {
@@ -3538,6 +3551,22 @@ private:
                     }
                     if (effects.exitsSideways || effects.writes)
                         break;
+                }
+            }
+            break;
+        }
+
+        case WasmRefTest: {
+            auto* cast = m_value->as<WasmRefTypeCheckValue>();
+            auto* child = cast->child(0);
+            if (child->opcode() == WasmStructNew) {
+                auto* structNew = child->as<WasmStructNewValue>();
+                auto rtt = structNew->rtt();
+                int32_t toHeapType = cast->targetHeapType();
+                SUPPRESS_UNCOUNTED_LOCAL const Wasm::RTT* targetRTT = cast->targetRTT();
+                if (!Wasm::typeIndexIsType(static_cast<Wasm::TypeIndex>(toHeapType))) {
+                    replaceWithNewValue(m_proc.addIntConstant(m_value, !!targetRTT->isSubRTT(rtt)));
+                    break;
                 }
             }
             break;

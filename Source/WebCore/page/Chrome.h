@@ -177,10 +177,7 @@ public:
     bool canRunModal() const;
     void runModal();
 
-    bool toolbarsVisible() const;
-    bool statusbarVisible() const;
-    bool scrollbarsVisible() const;
-    bool menubarVisible() const;
+    bool isPopup() const;
 
     void setResizable(bool);
 

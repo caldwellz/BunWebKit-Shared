@@ -145,7 +145,7 @@
 #include "AudioSessionRoutingArbitratorProxy.h"
 #endif
 
-#if ENABLE(REMOTE_INSPECTOR) && ENABLE(WEBASSEMBLY)
+#if ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
 #include "WasmDebuggerDispatcherMessages.h"
 #endif
 
@@ -285,9 +285,9 @@ Vector<std::pair<WebCore::ProcessIdentifier, WebCore::RegistrableDomain>> WebPro
     return result;
 }
 
-Ref<WebProcessProxy> WebProcessProxy::create(WebProcessPool& processPool, WebsiteDataStore* websiteDataStore, LockdownMode lockdownMode, EnhancedSecurity enhancedSecurity, IsPrewarmed isPrewarmed, CrossOriginMode crossOriginMode, ShouldLaunchProcess shouldLaunchProcess)
+Ref<WebProcessProxy> WebProcessProxy::create(WebProcessPool& processPool, WebsiteDataStore* websiteDataStore, LockdownMode lockdownMode, EnhancedSecurity enhancedSecurity, IsPrewarmed isPrewarmed, CrossOriginMode crossOriginMode, ShouldLaunchProcess shouldLaunchProcess, EnableWebAssemblyDebugger enableWebAssemblyDebugger)
 {
-    Ref proxy = adoptRef(*new WebProcessProxy(processPool, websiteDataStore, isPrewarmed, crossOriginMode, lockdownMode, enhancedSecurity));
+    Ref proxy = adoptRef(*new WebProcessProxy(processPool, websiteDataStore, isPrewarmed, crossOriginMode, lockdownMode, enhancedSecurity, enableWebAssemblyDebugger));
     if (shouldLaunchProcess == ShouldLaunchProcess::Yes) {
         if (liveProcessesLRU().computeSize() >= s_maxProcessCount) {
             for (auto& processPool : WebProcessPool::allProcessPools())
@@ -311,7 +311,7 @@ Ref<WebProcessProxy> WebProcessProxy::createForRemoteWorkers(RemoteWorkerType wo
     return proxy;
 }
 
-WebProcessProxy::WebProcessProxy(WebProcessPool& processPool, WebsiteDataStore* websiteDataStore, IsPrewarmed isPrewarmed, CrossOriginMode crossOriginMode, LockdownMode lockdownMode, EnhancedSecurity enhancedSecurity)
+WebProcessProxy::WebProcessProxy(WebProcessPool& processPool, WebsiteDataStore* websiteDataStore, IsPrewarmed isPrewarmed, CrossOriginMode crossOriginMode, LockdownMode lockdownMode, EnhancedSecurity enhancedSecurity, EnableWebAssemblyDebugger enableWebAssemblyDebugger)
     : AuxiliaryProcessProxy(processPool.shouldTakeUIBackgroundAssertion() ? ShouldTakeUIBackgroundAssertion::Yes : ShouldTakeUIBackgroundAssertion::No
     , processPool.alwaysRunsAtBackgroundPriority() ? AlwaysRunsAtBackgroundPriority::Yes : AlwaysRunsAtBackgroundPriority::No)
     , m_backgroundResponsivenessTimer(makeUniqueRef<BackgroundProcessResponsivenessTimer>(*this))
@@ -329,6 +329,9 @@ WebProcessProxy::WebProcessProxy(WebProcessPool& processPool, WebsiteDataStore* 
     , m_shutdownPreventingScopeCounter([this](RefCounterEvent event) { if (event == RefCounterEvent::Decrement) maybeShutDown(); })
     , m_webLockRegistry(websiteDataStore ? makeUniqueWithoutRefCountedCheck<WebLockRegistryProxy>(*this) : nullptr)
     , m_webPermissionController(makeUniqueRefWithoutRefCountedCheck<WebPermissionControllerProxy>(*this))
+#if ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
+    , m_createWasmDebuggerDebuggable(enableWebAssemblyDebugger == EnableWebAssemblyDebugger::Yes)
+#endif
 {
     RELEASE_ASSERT(isMainThreadOrCheckDisabled());
     WEBPROCESSPROXY_RELEASE_LOG(Process, "constructor:");
@@ -445,7 +448,7 @@ void WebProcessProxy::setWebsiteDataStore(WebsiteDataStore& dataStore)
     WEBPROCESSPROXY_RELEASE_LOG(Process, "setWebsiteDataStore() dataStore=%p, sessionID=%" PRIu64, &dataStore, dataStore.sessionID().toUInt64());
 #if PLATFORM(COCOA)
     if (!m_websiteDataStore)
-        dataStore.protectedNetworkProcess()->sendXPCEndpointToProcess(*this);
+        protect(dataStore.networkProcess())->sendXPCEndpointToProcess(*this);
 #endif
     m_websiteDataStore = dataStore;
     logger().setEnabled(this, isAlwaysOnLoggingAllowed());
@@ -721,7 +724,7 @@ void WebProcessProxy::shutDown()
 
     shutDownProcess();
 
-#if ENABLE(REMOTE_INSPECTOR) && ENABLE(WEBASSEMBLY)
+#if ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
     if (JSC::Options::enableWasmDebugger()) [[unlikely]]
         destroyWasmDebuggerTarget();
 #endif
@@ -814,8 +817,8 @@ bool WebProcessProxy::shouldTakeNearSuspendedAssertion() const
     }
 
     for (auto& page : m_pageMap.values()) {
-        bool processSuppressionEnabled = page->preferences().pageVisibilityBasedProcessSuppressionEnabled();
-        bool nearSuspendedAssertionsEnabled = page->preferences().shouldTakeNearSuspendedAssertions();
+        bool processSuppressionEnabled = protect(page)->preferences().pageVisibilityBasedProcessSuppressionEnabled();
+        bool nearSuspendedAssertionsEnabled = protect(page)->preferences().shouldTakeNearSuspendedAssertions();
         if (nearSuspendedAssertionsEnabled || !processSuppressionEnabled)
             return true;
     }
@@ -991,7 +994,7 @@ void WebProcessProxy::assumeReadAccessToBaseURL(WebPageProxy& page, const String
     if (directoryOnly)
         afterAllowAccess();
     else
-        dataStore->protectedNetworkProcess()->sendWithAsyncReply(Messages::NetworkProcess::AllowFileAccessFromWebProcess(coreProcessIdentifier(), path), WTF::move(afterAllowAccess));
+        protect(dataStore->networkProcess())->sendWithAsyncReply(Messages::NetworkProcess::AllowFileAccessFromWebProcess(coreProcessIdentifier(), path), WTF::move(afterAllowAccess));
 }
 
 void WebProcessProxy::assumeReadAccessToBaseURLs(WebPageProxy& page, const Vector<String>& urls, CompletionHandler<void()>&& completionHandler)
@@ -1018,7 +1021,7 @@ void WebProcessProxy::assumeReadAccessToBaseURLs(WebPageProxy& page, const Vecto
     if (!networkProcessWillCheckBlobFileAccess())
         return completionHandler();
 
-    dataStore->protectedNetworkProcess()->sendWithAsyncReply(Messages::NetworkProcess::AllowFilesAccessFromWebProcess(coreProcessIdentifier(), WTF::move(paths)), [weakThis = WeakPtr { *this }, weakPage = WeakPtr { page }, paths, completionHandler = WTF::move(completionHandler)] mutable {
+    protect(dataStore->networkProcess())->sendWithAsyncReply(Messages::NetworkProcess::AllowFilesAccessFromWebProcess(coreProcessIdentifier(), WTF::move(paths)), [weakThis = WeakPtr { *this }, weakPage = WeakPtr { page }, paths, completionHandler = WTF::move(completionHandler)] mutable {
         if (!weakThis || !weakPage)
             return completionHandler();
 
@@ -1428,7 +1431,7 @@ void WebProcessProxy::didChangeIsResponsive()
 void WebProcessProxy::setIgnoreInvalidMessageForTesting()
 {
     if (state() == State::Running)
-        protectedConnection()->setIgnoreInvalidMessageForTesting();
+        protect(connection())->setIgnoreInvalidMessageForTesting();
     m_ignoreInvalidMessageForTesting = true;
 }
 #endif
@@ -1450,20 +1453,20 @@ void WebProcessProxy::didFinishLaunching(ProcessLauncher* launcher, IPC::Connect
 
 #if PLATFORM(COCOA)
     if (RefPtr websiteDataStore = m_websiteDataStore)
-        websiteDataStore->protectedNetworkProcess()->sendXPCEndpointToProcess(*this);
+        protect(websiteDataStore->networkProcess())->sendXPCEndpointToProcess(*this);
 #endif
 
     protect(processPool())->processDidFinishLaunching(*this);
     m_backgroundResponsivenessTimer->updateState();
 
-#if ENABLE(REMOTE_INSPECTOR) && ENABLE(WEBASSEMBLY)
-    if (JSC::Options::enableWasmDebugger()) [[unlikely]]
+#if ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
+    if (m_createWasmDebuggerDebuggable || JSC::Options::enableWasmDebugger()) [[unlikely]]
         createWasmDebuggerTarget();
 #endif
 
 #if ENABLE(IPC_TESTING_API)
     if (m_ignoreInvalidMessageForTesting)
-        protectedConnection()->setIgnoreInvalidMessageForTesting();
+        protect(connection())->setIgnoreInvalidMessageForTesting();
 #endif
 
 #if USE(RUNNINGBOARD) && PLATFORM(MAC)
@@ -2270,9 +2273,9 @@ void WebProcessProxy::didStartProvisionalLoadForMainFrame(const URL& url)
     RefPtr dataStore = websiteDataStore();
     if (dataStore && m_site && *m_site != site) {
         if (isRunningServiceWorkers())
-            dataStore->protectedNetworkProcess()->terminateRemoteWorkerContextConnectionWhenPossible(RemoteWorkerType::ServiceWorker, dataStore->sessionID(), m_site->domain(), coreProcessIdentifier());
+            protect(dataStore->networkProcess())->terminateRemoteWorkerContextConnectionWhenPossible(RemoteWorkerType::ServiceWorker, dataStore->sessionID(), m_site->domain(), coreProcessIdentifier());
         if (isRunningSharedWorkers())
-            dataStore->protectedNetworkProcess()->terminateRemoteWorkerContextConnectionWhenPossible(RemoteWorkerType::SharedWorker, dataStore->sessionID(), m_site->domain(), coreProcessIdentifier());
+            protect(dataStore->networkProcess())->terminateRemoteWorkerContextConnectionWhenPossible(RemoteWorkerType::SharedWorker, dataStore->sessionID(), m_site->domain(), coreProcessIdentifier());
 
         m_site = makeUnexpected(SiteState::MultipleSites);
         return;
@@ -2607,7 +2610,7 @@ void WebProcessProxy::startBackgroundActivityForFullscreenInput()
     if (m_backgroundActivityForFullscreenFormControls)
         return;
 
-    m_backgroundActivityForFullscreenFormControls = protectedThrottler()->backgroundActivity("Fullscreen input"_s);
+    m_backgroundActivityForFullscreenFormControls = protect(throttler())->backgroundActivity("Fullscreen input"_s);
     WEBPROCESSPROXY_RELEASE_LOG(ProcessSuspension, "startBackgroundActivityForFullscreenInput: UIProcess is taking a background assertion because it is presenting fullscreen UI for form controls.");
 }
 
@@ -2671,7 +2674,7 @@ void WebProcessProxy::updateRemoteWorkerProcessAssertion(RemoteWorkerType worker
     });
     if (shouldTakeForegroundActivity) {
         if (!ProcessThrottler::isValidForegroundActivity(workerInformation->activity.get()))
-            workerInformation->activity = protectedThrottler()->foregroundActivity("Worker for foreground view(s)"_s);
+            workerInformation->activity = protect(throttler())->foregroundActivity("Worker for foreground view(s)"_s);
         return;
     }
 
@@ -2681,14 +2684,14 @@ void WebProcessProxy::updateRemoteWorkerProcessAssertion(RemoteWorkerType worker
     });
     if (shouldTakeBackgroundActivity) {
         if (!ProcessThrottler::isValidBackgroundActivity(workerInformation->activity.get()))
-            workerInformation->activity = protectedThrottler()->backgroundActivity("Worker for background view(s)"_s);
+            workerInformation->activity = protect(throttler())->backgroundActivity("Worker for background view(s)"_s);
         return;
     }
 
     if (workerType == RemoteWorkerType::ServiceWorker && m_hasServiceWorkerBackgroundProcessing) {
         WEBPROCESSPROXY_RELEASE_LOG(ProcessSuspension, "Service Worker for background processing");
         if (!ProcessThrottler::isValidBackgroundActivity(workerInformation->activity.get()))
-            workerInformation->activity = protectedThrottler()->backgroundActivity("Service Worker for background processing"_s);
+            workerInformation->activity = protect(throttler())->backgroundActivity("Service Worker for background processing"_s);
         return;
     }
 
@@ -3089,7 +3092,7 @@ TextStream& operator<<(TextStream& ts, const WebProcessProxy& process)
     appendIf(process.isRunningSharedWorkers(), "has-shared-worker"_s);
     appendIf(process.memoryPressureStatus() == SystemMemoryPressureStatus::Warning, "warning-memory-pressure"_s);
     appendIf(process.memoryPressureStatus() == SystemMemoryPressureStatus::Critical, "critical-memory-pressure"_s);
-    ts << ", "_s << process.protectedThrottler().get();
+    ts << ", "_s << protect(process.throttler()).get();
 
 #if PLATFORM(COCOA)
     auto description = [](ProcessThrottleState state) -> ASCIILiteral {
@@ -3179,7 +3182,7 @@ void WebProcessProxy::didPostLegacySynchronousMessage(WebPageProxyIdentifier pag
     didPostMessage(pageID, identifier, WTF::move(frameInfo), handlerID, WTF::move(message), WTF::move(completionHandler));
 }
 
-#if ENABLE(REMOTE_INSPECTOR) && ENABLE(WEBASSEMBLY)
+#if ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
 
 void WebProcessProxy::createWasmDebuggerTarget()
 {
@@ -3255,16 +3258,16 @@ void WebProcessProxy::sendWasmDebuggerResponse(const String& response)
     debuggable->sendResponseToFrontend(response);
 }
 
+#endif // ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
+
 #if ENABLE(IPC_TESTING_API)
 void WebProcessProxy::takeInvalidMessageStringForTesting(CompletionHandler<void(String&&)>&& callback)
 {
-    ASCIILiteral error = protectedConnection()->takeErrorString();
+    ASCIILiteral error = protect(connection())->takeErrorString();
     String errorString = !error.isNull() ? String::fromUTF8(error) : emptyString();
     callback(WTF::move(errorString));
 }
 #endif
-
-#endif // ENABLE(REMOTE_INSPECTOR) && ENABLE(WEBASSEMBLY)
 
 } // namespace WebKit
 

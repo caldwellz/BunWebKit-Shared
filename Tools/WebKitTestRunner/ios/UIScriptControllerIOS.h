@@ -158,6 +158,7 @@ private:
     UIView *platformContentView() const override;
     JSObjectRef calendarType() const override;
     void setHardwareKeyboardAttached(bool) override;
+    void setShowKeyboardAfterElementFocusDelay(double) override;
     void setAllowsViewportShrinkToFit(bool) override;
     void copyText(JSStringRef) override;
     void installTapGestureOnWindow(JSValueRef) override;

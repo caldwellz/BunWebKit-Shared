@@ -100,6 +100,7 @@ class NativeImage;
 class PlatformMediaResourceLoader;
 class PlatformTimeRanges;
 class SecurityOriginData;
+class ShareableBitmap;
 class SharedBuffer;
 class TextTrackRepresentation;
 class VideoFrame;
@@ -543,6 +544,9 @@ public:
 
     RefPtr<VideoFrame> videoFrameForCurrentTime();
     RefPtr<NativeImage> nativeImageForCurrentTime();
+    RefPtr<ShareableBitmap> bitmapImageForCurrentTimeSync();
+    using BitmapImagePromise = NativePromise<Ref<ShareableBitmap>, void>;
+    Ref<BitmapImagePromise> bitmapImageForCurrentTime();
     DestinationColorSpace colorSpace();
     bool shouldGetNativeImageForCanvasDrawing() const;
 

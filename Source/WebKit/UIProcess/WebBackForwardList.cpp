@@ -34,6 +34,7 @@
 #include "WebBackForwardCache.h"
 #include "WebBackForwardListCounts.h"
 #include "WebBackForwardListFrameItem.h"
+#include "WebBackForwardListSwiftUtilities.h"
 #include "WebFrameProxy.h"
 #include "WebInspectorUtilities.h"
 #include "WebPageProxy.h"
@@ -47,8 +48,15 @@
 #include <wtf/cocoa/RuntimeApplicationChecksCocoa.h>
 #endif
 
+// FIXME: https://bugs.webkit.org/show_bug.cgi?id=306415
+#if ENABLE(BACK_FORWARD_LIST_SWIFT)
+#include "WebKit-Swift.h"
+#endif
+
 namespace WebKit {
 using namespace WebCore;
+
+#if !ENABLE(BACK_FORWARD_LIST_SWIFT)
 
 static const unsigned DefaultCapacity = 100;
 
@@ -115,20 +123,6 @@ void WebBackForwardList::addItem(Ref<WebBackForwardListItem>&& newItem)
             m_entries.removeLast();
         }
 
-        while (m_entries.size()) {
-            Ref lastEntry = m_entries.last();
-            if (!lastEntry->isRemoteFrameNavigation() || lastEntry->protectedNavigatedFrameItem()->sharesAncestor(newItem->protectedNavigatedFrameItem()))
-                break;
-            didRemoveItem(lastEntry);
-            removedItems.append(WTF::move(lastEntry));
-            m_entries.removeLast();
-
-            if (m_entries.isEmpty()) {
-                m_currentIndex = std::nullopt;
-            } else
-                m_currentIndex = *m_currentIndex - 1;
-        }
-
         // Toss the first item if the list is getting too big, as long as we're not using it
         // (or even if we are, if we only want 1 entry).
         if (m_entries.size() >= DefaultCapacity && (*m_currentIndex)) {
@@ -192,7 +186,7 @@ void WebBackForwardList::addChildItem(FrameIdentifier parentFrameID, Ref<FrameSt
     if (!currentItem)
         return;
 
-    RefPtr parentItem = currentItem->protectedMainFrameItem()->childItemForFrameID(parentFrameID);
+    RefPtr parentItem = protect(currentItem->mainFrameItem())->childItemForFrameID(parentFrameID);
     if (!parentItem)
         return;
 
@@ -504,7 +498,7 @@ void WebBackForwardList::didRemoveItem(WebBackForwardListItem& backForwardListIt
 {
     backForwardListItem.wasRemovedFromBackForwardList();
 
-    protect(m_page)->backForwardRemovedItem(backForwardListItem.identifier());
+    protect(m_page)->backForwardRemovedItem(backForwardListItem.mainFrameItem().identifier());
 
 #if PLATFORM(COCOA) || PLATFORM(GTK)
     backForwardListItem.setSnapshot(nullptr);
@@ -648,13 +642,9 @@ void WebBackForwardList::backForwardAddItemShared(IPC::Connection& connection, R
 
     if (RefPtr webPageProxy = m_page.get()) {
 
-        const bool isRemoteFrameNavigation = webPageProxy->isRemoteFrameNavigation(process);
-        ASSERT(!isRemoteFrameNavigation || webPageProxy->preferences().siteIsolationEnabled());
-
         auto navigatedFrameID = navigatedFrameState->frameID;
         Ref item = WebBackForwardListItem::create(completeFrameStateForNavigation(WTF::move(navigatedFrameState)), webPageProxy->identifier(), navigatedFrameID, protect(webPageProxy->browsingContextGroup()).ptr());
         item->setResourceDirectoryURL(webPageProxy->currentResourceDirectoryURL());
-        item->setIsRemoteFrameNavigation(isRemoteFrameNavigation);
         item->setEnhancedSecurity(process->enhancedSecurity());
         if (loadedWebArchive == LoadedWebArchive::Yes)
             item->setDataStoreForWebArchive(process->websiteDataStore());
@@ -694,18 +684,29 @@ void WebBackForwardList::backForwardUpdateItem(IPC::Connection& connection, Ref<
         Ref process = *downcast<WebProcessProxy>(AuxiliaryProcessProxy::fromConnection(connection));
         if (!!item->backForwardCacheEntry() != frameState->hasCachedPage) {
             if (frameState->hasCachedPage)
-            protect(webPageProxy->backForwardCache())->addEntry(*item, process->coreProcessIdentifier());
+                protect(webPageProxy->backForwardCache())->addEntry(*item, process->coreProcessIdentifier());
             else if (!item->suspendedPage())
-            protect(webPageProxy->backForwardCache())->removeEntry(*item);
+                protect(webPageProxy->backForwardCache())->removeEntry(*item);
         }
 
+        auto oldFrameID = frameItem->frameID();
         frameItem->setFrameState(WTF::move(frameState));
+        auto newFrameID = frameItem->frameID();
+
+        if (oldFrameID && newFrameID && oldFrameID != newFrameID)
+            updateAllFrameIDs(*oldFrameID, *newFrameID);
     }
+}
+
+void WebBackForwardList::updateAllFrameIDs(FrameIdentifier oldFrameID, FrameIdentifier newFrameID)
+{
+    for (auto& entry : m_entries)
+        entry->updateFrameID(oldFrameID, newFrameID);
 }
 
 void WebBackForwardList::backForwardGoToItem(BackForwardItemIdentifier itemID, CompletionHandler<void(const WebBackForwardListCounts&)>&& completionHandler)
 {
-    // On process swap, we tell the previous process to ignore the load, which causes it so restore its current back forward item to its previous
+    // On process swap, we tell the previous process to ignore the load, which causes it to restore its current back forward item to its previous
     // value. Since the load is really going on in a new provisional process, we want to ignore such requests from the committed process.
     // Any real new load in the committed process would have cleared m_provisionalPage.
     if (RefPtr webPageProxy = m_page.get()) {
@@ -736,27 +737,20 @@ void WebBackForwardList::backForwardGoToItemShared(BackForwardItemIdentifier ite
 
 void WebBackForwardList::backForwardAllItems(FrameIdentifier frameID, CompletionHandler<void(Vector<Ref<FrameState>>&&)>&& completionHandler)
 {
-    Vector<Ref<FrameState>> allItems;
+    auto frameItems = WTF::compactMap(entries(), [frameID](const auto& item) -> RefPtr<WebBackForwardListFrameItem> {
+        return protect(item->mainFrameItem())->childItemForFrameID(frameID);
+    });
 
-    for (Ref item : this->allItems()) {
-        RefPtr<FrameState> frameState;
-
-        if (RefPtr frameItem = item->protectedMainFrameItem()->childItemForFrameID(frameID))
-            frameState = frameItem->copyFrameStateWithChildren();
-        else
-            frameState = item->mainFrameState();
-
-        allItems.append(frameState.releaseNonNull());
-    }
-
-    completionHandler(WTF::move(allItems));
+    completionHandler(WTF::map(WTF::move(frameItems), [](const auto& frameItem) {
+        return frameItem->copyFrameStateWithChildren();
+    }));
 }
 
 void WebBackForwardList::backForwardItemAtIndex(int32_t index, FrameIdentifier frameID, CompletionHandler<void(RefPtr<FrameState>&&)>&& completionHandler)
 {
     // FIXME: This should verify that the web process requesting the item hosts the specified frame.
     if (RefPtr item = itemAtIndex(index)) {
-        if (RefPtr frameItem = item->protectedMainFrameItem()->childItemForFrameID(frameID))
+        if (RefPtr frameItem = protect(item->mainFrameItem())->childItemForFrameID(frameID))
             return completionHandler(frameItem->copyFrameStateWithChildren());
         completionHandler(item->mainFrameState());
     } else
@@ -784,4 +778,112 @@ String WebBackForwardList::loggingString()
     return builder.toString();
 }
 
+#else // ENABLE(BACK_FORWARD_LIST_SWIFT)
+
+WebBackForwardListWrapper::WebBackForwardListWrapper(WebPageProxy& webPageProxy)
+    : m_impl(WTF::makeUniqueWithoutFastMallocCheck<WebBackForwardList>(WebBackForwardList::init(webPageProxy)))
+{
+}
+
+WebBackForwardListWrapper::~WebBackForwardListWrapper()
+{
+}
+
+WebBackForwardListItem* WebBackForwardListWrapper::currentItem() const
+{
+    return m_impl->currentItem();
+}
+
+WebBackForwardListItem* WebBackForwardListWrapper::backItem() const
+{
+    return m_impl->backItem();
+}
+
+WebBackForwardListItem* WebBackForwardListWrapper::forwardItem() const
+{
+    return m_impl->forwardItem();
+}
+
+WebBackForwardListItem* WebBackForwardListWrapper::itemAtIndex(int index) const
+{
+    return m_impl->itemAtIndex(index);
+}
+
+unsigned WebBackForwardListWrapper::backListCount() const
+{
+    return m_impl->backListCount();
+}
+
+unsigned WebBackForwardListWrapper::forwardListCount() const
+{
+    return m_impl->forwardListCount();
+}
+
+Ref<API::Array> WebBackForwardListWrapper::backList() const
+{
+    return backListAsAPIArrayWithLimit(backListCount());
+}
+
+Ref<API::Array> WebBackForwardListWrapper::forwardList() const
+{
+    return forwardListAsAPIArrayWithLimit(forwardListCount());
+}
+
+Ref<API::Array> WebBackForwardListWrapper::backListAsAPIArrayWithLimit(unsigned limit) const
+{
+    return m_impl->backListAsAPIArrayWithLimit(limit);
+}
+
+Ref<API::Array> WebBackForwardListWrapper::forwardListAsAPIArrayWithLimit(unsigned limit) const
+{
+    return m_impl->forwardListAsAPIArrayWithLimit(limit);
+}
+
+void WebBackForwardListWrapper::removeAllItems()
+{
+    m_impl->removeAllItems();
+}
+
+void WebBackForwardListWrapper::clear()
+{
+    m_impl->clear();
+}
+
+String WebBackForwardListWrapper::loggingString()
+{
+    return String::fromUTF8WithLatin1Fallback(std::string(m_impl->loggingString()));
+}
+
+#endif // ENABLE(BACK_FORWARD_LIST_SWIFT)
+
 } // namespace WebKit
+
+#if ENABLE(BACK_FORWARD_LIST_SWIFT)
+
+WebCore::BackForwardFrameItemIdentifier generateBackForwardFrameItemIdentifier()
+{
+    return WebCore::BackForwardFrameItemIdentifier::generate();
+}
+
+WebCore::BackForwardItemIdentifier generateBackForwardItemIdentifier()
+{
+    return WebCore::BackForwardItemIdentifier::generate();
+}
+
+// rdar://168139823 is the task of doing a productionized version of WebKit Swift logging
+void doLog(const char* WTF_NONNULL msg)
+{
+    LOG(BackForward, "%s", msg);
+}
+
+void doLoadingReleaseLog(const char* WTF_NONNULL msg)
+{
+    RELEASE_LOG(Loading, "%s", msg);
+}
+// rdar://168139740 is the task of doing a productionized Swift MESSAGE_CHECK
+void messageCheckFailed(Ref<WebKit::WebProcessProxy> process)
+{
+    MESSAGE_CHECK_BASE(false, process->connection());
+}
+
+#endif // ENABLE(BACK_FORWARD_LIST_SWIFT)

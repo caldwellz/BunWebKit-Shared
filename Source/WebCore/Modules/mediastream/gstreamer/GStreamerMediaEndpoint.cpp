@@ -2182,7 +2182,7 @@ void GStreamerMediaEndpoint::close()
     GST_DEBUG_OBJECT(m_pipeline.get(), "Closing");
 
     // https://gitlab.freedesktop.org/gstreamer/gstreamer/-/merge_requests/9379
-#if GST_CHECK_VERSION(1, 27, 0)
+#if GST_CHECK_VERSION(1, 28, 0)
     g_signal_emit_by_name(m_webrtcBin.get(), "close", gst_promise_new_with_change_func([](GstPromise* rawPromise, gpointer userData) {
         auto promise = adoptGRef(rawPromise);
         auto result = gst_promise_wait(promise.get());

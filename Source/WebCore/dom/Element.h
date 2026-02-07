@@ -468,7 +468,6 @@ public:
     ExceptionOr<ShadowRoot&> attachDeclarativeShadow(ShadowRootMode, ShadowRootDelegatesFocus, ShadowRootClonable, ShadowRootSerializable, String referenceTarget, CustomElementRegistryKind);
 
     WEBCORE_EXPORT ShadowRoot* userAgentShadowRoot() const;
-    RefPtr<ShadowRoot> protectedUserAgentShadowRoot() const;
     WEBCORE_EXPORT ShadowRoot& ensureUserAgentShadowRoot();
     Ref<ShadowRoot> ensureProtectedUserAgentShadowRoot();
     WEBCORE_EXPORT ShadowRoot& createUserAgentShadowRoot();
@@ -654,7 +653,6 @@ public:
     WEBCORE_EXPORT ExceptionOr<Element*> closest(const String& selectors);
 
     WEBCORE_EXPORT DOMTokenList& classList();
-    WEBCORE_EXPORT Ref<DOMTokenList> protectedClassList();
 
     SpaceSplitString partNames() const;
     DOMTokenList& part();

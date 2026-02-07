@@ -85,9 +85,9 @@ void ScrollAnchoringController::invalidateAnchorElement()
     if (!m_anchorElement) {
         if (RefPtr element = elementForScrollableArea(m_owningScrollableArea)) {
             if (auto* renderer = element->renderer()) {
-                auto* scrollAnchoringControllerForScrollableArea = RenderObject::searchParentChainForScrollAnchoringController(*renderer);
-                if (scrollAnchoringControllerForScrollableArea && scrollAnchoringControllerForScrollableArea->isInScrollAnchoringAncestorChain(*renderer))
-                    scrollAnchoringControllerForScrollableArea->invalidateAnchorElement();
+                CheckedPtr controller = RenderObject::searchParentChainForScrollAnchoringController(*renderer);
+                if (controller && controller->isInScrollAnchoringAncestorChain(*renderer))
+                    controller->invalidateAnchorElement();
             }
         }
     }
@@ -244,17 +244,23 @@ CandidateExaminationResult ScrollAnchoringController::examineAnchorCandidate(Ele
 
         if (isExcludedSubtree(renderer, intersects))
             return CandidateExaminationResult::Exclude;
+
         if (&element == document->bodyOrFrameset() || is<HTMLHtmlElement>(&element) || (renderer->isInline() && !renderer->isAtomicInlineLevelBox()))
             return CandidateExaminationResult::Skip;
+
         if (!boxRect.width() || !boxRect.height())
             return CandidateExaminationResult::Skip;
+
         if (containingRect.contains(boxRect))
             return CandidateExaminationResult::Select;
+
         auto isScrollingNode = false;
         if (auto* renderBox = dynamicDowncast<RenderBox>(renderer))
             isScrollingNode = renderBox->hasPotentiallyScrollableOverflow();
+
         if (intersects)
             return !isScrollingNode || canDescendIntoElement(element) ? CandidateExaminationResult::Descend : CandidateExaminationResult::Select;
+
         if (isScrollingNode)
             return CandidateExaminationResult::Exclude;
     }
@@ -356,6 +362,7 @@ void ScrollAnchoringController::adjustScrollPositionForAnchoring()
     auto suppressed = std::exchange(m_shouldSuppressScrollPositionUpdate, false);
     if (!m_anchorElement || !queued)
         return;
+
     auto* renderer = m_anchorElement->renderer();
     if (!renderer || suppressed) {
         invalidateAnchorElement();

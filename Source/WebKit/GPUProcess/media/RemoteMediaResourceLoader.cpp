@@ -61,8 +61,10 @@ RemoteMediaResourceLoader::RemoteMediaResourceLoader(RemoteMediaPlayerProxy& rem
 
 RemoteMediaResourceLoader::~RemoteMediaResourceLoader()
 {
-    if (RefPtr remoteMediaPlayerProxy = m_remoteMediaPlayerProxy.get())
-        remoteMediaPlayerProxy->destroyResourceLoader(identifier());
+    ensureOnMainRunLoop([remoteMediaPlayerProxy = std::exchange(m_remoteMediaPlayerProxy, nullptr), identifier = identifier()] {
+        if (RefPtr proxy = remoteMediaPlayerProxy.get())
+            proxy->destroyResourceLoader(identifier);
+    });
 }
 
 void RemoteMediaResourceLoader::initializeConnection()
@@ -72,30 +74,23 @@ void RemoteMediaResourceLoader::initializeConnection()
 
 RefPtr<PlatformMediaResource> RemoteMediaResourceLoader::requestResource(ResourceRequest&& request, LoadOptions options)
 {
-    assertIsCurrent(defaultQueue());
+    // This call is thread-safe.
     AtomicObjectIdentifier<RemoteMediaResourceIdentifierType> remoteMediaResourceIdentifier = RemoteMediaResourceIdentifier::generate();
     auto remoteMediaResource = RemoteMediaResource::create(*this, remoteMediaResourceIdentifier);
     addMediaResource(remoteMediaResourceIdentifier, remoteMediaResource);
 
-    m_connection->send(Messages::RemoteMediaResourceLoaderProxy::RequestResource(remoteMediaResourceIdentifier, request, options), identifier());
+    m_connection->send(Messages::RemoteMediaResourceLoaderProxy::RequestResource(remoteMediaResourceIdentifier, WTF::move(request), options), identifier());
 
     return remoteMediaResource;
 }
 
 void RemoteMediaResourceLoader::sendH2Ping(const URL& url, CompletionHandler<void(Expected<Seconds, ResourceError>&&)>&& completionHandler)
 {
-    assertIsCurrent(defaultQueue());
-    RefPtr remoteMediaPlayerProxy = m_remoteMediaPlayerProxy.get();
-    if (!remoteMediaPlayerProxy)
-        return completionHandler(makeUnexpected(internalError(url)));
-
     m_connection->sendWithAsyncReply(Messages::RemoteMediaResourceLoaderProxy::SendH2Ping(url), WTF::move(completionHandler), identifier());
 }
 
 void RemoteMediaResourceLoader::addMediaResource(RemoteMediaResourceIdentifier remoteMediaResourceIdentifier, RemoteMediaResource& remoteMediaResource)
 {
-    assertIsCurrent(defaultQueue());
-
     Locker locker { m_lock };
     ASSERT(!m_remoteMediaResources.contains(remoteMediaResourceIdentifier));
     m_remoteMediaResources.add(remoteMediaResourceIdentifier, ThreadSafeWeakPtr { remoteMediaResource });
@@ -103,8 +98,6 @@ void RemoteMediaResourceLoader::addMediaResource(RemoteMediaResourceIdentifier r
 
 void RemoteMediaResourceLoader::removeMediaResource(RemoteMediaResourceIdentifier remoteMediaResourceIdentifier)
 {
-    assertIsCurrent(defaultQueue());
-
     RefPtr resource = resourceForId(remoteMediaResourceIdentifier);
     ASSERT(resource);
     if (!resource)

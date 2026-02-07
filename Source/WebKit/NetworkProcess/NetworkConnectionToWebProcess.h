@@ -268,7 +268,6 @@ public:
 
 #if ENABLE(WEB_RTC)
     NetworkMDNSRegister& mdnsRegister() { return m_mdnsRegister; }
-    Ref<NetworkMDNSRegister> protectedMDNSRegister() { return m_mdnsRegister; }
 #if PLATFORM(COCOA)
     bool webRTCInterfaceMonitoringViaNWEnabled() const { return m_sharedPreferencesForWebProcess.webRTCInterfaceMonitoringViaNWEnabled; }
 #endif
@@ -385,7 +384,6 @@ private:
 
 #if USE(LIBWEBRTC)
     NetworkRTCProvider& rtcProvider();
-    Ref<NetworkRTCProvider> protectedRTCProvider() { return rtcProvider(); }
 #endif
 #if ENABLE(WEB_RTC)
     void registerToRTCDataChannelProxy();
@@ -517,9 +515,8 @@ private:
     const Ref<NetworkProcess> m_networkProcess;
     PAL::SessionID m_sessionID;
 
-    HashMap<WebCore::WebSocketIdentifier, RefPtr<NetworkSocketChannel>> m_networkSocketChannels;
+    HashMap<WebCore::WebSocketIdentifier, Ref<NetworkSocketChannel>> m_networkSocketChannels;
     NetworkResourceLoadMap m_networkResourceLoaders;
-    HashMap<String, RefPtr<WebCore::BlobDataFileReference>> m_blobDataFileReferences;
     Vector<ResourceNetworkActivityTracker> m_networkActivityTrackers;
 
     HashMap<WebCore::ResourceLoaderIdentifier, std::unique_ptr<WebCore::NetworkLoadInformation>> m_networkLoadInformationByID;

@@ -79,11 +79,27 @@ MediaPlayerPrivateWirelessPlayback::MediaPlayerPrivateWirelessPlayback(MediaPlay
 
 MediaPlayerPrivateWirelessPlayback::~MediaPlayerPrivateWirelessPlayback() = default;
 
+static bool supportsURL(const URL& url)
+{
+#if PLATFORM(IOS_FAMILY_SIMULATOR)
+    if (url.protocolIsFile())
+        return true;
+#endif
+    return url.protocolIsInHTTPFamily();
+}
+
 void MediaPlayerPrivateWirelessPlayback::load(const String& urlString)
 {
-    m_urlString = urlString;
     ALWAYS_LOG(LOGIDENTIFIER, urlString);
-    updateURLStringIfNeeded();
+
+    URL url { urlString };
+    if (!supportsURL(url)) {
+        setNetworkState(MediaPlayer::NetworkState::FormatError);
+        return;
+    }
+
+    m_url = WTF::move(url);
+    updateURLIfNeeded();
 }
 
 #if ENABLE(WIRELESS_PLAYBACK_TARGET)
@@ -134,8 +150,9 @@ bool MediaPlayerPrivateWirelessPlayback::isCurrentPlaybackTargetWireless() const
 
 void MediaPlayerPrivateWirelessPlayback::setWirelessPlaybackTarget(Ref<MediaPlaybackTarget>&& playbackTarget)
 {
+    ALWAYS_LOG(LOGIDENTIFIER, playbackTarget->type());
     m_playbackTarget = WTF::move(playbackTarget);
-    updateURLStringIfNeeded();
+    updateURLIfNeeded();
 }
 
 void MediaPlayerPrivateWirelessPlayback::setShouldPlayToPlaybackTarget(bool shouldPlayToTarget)
@@ -149,13 +166,46 @@ void MediaPlayerPrivateWirelessPlayback::setShouldPlayToPlaybackTarget(bool shou
         player->currentPlaybackTargetIsWirelessChanged(isCurrentPlaybackTargetWireless());
 }
 
-void MediaPlayerPrivateWirelessPlayback::updateURLStringIfNeeded()
+void MediaPlayerPrivateWirelessPlayback::updateURLIfNeeded()
 {
     RefPtr playbackTarget = dynamicDowncast<MediaPlaybackTargetWirelessPlayback>(m_playbackTarget);
     if (!playbackTarget)
         return;
 
-    // FIXME: pass the URL to the route
+    playbackTarget->loadURL(m_url, [weakThis = ThreadSafeWeakPtr { *this }](const MediaDeviceRouteLoadURLResult& result) {
+        RefPtr protectedThis = weakThis.get();
+        if (!protectedThis)
+            return;
+
+        if (!result) {
+            protectedThis->setNetworkState(MediaPlayer::NetworkState::FormatError);
+            return;
+        }
+
+        // FIXME: Advance networkState and readyState once the target has loaded the URL
+    });
+}
+
+void MediaPlayerPrivateWirelessPlayback::setNetworkState(MediaPlayer::NetworkState networkState)
+{
+    if (networkState == m_networkState)
+        return;
+
+    ALWAYS_LOG(LOGIDENTIFIER, networkState);
+    m_networkState = networkState;
+    if (RefPtr player = m_player.get())
+        player->networkStateChanged();
+}
+
+void MediaPlayerPrivateWirelessPlayback::setReadyState(MediaPlayer::ReadyState readyState)
+{
+    if (readyState == m_readyState)
+        return;
+
+    ALWAYS_LOG(LOGIDENTIFIER, readyState);
+    m_readyState = readyState;
+    if (RefPtr player = m_player.get())
+        player->readyStateChanged();
 }
 
 #endif // ENABLE(WIRELESS_PLAYBACK_TARGET)

@@ -587,6 +587,7 @@ private:
 #if PLATFORM(COCOA)
     bool hasApplePDFAnnotationAttribute() const final { return boolAttributeValue(AXProperty::HasApplePDFAnnotationAttribute); }
     RetainPtr<id> remoteFramePlatformElement() const final;
+    pid_t remoteFrameProcessIdentifier() const final { return propertyValue<pid_t>(AXProperty::RemoteFrameProcessIdentifier); }
 #endif
     bool hasRemoteFrameChild() const final { return boolAttributeValue(AXProperty::HasRemoteFrameChild); }
 

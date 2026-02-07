@@ -175,6 +175,20 @@ void MediaSessionManagerInterface::updateNowPlayingInfoIfNecessary()
     scheduleSessionStatusUpdate();
 }
 
+void MediaSessionManagerInterface::updateNowPlayingInfo()
+{
+    updateNowPlayingInfoIfNecessary();
+}
+
+void MediaSessionManagerInterface::setNowPlayingUpdateInterval(double)
+{
+}
+
+double MediaSessionManagerInterface::nowPlayingUpdateInterval()
+{
+    return 0;
+}
+
 void MediaSessionManagerInterface::updateAudioSessionCategoryIfNecessary()
 {
     scheduleUpdateSessionState();

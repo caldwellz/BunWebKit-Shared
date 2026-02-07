@@ -26,6 +26,7 @@
 
 #pragma once
 
+#include "InjectedScriptManager.h"
 #include "InspectorEnvironment.h"
 #include "InspectorFrontendRouter.h"
 #include <wtf/CheckedRef.h>
@@ -39,11 +40,10 @@ class JSGlobalObject;
 namespace Inspector {
 
 class BackendDispatcher;
-class InjectedScriptManager;
 
 struct AgentContext {
     CheckedRef<InspectorEnvironment> environment;
-    InjectedScriptManager& injectedScriptManager;
+    CheckedRef<InjectedScriptManager> injectedScriptManager;
     CheckedRef<FrontendRouter> frontendRouter;
     BackendDispatcher& backendDispatcher;
 };

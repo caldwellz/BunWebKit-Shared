@@ -25,9 +25,12 @@
 
 #pragma once
 
+#include <wtf/Platform.h>
+
+#if !PLATFORM(COCOA) || !__has_feature(modules) || (defined(WK_SUPPORTS_SWIFT_OBJCXX_INTEROP) && WK_SUPPORTS_SWIFT_OBJCXX_INTEROP)
+
 #include <wtf/HashTable.h>
 #include <wtf/Noncopyable.h>
-#include <wtf/Platform.h>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
 #include <wtf/RetainReleaseSwift.h>
@@ -318,6 +321,9 @@ inline API::Object* Object::unwrap(void* object)
 }
 #endif
 
+using VectorRefPtrAPIObject = Vector<RefPtr<Object>>;
+using RefPtrAPIObject = RefPtr<Object>;
+
 } // namespace API
 
 inline void refObject(API::Object* WTF_NONNULL obj)
@@ -344,3 +350,5 @@ inline void derefObject(API::Object* WTF_NONNULL obj)
 SPECIALIZE_TYPE_TRAITS_BEGIN(API::ClassName) \
 static bool isType(const API::Object& object) { return object.type() == API::Object::Type::ClassName; } \
 SPECIALIZE_TYPE_TRAITS_END()
+
+#endif // !PLATFORM(COCOA) || !__has_feature(modules) || (defined(WK_SUPPORTS_SWIFT_OBJCXX_INTEROP) && WK_SUPPORTS_SWIFT_OBJCXX_INTEROP)

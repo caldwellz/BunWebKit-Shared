@@ -24,6 +24,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. 
  */
 
+// https://dom.spec.whatwg.org/#customevent
 [
     Exposed=*,
     JSCustomMarkFunction,
@@ -35,8 +36,7 @@
     undefined initCustomEvent([AtomString] DOMString type, optional boolean bubbles = false, optional boolean cancelable = false, optional any detail = null);
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary CustomEventInit : EventInit {
+// https://dom.spec.whatwg.org/#dictdef-customeventinit
+dictionary CustomEventInit : EventInit {
     any detail = null;
 };

@@ -78,10 +78,10 @@ const HAS_CCACHE = CCACHE !== null;
 // On Windows, use clang-cl for MSVC compatibility
 const CC_BASE = IS_WINDOWS
   ? findExecutable(["clang-cl.exe", "clang-cl"]) || "clang-cl"
-  : findExecutable(["clang-19", "clang"]) || "clang";
+  : findExecutable(["clang-21", "clang"]) || "clang";
 const CXX_BASE = IS_WINDOWS
   ? findExecutable(["clang-cl.exe", "clang-cl"]) || "clang-cl"
-  : findExecutable(["clang++-19", "clang++"]) || "clang++";
+  : findExecutable(["clang++-21", "clang++"]) || "clang++";
 
 const CC = HAS_CCACHE ? CCACHE : CC_BASE;
 const CXX = HAS_CCACHE ? CCACHE : CXX_BASE;
@@ -129,15 +129,10 @@ const getCommonFlags = (config: BuildConfig) => {
 
   if (IS_MAC) {
     flags.push(
-      "-DENABLE_SINGLE_THREADED_VM_ENTRY_SCOPE=ON",
-      "-DBUN_FAST_TLS=ON",
-      "-DPTHREAD_JIT_PERMISSIONS_API=1",
-      "-DUSE_PTHREAD_JIT_PERMISSIONS_API=ON"
+      "-DENABLE_REMOTE_INSPECTOR=ON"
     );
   } else if (IS_LINUX) {
     flags.push(
-      "-DJSEXPORT_PRIVATE=WTF_EXPORT_DECLARATION",
-      "-DUSE_VISIBILITY_ATTRIBUTE=1",
       "-DENABLE_REMOTE_INSPECTOR=ON"
     );
   } else if (IS_WINDOWS) {

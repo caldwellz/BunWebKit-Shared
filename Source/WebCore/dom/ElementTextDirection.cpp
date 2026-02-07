@@ -88,7 +88,7 @@ static void updateHasDirAutoFlagForSubtree(Node& firstNode, TextDirectionState t
 static void updateElementHasDirAutoFlag(Element& element, TextDirectionState textDirectionState)
 {
     RefPtr parent = element.parentOrShadowHostElement();
-    element.protectedDocument()->setIsDirAttributeDirty();
+    protect(element.document())->setIsDirAttributeDirty();
 
     switch (textDirectionState) {
     case TextDirectionState::LTR:

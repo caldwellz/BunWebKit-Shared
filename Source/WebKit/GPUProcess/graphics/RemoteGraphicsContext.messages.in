@@ -73,6 +73,7 @@ messages -> RemoteGraphicsContext Stream {
     ClipToImageBuffer(WebCore::RenderingResourceIdentifier renderingResourceIdentifier, WebCore::FloatRect destinationRect) StreamBatched
     ClipOutToPath(WebCore::Path path) StreamBatched
     ClipPath(WebCore::Path path, enum:bool WebCore::WindRule windRule) StreamBatched
+    ClipCachedPath(WebKit::RemotePathImplIdentifier identifier, enum:bool WebCore::WindRule windRule)
     ResetClip() StreamBatched
     DrawGlyphs(WebCore::RenderingResourceIdentifier fontIdentifier, IPC::ArrayReferenceTuple<WebCore::GlyphBufferGlyph, WebCore::FloatSize> glyphsAdvances, WebCore::FloatPoint localAnchor, enum:uint8_t WebCore::FontSmoothingMode smoothingMode) StreamBatched
     DrawDisplayList(WebKit::RemoteDisplayListIdentifier identifier) StreamBatched
@@ -109,6 +110,7 @@ messages -> RemoteGraphicsContext Stream {
 #endif
     FillPathSegment(WebCore::PathSegment segment) StreamBatched
     FillPath(WebCore::Path path)
+    FillCachedPath(WebKit::RemotePathImplIdentifier identifier)
     FillEllipse(WebCore::FloatRect rect)
     StrokeRect(WebCore::FloatRect rect, float lineWidth)
 #if ENABLE(INLINE_PATH_DATA)

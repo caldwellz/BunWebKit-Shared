@@ -28,6 +28,7 @@
 
 #include "GridAreaLines.h"
 #include "GridItemRect.h"
+#include "GridLayoutState.h"
 #include "GridLayoutUtils.h"
 #include "ImplicitGrid.h"
 #include "RenderStyle+GettersInlines.h"
@@ -53,6 +54,11 @@ struct UsedMargins {
 struct UsedGridItemSizes {
     LayoutUnit inlineAxisSize;
     LayoutUnit blockAxisSize;
+};
+
+struct GridAreaSizes {
+    Vector<LayoutUnit> inlineSizes;
+    Vector<LayoutUnit> blockSizes;
 };
 
 GridLayout::GridLayout(const GridFormattingContext& gridFormattingContext)
@@ -170,45 +176,80 @@ auto computeGridItemRects = [](const PlacedGridItems& placedGridItems, const Bor
     return gridItemRects;
 };
 
-// https://drafts.csswg.org/css-grid-1/#layout-algorithm
-std::pair<UsedTrackSizes, GridItemRects> GridLayout::layout(const GridFormattingContext::GridLayoutConstraints& layoutConstraints, UnplacedGridItems& unplacedGridItems,
-    const GridDefinition& gridDefinition)
+static GridAreaSizes computeGridAreaSizes(const PlacedGridItems& gridItems, const Style::GapGutter& columnGap, const Style::GapGutter& rowGap, const UsedTrackSizes& usedTrackSizes)
 {
+    auto gridItemsCount = gridItems.size();
+    GridAreaSizes gridAreaSizes;
+    gridAreaSizes.inlineSizes.reserveInitialCapacity(gridItemsCount);
+    gridAreaSizes.blockSizes.reserveInitialCapacity(gridItemsCount);
+
+    auto usedColumnGap = GridLayoutUtils::computeGapValue(columnGap);
+    auto usedRowGap = GridLayoutUtils::computeGapValue(rowGap);
+
+    for (auto& gridItem : gridItems) {
+        auto columnsSize = GridLayoutUtils::gridAreaDimensionSize(gridItem.columnStartLine(), gridItem.columnEndLine(), usedTrackSizes.columnSizes, usedColumnGap);
+        auto rowsSize = GridLayoutUtils::gridAreaDimensionSize(gridItem.rowStartLine(), gridItem.rowEndLine(), usedTrackSizes.rowSizes, usedRowGap);
+        gridAreaSizes.inlineSizes.append(columnsSize);
+        gridAreaSizes.blockSizes.append(rowsSize);
+    }
+    return gridAreaSizes;
+}
+
+// https://drafts.csswg.org/css-grid-1/#layout-algorithm
+std::pair<UsedTrackSizes, GridItemRects> GridLayout::layout(UnplacedGridItems& unplacedGridItems, const GridLayoutState& gridLayoutState)
+{
+    auto& [layoutConstraints, gridDefinition] = gridLayoutState;
     auto& gridTemplateColumnsTrackSizes = gridDefinition.gridTemplateColumns.sizes;
     auto& gridTemplateRowsTrackSizes = gridDefinition.gridTemplateRows.sizes;
 
+    auto& formattingContext = this->formattingContext();
     // 1. Run the Grid Item Placement Algorithm to resolve the placement of all grid items in the grid.
     auto [ gridAreas, columnsCount, rowsCount ] = placeGridItems(unplacedGridItems, gridTemplateColumnsTrackSizes, gridTemplateRowsTrackSizes, gridDefinition.autoFlowOptions);
-    auto placedGridItems = formattingContext().constructPlacedGridItems(gridAreas);
+    auto placedGridItems = formattingContext.constructPlacedGridItems(gridAreas);
 
     auto columnTrackSizingFunctionsList = trackSizingFunctions(columnsCount, gridTemplateColumnsTrackSizes);
     auto rowTrackSizingFunctionsList = trackSizingFunctions(rowsCount, gridTemplateRowsTrackSizes);
 
+    // 2. FIXME: Find the size of the grid container.
+
     // 3. Given the resulting grid container size, run the Grid Sizing Algorithm to size the grid.
-    UsedTrackSizes usedTrackSizes = performGridSizingAlgorithm(placedGridItems, columnTrackSizingFunctionsList, rowTrackSizingFunctionsList, layoutConstraints);
+    // FIXME: Handle FreeSpaceScenario::MinContent and FreeSpaceScenario::Indefinite once intrinsic sizing is supported.
+    auto columnFreeSpaceScenario = layoutConstraints.inlineAxisAvailableSpace.has_value()
+        ? FreeSpaceScenario::Definite
+        : FreeSpaceScenario::Indefinite;
+    auto rowFreeSpaceScenario = layoutConstraints.blockAxisAvailableSpace.has_value()
+        ? FreeSpaceScenario::Definite
+        : FreeSpaceScenario::Indefinite;
+    UsedTrackSizes usedTrackSizes = performGridSizingAlgorithm(placedGridItems, columnTrackSizingFunctionsList, rowTrackSizingFunctionsList, layoutConstraints, columnFreeSpaceScenario, rowFreeSpaceScenario);
+
+    CheckedRef formattingContextRootStyle = formattingContext.root().style();
+    auto& columnGap = formattingContextRootStyle->columnGap();
+    auto& rowGap = formattingContextRootStyle->rowGap();
+    auto gridAreaSizes = computeGridAreaSizes(placedGridItems, columnGap, rowGap, usedTrackSizes);
 
     // 4. Lay out the grid items into their respective containing blocks. Each grid area’s
     // width and height are considered definite for this purpose.
-    auto [ usedInlineSizes, usedBlockSizes ] = layoutGridItems(placedGridItems, usedTrackSizes);
+    auto [ usedInlineSizes, usedBlockSizes ] = layoutGridItems(placedGridItems, gridAreaSizes);
 
     // https://drafts.csswg.org/css-grid-1/#alignment
-    const auto& zoomFactor = formattingContext().zoomFactor();
+    const auto& zoomFactor = formattingContext.zoomFactor();
     auto usedInlineMargins = computeInlineMargins(placedGridItems, zoomFactor);
     auto usedBlockMargins = computeBlockMargins(placedGridItems, zoomFactor);
 
     // https://drafts.csswg.org/css-grid-1/#alignment
     // After a grid container’s grid tracks have been sized, and the dimensions of all grid items
     // are finalized, grid items can be aligned within their grid areas.
-    auto inlineAxisPositions = performInlineAxisSelfAlignment(placedGridItems, usedInlineMargins);
-    auto blockAxisPositions = performBlockAxisSelfAlignment(placedGridItems, usedBlockMargins);
+    auto inlineAxisPositions = performInlineAxisSelfAlignment(placedGridItems, usedInlineMargins, gridAreaSizes.inlineSizes);
+    auto blockAxisPositions = performBlockAxisSelfAlignment(placedGridItems, usedBlockMargins, gridAreaSizes.blockSizes);
 
     auto gridItemRects = computeGridItemRects(placedGridItems, inlineAxisPositions, blockAxisPositions, usedInlineSizes, usedBlockSizes, usedInlineMargins, usedBlockMargins);
 
     return { usedTrackSizes, gridItemRects };
 }
 
-BorderBoxPositions GridLayout::performInlineAxisSelfAlignment(const PlacedGridItems& placedGridItems, const Vector<UsedMargins>& inlineMargins)
+BorderBoxPositions GridLayout::performInlineAxisSelfAlignment(const PlacedGridItems& placedGridItems, const Vector<UsedMargins>& inlineMargins, const Vector<LayoutUnit>& gridAreaInlineSizes)
 {
+    UNUSED_PARAM(gridAreaInlineSizes);
     BorderBoxPositions borderBoxPositions;
     borderBoxPositions.reserveInitialCapacity(placedGridItems.size());
 
@@ -241,8 +282,9 @@ BorderBoxPositions GridLayout::performInlineAxisSelfAlignment(const PlacedGridIt
     return borderBoxPositions;
 }
 
-BorderBoxPositions GridLayout::performBlockAxisSelfAlignment(const PlacedGridItems& placedGridItems, const Vector<UsedMargins>& blockMargins)
+BorderBoxPositions GridLayout::performBlockAxisSelfAlignment(const PlacedGridItems& placedGridItems, const Vector<UsedMargins>& blockMargins, const Vector<LayoutUnit>& gridAreaBlockSizes)
 {
+    UNUSED_PARAM(gridAreaBlockSizes);
     BorderBoxPositions borderBoxPositions;
     borderBoxPositions.reserveInitialCapacity(placedGridItems.size());
 
@@ -320,23 +362,40 @@ TrackSizingFunctionsList GridLayout::trackSizingFunctions(size_t implicitGridTra
 
 // https://www.w3.org/TR/css-grid-1/#algo-grid-sizing
 UsedTrackSizes GridLayout::performGridSizingAlgorithm(const PlacedGridItems& placedGridItems,
-    const TrackSizingFunctionsList& columnTrackSizingFunctionsList, const TrackSizingFunctionsList& rowTrackSizingFunctionsList, const GridFormattingContext::GridLayoutConstraints& layoutConstraints) const
+    const TrackSizingFunctionsList& columnTrackSizingFunctionsList, const TrackSizingFunctionsList& rowTrackSizingFunctionsList, const GridLayoutConstraints& layoutConstraints, FreeSpaceScenario columnFreeSpaceScenario, FreeSpaceScenario rowFreeSpaceScenario) const
 {
     auto& integrationUtils = formattingContext().integrationUtils();
+    auto gridItemsCount = placedGridItems.size();
+
+    Vector<WTF::Range<size_t>> columnSpanList;
+    columnSpanList.reserveInitialCapacity(gridItemsCount);
+    ComputedSizesList inlineAxisComputedSizesList;
+    inlineAxisComputedSizesList.reserveInitialCapacity(gridItemsCount);
+
+    Vector<WTF::Range<size_t>> rowSpanList;
+    rowSpanList.reserveInitialCapacity(gridItemsCount);
+    ComputedSizesList blockAxisComputedSizesList;
+    blockAxisComputedSizesList.reserveInitialCapacity(gridItemsCount);
+
+    for (auto& gridItem : placedGridItems) {
+        columnSpanList.append({ gridItem.columnStartLine(), gridItem.columnEndLine() });
+        inlineAxisComputedSizesList.append(gridItem.inlineAxisSizes());
+
+        rowSpanList.append({ gridItem.rowStartLine(), gridItem.rowEndLine() });
+        blockAxisComputedSizesList.append(gridItem.blockAxisSizes());
+    }
+
+    CheckedRef formattingContextRootStyle = formattingContext().root().style();
+    auto columnsGap = GridLayoutUtils::computeGapValue(formattingContextRootStyle->columnGap());
+    auto rowsGap = GridLayoutUtils::computeGapValue(formattingContextRootStyle->rowGap());
 
     // 1. First, the track sizing algorithm is used to resolve the sizes of the grid columns.
-    auto columnSpanList = placedGridItems.map([](const PlacedGridItem& gridItem) {
-        return WTF::Range<size_t> { gridItem.columnStartLine(), gridItem.columnEndLine() };
-    });
-    auto columnSizes = TrackSizingAlgorithm::sizeTracks(placedGridItems, columnSpanList, columnTrackSizingFunctionsList, layoutConstraints.inlineAxisAvailableSpace,
-        GridLayoutUtils::inlineAxisGridItemSizingFunctions(), integrationUtils);
+    auto columnSizes = TrackSizingAlgorithm::sizeTracks(placedGridItems, inlineAxisComputedSizesList, columnSpanList,
+        columnTrackSizingFunctionsList, layoutConstraints.inlineAxisAvailableSpace, GridLayoutUtils::inlineAxisGridItemSizingFunctions(), integrationUtils, columnFreeSpaceScenario, columnsGap);
 
-    auto rowSpanList = placedGridItems.map([](const PlacedGridItem& gridItem) {
-        return WTF::Range<size_t> { gridItem.rowStartLine(), gridItem.rowEndLine() };
-    });
     // 2. Next, the track sizing algorithm resolves the sizes of the grid rows.
-    auto rowSizes = TrackSizingAlgorithm::sizeTracks(placedGridItems, rowSpanList, rowTrackSizingFunctionsList, layoutConstraints.blockAxisAvailableSpace,
-        GridLayoutUtils::blockAxisGridItemSizingFunctions(), integrationUtils);
+    auto rowSizes = TrackSizingAlgorithm::sizeTracks(placedGridItems, blockAxisComputedSizesList, rowSpanList,
+        rowTrackSizingFunctionsList, layoutConstraints.blockAxisAvailableSpace, GridLayoutUtils::blockAxisGridItemSizingFunctions(), integrationUtils, rowFreeSpaceScenario, rowsGap);
 
     // 3. Then, if the min-content contribution of any grid item has changed based on the
     // row sizes and alignment calculated in step 2, re-resolve the sizes of the grid
@@ -410,30 +469,23 @@ Vector<UsedMargins> GridLayout::computeBlockMargins(const PlacedGridItems& place
 }
 
 // https://drafts.csswg.org/css-grid-1/#grid-item-sizing
-std::pair<UsedInlineSizes, UsedBlockSizes> GridLayout::layoutGridItems(const PlacedGridItems& placedGridItems, const UsedTrackSizes& usedTrackSizes) const
+std::pair<UsedInlineSizes, UsedBlockSizes> GridLayout::layoutGridItems(const PlacedGridItems& placedGridItems, const GridAreaSizes& gridAreaSizes) const
 {
-    UsedInlineSizes usedInlineSizes;
-    UsedBlockSizes usedBlockSizes;
     auto gridItemsCount = placedGridItems.size();
-    usedInlineSizes.reserveInitialCapacity(gridItemsCount);
-    usedBlockSizes.reserveInitialCapacity(gridItemsCount);
+    UsedInlineSizes usedInlineSizes(gridItemsCount);
+    UsedBlockSizes usedBlockSizes(gridItemsCount);
 
     auto& formattingContext = this->formattingContext();
     auto& integrationUtils = formattingContext.integrationUtils();
-
-    CheckedRef formattingContextRootStyle = formattingContext.root().style();
-    auto columnsGap = GridLayoutUtils::computeGapValue(formattingContextRootStyle->columnGap());
-    auto rowsGap = GridLayoutUtils::computeGapValue(formattingContextRootStyle->rowGap());
-
-    for (auto& gridItem : placedGridItems) {
+    for (auto [gridItemIndex, gridItem] : WTF::indexedRange(placedGridItems)) {
         auto& gridItemBoxGeometry = formattingContext.geometryForGridItem(gridItem.layoutBox());
+        auto& gridAreaInlineSize = gridAreaSizes.inlineSizes[gridItemIndex];
+        auto& gridAreaBlockSize = gridAreaSizes.blockSizes[gridItemIndex];
 
-        auto columnsSize = GridLayoutUtils::gridAreaDimensionSize(gridItem.columnStartLine(), gridItem.columnEndLine(), usedTrackSizes.columnSizes, columnsGap);
-        auto usedInlineSizeForGridItem = GridLayoutUtils::usedInlineSizeForGridItem(gridItem, gridItemBoxGeometry.horizontalBorderAndPadding(), columnsSize);
+        auto usedInlineSizeForGridItem = GridLayoutUtils::usedInlineSizeForGridItem(gridItem, gridItemBoxGeometry.horizontalBorderAndPadding(), gridAreaInlineSize);
         usedInlineSizes.append(usedInlineSizeForGridItem);
 
-        auto rowsSize = GridLayoutUtils::gridAreaDimensionSize(gridItem.rowStartLine(), gridItem.rowEndLine(), usedTrackSizes.rowSizes, rowsGap);
-        auto usedBlockSizeForGridItem = GridLayoutUtils::usedBlockSizeForGridItem(gridItem, gridItemBoxGeometry.verticalBorderAndPadding(), rowsSize);
+        auto usedBlockSizeForGridItem = GridLayoutUtils::usedBlockSizeForGridItem(gridItem, gridItemBoxGeometry.verticalBorderAndPadding(), gridAreaBlockSize);
         usedBlockSizes.append(usedBlockSizeForGridItem);
 
         auto& layoutBox = gridItem.layoutBox();

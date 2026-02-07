@@ -33,8 +33,6 @@
     readonly attribute DOMString availability;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary WebKitPlaybackTargetAvailabilityEventInit : EventInit {
+dictionary WebKitPlaybackTargetAvailabilityEventInit : EventInit {
     DOMString availability = "";
 };

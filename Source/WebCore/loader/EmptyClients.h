@@ -80,10 +80,7 @@ class EmptyChromeClient : public ChromeClient {
     bool canRunModal() const final { return false; }
     void runModal() final { }
 
-    bool toolbarsVisible() const final { return false; }
-    bool statusbarVisible() const final { return false; }
-    bool scrollbarsVisible() const final { return false; }
-    bool menubarVisible() const final { return false; }
+    bool isPopup() const final { return false; }
 
     void setResizable(bool) final { }
 
@@ -224,8 +221,6 @@ class EmptyChromeClient : public ChromeClient {
     bool shouldNotifyOnFormChanges() final { return false; }
 
     RefPtr<Icon> createIconForFiles(const Vector<String>& /* filenames */) final;
-
-    void requestCookieConsent(CompletionHandler<void(CookieConsentDecisionResult)>&&) final;
 };
 
 DiagnosticLoggingClient& emptyDiagnosticLoggingClient();

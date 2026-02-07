@@ -1,26 +1,156 @@
-module WebKit_Internal {
-    module WKWebViewIOS {
-        header "../../UIProcess/API/ios/WKWebViewIOS.h"
+module WebKit_Internal [system] {
+    module AppKitSPI {
+        requires cplusplus20
+        header "../../Platform/spi/mac/AppKitSPI.h"
+        export *
+    }
+
+    module APIObject {
+        requires cplusplus20
+        header "../../Shared/API/APIObject.h"
         export *
     }
 
     module FrameInfoData {
+        requires cplusplus20
         header "../../Shared/FrameInfoData.h"
         export *
     }
 
     module FrameTreeNodeData {
+        requires cplusplus20
         header "../../Shared/FrameTreeNodeData.h"
         export *
     }
 
+    module GamepadData {
+        requires cplusplus20
+        header "../../Shared/Gamepad/GamepadData.h"
+        export *
+    }
+
+    module GestureTypes {
+        requires cplusplus20
+        header "../../Shared/Cocoa/GestureTypes.h"
+        export *
+    }
+
+    module HistoryClient {
+        requires cplusplus20
+        header "../../UIProcess/API/APIHistoryClient.h"
+        export *
+    }
+
     module JSHandleInfo {
+        requires cplusplus20
         header "../../Shared/JSHandleInfo.h"
         export *
     }
 
+    module JavaScriptEvaluationResult {
+        requires cplusplus20
+        header "../../Shared/JavaScriptEvaluationResult.h"
+        export *
+    }
+
+    module MessageReceiver {
+        requires cplusplus20
+        header "../../Platform/IPC/MessageReceiver.h"
+        export *
+    }
+
+    module NavigationClient {
+        requires cplusplus20
+        header "../../UIProcess/API/APINavigationClient.h"
+        export *
+    }
+
+    module WKObject {
+        requires cplusplus20
+        header "../../Shared/Cocoa/WKObject.h"
+        export *
+    }
+
+    module WKTextSelectionController {
+        requires cplusplus20
+        header "../../UIProcess/mac/WKTextSelectionController.h"
+        export *
+    }
+
+    module WKTextSelectionRect {
+        requires cplusplus20
+        header "../../UIProcess/Cocoa/WKTextSelectionRect.h"
+        export *
+    }
+
+    module WKWebViewIOS {
+        header "../../UIProcess/API/ios/WKWebViewIOS.h"
+        export *
+    }
+
+    module WebExtensionCookieParameters {
+        requires cplusplus20
+        header "../../Shared/Extensions/WebExtensionCookieParameters.h"
+        export *
+    }
+
+    module WebAutocorrectionData {
+        requires cplusplus20
+        header "../../Shared/ios/WebAutocorrectionData.h"
+        export *
+    }
+
     module WebFrameMetrics {
+        requires cplusplus20
         header "../../Shared/WebFrameMetrics.h"
+        export *
+    }
+
+    module WebKeyboardEvent {
+        requires cplusplus20
+        header "../../Shared/WebKeyboardEvent.h"
+        export *
+    }
+
+    module WebNavigationState {
+        requires cplusplus20
+        header "../../UIProcess/WebNavigationState.h"
+        export *
+    }
+
+    module WebPageCreationParameters {
+        requires cplusplus20
+        header "../../Shared/WebPageCreationParameters.h"
+        export *
+    }
+
+    module WebPageInspectorController {
+        requires cplusplus20
+        header "../../UIProcess/Inspector/WebPageInspectorController.h"
+        export *
+    }
+
+    module WebPageProxy {
+        requires cplusplus20
+        header "../../UIProcess/WebPageProxy.h"
+        export *
+    }
+
+    module WebPageProxyInternals {
+        requires cplusplus20
+        header "../../UIProcess/WebPageProxyInternals.h"
+        export *
+    }
+
+    module WebProcessActivityState {
+        requires cplusplus20
+        header "../../UIProcess/WebProcessActivityState.h"
+        export *
+    }
+
+    module WebPushMessage {
+        requires cplusplus20
+        header "../../Shared/WebPushMessage.h"
         export *
     }
 
@@ -30,12 +160,8 @@ module WebKit_Internal {
     }
 
     module WebsiteData {
+        requires cplusplus20
         header "../../Shared/WebsiteData/WebsiteData.h"
-        export *
-    }
-
-    module WebPushMessage {
-        header "../../Shared/WebPushMessage.h"
         export *
     }
 

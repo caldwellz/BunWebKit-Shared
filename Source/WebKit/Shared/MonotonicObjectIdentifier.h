@@ -46,7 +46,6 @@ public:
     { }
 
     bool isHashTableDeletedValue() const { return m_identifier == hashTableDeletedValue(); }
-    bool isHashTableEmptyValue() const { return !*this; }
 
     friend auto operator<=>(MonotonicObjectIdentifier, MonotonicObjectIdentifier) = default;
 

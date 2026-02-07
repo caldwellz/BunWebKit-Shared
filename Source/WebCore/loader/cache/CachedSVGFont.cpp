@@ -53,7 +53,7 @@ CachedSVGFont::CachedSVGFont(CachedResourceRequest&& request, PAL::SessionID ses
 }
 
 CachedSVGFont::CachedSVGFont(CachedResourceRequest&& request, CachedSVGFont& resource)
-    : CachedSVGFont(WTF::move(request), resource.sessionID(), resource.protectedCookieJar().get(), resource.m_settings.copyRef())
+    : CachedSVGFont(WTF::move(request), resource.sessionID(), protect(resource.cookieJar()).get(), resource.m_settings.copyRef())
 {
 }
 

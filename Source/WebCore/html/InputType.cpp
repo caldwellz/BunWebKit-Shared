@@ -700,7 +700,7 @@ void InputType::handleBlurEvent()
 bool InputType::accessKeyAction(bool)
 {
     ASSERT(element());
-    protectedElement()->focus({ SelectionRestorationMode::SelectAll });
+    protectedElement()->focus({ { }, { }, SelectionRestorationMode::SelectAll });
     return false;
 }
 
@@ -791,7 +791,7 @@ void InputType::setValue(const String& sanitizedValue, bool valueChanged, TextFi
         break;
     }
 
-    if (CheckedPtr cache = element->protectedDocument()->existingAXObjectCache())
+    if (CheckedPtr cache = protect(element->document())->existingAXObjectCache())
         cache->valueChanged(*element);
 }
 
@@ -1013,7 +1013,7 @@ ExceptionOr<void> InputType::applyStep(int count, AnyStepHandling anyStepHandlin
     if (result.hasException() || !this->element())
         return result;
 
-    if (CheckedPtr cache = element->protectedDocument()->existingAXObjectCache())
+    if (CheckedPtr cache = protect(element->document())->existingAXObjectCache())
         cache->valueChanged(element);
 
     return result;

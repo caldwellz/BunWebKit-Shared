@@ -145,9 +145,7 @@ public:
     CachePolicy cachePolicy(CachedResource::Type, const URL&) const;
     
     LocalFrame* frame() const; // Can be null
-    RefPtr<LocalFrame> protectedFrame() const;
     Document* document() const { return m_document.get(); } // Can be null
-    RefPtr<Document> protectedDocument() const { return document(); }
     void setDocument(Document* document) { m_document = document; }
     void clearDocumentLoader(); 
     void loadDone(LoadCompletionType, bool shouldPerformPostLoadActions = true);
@@ -214,8 +212,6 @@ private:
 
     bool canRequestAfterRedirection(CachedResource::Type, const URL&, const ResourceLoaderOptions&, const URL& preRedirectURL) const;
     bool canRequestInContentDispositionAttachmentSandbox(CachedResource::Type, const URL&) const;
-
-    RefPtr<DocumentLoader> protectedDocumentLoader() const;
 
     MemoryCompactRobinHoodHashSet<URL> m_validatedURLs;
     MemoryCompactRobinHoodHashSet<URL> m_cachedSVGImagesURLs;

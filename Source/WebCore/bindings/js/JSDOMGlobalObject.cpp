@@ -760,7 +760,7 @@ JSC::JSGlobalObject* JSDOMGlobalObject::deriveShadowRealmGlobalObject(JSC::JSGlo
 
         while (!document->isTopDocument()) {
             CheckedPtr candidateDocument = document->parentDocument();
-            if (!candidateDocument || !candidateDocument->protectedSecurityOrigin()->isSameOriginDomain(originalOrigin))
+            if (!candidateDocument || !protect(candidateDocument->securityOrigin())->isSameOriginDomain(originalOrigin))
                 break;
 
             document = candidateDocument;

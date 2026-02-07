@@ -262,14 +262,12 @@ void CanvasRenderingContext2DBase::unwindStateStack()
     size_t stackSize = m_stateStack.size();
     if (stackSize <= 1)
         return;
-
-    // We need to keep the last state because it is tracked by CanvasBase::m_contextStateSaver.
+    m_stateStack.shrink(1);
     auto* context = existingDrawingContext();
-    while (m_stateStack.size() > 1) {
-        m_stateStack.removeLast();
-        if (context)
-            context->restore();
-    }
+    if (!context)
+        return;
+    for (;stackSize > 1; --stackSize)
+        context->restore();
 }
 
 CanvasRenderingContext2DBase::~CanvasRenderingContext2DBase()
@@ -330,7 +328,8 @@ void CanvasRenderingContext2DBase::reset()
     m_hasDeferredOperations = false;
     clearAccumulatedDirtyRect();
     if (auto* c = existingDrawingContext()) {
-        canvasBase().resetGraphicsContextState();
+        c->restore();
+        c->save();
         c->clearRect(FloatRect { { }, canvasBase().size() });
     }
 }
@@ -1633,7 +1632,7 @@ ExceptionOr<void> CanvasRenderingContext2DBase::drawImage(HTMLImageElement& imag
             orientation = Style::toPlatform(computedStyle->imageOrientation()).orientation();
     }
 
-    auto result = drawImage(imageElement.protectedDocument().get(), *cachedImage, imageElement.checkedRenderer().get(), imageRect, srcRect, dstRect, op, blendMode, orientation);
+    auto result = drawImage(protect(imageElement.document()).get(), *cachedImage, imageElement.checkedRenderer().get(), imageRect, srcRect, dstRect, op, blendMode, orientation);
 
     if (!result.hasException())
         checkOrigin(&imageElement);
@@ -1656,7 +1655,7 @@ ExceptionOr<void> CanvasRenderingContext2DBase::drawImage(SVGImageElement& image
 
     auto imageRect = FloatRect(FloatPoint(), size(imageElement, ImageSizeType::BeforeDevicePixelRatio));
 
-    auto result = drawImage(imageElement.protectedDocument().get(), *cachedImage, imageElement.checkedRenderer().get(), imageRect, srcRect, dstRect, op, blendMode);
+    auto result = drawImage(protect(imageElement.document()).get(), *cachedImage, imageElement.checkedRenderer().get(), imageRect, srcRect, dstRect, op, blendMode);
 
     if (!result.hasException())
         checkOrigin(&imageElement);
@@ -2964,8 +2963,12 @@ void CanvasRenderingContext2DBase::drawTextUnchecked(const TextRun& textRun, dou
         clearCanvas();
         fontProxy.drawBidiText(*c, textRun, location, FontCascade::CustomFontNotReadyAction::UseFallbackIfFontNotReady);
         repaintEntireCanvas = true;
-    } else
+    } else {
+        auto clipBounds = c->clipBounds();
+        if ((clipBounds.isEmpty() || !clipBounds.intersects(enclosingIntRect(textRect))) && !shouldDrawShadows())
+            return;
         fontProxy.drawBidiText(*c, textRun, location, FontCascade::CustomFontNotReadyAction::UseFallbackIfFontNotReady);
+    }
 
     didDraw(repaintEntireCanvas, targetSwitcher ? targetSwitcher->expandedBounds() : textRect);
 }

@@ -64,14 +64,14 @@ struct GridDefinition {
     GridAutoFlowOptions autoFlowOptions;
 };
 
+struct GridLayoutConstraints {
+    std::optional<LayoutUnit> inlineAxisAvailableSpace;
+    std::optional<LayoutUnit> blockAxisAvailableSpace;
+};
+
 class GridFormattingContext {
     WTF_MAKE_TZONE_ALLOCATED(GridFormattingContext);
 public:
-
-    struct GridLayoutConstraints {
-        std::optional<LayoutUnit> inlineAxisAvailableSpace;
-        std::optional<LayoutUnit> blockAxisAvailableSpace;
-    };
 
     GridFormattingContext(const ElementBox& gridBox, LayoutState&);
 

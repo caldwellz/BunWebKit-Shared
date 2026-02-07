@@ -81,7 +81,7 @@ void BrowsingContextGroup::sharedProcessForSite(WebsiteDataStore& websiteDataSto
             return completionHandler(frameProcess.get());
         }
 
-        Ref process = protect(pageConfiguration->processPool())->processForSite(websiteDataStore.get(), WebProcessPool::IsSharedProcess::Yes, site, mainFrameSite, domainsWithUserInteraction, lockdownMode, enhancedSecurity, pageConfiguration.get(), ProcessSwapDisposition::Other);
+        Ref process = protect(pageConfiguration->processPool())->processForSite(websiteDataStore.get(), WebProcessProxy::IsolatedProcessType::Shared, site, mainFrameSite, domainsWithUserInteraction, lockdownMode, enhancedSecurity, pageConfiguration.get(), ProcessSwapDisposition::Other);
         ASSERT(!process->isInProcessCache());
         Ref frameProcess = FrameProcess::create(process, protectedThis, std::nullopt, mainFrameSite, preferences, LoadedWebArchive::No, BrowsingContextGroupUpdate::AddProcessAndInjectBrowsingContext);
         ASSERT(frameProcess->isSharedProcess());
@@ -318,20 +318,6 @@ bool BrowsingContextGroup::hasRemotePages(const WebPageProxy& page)
 {
     auto it = m_remotePages.find(page);
     return it != m_remotePages.end() && !it->value.isEmpty();
-}
-
-bool BrowsingContextGroup::isFrameProcessInUseForMainFrame(const FrameProcess& process)
-{
-    for (Ref page : m_pages) {
-        RefPtr mainFrame = page->mainFrame();
-        if (!mainFrame)
-            continue;
-
-        if (&mainFrame->frameProcess() == &process)
-            return true;
-    }
-
-    return false;
 }
 
 } // namespace WebKit

@@ -55,6 +55,7 @@ private:
     void removeLeftoverAnonymousBlock(RenderBlock& anonymousBlock);
 
     RenderTreeBuilder& m_builder;
+    const bool m_buildsSimpleAnonymousBlocks { false };
 };
 
 }

@@ -51,6 +51,7 @@
 #include "PlatformTimeRanges.h"
 #include "ResourceError.h"
 #include "SecurityOrigin.h"
+#include "ShareableBitmap.h"
 #include "VideoFrame.h"
 #include "VideoFrameMetadata.h"
 #include <JavaScriptCore/ArrayBuffer.h>
@@ -1253,10 +1254,19 @@ RefPtr<VideoFrame> MediaPlayer::videoFrameForCurrentTime()
     return protectedPrivate()->videoFrameForCurrentTime();
 }
 
-
 RefPtr<NativeImage> MediaPlayer::nativeImageForCurrentTime()
 {
     return protectedPrivate()->nativeImageForCurrentTime();
+}
+
+RefPtr<ShareableBitmap> MediaPlayer::bitmapImageForCurrentTimeSync()
+{
+    return protectedPrivate()->bitmapImageForCurrentTimeSync();
+}
+
+Ref<MediaPlayer::BitmapImagePromise> MediaPlayer::bitmapImageForCurrentTime()
+{
+    return protectedPrivate()->bitmapImageForCurrentTime();
 }
 
 DestinationColorSpace MediaPlayer::colorSpace()

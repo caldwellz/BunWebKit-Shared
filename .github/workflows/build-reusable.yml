@@ -1,7 +1,7 @@
 name: Build WebKit (Reusable)
 
 env:
-  LLVM_VERSION: 19
+  LLVM_VERSION: 21
 
 on:
   workflow_call:
@@ -130,7 +130,7 @@ jobs:
         run: |
           "C:\Program Files\7-Zip" >> $Env:GITHUB_PATH
           scoop config use_external_7zip true
-          scoop install ninja llvm@19.1.7
+          scoop install ninja llvm@21.1.8
           Join-Path (Resolve-Path ~).Path "scoop\apps\llvm\current\bin" >> $Env:GITHUB_PATH
       - name: Install LLVM and Ninja (ARM64)
         if: matrix.platform == 'ARM64'

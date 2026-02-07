@@ -310,10 +310,15 @@ static RefPtr<Inspector::Protocol::Canvas::ContextAttributes> buildObjectForCanv
         case PredefinedColorSpace::SRGB:
             contextAttributesPayload->setColorSpace(Inspector::Protocol::Canvas::ColorSpace::SRGB);
             break;
-
+        case PredefinedColorSpace::SRGBLinear:
+            contextAttributesPayload->setColorSpace(Inspector::Protocol::Canvas::ColorSpace::SRGBLinear);
+            break;
 #if ENABLE(PREDEFINED_COLOR_SPACE_DISPLAY_P3)
         case PredefinedColorSpace::DisplayP3:
             contextAttributesPayload->setColorSpace(Inspector::Protocol::Canvas::ColorSpace::DisplayP3);
+            break;
+        case PredefinedColorSpace::DisplayP3Linear:
+            contextAttributesPayload->setColorSpace(Inspector::Protocol::Canvas::ColorSpace::DisplayP3Linear);
             break;
 #endif
         }
@@ -423,7 +428,7 @@ Ref<Inspector::Protocol::Canvas::Canvas> InspectorCanvas::buildObjectForCanvas(b
     if (auto attributes = buildObjectForCanvasContextAttributes(m_context.get()))
         canvas->setContextAttributes(attributes.releaseNonNull());
 
-    if (size_t memoryCost = m_context->canvasBase().memoryCost())
+    if (size_t memoryCost = m_context->memoryCost())
         canvas->setMemoryCost(memoryCost);
 
     if (captureBacktrace) {

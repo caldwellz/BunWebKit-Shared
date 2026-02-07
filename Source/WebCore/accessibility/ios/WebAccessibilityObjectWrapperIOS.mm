@@ -2137,7 +2137,7 @@ static RenderObject* rendererForView(WAKView* view)
     if (!renderer)
         return nil;
 
-    CheckedPtr cache = renderer->protectedDocument()->axObjectCache();
+    CheckedPtr cache = protect(renderer->document())->axObjectCache();
     if (!cache)
         return nil;
 

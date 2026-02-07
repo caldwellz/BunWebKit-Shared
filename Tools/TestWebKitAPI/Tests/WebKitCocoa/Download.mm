@@ -2223,16 +2223,12 @@ TEST(WKDownload, RedirectCancel)
     EXPECT_EQ(server.totalRequests(), 1u);
 }
 
-// FIXME when rdar://168517549 is resolved.
-#if PLATFORM(MAC)
-TEST(WKDownload, DISABLED_DownloadRequestFailure)
-#else
 TEST(WKDownload, DownloadRequestFailure)
-#endif
 {
-    HTTPServer server({ });
+    HTTPServer server([] (Connection connection) {
+        connection.terminate();
+    });
     RetainPtr serverRequest = server.request();
-    server.cancel();
     auto delegate = adoptNS([TestDownloadDelegate new]);
     auto webView = adoptNS([WKWebView new]);
     [webView setNavigationDelegate:delegate.get()];
@@ -2242,7 +2238,7 @@ TEST(WKDownload, DownloadRequestFailure)
         download.delegate = delegate.get();
         delegate.get().didFailWithError = ^(WKDownload *download, NSError *error, NSData *resumeData) {
             EXPECT_WK_STREQ(error.domain, NSURLErrorDomain);
-            EXPECT_EQ(error.code, NSURLErrorCannotConnectToHost);
+            EXPECT_EQ(error.code, NSURLErrorNetworkConnectionLost);
             failed = true;
         };
     }];

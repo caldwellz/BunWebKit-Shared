@@ -21,14 +21,14 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
 
-#if canImport(RealityCoreRenderer, _version: 9999)
+#if canImport(RealityCoreRenderer, _version: 6) && canImport(USDStageKit, _version: 34)
 
 import DirectResource
 import Metal
 @_spi(RealityCoreRendererAPI) import RealityKit
 @_spi(SGInternal) import RealityKit
-internal import WebGPU_Private.DDModelTypes
-@_spi(UsdLoaderAPI) import _USDStageKit_SwiftUI
+internal import WebGPU_Private.ModelTypes
+@_spi(UsdLoaderAPI) import _RealityKit_SwiftUI
 
 nonisolated func mapSemantic(_ semantic: LowLevelMesh.VertexSemantic) -> _Proto_LowLevelMeshResource_v1.VertexSemantic {
     switch semantic {

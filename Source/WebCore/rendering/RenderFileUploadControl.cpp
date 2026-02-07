@@ -88,7 +88,7 @@ void RenderFileUploadControl::updateFromElement()
 {
     ASSERT(inputElement().isFileUpload());
 
-    if (HTMLInputElement* button = uploadButton()) {
+    if (RefPtr button = uploadButton()) {
         bool newCanReceiveDroppedFilesState = inputElement().canReceiveDroppedFiles();
         if (m_canReceiveDroppedFiles != newCanReceiveDroppedFilesState) {
             m_canReceiveDroppedFiles = newCanReceiveDroppedFilesState;
@@ -98,7 +98,7 @@ void RenderFileUploadControl::updateFromElement()
 
     // This only supports clearing out the files, but that's OK because for
     // security reasons that's the only change the DOM is allowed to make.
-    FileList* files = inputElement().files();
+    RefPtr files = inputElement().files();
     ASSERT(files);
     if (files && files->isEmpty())
         repaint();
@@ -169,7 +169,7 @@ void RenderFileUploadControl::paintControl(PaintInfo& paintInfo, const LayoutPoi
         else
             contentLogicalLeft -= textIndentOffset();
 
-        HTMLInputElement* button = uploadButton();
+        RefPtr button = uploadButton();
         if (!button)
             return;
 
@@ -289,9 +289,10 @@ void RenderFileUploadControl::computeIntrinsicLogicalWidths(LayoutUnit& minLogic
 
     const String label = theme().fileListDefaultLabel(inputElement().multiple());
     float defaultLabelWidth = font.width(constructTextRun(label, style(), ExpansionBehavior::allowRightOnly()));
-    if (HTMLInputElement* button = uploadButton())
+    if (RefPtr button = uploadButton()) {
         if (CheckedPtr buttonRenderer = dynamicDowncast<RenderBox>(button->renderer()))
             defaultLabelWidth += buttonRenderer->maxPreferredLogicalWidth() + afterButtonSpacing;
+    }
     maxLogicalWidth = static_cast<int>(ceilf(std::max(minDefaultLabelWidth, defaultLabelWidth)));
 
     auto& logicalWidth = style().logicalWidth();
@@ -331,7 +332,7 @@ HTMLInputElement* RenderFileUploadControl::uploadButton() const
 
 String RenderFileUploadControl::buttonValue()
 {
-    if (HTMLInputElement* button = uploadButton())
+    if (RefPtr button = uploadButton())
         return button->value();
     
     return String();
@@ -339,16 +340,16 @@ String RenderFileUploadControl::buttonValue()
 
 String RenderFileUploadControl::fileTextValue() const
 {
-    auto& input = inputElement();
-    if (!input.files())
+    Ref input = inputElement();
+    if (!input->files())
         return { };
-    if (input.files()->length() && !input.displayString().isEmpty()) {
-        if (input.files()->length() == 1)
-            return StringTruncator::centerTruncate(input.displayString(), maxFilenameLogicalWidth(), style().fontCascade());
+    if (input->files()->length() && !input->displayString().isEmpty()) {
+        if (input->files()->length() == 1)
+            return StringTruncator::centerTruncate(input->displayString(), maxFilenameLogicalWidth(), style().fontCascade());
 
-        return StringTruncator::rightTruncate(input.displayString(), maxFilenameLogicalWidth(), style().fontCascade());
+        return StringTruncator::rightTruncate(input->displayString(), maxFilenameLogicalWidth(), style().fontCascade());
     }
-    return theme().fileListNameForWidth(input.files(), style().fontCascade(), maxFilenameLogicalWidth(), input.multiple());
+    return theme().fileListNameForWidth(input->files(), style().fontCascade(), maxFilenameLogicalWidth(), input->multiple());
 }
     
 } // namespace WebCore

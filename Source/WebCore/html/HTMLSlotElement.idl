@@ -23,6 +23,7 @@
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// https://html.spec.whatwg.org/multipage/scripting.html#htmlslotelement
 [
     JSGenerateToNativeObject,
     Exposed=Window
@@ -33,8 +34,7 @@
     undefined assign((Element or Text)... nodes);
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary AssignedNodesOptions {
+// https://html.spec.whatwg.org/multipage/scripting.html#assignednodesoptions
+dictionary AssignedNodesOptions {
     boolean flatten = false;
 };

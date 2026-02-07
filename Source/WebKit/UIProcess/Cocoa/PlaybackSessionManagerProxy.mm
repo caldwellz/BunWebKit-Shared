@@ -1033,7 +1033,7 @@ void PlaybackSessionManagerProxy::setVideoReceiverEndpoint(PlaybackSessionContex
 
     Ref gpuProcess = process->processPool().ensureProtectedGPUProcess();
     Ref connection = gpuProcess->connection();
-    XPCObjectPtr<xpc_connection_t> xpcConnection = connection->xpcConnection();
+    OSObjectPtr<xpc_connection_t> xpcConnection = connection->xpcConnection();
     if (!xpcConnection)
         return;
 
@@ -1073,7 +1073,7 @@ void PlaybackSessionManagerProxy::swapVideoReceiverEndpoints(PlaybackSessionCont
 
     Ref gpuProcess = process->processPool().ensureProtectedGPUProcess();
     Ref connection = gpuProcess->connection();
-    XPCObjectPtr<xpc_connection_t> xpcConnection = connection->xpcConnection();
+    OSObjectPtr<xpc_connection_t> xpcConnection = connection->xpcConnection();
     if (!xpcConnection)
         return;
 
@@ -1162,11 +1162,6 @@ PlatformPlaybackSessionInterface* PlaybackSessionManagerProxy::controlsManagerIn
         return nullptr;
 
     return &ensureInterface(*m_controlsManagerContextId);
-}
-
-RefPtr<WebCore::PlatformPlaybackSessionInterface> PlaybackSessionManagerProxy::protectedControlsManagerInterface()
-{
-    return controlsManagerInterface();
 }
 
 bool PlaybackSessionManagerProxy::isPaused(PlaybackSessionContextIdentifier identifier) const

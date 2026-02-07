@@ -69,7 +69,7 @@ RemoteMediaSessionCoordinatorProxy::RemoteMediaSessionCoordinatorProxy(WebPagePr
 
 RemoteMediaSessionCoordinatorProxy::~RemoteMediaSessionCoordinatorProxy()
 {
-    protect(protectedWebPageProxy()->legacyMainFrameProcess())->removeMessageReceiver(Messages::RemoteMediaSessionCoordinatorProxy::messageReceiverName(), m_webPageProxy->webPageIDInMainFrameProcess());
+    protect(protect(m_webPageProxy)->legacyMainFrameProcess())->removeMessageReceiver(Messages::RemoteMediaSessionCoordinatorProxy::messageReceiverName(), m_webPageProxy->webPageIDInMainFrameProcess());
 }
 
 std::optional<SharedPreferencesForWebProcess> RemoteMediaSessionCoordinatorProxy::sharedPreferencesForWebProcess(IPC::Connection& connection) const
@@ -165,32 +165,27 @@ void RemoteMediaSessionCoordinatorProxy::trackIdentifierChanged(const String& id
 
 void RemoteMediaSessionCoordinatorProxy::seekSessionToTime(double time, CompletionHandler<void(bool)>&& callback)
 {
-    protect(protectedWebPageProxy()->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::SeekSessionToTime { time }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
+    protect(protect(m_webPageProxy)->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::SeekSessionToTime { time }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
 }
 
 void RemoteMediaSessionCoordinatorProxy::playSession(std::optional<double> atTime, std::optional<MonotonicTime> hostTime, CompletionHandler<void(bool)>&& callback)
 {
-    protect(protectedWebPageProxy()->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::PlaySession { WTF::move(atTime), WTF::move(hostTime) }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
+    protect(protect(m_webPageProxy)->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::PlaySession { WTF::move(atTime), WTF::move(hostTime) }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
 }
 
 void RemoteMediaSessionCoordinatorProxy::pauseSession(CompletionHandler<void(bool)>&& callback)
 {
-    protect(protectedWebPageProxy()->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::PauseSession { }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
+    protect(protect(m_webPageProxy)->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::PauseSession { }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
 }
 
 void RemoteMediaSessionCoordinatorProxy::setSessionTrack(const String& trackId, CompletionHandler<void(bool)>&& callback)
 {
-    protect(protectedWebPageProxy()->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::SetSessionTrack { trackId }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
+    protect(protect(m_webPageProxy)->legacyMainFrameProcess())->sendWithAsyncReply(Messages::RemoteMediaSessionCoordinator::SetSessionTrack { trackId }, callback, m_webPageProxy->webPageIDInMainFrameProcess());
 }
 
 void RemoteMediaSessionCoordinatorProxy::coordinatorStateChanged(WebCore::MediaSessionCoordinatorState state)
 {
-    protect(protectedWebPageProxy()->legacyMainFrameProcess())->send(Messages::RemoteMediaSessionCoordinator::CoordinatorStateChanged { state }, m_webPageProxy->webPageIDInMainFrameProcess());
-}
-
-Ref<WebPageProxy> RemoteMediaSessionCoordinatorProxy::protectedWebPageProxy()
-{
-    return m_webPageProxy.get();
+    protect(protect(m_webPageProxy)->legacyMainFrameProcess())->send(Messages::RemoteMediaSessionCoordinator::CoordinatorStateChanged { state }, m_webPageProxy->webPageIDInMainFrameProcess());
 }
 
 #if !RELEASE_LOG_DISABLED

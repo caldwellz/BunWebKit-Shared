@@ -573,6 +573,16 @@ typedef any AnyTypedef;
     required BufferSource requiredBufferSourceValue;
     (DOMString or [Clamp] long) annotatedTypeInUnionMember;
     sequence<[Clamp] long> annotatedTypeInSequenceMember;
+    [ImplementationDefaultValue=0] long integerWithImplementationDefaultValue;
+    [ImplementationDefaultValue=[]] sequence<DOMString> sequenceWithImplementationDefaultValue;
+    [ImplementationDefaultValue={}] ParentDictionary dictionaryWithImplementationDefaultValue;
+    [ImplementationDefaultValue=null] long? nullableIntegerWithImplementationDefaultValue;
+    [ImplementationDefaultValue=null] Node? nullableNodeWithImplementationDefaultValue;
+    [ImplementationRequired] long integerWithImplementationRequired;
+    [ImplementationRequired] sequence<DOMString> sequenceWithImplementationRequired;
+    [ImplementationRequired] ParentDictionary dictionaryWithImplementationRequired;
+    [ImplementationRequired] long? nullableIntegerWithImplementationRequired;
+    [ImplementationRequired] Node? nullableNodeWithImplementationRequired;
 };
 
 dictionary TestDictionaryThatShouldNotTolerateNull {

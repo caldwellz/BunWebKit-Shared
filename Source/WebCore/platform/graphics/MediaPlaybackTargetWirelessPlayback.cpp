@@ -30,6 +30,7 @@
 
 #include "MediaDeviceRoute.h"
 #include "MediaDeviceRouteController.h"
+#include <wtf/CompletionHandler.h>
 #include <wtf/UUID.h>
 
 namespace WebCore {
@@ -71,6 +72,15 @@ String MediaPlaybackTargetWirelessPlayback::deviceName() const
     if (auto identifier = this->identifier())
         return identifier->toString();
     return { };
+}
+
+void MediaPlaybackTargetWirelessPlayback::loadURL(const URL& url, CompletionHandler<void(const MediaDeviceRouteLoadURLResult&)>&& completionHandler)
+{
+    RefPtr route = m_route;
+    if (!route)
+        return completionHandler(makeUnexpected(MediaDeviceRouteLoadURLError::NoRoute));
+
+    route->loadURL(url, WTF::move(completionHandler));
 }
 
 } // namespace WebCore

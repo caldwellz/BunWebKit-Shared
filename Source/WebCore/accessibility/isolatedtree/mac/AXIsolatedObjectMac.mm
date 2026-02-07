@@ -79,6 +79,7 @@ void appendPlatformProperties(AXPropertyVector& properties, OptionSet<AXProperty
         setProperty(AXProperty::StringValue, object->stringValue().isolatedCopy());
 
     setProperty(AXProperty::RemoteFramePlatformElement, object->remoteFramePlatformElement());
+    setProperty(AXProperty::RemoteFrameProcessIdentifier, object->remoteFrameProcessIdentifier());
 
     if (object->isWebArea()) {
         setProperty(AXProperty::PreventKeyboardDOMEventDispatch, object->preventKeyboardDOMEventDispatch());

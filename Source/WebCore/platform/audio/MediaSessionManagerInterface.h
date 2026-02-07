@@ -45,8 +45,8 @@ namespace WebCore {
 
 class Page;
 class PlatformMediaSessionInterface;
-struct MediaConfiguration;
 struct NowPlayingMetadata;
+struct PlatformMediaConfiguration;
 
 class WEBCORE_EXPORT MediaSessionManagerInterface
     : public ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr<MediaSessionManagerInterface>
@@ -77,8 +77,9 @@ public:
     virtual bool shouldDeactivateAudioSession() { return m_shouldDeactivateAudioSession; };
 
     virtual void updateNowPlayingInfoIfNecessary();
-    virtual void updateNowPlayingInfo() { updateNowPlayingInfoIfNecessary(); }
-    virtual void setNowPlayingUpdateInterval(double) { };
+    virtual void updateNowPlayingInfo();
+    virtual void setNowPlayingUpdateInterval(double);
+    virtual double nowPlayingUpdateInterval();
     virtual void updateAudioSessionCategoryIfNecessary();
 
     virtual std::optional<NowPlayingInfo> nowPlayingInfo() const { return { }; }
@@ -136,7 +137,7 @@ public:
     virtual bool isPlayingToAutomotiveHeadUnit() const { return m_isPlayingToAutomotiveHeadUnit; };
 
     virtual void setSupportsSpatialAudioPlayback(bool);
-    virtual std::optional<bool> supportsSpatialAudioPlaybackForConfiguration(const MediaConfiguration&) { return m_supportsSpatialAudioPlayback; }
+    virtual std::optional<bool> supportsSpatialAudioPlaybackForConfiguration(const PlatformMediaConfiguration&) { return m_supportsSpatialAudioPlayback; }
 
     virtual void addAudioCaptureSource(AudioCaptureSource&);
     virtual void removeAudioCaptureSource(AudioCaptureSource&);

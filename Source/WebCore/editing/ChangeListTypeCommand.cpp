@@ -90,7 +90,7 @@ void ChangeListTypeCommand::doApply()
     Ref listToReplace = WTF::move(typeAndElement->second);
     Ref newList = createNewList(listToReplace);
     insertNodeBefore(newList.copyRef(), listToReplace);
-    moveRemainingSiblingsToNewParent(listToReplace->protectedFirstChild().get(), nullptr, newList);
+    moveRemainingSiblingsToNewParent(protect(listToReplace->firstChild()).get(), nullptr, newList);
     removeNode(listToReplace);
     setEndingSelection({ Position { newList.ptr(), Position::PositionIsAfterChildren }});
 }

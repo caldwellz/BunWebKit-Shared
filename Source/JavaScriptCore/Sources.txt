@@ -152,11 +152,9 @@ b3/B3InferSwitches.cpp
 b3/B3InsertionSet.cpp
 b3/B3Kind.cpp
 b3/B3LegalizeMemoryOffsets.cpp
-b3/B3LowerInt64.cpp
 b3/B3LowerMacros.cpp
 b3/B3LowerMacrosAfterOptimizations.cpp
 b3/B3LowerToAir.cpp
-b3/B3LowerToAir32_64.cpp
 b3/B3MathExtras.cpp
 b3/B3MemoryValue.cpp
 b3/B3MoveConstants.cpp
@@ -710,6 +708,7 @@ llint/LLIntSlowPaths.cpp
 llint/LLIntThunks.cpp
 
 parser/Lexer.cpp
+parser/LexerUnicodeProperties.cpp
 parser/ModuleAnalyzer.cpp
 parser/Nodes.cpp
 parser/NodesAnalyzeModule.cpp
@@ -879,6 +878,7 @@ runtime/IntlRelativeTimeFormatConstructor.cpp
 runtime/IntlRelativeTimeFormatPrototype.cpp
 runtime/IntlSegmentIterator.cpp
 runtime/IntlSegmentIteratorPrototype.cpp
+runtime/IntlSegmentDataObject.cpp
 runtime/IntlSegmenter.cpp
 runtime/IntlSegmenterConstructor.cpp
 runtime/IntlSegmenterPrototype.cpp
@@ -1150,10 +1150,8 @@ tools/SourceProfiler.cpp
 tools/VMInspector.cpp
 
 wasm/WasmOMGIRGenerator.cpp
-wasm/WasmOMGIRGenerator32_64.cpp
 wasm/WasmBBQDisassembler.cpp
 wasm/WasmBBQJIT.cpp @no-unify
-wasm/WasmBBQJIT32_64.cpp @no-unify
 wasm/WasmBBQJIT64.cpp @no-unify
 wasm/WasmBBQPlan.cpp
 wasm/WasmBinding.cpp

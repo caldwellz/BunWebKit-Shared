@@ -112,6 +112,7 @@
 #include "IntlPluralRulesPrototype.h"
 #include "IntlRelativeTimeFormat.h"
 #include "IntlRelativeTimeFormatPrototype.h"
+#include "IntlSegmentDataObject.h"
 #include "IntlSegmentIterator.h"
 #include "IntlSegmentIteratorPrototype.h"
 #include "IntlSegmenter.h"
@@ -1686,6 +1687,14 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
             IntlSegmentsPrototype* segmentsPrototype = IntlSegmentsPrototype::create(init.vm, globalObject, IntlSegmentsPrototype::createStructure(init.vm, globalObject, globalObject->objectPrototype()));
             init.set(IntlSegments::createStructure(init.vm, globalObject, segmentsPrototype));
         });
+    m_segmentDataObjectStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            init.set(createSegmentDataObjectStructure(init.vm, *init.owner));
+        });
+    m_segmentDataObjectWithIsWordLikeStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            init.set(createSegmentDataObjectWithIsWordLikeStructure(init.vm, *init.owner));
+        });
 
     m_dateTimeFormatStructure.initLater(
         [] (LazyClassStructure::Initializer& init) {
@@ -2944,6 +2953,8 @@ void JSGlobalObject::visitChildrenImpl(JSCell* cell, Visitor& visitor)
     thisObject->m_segmentIteratorStructure.visit(visitor);
     thisObject->m_segmenterStructure.visit(visitor);
     thisObject->m_segmentsStructure.visit(visitor);
+    thisObject->m_segmentDataObjectStructure.visit(visitor);
+    thisObject->m_segmentDataObjectWithIsWordLikeStructure.visit(visitor);
     thisObject->m_dateTimeFormatStructure.visit(visitor);
     thisObject->m_numberFormatStructure.visit(visitor);
 

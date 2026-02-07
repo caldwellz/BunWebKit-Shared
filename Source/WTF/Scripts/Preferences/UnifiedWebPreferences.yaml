@@ -279,19 +279,15 @@ AllowMultiElementImplicitSubmission:
 AllowMultipleCommitLayerTreePending:
   type: bool
   status: internal
-  category: dom
   humanReadableName: "Allow requesting CommitLayerTree before the previous has completed"
   humanReadableDescription: "Allow requesting CommitLayerTree before the previous has completed"
   defaultValue:
     WebKitLegacy:
-      "PLATFORM(IOS_FAMILY)": false
-      default: true
+      default: false
     WebKit:
-      "PLATFORM(IOS_FAMILY)": false
-      default: true
+      default: false
     WebCore:
-      "PLATFORM(IOS_FAMILY)": false
-      default: true
+      default: false
 
 AllowPrivacySensitiveOperationsInNonPersistentDataStores:
   type: bool
@@ -499,6 +495,20 @@ AnimatedImageAsyncDecodingEnabled:
     WebCore:
       default: true
 
+AnonymousBlockGenerationDisabled:
+  type: bool
+  status: unstable
+  category: css
+  humanReadableName: "Disable anonymous block generation"
+  humanReadableDescription: "Disable anonymous block generation for mixed blocks"
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
 AppBadgeEnabled:
   type: bool
   status: unstable
@@ -693,18 +703,16 @@ AudioControlsScaleWithPageZoom:
 
 AudioDescriptionsEnabled:
   type: bool
-  status: preview
+  status: stable
   category: media
   condition: ENABLE(VIDEO)
   humanReadableName: "Audio descriptions for video - Standard"
   humanReadableDescription: "Enable standard audio descriptions for video"
   defaultValue:
-    WebKitLegacy:
-      default: false
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
 
 AuthorAndUserStylesEnabled:
   type: bool
@@ -1892,6 +1900,20 @@ CompressionStreamEnabled:
     WebCore:
       default: false
 
+ConsistentQueryParameterFilteringQuirkEnabled:
+  type: bool
+  status: internal
+  category: dom
+  humanReadableName: "Consistent Query Parameter Filtering"
+  humanReadableDescription: "Enable consistent query parameter filtering"
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
 ContactPickerAPIEnabled:
   type: bool
   status: testable
@@ -1962,23 +1984,6 @@ ContextMenuQRCodeDetectionEnabled:
       default: false
     WebCore:
       default: false
-
-CookieConsentAPIEnabled:
-  type: bool
-  status: unstable
-  category: dom
-  humanReadableName: "Cookie Consent API"
-  humanReadableDescription: "Enable cookie consent API"
-  exposed: [ WebKit ]
-  defaultValue:
-    WebCore:
-      default: false
-    WebKitLegacy:
-      default: false
-    WebKit:
-      default: false
-  sharedPreferenceForWebProcess: true
-  richJavaScript: true
 
 # FIXME: This is handled via WebView SPI rather than WebPreferences for WebKitLegacy. We should change the SPI to lookup the WebPreferences value instead.
 CookieEnabled:
@@ -2845,21 +2850,18 @@ ExposeSpeakersWithoutMicrophoneEnabled:
     WebCore:
       default: false
 
-# FIXME: Is this implemented for WebKitLegacy? If not, this should be excluded from WebKitLegacy entirely.
 ExtendedAudioDescriptionsEnabled:
   type: bool
-  status: preview
+  status: stable
   category: media
   condition: ENABLE(VIDEO)
   humanReadableName: "Audio descriptions for video - Extended"
   humanReadableDescription: "Enable extended audio descriptions for video"
   defaultValue:
-    WebKitLegacy:
-      default: false
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
 
 ExtendedProofreadingEnabled:
   type: bool
@@ -3466,6 +3468,20 @@ HTTPSByDefaultEnabled:
       default: false
     WebCore:
       default: false
+
+HardwareAccelerationEnabled:
+  type: bool
+  status: internal
+  humanReadableName: "Hardware acceleration"
+  humanReadableDescription: "Enable hardware acceleration"
+  condition: PLATFORM(GTK) || ENABLE(WPE_PLATFORM)
+  defaultValue:
+    WebKitLegacy:
+      default: true
+    WebKit:
+      default: true
+    WebCore:
+      default: true
 
 HiddenPageCSSAnimationSuspensionEnabled:
   type: bool
@@ -5285,6 +5301,21 @@ MediaSourceUseRemoteAudioVideoRenderer:
       default: false
   sharedPreferenceForWebProcess: true
 
+MediaStreamTrackHandleEnabled:
+  type: bool
+  status: preview
+  category: media
+  humanReadableName: "MediaStreamTrackHandle"
+  humanReadableDescription: "Enable MediaStreamTrackHandle"
+  condition: ENABLE(MEDIA_STREAM)
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
 MediaStreamTrackProcessingEnabled:
   type: bool
   status: mature
@@ -6404,6 +6435,20 @@ ReadableByteStreamFetchSourceEnabled:
     WebKit:
       default: true
 
+ReadableStreamFromEnabled:
+  type: bool
+  status: stable
+  category: dom
+  humanReadableName: "ReadableStream.from"
+  humanReadableDescription: "Enable ReadableStream.from"
+  defaultValue:
+    WebCore:
+      default: true
+    WebKitLegacy:
+      default: true
+    WebKit:
+      default: true
+
 ReadableStreamIterableEnabled:
   type: bool
   status: stable
@@ -6417,6 +6462,20 @@ ReadableStreamIterableEnabled:
       default: true
     WebKit:
       default: true
+
+ReadableStreamTransferEnabled:
+  type: bool
+  status: testable
+  category: dom
+  humanReadableName: "ReadableStream transfer"
+  humanReadableDescription: "Enable ReadableStream transfer"
+  defaultValue:
+    WebCore:
+      default: false
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
 
 RemoteMediaSessionManagerEnabled:
   type: bool
@@ -6540,18 +6599,6 @@ RequestVideoFrameCallbackEnabled:
       "PLATFORM(COCOA) && HAVE(AVSAMPLEBUFFERVIDEOOUTPUT)" : true
       "USE(GSTREAMER)": true
       default: false
-
-RequireUAGetDisplayMediaPrompt:
-  type: bool
-  status: internal
-  humanReadableName: "Require User Agent getDisplayMedia prompt"
-  humanReadableDescription: "Require and use User Agent getDisplayMedia prompt"
-  condition: HAVE(SC_CONTENT_SHARING_PICKER)
-  defaultValue:
-    WebKit:
-      default: true
-    WebCore:
-      default: true
 
 RequiresPageVisibilityForVideoToBeNowPlaying:
   type: bool
@@ -7105,16 +7152,18 @@ ServiceWorkerEntitlementDisabledForTesting:
 
 ServiceWorkerInstallEventEnabled:
   type: bool
-  status: testable
+  status: stable
   category: networking
   humanReadableName: "Service Worker Install Event"
   humanReadableDescription: "Enable Service Worker Install Event API"
   defaultValue:
     WebKit:
+      "PLATFORM(COCOA)" : true
       default: false
     WebKitLegacy:
       default: false
     WebCore:
+      "PLATFORM(COCOA)" : true
       default: false
   disableInLockdownMode: true
 
@@ -7639,7 +7688,7 @@ SourceBufferChangeTypeEnabled:
 
 SpatialImageControlsEnabled:
   type: bool
-  status: testable
+  status: preview
   category: media
   condition: ENABLE(SPATIAL_IMAGE_CONTROLS)
   humanReadableName: "Spatial image controls API"
@@ -7648,8 +7697,10 @@ SpatialImageControlsEnabled:
     WebKitLegacy:
       default: false
     WebKit:
+      "ENABLE(PANORAMA_IMAGE_CONTROLS)": true
       default: false
     WebCore:
+      "ENABLE(PANORAMA_IMAGE_CONTROLS)": true
       default: false
 
 SpatialNavigationEnabled:
@@ -7832,17 +7883,17 @@ StorageBlockingPolicy:
 
 SubpixelInlineLayoutEnabled:
   type: bool
-  status: unstable
+  status: stable
   category: css
   humanReadableName: "Subpixels in inline layout (in block direction)"
   humanReadableDescription: "Subpixels in line layout (in block direction)"
   defaultValue:
     WebKitLegacy:
-      default: false
+      default: true
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
 
 SupportHDRCompositorTonemappingEnabled:
   type: bool
@@ -8213,20 +8264,6 @@ ThreadedTimeBasedAnimationsEnabled:
     WebCore:
       default: false
 
-ThumbAndTrackPseudoElementsEnabled:
-  type: bool
-  status: testable
-  category: css
-  humanReadableName: "::thumb and ::track pseudo-elements"
-  humanReadableDescription: "Enable support for CSS ::thumb and ::track pseudo-elements"
-  defaultValue:
-    WebKitLegacy:
-      default: false
-    WebKit:
-      default: false
-    WebCore:
-      default: false
-
 # FIXME: This is not relevent for WebKitLegacy, so should be excluded from WebKitLegacy entirely.
 TiledScrollingIndicatorVisible:
   type: bool
@@ -8574,12 +8611,10 @@ UseGPUProcessForWebGLEnabled:
     WebKit:
       "ENABLE(GPU_PROCESS_BY_DEFAULT) && ENABLE(GPU_PROCESS_WEBGL_BY_DEFAULT)": true
       "USE(GRAPHICS_LAYER_WC)": true
-      "PLATFORM(GTK) || PLATFORM(WPE)" : true
       default: false
     WebCore:
       "ENABLE(GPU_PROCESS_BY_DEFAULT) && ENABLE(GPU_PROCESS_WEBGL_BY_DEFAULT)": true
       "USE(GRAPHICS_LAYER_WC)": true
-      "PLATFORM(GTK) || PLATFORM(WPE)" : true
       default: false
   sharedPreferenceForWebProcess: true
 
@@ -8781,13 +8816,13 @@ VerticalFormControlsEnabled:
   humanReadableDescription: "Enable support for form controls in vertical writing mode"
   defaultValue:
     WebKitLegacy:
-      "PLATFORM(COCOA)": true
+      "PLATFORM(COCOA) || USE(THEME_ADWAITA)": true
       default: false
     WebKit:
-      "PLATFORM(COCOA)": true
+      "PLATFORM(COCOA) || USE(THEME_ADWAITA)": true
       default: false
     WebCore:
-      "PLATFORM(COCOA)": true
+      "PLATFORM(COCOA) || USE(THEME_ADWAITA)": true
       default: false
 
 VideoFullsceenPrefersMostVisibleHeuristic:
@@ -9079,6 +9114,21 @@ WebArchiveTestingModeEnabled:
   humanReadableName: "Web Archive testing mode"
   humanReadableDescription: "Enable web archive testing mode"
   condition: ENABLE(WEB_ARCHIVE)
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
+WebAssemblyDebuggerEnabled:
+  type: bool
+  status: internal
+  category: javascript
+  humanReadableName: "WebAssembly Debugger"
+  humanReadableDescription: "Enable LLDB debugging support for WebAssembly (requires page reload)"
+  condition: ENABLE(WEBASSEMBLY_DEBUGGER) && ENABLE(REMOTE_INSPECTOR)
   defaultValue:
     WebKitLegacy:
       default: false
@@ -9398,7 +9448,7 @@ WebLocksAPIEnabled:
 
 WebMUseRemoteAudioVideoRenderer:
   type: bool
-  status: testable
+  status: stable
   category: media
   humanReadableName: "WebM player uses GPU renderer"
   humanReadableDescription: "WebM player uses GPU renderer"
@@ -9407,9 +9457,9 @@ WebMUseRemoteAudioVideoRenderer:
     WebKitLegacy:
       default: false
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
   sharedPreferenceForWebProcess: true
 
 WebPageSpatialBackdropEnabled:

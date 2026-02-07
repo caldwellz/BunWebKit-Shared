@@ -240,6 +240,8 @@ MediaSelectionOption CaptionUserPreferences::mediaSelectionOptionForTrack(const 
     auto legibleType = MediaSelectionOption::LegibleType::Regular;
     if (&track == &TextTrack::captionMenuOffItemSingleton())
         legibleType = MediaSelectionOption::LegibleType::LegibleOff;
+    else if (&track == &TextTrack::captionMenuOnItemSingleton())
+        legibleType = MediaSelectionOption::LegibleType::LegibleOn;
     else if (&track == &TextTrack::captionMenuAutomaticItemSingleton())
         legibleType = MediaSelectionOption::LegibleType::LegibleAuto;
 
@@ -261,7 +263,7 @@ MediaSelectionOption CaptionUserPreferences::mediaSelectionOptionForTrack(const 
         break;
     }
 
-    return { mediaType, displayNameForTrack(track), legibleType };
+    return { mediaType, displayNameForTrack(track), legibleType, track.validBCP47Language() };
 }
     
 Vector<Ref<TextTrack>> CaptionUserPreferences::sortedTrackListForMenu(TextTrackList* trackList, HashSet<TextTrack::Kind> kinds)
@@ -306,7 +308,7 @@ String CaptionUserPreferences::displayNameForTrack(const AudioTrack& track) cons
 
 MediaSelectionOption CaptionUserPreferences::mediaSelectionOptionForTrack(const AudioTrack& track) const
 {
-    return { MediaSelectionOption::MediaType::Audio, displayNameForTrack(track), MediaSelectionOption::LegibleType::Regular };
+    return { MediaSelectionOption::MediaType::Audio, displayNameForTrack(track), MediaSelectionOption::LegibleType::Regular, track.validBCP47Language() };
 }
 
 Vector<Ref<AudioTrack>> CaptionUserPreferences::sortedTrackListForMenu(AudioTrackList* trackList)

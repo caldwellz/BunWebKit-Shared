@@ -250,7 +250,7 @@ void SOAuthorizationSession::continueStartAfterDecidePolicy(const SOAuthorizatio
         kSOAuthorizationOptionInitiatingPath: initiatingPath.createNSString().get()
     };
 #if PLATFORM(IOS_FAMILY)
-    RetainPtr<WKWebView> webView = m_page->cocoaView();
+    RetainPtr<WKWebView> webView = protect(m_page)->cocoaView();
     id webViewUIDelegate = [webView UIDelegate];
     if ([webViewUIDelegate respondsToSelector:@selector(_hostSceneIdentifierForWebView:)]) {
         NSString *callerSceneID = [webViewUIDelegate _hostSceneIdentifierForWebView:webView.get()];
@@ -363,7 +363,7 @@ void SOAuthorizationSession::complete(NSHTTPURLResponse *httpResponse, NSData *d
         AUTHORIZATIONSESSION_RELEASE_LOG("complete: Setting %zu cookies with total header size ~%zu bytes in data store %p", cookies.size(), totalHeaderSize, protect(page->websiteDataStore()).ptr());
     }
 
-    protect(page->websiteDataStore())->protectedCookieStore()->setCookies(WTF::move(cookies), [weakThis = ThreadSafeWeakPtr { *this }, response = WTF::move(response), data = adoptNS([[NSData alloc] initWithData:data])] () mutable {
+    protect(protect(page->websiteDataStore())->cookieStore())->setCookies(WTF::move(cookies), [weakThis = ThreadSafeWeakPtr { *this }, response = WTF::move(response), data = adoptNS([[NSData alloc] initWithData:data])] () mutable {
         auto protectedThis = weakThis.get();
         if (!protectedThis)
             return;
@@ -421,8 +421,10 @@ void SOAuthorizationSession::presentViewController(SOAuthorizationViewController
     // FIXME: When in element fullscreen, UIClient::presentingViewController() may not return the
     // WKFullScreenViewController even though that is the presenting view controller of the WKWebView.
     // We should call PageClientImpl::presentingViewController() instead.
-    UIViewController *presentingViewController = page->uiClient().presentingViewController();
-#if !PLATFORM(VISION)
+    RetainPtr presentingViewController = page->uiClient().presentingViewController();
+#if PLATFORM(VISION)
+    page->dispatchWillPresentModalUI();
+#else
     if (!presentingViewController)
         presentingViewController = [page->cocoaView() _wk_viewControllerForFullScreenPresentation];
 #endif

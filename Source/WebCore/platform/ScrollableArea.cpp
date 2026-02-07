@@ -40,6 +40,7 @@
 #include "LayoutRect.h"
 #include "Logging.h"
 #include "PlatformWheelEvent.h"
+#include "ScrollAnchoringController.h"
 #include "ScrollAnimator.h"
 #include "ScrollbarTheme.h"
 #include "ScrollbarsControllerMock.h"
@@ -259,7 +260,7 @@ void ScrollableArea::scrollPositionChanged(const ScrollPosition& position)
 
     if (scrollPosition() != oldPosition) {
         scrollbarsController().notifyContentAreaScrolled(scrollPosition() - oldPosition);
-        invalidateScrollAnchoringElement();
+
         updateScrollAnchoringElement();
         updateAnchorPositionedAfterScroll();
     }
@@ -281,10 +282,39 @@ void ScrollableArea::stopKeyboardScrollAnimation()
     scrollAnimator().stopKeyboardScrollAnimation();
 }
 
+void ScrollableArea::updateScrollAnchoringElement(ComputeNewScrollAnchor computeNewScrollAnchor)
+{
+    CheckedPtr controller = scrollAnchoringController();
+    if (!controller)
+        return;
+
+    if (computeNewScrollAnchor == ComputeNewScrollAnchor::Yes)
+        controller->invalidateAnchorElement();
+
+    controller->updateAnchorElement();
+}
+
+void ScrollableArea::adjustScrollAnchoringPosition()
+{
+    if (CheckedPtr controller = scrollAnchoringController())
+        controller->adjustScrollPositionForAnchoring();
+}
+
 #if ENABLE(TOUCH_EVENTS)
 bool ScrollableArea::handleTouchEvent(const PlatformTouchEvent& touchEvent)
 {
     return scrollAnimator().handleTouchEvent(touchEvent);
+}
+#endif
+
+#if USE(COORDINATED_GRAPHICS_ASYNC_SCROLLBAR)
+float ScrollableArea::scrollbarOpacity() const
+{
+    if (auto scrollbar = verticalScrollbar())
+        return scrollbar->opacity();
+    if (auto scrollbar = horizontalScrollbar())
+        return scrollbar->opacity();
+    return 1;
 }
 #endif
 

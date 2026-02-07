@@ -41,6 +41,7 @@ ErrorInstance::ErrorInstance(VM& vm, Structure* structure, ErrorType errorType)
     , m_stackOverflowError(false)
     , m_outOfMemoryError(false)
     , m_errorInfoMaterialized(false)
+    , m_stackPropertyAlreadyMaterialized(false)
     , m_nativeGetterTypeError(false)
 #if ENABLE(WEBASSEMBLY)
     , m_catchableFromWasm(true)
@@ -375,10 +376,19 @@ void ErrorInstance::computeErrorInfo(VM& vm, bool allocationAllowed)
         auto& fn = vm.onComputeErrorInfo();
         WTF::String stackString;
         if (fn) {
-            stackString = fn(vm, *m_stackTrace.get(), m_lineColumn.line, m_lineColumn.column, m_sourceURL, this->bunErrorData());
+            if (m_stackPropertyAlreadyMaterialized)
+                stackString = emptyString();
+            else
+                stackString = fn(vm, *m_stackTrace.get(), m_lineColumn.line, m_lineColumn.column, m_sourceURL, this->bunErrorData());
         } else {
             getLineColumnAndSource(vm, m_stackTrace.get(), m_lineColumn, m_sourceURL);
-            stackString = Interpreter::stackTraceAsString(vm, *m_stackTrace.get());
+            // If the stack property was already materialized by Error.captureStackString,
+            // use emptyString as a placeholder to materialize the other properties in
+            // materializeErrorInfoIfNeeded below.
+            if (m_stackPropertyAlreadyMaterialized)
+                stackString = emptyString();
+            else
+                stackString = Interpreter::stackTraceAsString(vm, *m_stackTrace.get());
         }
 
         {
@@ -402,7 +412,9 @@ bool ErrorInstance::materializeErrorInfoIfNeeded(VM& vm)
         m_errorInfoMaterialized = true;
         DeferGCForAWhile deferGC(vm);
 
-        JSValue stack = fn(vm, *m_stackTrace.get(), m_lineColumn.line, m_lineColumn.column, m_sourceURL, this, this->bunErrorData());
+        JSValue stack;
+        if (!m_stackPropertyAlreadyMaterialized)
+            stack = fn(vm, *m_stackTrace.get(), m_lineColumn.line, m_lineColumn.column, m_sourceURL, this, this->bunErrorData());
 
         {
             Locker locker { cellLock() };
@@ -418,7 +430,8 @@ bool ErrorInstance::materializeErrorInfoIfNeeded(VM& vm)
         if (!m_sourceURL.isEmpty())
             putDirect(vm, vm.propertyNames->sourceURL, jsString(vm, WTF::move(m_sourceURL)), attributes);
 
-        putDirect(vm, vm.propertyNames->stack, stack, attributes);
+        if (!m_stackPropertyAlreadyMaterialized)
+            putDirect(vm, vm.propertyNames->stack, stack, attributes);
         return true;
     }
 
@@ -433,12 +446,15 @@ bool ErrorInstance::materializeErrorInfoIfNeeded(VM& vm)
         putDirect(vm, vm.propertyNames->column, jsNumber(m_lineColumn.column), attributes);
         if (!m_sourceURL.isEmpty())
             putDirect(vm, vm.propertyNames->sourceURL, jsString(vm, WTF::move(m_sourceURL)), attributes);
-        WTF::String stackString;
-        {
-            Locker locker { cellLock() };
-            stackString = WTF::move(m_stackString);
+
+        if (!m_stackPropertyAlreadyMaterialized) {
+            WTF::String stackString;
+            {
+                Locker locker { cellLock() };
+                stackString = WTF::move(m_stackString);
+            }
+            putDirect(vm, vm.propertyNames->stack, jsString(vm, WTF::move(stackString)), attributes);
         }
-        putDirect(vm, vm.propertyNames->stack, jsString(vm, WTF::move(stackString)), attributes);
         m_errorInfoMaterialized = true;
     }
 

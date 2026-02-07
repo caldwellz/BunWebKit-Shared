@@ -204,11 +204,6 @@ Text* Position::containerText() const
     return nullptr;
 }
 
-RefPtr<Text> Position::protectedContainerText() const
-{
-    return containerText();
-}
-
 Element* Position::containerOrParentElement() const
 {
     auto* container = containerNode();
@@ -483,7 +478,7 @@ bool Position::atFirstEditingPositionForNode() const
         return true;
     case PositionIsAfterChildren:
     case PositionIsAfterAnchor:
-        return !lastOffsetForEditing(*protectedDeprecatedNode());
+        return !lastOffsetForEditing(*protect(deprecatedNode()));
     }
     ASSERT_NOT_REACHED();
     return false;
@@ -494,7 +489,7 @@ bool Position::atLastEditingPositionForNode() const
     if (isNull())
         return true;
     // FIXME: Position after anchor shouldn't be considered as at the first editing position for node since that position resides outside of the node.
-    return m_anchorType == PositionIsAfterAnchor || m_anchorType == PositionIsAfterChildren || m_offset >= static_cast<unsigned>(lastOffsetForEditing(*protectedDeprecatedNode()));
+    return m_anchorType == PositionIsAfterAnchor || m_anchorType == PositionIsAfterChildren || m_offset >= static_cast<unsigned>(lastOffsetForEditing(*protect(deprecatedNode())));
 }
 
 // A position is considered at editing boundary if one of the following is true:
@@ -554,7 +549,7 @@ bool Position::atStartOfTree() const
     case PositionIsBeforeChildren:
         return true;
     case PositionIsAfterChildren:
-        return !lastOffsetForEditing(*protectedAnchorNode());
+        return !lastOffsetForEditing(*protect(anchorNode()));
     }
     ASSERT_NOT_REACHED();
     return false;
@@ -571,13 +566,13 @@ bool Position::atEndOfTree() const
 
     switch (m_anchorType) {
     case PositionIsOffsetInAnchor:
-        return m_offset >= static_cast<unsigned>(lastOffsetForEditing(*protectedAnchorNode()));
+        return m_offset >= static_cast<unsigned>(lastOffsetForEditing(*protect(anchorNode())));
     case PositionIsBeforeAnchor:
         return false;
     case PositionIsAfterAnchor:
         return !m_anchorNode->nextSibling();
     case PositionIsBeforeChildren:
-        return !lastOffsetForEditing(*protectedAnchorNode());
+        return !lastOffsetForEditing(*protect(anchorNode()));
     case PositionIsAfterChildren:
         return true;
     }

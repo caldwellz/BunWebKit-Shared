@@ -191,6 +191,7 @@ struct WebPageCreationParameters {
     bool useDarkAppearance { false };
     bool useElevatedUserInterfaceLevel { false };
     bool allowPostingLegacySynchronousMessages { false };
+    bool backgroundTextExtractionEnabled { false };
 
 #if PLATFORM(MAC)
     std::optional<WebCore::DestinationColorSpace> colorSpace { };
@@ -340,9 +341,6 @@ struct WebPageCreationParameters {
     WebCore::SandboxFlags initialSandboxFlags;
     WebCore::ReferrerPolicy initialReferrerPolicy { WebCore::ReferrerPolicy::EmptyString };
     std::optional<WebCore::WindowFeatures> windowFeatures { };
-    bool statusBarIsVisible;
-    bool menuBarIsVisible;
-    bool toolbarsAreVisible;
 
 #if ENABLE(ADVANCED_PRIVACY_PROTECTIONS)
     Vector<WebCore::LinkDecorationFilteringData> linkDecorationFilteringData { };
@@ -377,6 +375,8 @@ struct WebPageCreationParameters {
 #endif
 
     std::optional<TextManipulationParameters> textManipulationParameters { std::nullopt };
+
+    bool isPopup { false };
 };
 
 } // namespace WebKit

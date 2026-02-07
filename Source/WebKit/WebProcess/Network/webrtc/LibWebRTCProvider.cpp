@@ -36,6 +36,7 @@
 #include "LibWebRTCNetwork.h"
 #include "LibWebRTCNetworkManager.h"
 #include "RTCDataChannelRemoteManager.h"
+#include "RTCSocketCreationFlags.h"
 #include "WebPage.h"
 #include "WebProcess.h"
 #include <WebCore/Page.h>
@@ -86,7 +87,7 @@ webrtc::scoped_refptr<webrtc::PeerConnectionInterface> LibWebRTCProvider::create
 
 void LibWebRTCProvider::disableNonLocalhostConnections()
 {
-    WebProcess::singleton().protectedLibWebRTCNetwork()->disableNonLocalhostConnections();
+    protect(WebProcess::singleton().libWebRTCNetwork())->disableNonLocalhostConnections();
 }
 
 #if PLATFORM(COCOA) && USE(LIBWEBRTC)
@@ -173,7 +174,7 @@ void RTCSocketFactory::resume()
 
 void LibWebRTCProvider::startedNetworkThread()
 {
-    WebProcess::singleton().protectedLibWebRTCNetwork()->setAsActive();
+    protect(WebProcess::singleton().libWebRTCNetwork())->setAsActive();
 }
 
 std::unique_ptr<LibWebRTCProvider::SuspendableSocketFactory> LibWebRTCProvider::createSocketFactory(String&& userAgent, ScriptExecutionContextIdentifier identifier, bool isFirstParty, RegistrableDomain&& domain, bool enableServiceClass)
@@ -200,7 +201,7 @@ void LibWebRTCProvider::setLoggingLevel(WTFLogLevel level)
 {
     WebCore::LibWebRTCProvider::setLoggingLevel(level);
 #if PLATFORM(COCOA)
-    WebProcess::singleton().protectedLibWebRTCCodecs()->setLoggingLevel(level);
+    protect(WebProcess::singleton().libWebRTCCodecs())->setLoggingLevel(level);
 #endif
 }
 

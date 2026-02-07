@@ -191,7 +191,7 @@ template<typename T> struct HashTraits<UniqueRef<T>> : SimpleClassHashTraits<Uni
     typedef std::nullptr_t EmptyValueType;
     static EmptyValueType emptyValue() { return nullptr; }
 
-    template <typename>
+    template<typename>
     static void constructEmptyValue(UniqueRef<T>& slot)
     {
         new (NotNull, std::addressof(slot)) UniqueRef<T>(HashTableEmptyValue);
@@ -242,7 +242,7 @@ template<typename P> struct RefHashTraits : SimpleClassHashTraits<Ref<P>> {
     static constexpr bool emptyValueIsZero = true;
     static Ref<P> emptyValue() { return HashTableEmptyValue; }
 
-    template <typename>
+    template<typename>
     static void constructEmptyValue(Ref<P>& slot)
     {
         new (NotNull, std::addressof(slot)) Ref<P>(HashTableEmptyValue);
@@ -348,6 +348,15 @@ struct PairHashTraits : GenericHashTraits<std::pair<typename FirstTraitsArg::Tra
 
     static constexpr bool emptyValueIsZero = FirstTraits::emptyValueIsZero && SecondTraits::emptyValueIsZero;
     static EmptyValueType emptyValue() { return std::make_pair(FirstTraits::emptyValue(), SecondTraits::emptyValue()); }
+
+    // Override constructEmptyValue to construct elements individually, avoiding move-construction from emptyValue().
+    template<typename>
+    static void constructEmptyValue(TraitType& slot)
+    {
+        FirstTraits::template constructEmptyValue<FirstTraits>(*std::launder(&slot.first));
+        SecondTraits::template constructEmptyValue<SecondTraits>(*std::launder(&slot.second));
+    }
+
     static bool isEmptyValue(const TraitType& value) { return isHashTraitsEmptyValue<FirstTraits>(value.first) && isHashTraitsEmptyValue<SecondTraits>(value.second); }
 
     static constexpr unsigned minimumTableSize = FirstTraits::minimumTableSize;
@@ -400,7 +409,7 @@ struct KeyValuePairHashTraits : GenericHashTraits<KeyValuePair<typename KeyTrait
 
     static bool isEmptyValue(const TraitType& value) { return isHashTraitsEmptyValue<KeyTraits>(value.key) && isHashTraitsEmptyValue<ValueTraits>(value.value); }
 
-    template <typename>
+    template<typename>
     static void constructEmptyValue(TraitType& slot)
     {
         KeyTraits::template constructEmptyValue<KeyTraits>(slot.key);

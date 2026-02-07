@@ -164,7 +164,7 @@ void NetworkProcessProxy::terminate()
 {
     AuxiliaryProcessProxy::terminate();
     if (hasConnection())
-        protectedConnection()->invalidate();
+        protect(connection())->invalidate();
 }
 
 void NetworkProcessProxy::requestTermination()
@@ -265,7 +265,7 @@ NetworkProcessProxy::NetworkProcessProxy()
     , m_customProtocolManagerClient(makeUniqueRef<API::CustomProtocolManagerClient>())
 #endif
 #if PLATFORM(MAC)
-    , m_backgroundActivityToPreventSuspension(protectedThrottler()->backgroundActivity("Prevent suspension"_s))
+    , m_backgroundActivityToPreventSuspension(protect(throttler())->backgroundActivity("Prevent suspension"_s))
 #endif
 {
     RELEASE_LOG(Process, "%p - NetworkProcessProxy::NetworkProcessProxy", this);
@@ -380,7 +380,7 @@ Ref<DownloadProxy> NetworkProcessProxy::createDownloadProxy(WebsiteDataStore& da
 
 void NetworkProcessProxy::dataTaskWithRequest(WebPageProxy& page, PAL::SessionID sessionID, WebCore::ResourceRequest&& request, const std::optional<SecurityOriginData>& topOrigin, bool shouldRunAtForegroundPriority, CompletionHandler<void(API::DataTask&)>&& completionHandler)
 {
-    auto activity = shouldRunAtForegroundPriority ? protectedThrottler()->foregroundActivity("WKDataTask initialization"_s) : protectedThrottler()->backgroundActivity("WKDataTask initialization"_s);
+    auto activity = shouldRunAtForegroundPriority ? protect(throttler())->foregroundActivity("WKDataTask initialization"_s) : protect(throttler())->backgroundActivity("WKDataTask initialization"_s);
     sendWithAsyncReply(Messages::NetworkProcess::DataTaskWithRequest(page.identifier(), sessionID, request, topOrigin, IPC::FormDataReference(request.httpBody())), [this, protectedThis = Ref { *this }, weakPage = WeakPtr { page }, activity = WTF::move(activity), shouldRunAtForegroundPriority, completionHandler = WTF::move(completionHandler), originalURL = request.url()] (std::optional<DataTaskIdentifier> identifier) mutable {
         auto dataTask = API::DataTask::create(identifier, WTF::move(weakPage), WTF::move(originalURL), shouldRunAtForegroundPriority);
         completionHandler(dataTask);
@@ -395,7 +395,7 @@ void NetworkProcessProxy::dataTaskReceivedChallenge(DataTaskIdentifier identifie
 {
     MESSAGE_CHECK_COMPLETION(decltype(m_dataTasks)::isValidKey(identifier), completionHandler({ }, { }));
     if (RefPtr task = m_dataTasks.get(identifier))
-        task->protectedClient()->didReceiveChallenge(*task, WTF::move(challenge), WTF::move(completionHandler));
+        protect(task->client())->didReceiveChallenge(*task, WTF::move(challenge), WTF::move(completionHandler));
     else
         completionHandler(AuthenticationChallengeDisposition::RejectProtectionSpaceAndContinue, { });
 }
@@ -404,14 +404,14 @@ void NetworkProcessProxy::dataTaskWillPerformHTTPRedirection(DataTaskIdentifier 
 {
     MESSAGE_CHECK_COMPLETION(decltype(m_dataTasks)::isValidKey(identifier), completionHandler(false));
     if (RefPtr task = m_dataTasks.get(identifier))
-        task->protectedClient()->willPerformHTTPRedirection(*task, WTF::move(response), WTF::move(request), WTF::move(completionHandler));
+        protect(task->client())->willPerformHTTPRedirection(*task, WTF::move(response), WTF::move(request), WTF::move(completionHandler));
 }
 
 void NetworkProcessProxy::dataTaskDidReceiveResponse(DataTaskIdentifier identifier, WebCore::ResourceResponse&& response, CompletionHandler<void(bool)>&& completionHandler)
 {
     MESSAGE_CHECK_COMPLETION(decltype(m_dataTasks)::isValidKey(identifier), completionHandler(false));
     if (RefPtr task = m_dataTasks.get(identifier))
-        task->protectedClient()->didReceiveResponse(*task, WTF::move(response), WTF::move(completionHandler));
+        protect(task->client())->didReceiveResponse(*task, WTF::move(response), WTF::move(completionHandler));
     else
         completionHandler(false);
 }
@@ -420,7 +420,7 @@ void NetworkProcessProxy::dataTaskDidReceiveData(DataTaskIdentifier identifier, 
 {
     MESSAGE_CHECK(decltype(m_dataTasks)::isValidKey(identifier));
     if (RefPtr task = m_dataTasks.get(identifier))
-        task->protectedClient()->didReceiveData(*task, data);
+        protect(task->client())->didReceiveData(*task, data);
 }
 
 void NetworkProcessProxy::dataTaskDidCompleteWithError(DataTaskIdentifier identifier, WebCore::ResourceError&& error)
@@ -443,7 +443,7 @@ void NetworkProcessProxy::fetchWebsiteData(PAL::SessionID sessionID, OptionSet<W
 
 void NetworkProcessProxy::deleteWebsiteData(PAL::SessionID sessionID, OptionSet<WebsiteDataType> dataTypes, WallTime modifiedSince, const HashSet<WebCore::ProcessIdentifier>& identifiers, CompletionHandler<void()>&& completionHandler)
 {
-    auto completionHandlerWithPriority = [completionHandler = WTF::move(completionHandler), activity = protectedThrottler()->foregroundActivity("Website data deletion"_s)] mutable {
+    auto completionHandlerWithPriority = [completionHandler = WTF::move(completionHandler), activity = protect(throttler())->foregroundActivity("Website data deletion"_s)] mutable {
         completionHandler();
     };
     sendWithAsyncReply(Messages::NetworkProcess::DeleteWebsiteData(sessionID, dataTypes, modifiedSince, identifiers), WTF::move(completionHandlerWithPriority));
@@ -471,7 +471,7 @@ void NetworkProcessProxy::networkProcessDidTerminate(ProcessTerminationReason re
     if (RefPtr downloadProxyMap = m_downloadProxyMap.get())
         downloadProxyMap->invalidate();
 #if ENABLE(LEGACY_CUSTOM_PROTOCOL_MANAGER)
-    protectedCustomProtocolManagerProxy()->invalidate();
+    protect(m_customProtocolManagerProxy)->invalidate();
 #endif
 
     m_uploadActivity = std::nullopt;
@@ -1720,13 +1720,13 @@ void NetworkProcessProxy::updateProcessAssertion()
 {
     if (anyProcessPoolHasForegroundWebProcesses()) {
         if (!ProcessThrottler::isValidForegroundActivity(m_activityFromWebProcesses.get())) {
-            m_activityFromWebProcesses = protectedThrottler()->foregroundActivity("Networking for foreground view(s)"_s);
+            m_activityFromWebProcesses = protect(throttler())->foregroundActivity("Networking for foreground view(s)"_s);
         }
         return;
     }
     if (anyProcessPoolHasBackgroundWebProcesses()) {
         if (!ProcessThrottler::isValidBackgroundActivity(m_activityFromWebProcesses.get())) {
-            m_activityFromWebProcesses = protectedThrottler()->backgroundActivity("Networking for background view(s)"_s);
+            m_activityFromWebProcesses = protect(throttler())->backgroundActivity("Networking for background view(s)"_s);
         }
         return;
     }
@@ -1769,7 +1769,7 @@ void NetworkProcessProxy::clearAppBoundSession(PAL::SessionID sessionID, Complet
 
 void NetworkProcessProxy::getAppBoundDomains(PAL::SessionID sessionID, CompletionHandler<void(HashSet<WebCore::RegistrableDomain>&&)>&& completionHandler)
 {
-    if (auto* store = websiteDataStoreFromSessionID(sessionID)) {
+    if (RefPtr store = websiteDataStoreFromSessionID(sessionID)) {
         store->getAppBoundDomains([completionHandler = WTF::move(completionHandler)] (auto& appBoundDomains) mutable {
             auto appBoundDomainsCopy = appBoundDomains;
             completionHandler(WTF::move(appBoundDomainsCopy));
@@ -1929,7 +1929,7 @@ void NetworkProcessProxy::applicationWillEnterForeground()
 void NetworkProcessProxy::cookiesDidChange(PAL::SessionID sessionID)
 {
     if (RefPtr websiteDataStore = websiteDataStoreFromSessionID(sessionID))
-        websiteDataStore->protectedCookieStore()->cookiesDidChange();
+        protect(websiteDataStore->cookieStore())->cookiesDidChange();
 }
 
 void NetworkProcessProxy::notifyMediaStreamingActivity(bool activity)

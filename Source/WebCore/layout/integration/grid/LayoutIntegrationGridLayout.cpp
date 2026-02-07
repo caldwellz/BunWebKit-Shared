@@ -55,7 +55,7 @@ void GridLayout::updateFormattingContextGeometries()
     boxGeometryUpdater.setFormattingContextContentGeometry(CheckedRef { layoutState() }->geometryForBox(gridBox()).contentBoxWidth(), { });
 }
 
-static inline Layout::GridFormattingContext::GridLayoutConstraints constraintsForGridContent(const Layout::ElementBox& gridContainer)
+static inline Layout::GridLayoutConstraints constraintsForGridContent(const Layout::ElementBox& gridContainer)
 {
     CheckedRef gridContainerRenderer = downcast<RenderGrid>(*gridContainer.rendererForIntegration());
 

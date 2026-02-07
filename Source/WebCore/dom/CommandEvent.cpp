@@ -41,16 +41,16 @@ CommandEvent::CommandEvent()
 {
 }
 
-CommandEvent::CommandEvent(const AtomString& type, const CommandEvent::Init& initializer, IsTrusted isTrusted)
-    : Event(EventInterfaceType::CommandEvent, type, initializer, isTrusted)
-    , m_source(initializer.source)
-    , m_command(initializer.command)
+CommandEvent::CommandEvent(const AtomString& type, Init&& initializer, IsTrusted isTrusted)
+    : Event(EventInterfaceType::CommandEvent, type, WTF::move(initializer), isTrusted)
+    , m_source(WTF::move(initializer.source))
+    , m_command(WTF::move(initializer.command))
 {
 }
 
-Ref<CommandEvent> CommandEvent::create(const AtomString& eventType, const CommandEvent::Init& init, IsTrusted isTrusted)
+Ref<CommandEvent> CommandEvent::create(const AtomString& eventType, Init&& initializer, IsTrusted isTrusted)
 {
-    return adoptRef(*new CommandEvent(eventType, init, isTrusted));
+    return adoptRef(*new CommandEvent(eventType, WTF::move(initializer), isTrusted));
 }
 
 Ref<CommandEvent> CommandEvent::createForBindings()

@@ -950,7 +950,7 @@ auto TextManipulationController::replace(const ManipulationItemData& item, const
             for (RefPtr descendentNode = NodeTraversal::next(*originalNode, originalNode.get()); descendentNode; descendentNode = NodeTraversal::next(*descendentNode, originalNode.get()))
                 nodesToRemove.remove(*descendentNode);
         } else
-            replacementNode = Text::create(commonAncestor->protectedDocument(), WTF::move(replacementText));
+            replacementNode = Text::create(protect(commonAncestor->document()), WTF::move(replacementText));
 
         auto topDownPath = getPath(commonAncestor.get(), originalNode.get());
         updateInsertions(lastTopDownPath, topDownPath, replacementNode.get(), reusedOriginalNodes, insertions);

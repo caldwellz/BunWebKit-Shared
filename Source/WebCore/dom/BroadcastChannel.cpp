@@ -66,7 +66,7 @@ static HashMap<BroadcastChannelIdentifier, ScriptExecutionContextIdentifier>& ch
 
 static PartitionedSecurityOrigin partitionedSecurityOriginFromContext(ScriptExecutionContext& context)
 {
-    return { context.topOrigin(), context.protectedSecurityOrigin().releaseNonNull() };
+    return { context.topOrigin(), protect(context.securityOrigin()).releaseNonNull() };
 }
 
 class BroadcastChannel::MainThreadBridge : public ThreadSafeRefCounted<MainThreadBridge, WTF::DestructionThread::Main>, public Identified<BroadcastChannelIdentifier> {
@@ -112,7 +112,7 @@ void BroadcastChannel::MainThreadBridge::ensureOnMainThread(Function<void(Page*)
     ASSERT(context->isContextThread());
 
     if (RefPtr document = dynamicDowncast<Document>(*context)) {
-        task(document->protectedPage().get());
+        task(protect(document->page()).get());
         return;
     }
 
@@ -121,7 +121,7 @@ void BroadcastChannel::MainThreadBridge::ensureOnMainThread(Function<void(Page*)
         return;
 
     workerLoaderProxy->postTaskToLoader([task = WTF::move(task)](auto& context) {
-        task(downcast<Document>(context).protectedPage().get());
+        task(protect(downcast<Document>(context).page()).get());
     });
 }
 

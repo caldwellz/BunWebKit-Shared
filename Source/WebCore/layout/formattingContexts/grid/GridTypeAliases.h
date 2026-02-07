@@ -39,6 +39,7 @@ namespace Layout {
 class PlacedGridItem;
 class UnplacedGridItem;
 
+struct ComputedSizes;
 struct GridAreaLines;
 struct GridItemRect;
 struct TrackSizingFunctions;
@@ -49,6 +50,7 @@ using BorderBoxPositions = Vector<LayoutUnit>;
 using FlexTracks = Vector<FlexTrack>;
 using GridAreas = HashMap<UnplacedGridItem, GridAreaLines>;
 using GridCell = Vector<UnplacedGridItem, 1>;
+using ComputedSizesList = Vector<ComputedSizes>;
 using GridItemRects = Vector<GridItemRect>;
 using GridMatrix = Vector<Vector<GridCell>>;
 using PlacedGridItems = Vector<PlacedGridItem>;

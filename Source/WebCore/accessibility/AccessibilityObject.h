@@ -515,6 +515,7 @@ public:
     RetainPtr<RemoteAXObjectRef> remoteParent() const final;
     FloatRect convertRectToPlatformSpace(const FloatRect&, AccessibilityConversionSpace) const final;
     RetainPtr<id> remoteFramePlatformElement() const override { return nil; }
+    pid_t remoteFrameProcessIdentifier() const override { return 0; }
 #endif
     bool hasRemoteFrameChild() const override { return false; }
 

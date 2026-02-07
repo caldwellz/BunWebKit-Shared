@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2013-2024 Apple Inc. All rights reserved.
+ * Copyright (C) 2013-2026 Apple Inc. All rights reserved.
  * Copyright (C) 2014 Yusuke Suzuki <utatane.tea@gmail.com>
  *
  * Redistribution and use in source and binary forms, with or without
@@ -1501,11 +1501,13 @@ static FunctionType constructFragmentsInternal(const CSSSelector& rootSelector, 
             case CSSSelector::PseudoElement::After:
             case CSSSelector::PseudoElement::Backdrop:
             case CSSSelector::PseudoElement::Before:
+            case CSSSelector::PseudoElement::Checkmark:
             case CSSSelector::PseudoElement::FirstLetter:
             case CSSSelector::PseudoElement::FirstLine:
             case CSSSelector::PseudoElement::GrammarError:
             case CSSSelector::PseudoElement::InternalWritingSuggestions:
             case CSSSelector::PseudoElement::Marker:
+            case CSSSelector::PseudoElement::Picker:
             case CSSSelector::PseudoElement::WebKitResizer:
             case CSSSelector::PseudoElement::WebKitScrollbar:
             case CSSSelector::PseudoElement::WebKitScrollbarButton:
@@ -1530,7 +1532,6 @@ static FunctionType constructFragmentsInternal(const CSSSelector& rootSelector, 
 #endif
             case CSSSelector::PseudoElement::Highlight:
             case CSSSelector::PseudoElement::Part:
-            case CSSSelector::PseudoElement::Picker:
             case CSSSelector::PseudoElement::Slotted:
             case CSSSelector::PseudoElement::ViewTransitionGroup:
             case CSSSelector::PseudoElement::ViewTransitionImagePair:

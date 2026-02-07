@@ -296,7 +296,7 @@ JSObjectRef JSObjectGetTypedArrayBuffer(JSContextRef ctx, JSObjectRef objectRef,
 
     if (JSArrayBufferView* typedArray = jsDynamicCast<JSArrayBufferView*>(object)) {
         if (ArrayBuffer* buffer = typedArray->possiblySharedBuffer())
-            return toRef(vm.m_typedArrayController->toJS(globalObject, typedArray->globalObject(), buffer));
+            return toRef(vm.m_typedArrayController->toJS(globalObject, typedArray->globalObject(), *buffer));
 
         setException(ctx, exception, createOutOfMemoryError(globalObject));
     }

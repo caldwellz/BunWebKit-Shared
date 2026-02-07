@@ -223,7 +223,7 @@ inline RefPtr<T, U, V> adoptRef(T* p)
 }
 
 template<typename T, typename PtrTraits = RawPtrTraits<T>, typename RefDerefTraits = DefaultRefDerefTraits<T>>
-    requires HasRefPtrMemberFunctions<T>::value
+    requires CanUseDefaultRefDerefTraits<T>
 ALWAYS_INLINE CLANG_POINTER_CONVERSION RefPtr<T, PtrTraits, RefDerefTraits> protect(T* ptr)
 {
     return RefPtr<T, PtrTraits, RefDerefTraits>(ptr);

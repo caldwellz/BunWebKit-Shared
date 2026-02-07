@@ -466,7 +466,7 @@ void HeapSnapshotBuilder::dumpToStream(PrintStream& out)
         switch (edge.type) {
         case EdgeType::Property:
         case EdgeType::Variable: {
-            auto result = edgeNameIndexes.add(edge.u.name, nextEdgeNameIndex);
+            auto result = edgeNameIndexes.add(edge.name.get(), nextEdgeNameIndex);
             if (result.isNewEntry)
                 nextEdgeNameIndex++;
             unsigned edgeNameIndex = result.iterator->value;
@@ -474,7 +474,7 @@ void HeapSnapshotBuilder::dumpToStream(PrintStream& out)
             break;
         }
         case EdgeType::Index:
-            out.print(edge.u.index);
+            out.print(edge.index);
             break;
         default:
             // No data for this edge type.

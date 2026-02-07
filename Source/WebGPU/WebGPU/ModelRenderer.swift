@@ -21,7 +21,7 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
 
-#if canImport(RealityCoreRenderer, _version: 9999)
+#if canImport(RealityCoreRenderer, _version: 6) && canImport(USDStageKit, _version: 34)
 
 import QuartzCore
 @_spi(RealityCoreRendererAPI) @_spi(Private) import RealityKit
@@ -122,7 +122,7 @@ nonisolated class Renderer {
 
         let target: _Proto_LowLevelRenderTarget_v1 = .texture(color: texture, sampleCount: 4)
         renderWorkload.camera = .mono(pose: cameraPose, projection: projection)
-        renderWorkload.camera.clearColor = .init(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.1)
+        renderWorkload.camera.clearColor = .init(red: 0.0, green: 0.0, blue: 0.0, alpha: 0.0)
         try renderWorkload.setMeshInstances(meshInstances)
 
         guard let renderCommandBuffer = commandQueue.makeCommandBuffer() else {

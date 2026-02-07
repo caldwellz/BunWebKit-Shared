@@ -100,7 +100,6 @@ public:
     static void applySandboxProfileForDaemon(const String& profilePath, const String& userDirectorySuffix);
 
     IPC::Connection* parentProcessConnection() const { return m_connection.get(); }
-    RefPtr<IPC::Connection> protectedParentProcessConnection() const { return parentProcessConnection(); }
 
     IPC::MessageReceiverMap& messageReceiverMap() { return m_messageReceiverMap; }
 

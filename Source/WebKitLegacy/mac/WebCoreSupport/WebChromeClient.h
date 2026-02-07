@@ -75,17 +75,7 @@ private:
     bool canRunModal() const final;
     void runModal() final;
 
-    void setToolbarsVisible(bool);
-    bool toolbarsVisible() const final;
-
-    void setStatusbarVisible(bool);
-    bool statusbarVisible() const final;
-
-    void setScrollbarsVisible(bool);
-    bool scrollbarsVisible() const final;
-
-    void setMenubarVisible(bool);
-    bool menubarVisible() const final;
+    bool isPopup() const final;
 
     void setResizable(bool) final;
 
@@ -252,8 +242,6 @@ private:
     RefPtr<WebCore::ShapeDetection::TextDetector> createTextDetector() const final;
 
     void registerBlobPathForTesting(const String&, CompletionHandler<void()>&&) final;
-
-    void requestCookieConsent(CompletionHandler<void(WebCore::CookieConsentDecisionResult)>&&) final;
 
 #if ENABLE(VIDEO_PRESENTATION_MODE)
     bool m_mockVideoPresentationModeEnabled { false };

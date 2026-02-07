@@ -243,6 +243,8 @@ private:
     void updateVideoLayerGravity() final { updateVideoLayerGravity(ShouldAnimate::No); }
     void updateVideoLayerGravity(ShouldAnimate);
 
+    void updateIsAudible() final;
+
     bool didPassCORSAccessCheck() const final;
     std::optional<bool> isCrossOrigin(const SecurityOrigin&) const final;
 
@@ -491,6 +493,7 @@ private:
     double m_cachedRate { 0 };
     bool m_requestedPlaying { false };
     double m_requestedRate { 1.0 };
+    double m_volume { 1 };
     int m_cachedTimeControlStatus { 0 };
     mutable long long m_cachedTotalBytes { 0 };
     unsigned m_pendingStatusChanges { 0 };
@@ -526,6 +529,8 @@ private:
     uint64_t m_sampleCount { 0 };
     RetainPtr<id> m_videoFrameMetadataGatheringObserver;
     bool m_isGatheringVideoFrameMetadata { false };
+    bool m_isAudible { false };
+    bool m_isVideoPlayer { false };
     std::optional<VideoFrameMetadata> m_videoFrameMetadata;
     mutable std::optional<NSTimeInterval> m_cachedSeekableTimeRangesLastModifiedTime;
     mutable std::optional<NSTimeInterval> m_cachedLiveUpdateInterval;

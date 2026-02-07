@@ -212,7 +212,9 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
     Vector<Ref<const RTT>> rtts;
     Vector<Vector<uint8_t>> constantExpressions;
     Name sourceMappingURL;
+#if ENABLE(WEBASSEMBLY_DEBUGGER)
     std::unique_ptr<Wasm::ModuleDebugInfo> debugInfo;
+#endif
 
     BitVector m_declaredFunctions;
     BitVector m_declaredExceptions;

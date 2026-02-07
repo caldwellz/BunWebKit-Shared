@@ -280,17 +280,17 @@ Position firstEditablePositionAfterPositionInRoot(const Position& position, Cont
     Position candidate = position;
 
     if (&position.deprecatedNode()->treeScope() != &highestRoot->treeScope()) {
-        RefPtr shadowAncestor = highestRoot->treeScope().ancestorNodeInThisScope(position.protectedDeprecatedNode().get());
+        RefPtr shadowAncestor = highestRoot->treeScope().ancestorNodeInThisScope(protect(position.deprecatedNode()).get());
         if (!shadowAncestor)
             return { };
 
         candidate = positionAfterNode(shadowAncestor.get());
     }
 
-    while (candidate.deprecatedNode() && !isEditablePosition(candidate) && candidate.protectedDeprecatedNode()->isDescendantOf(*highestRoot))
-        candidate = isAtomicNode(candidate.deprecatedNode()) ? positionInParentAfterNode(candidate.protectedDeprecatedNode().get()) : nextVisuallyDistinctCandidate(candidate);
+    while (candidate.deprecatedNode() && !isEditablePosition(candidate) && protect(candidate.deprecatedNode())->isDescendantOf(*highestRoot))
+        candidate = isAtomicNode(candidate.deprecatedNode()) ? positionInParentAfterNode(protect(candidate.deprecatedNode()).get()) : nextVisuallyDistinctCandidate(candidate);
 
-    if (candidate.deprecatedNode() && !candidate.protectedDeprecatedNode()->isInclusiveDescendantOf(*highestRoot))
+    if (candidate.deprecatedNode() && !protect(candidate.deprecatedNode())->isInclusiveDescendantOf(*highestRoot))
         return { };
 
     return candidate;
@@ -308,17 +308,17 @@ Position lastEditablePositionBeforePositionInRoot(const Position& position, Cont
     Position candidate = position;
 
     if (&position.deprecatedNode()->treeScope() != &highestRoot->treeScope()) {
-        RefPtr shadowAncestor = highestRoot->treeScope().ancestorNodeInThisScope(position.protectedDeprecatedNode().get());
+        RefPtr shadowAncestor = highestRoot->treeScope().ancestorNodeInThisScope(protect(position.deprecatedNode()).get());
         if (!shadowAncestor)
             return { };
 
         candidate = firstPositionInOrBeforeNode(shadowAncestor.get());
     }
 
-    while (candidate.deprecatedNode() && !isEditablePosition(candidate) && candidate.protectedDeprecatedNode()->isDescendantOf(*highestRoot))
-        candidate = isAtomicNode(candidate.deprecatedNode()) ? positionInParentBeforeNode(candidate.protectedDeprecatedNode().get()) : previousVisuallyDistinctCandidate(candidate);
-    
-    if (candidate.deprecatedNode() && !candidate.protectedDeprecatedNode()->isInclusiveDescendantOf(*highestRoot))
+    while (candidate.deprecatedNode() && !isEditablePosition(candidate) && protect(candidate.deprecatedNode())->isDescendantOf(*highestRoot))
+        candidate = isAtomicNode(candidate.deprecatedNode()) ? positionInParentBeforeNode(protect(candidate.deprecatedNode()).get()) : previousVisuallyDistinctCandidate(candidate);
+
+    if (candidate.deprecatedNode() && !protect(candidate.deprecatedNode())->isInclusiveDescendantOf(*highestRoot))
         return { };
     
     return candidate;
@@ -347,7 +347,7 @@ RefPtr<Element> enclosingBlock(RefPtr<Node> node, EditingBoundaryCrossingRule ru
 
 TextDirection directionOfEnclosingBlock(const Position& position)
 {
-    auto block = enclosingBlock(position.protectedContainerNode());
+    auto block = enclosingBlock(protect(position.containerNode()));
     if (!block)
         return TextDirection::LTR;
     auto renderer = block->renderer();
@@ -475,7 +475,7 @@ VisiblePosition closestEditablePositionInElementForAbsolutePoint(const Element& 
         return { };
 
     Ref<const Element> protectedElement { element };
-    element.protectedDocument()->updateLayoutIgnorePendingStylesheets();
+    protect(element.document())->updateLayoutIgnorePendingStylesheets();
 
     CheckedPtr renderer = element.renderer();
     // Look at the inner element of a form control, not the control itself, as it is the editable part.
@@ -638,7 +638,7 @@ RefPtr<Node> enclosingListChild(Node* node)
 RefPtr<Node> enclosingEmptyListItem(const VisiblePosition& position)
 {
     // Check that position is on a line by itself inside a list item
-    RefPtr listChildNode = enclosingListChild(position.deepEquivalent().protectedDeprecatedNode().get());
+    RefPtr listChildNode = enclosingListChild(protect(position.deepEquivalent().deprecatedNode()).get());
     if (!listChildNode || !isStartOfParagraph(position) || !isEndOfParagraph(position))
         return nullptr;
 

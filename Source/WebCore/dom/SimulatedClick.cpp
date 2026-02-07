@@ -121,12 +121,12 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(SimulatedPointerEvent);
 
 static void simulateMouseEvent(const AtomString& eventType, Element& element, Event* underlyingEvent, SimulatedClickSource source)
 {
-    element.dispatchEvent(SimulatedMouseEvent::create(eventType, element.document().protectedWindowProxy().get(), underlyingEvent, element, source));
+    element.dispatchEvent(SimulatedMouseEvent::create(eventType, protect(element.document().windowProxy()).get(), underlyingEvent, element, source));
 }
 
 static void simulatePointerEvent(const AtomString& eventType, Element& element, Event* underlyingEvent, SimulatedClickSource source)
 {
-    Ref mouseEvent = SimulatedMouseEvent::create(eventType, element.document().protectedWindowProxy().get(), underlyingEvent, element, source);
+    Ref mouseEvent = SimulatedMouseEvent::create(eventType, protect(element.document().windowProxy()).get(), underlyingEvent, element, source);
     Ref pointerEvent = SimulatedPointerEvent::create(eventType, mouseEvent.get(), underlyingEvent, element, source);
 
     element.dispatchEvent(pointerEvent.get());

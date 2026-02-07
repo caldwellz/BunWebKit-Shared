@@ -27,6 +27,7 @@
 
 #if ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
 
+#include "MockMediaDeviceRouteURLCallback.h"
 #include <WebKitAdditions/MediaDeviceRouteAdditions.h>
 #include <wtf/Ref.h>
 #include <wtf/RefCounted.h>
@@ -43,6 +44,8 @@ public:
     static Ref<MockMediaDeviceRoute> create();
 
     WebMediaDevicePlatformRoute *platformRoute() const;
+
+    void setURLCallback(MockMediaDeviceRouteURLCallback*);
 
 private:
     MockMediaDeviceRoute();

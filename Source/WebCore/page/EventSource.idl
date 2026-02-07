@@ -53,8 +53,7 @@
     undefined close();
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary EventSourceInit {
+// https://html.spec.whatwg.org/multipage/server-sent-events.html#eventsourceinit
+dictionary EventSourceInit {
     boolean withCredentials = false;
 };

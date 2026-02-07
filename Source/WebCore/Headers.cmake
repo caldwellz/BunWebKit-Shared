@@ -1,20 +1,9 @@
 set(WebCore_PRIVATE_FRAMEWORK_HEADERS
-    Modules/Model/Implementation/DDMeshImpl.h
+    Modules/Model/Implementation/MeshImpl.h
 
-    Modules/Model/InternalAPI/DDFloat3.h
-    Modules/Model/InternalAPI/DDFloat4x4.h
-    Modules/Model/InternalAPI/DDImageAsset.h
-    Modules/Model/InternalAPI/DDMaterialDescriptor.h
-    Modules/Model/InternalAPI/DDMesh.h
-    Modules/Model/InternalAPI/DDMeshDescriptor.h
-    Modules/Model/InternalAPI/DDMeshPart.h
-    Modules/Model/InternalAPI/DDModel.serialization.in
-    Modules/Model/InternalAPI/DDUpdateMaterialDescriptor.h
-    Modules/Model/InternalAPI/DDUpdateMeshDescriptor.h
-    Modules/Model/InternalAPI/DDUpdateTextureDescriptor.h
-    Modules/Model/InternalAPI/DDVertexAttributeFormat.h
-    Modules/Model/InternalAPI/DDVertexLayout.h
-    Modules/Model/InternalAPI/ModelObjectDescriptorBase.h
+    Modules/Model/InternalAPI/Mesh.h
+    Modules/Model/InternalAPI/WebModel.h
+    Modules/Model/InternalAPI/WebModel.serialization.in
 
     Modules/ShapeDetection/Interfaces/BarcodeDetectorInterface.h
     Modules/ShapeDetection/Interfaces/BarcodeDetectorOptionsInterface.h
@@ -411,8 +400,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     Modules/contact-picker/ContactsRequestData.h
     Modules/contact-picker/ContactsSelectOptions.h
 
-    Modules/cookie-consent/CookieConsentDecisionResult.h
-
     Modules/cookie-store/CookieChangeSubscription.h
     Modules/cookie-store/CookieStoreGetOptions.h
     Modules/cookie-store/CookieStoreManager.h
@@ -599,6 +586,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     Modules/mediastream/MediaDevices.h
     Modules/mediastream/MediaStreamTrack.h
     Modules/mediastream/MediaStreamTrackEvent.h
+    Modules/mediastream/MediaStreamTrackHandle.h
     Modules/mediastream/MediaTrackCapabilities.h
     Modules/mediastream/MediaTrackConstraints.h
     Modules/mediastream/RTCController.h
@@ -634,7 +622,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     Modules/mediastream/UserMediaRequest.h
     Modules/mediastream/libwebrtc/LibWebRTCUtils.h
 
-    Modules/model-element/DDModelPlayer.h
+    Modules/model-element/WebModelPlayer.h
     Modules/model-element/HTMLModelElement.h
     Modules/model-element/HTMLModelElementCamera.h
     Modules/model-element/ModelPlayer.h
@@ -1045,8 +1033,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     bindings/js/WindowProxy.h
     bindings/js/WorkerScriptFetcher.h
 
-    bridge/IdentifierRep.h
-
     bridge/jsc/BridgeJSC.h
 
     bridge/runtime_method.h
@@ -1089,6 +1075,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     crypto/CryptoAlgorithm.h
     crypto/CryptoAlgorithmIdentifier.h
     crypto/CryptoAlgorithmParameters.h
+    crypto/CryptoAlgorithmParametersInit.h
     crypto/CryptoKey.h
     crypto/CryptoKeyData.h
     crypto/CryptoKeyFormat.h
@@ -1116,6 +1103,37 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     crypto/keys/CryptoRsaKeyAlgorithm.h
 
     crypto/parameters/CryptoAlgorithmAesCbcCfbParams.h
+    crypto/parameters/CryptoAlgorithmAesCbcCfbParamsInit.h
+    crypto/parameters/CryptoAlgorithmAesCtrParams.h
+    crypto/parameters/CryptoAlgorithmAesCtrParamsInit.h
+    crypto/parameters/CryptoAlgorithmAesGcmParams.h
+    crypto/parameters/CryptoAlgorithmAesGcmParamsInit.h
+    crypto/parameters/CryptoAlgorithmAesKeyParams.h
+    crypto/parameters/CryptoAlgorithmAesKeyParamsInit.h
+    crypto/parameters/CryptoAlgorithmEcKeyParams.h
+    crypto/parameters/CryptoAlgorithmEcKeyParamsInit.h
+    crypto/parameters/CryptoAlgorithmEcdhKeyDeriveParams.h
+    crypto/parameters/CryptoAlgorithmEcdhKeyDeriveParamsInit.h
+    crypto/parameters/CryptoAlgorithmEcdsaParams.h
+    crypto/parameters/CryptoAlgorithmEcdsaParamsInit.h
+    crypto/parameters/CryptoAlgorithmHkdfParams.h
+    crypto/parameters/CryptoAlgorithmHkdfParamsInit.h
+    crypto/parameters/CryptoAlgorithmHmacKeyParams.h
+    crypto/parameters/CryptoAlgorithmHmacKeyParamsInit.h
+    crypto/parameters/CryptoAlgorithmPbkdf2Params.h
+    crypto/parameters/CryptoAlgorithmPbkdf2ParamsInit.h
+    crypto/parameters/CryptoAlgorithmRsaHashedImportParams.h
+    crypto/parameters/CryptoAlgorithmRsaHashedImportParamsInit.h
+    crypto/parameters/CryptoAlgorithmRsaHashedKeyGenParams.h
+    crypto/parameters/CryptoAlgorithmRsaHashedKeyGenParamsInit.h
+    crypto/parameters/CryptoAlgorithmRsaKeyGenParams.h
+    crypto/parameters/CryptoAlgorithmRsaKeyGenParamsInit.h
+    crypto/parameters/CryptoAlgorithmRsaOaepParams.h
+    crypto/parameters/CryptoAlgorithmRsaOaepParamsInit.h
+    crypto/parameters/CryptoAlgorithmRsaPssParams.h
+    crypto/parameters/CryptoAlgorithmRsaPssParamsInit.h
+    crypto/parameters/CryptoAlgorithmX25519Params.h
+    crypto/parameters/CryptoAlgorithmX25519ParamsInit.h
 
     css/CSSAttrValue.h
     css/CSSColorValue.h
@@ -1306,7 +1324,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     dom/ActiveDOMCallback.h
     dom/ActiveDOMObject.h
     dom/AddEventListenerOptions.h
-    dom/AddEventListenerOptionsInlines.h
     dom/AsyncNodeDeletionQueue.h
     dom/AsyncNodeDeletionQueueInlines.h
     dom/Attr.h
@@ -1841,9 +1858,11 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     layout/formattingContexts/flex/FlexRect.h
     layout/formattingContexts/flex/LogicalFlexItem.h
 
+    layout/formattingContexts/grid/FreeSpaceScenario.h
     layout/formattingContexts/grid/GridAreaLines.h
     layout/formattingContexts/grid/GridFormattingContext.h
     layout/formattingContexts/grid/GridItemRect.h
+    layout/formattingContexts/grid/GridLayoutState.h
     layout/formattingContexts/grid/GridTypeAliases.h
 
     layout/formattingContexts/inline/AbstractLineBuilder.h
@@ -2327,9 +2346,6 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/LowPowerModeNotifier.h
     platform/MIMETypeRegistry.h
     platform/MainThreadSharedTimer.h
-    platform/MediaCapabilitiesDecodingInfo.h
-    platform/MediaCapabilitiesEncodingInfo.h
-    platform/MediaCapabilitiesInfo.h
     platform/MediaDescription.h
     platform/MediaPromiseTypes.h
     platform/MediaSample.h
@@ -2411,6 +2427,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/ScrollbarsControllerInlines.h
     platform/ScrollingEffectsController.h
     platform/SearchPopupMenu.h
+    platform/SelectionGeometry.h
     platform/SerializedPlatformDataCue.h
     platform/SerializedPlatformDataCueValue.h
     platform/ShareableResource.h
@@ -2524,6 +2541,8 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/gamepad/PlatformGamepad.h
     platform/gamepad/SharedGamepadValue.h
     platform/gamepad/ShouldRequireExplicitConsentForGamepadAccess.h
+
+    platform/generic/ScrollbarsControllerGeneric.h
 
     platform/graphics/AV1Utilities.h
     platform/graphics/AlphaPremultiplication.h
@@ -2729,6 +2748,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/graphics/PlatformLayerIdentifier.h
     platform/graphics/PlatformMediaResourceLoader.h
     platform/graphics/PlatformPath.h
+    platform/graphics/PlatformPathImpl.h
     platform/graphics/PlatformPlaybackSessionInterface.h
     platform/graphics/PlatformTextTrack.h
     platform/graphics/PlatformTimeRanges.h
@@ -2899,17 +2919,20 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/libwebrtc/LibWebRTCVPXVideoDecoder.h
     platform/libwebrtc/LibWebRTCVPXVideoEncoder.h
 
-    platform/mediacapabilities/AudioConfiguration.h
-    platform/mediacapabilities/ColorGamut.h
-    platform/mediacapabilities/HdrMetadataType.h
-    platform/mediacapabilities/MediaConfiguration.h
-    platform/mediacapabilities/MediaDecodingConfiguration.h
-    platform/mediacapabilities/MediaDecodingType.h
-    platform/mediacapabilities/MediaEncodingConfiguration.h
-    platform/mediacapabilities/MediaEncodingType.h
-    platform/mediacapabilities/MediaEngineConfigurationFactory.h
-    platform/mediacapabilities/TransferFunction.h
-    platform/mediacapabilities/VideoConfiguration.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesAudioConfiguration.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesColorGamut.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesDecodingInfo.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesEncodingInfo.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesHdrMetadataType.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesInfo.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesTransferFunction.h
+    platform/mediacapabilities/PlatformMediaCapabilitiesVideoConfiguration.h
+    platform/mediacapabilities/PlatformMediaConfiguration.h
+    platform/mediacapabilities/PlatformMediaDecodingConfiguration.h
+    platform/mediacapabilities/PlatformMediaDecodingType.h
+    platform/mediacapabilities/PlatformMediaEncodingConfiguration.h
+    platform/mediacapabilities/PlatformMediaEncodingType.h
+    platform/mediacapabilities/PlatformMediaEngineConfigurationFactory.h
 
     platform/mediarecorder/MediaRecorderPrivate.h
     platform/mediarecorder/MediaRecorderPrivateAVFImpl.h
@@ -3090,7 +3113,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     rendering/FloatingObjects.h
     rendering/GapRects.h
     rendering/GlyphDisplayListCacheRemoval.h
-    rendering/GridLayoutState.h
+    rendering/RenderGridLayoutState.h
     rendering/HitTestLocation.h
     rendering/HitTestRequest.h
     rendering/HitTestResult.h
@@ -3509,6 +3532,7 @@ set(WebCore_PRIVATE_FRAMEWORK_HEADERS
     style/values/primitives/StylePrimitiveNumericOrKeyword.h
     style/values/primitives/StylePrimitiveNumericTypes+Calculation.h
     style/values/primitives/StylePrimitiveNumericTypes+Evaluation.h
+    style/values/primitives/StylePrimitiveNumericTypes+Rounding.h
     style/values/primitives/StylePrimitiveNumericTypes.h
     style/values/primitives/StyleRatio.h
     style/values/primitives/StyleURL.h

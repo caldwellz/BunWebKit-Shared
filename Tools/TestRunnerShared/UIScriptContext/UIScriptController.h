@@ -71,6 +71,7 @@ struct TextExtractionTestOptions {
     bool skipNearlyTransparentContent { false };
     JSRetainPtr<JSStringRef> outputFormat;
     JSValueRef dataDetectorTypes { nullptr };
+    JSRetainPtr<JSStringRef> wordLimitPolicy;
 };
 
 TextExtractionTestOptions* toTextExtractionTestOptions(JSContextRef, JSValueRef);
@@ -285,6 +286,7 @@ public:
     virtual bool hasInputSession() const { notImplemented(); return false; }
 
     virtual void setHardwareKeyboardAttached(bool) { }
+    virtual void setShowKeyboardAfterElementFocusDelay(double) { }
 
     virtual void setKeyboardInputModeIdentifier(JSStringRef) { notImplemented(); }
     virtual void setFocusStartsInputSessionPolicy(JSStringRef) { notImplemented(); }

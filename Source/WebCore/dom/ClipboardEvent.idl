@@ -24,6 +24,7 @@
  *
  */
 
+// https://w3c.github.io/clipboard-apis/#clipboardevent
 [
     Exposed=Window
 ] interface ClipboardEvent : Event {
@@ -32,8 +33,7 @@
     readonly attribute DataTransfer? clipboardData;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary ClipboardEventInit : EventInit {
+// https://w3c.github.io/clipboard-apis/#dictdef-clipboardeventinit
+dictionary ClipboardEventInit : EventInit {
     DataTransfer? clipboardData = null;
 };

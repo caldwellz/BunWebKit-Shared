@@ -63,6 +63,12 @@
 #include <WebCore/ShouldTreatAsContinuingLoad.h>
 #include <wtf/TZoneMallocInlines.h>
 
+// FIXME: https://bugs.webkit.org/show_bug.cgi?id=306415
+#if ENABLE(BACK_FORWARD_LIST_SWIFT)
+#include "WebBackForwardListSwiftUtilities.h"
+#include "WebKit-Swift.h"
+#endif
+
 #define MESSAGE_CHECK(assertion) MESSAGE_CHECK_BASE(assertion, process().connection())
 
 namespace WebKit {
@@ -88,7 +94,7 @@ ProvisionalPageProxy::ProvisionalPageProxy(WebPageProxy& page, Ref<FrameProcess>
     , m_shouldReuseMainFrame(protect(page.preferences())->siteIsolationEnabled() && (page.openedByDOM() || page.hasPageOpenedByMainFrame()))
     , m_provisionalLoadURL(isProcessSwappingOnNavigationResponse ? request.url() : URL())
 #if USE(RUNNINGBOARD)
-    , m_provisionalLoadActivity(m_frameProcess->process().protectedThrottler()->foregroundActivity("Provisional Load"_s))
+    , m_provisionalLoadActivity(protect(m_frameProcess->process().throttler())->foregroundActivity("Provisional Load"_s))
 #endif
 #if HAVE(VISIBILITY_PROPAGATION_VIEW)
     , m_contextIDForVisibilityPropagationInWebProcess(suspendedPage ? suspendedPage->contextIDForVisibilityPropagationInWebProcess() : 0)
@@ -250,7 +256,6 @@ void ProvisionalPageProxy::initializeWebPage(RefPtr<API::WebsitePolicies>&& webs
     drawingArea->startReceivingMessages(process);
     m_drawingArea = drawingArea.copyRef();
 
-    bool registerWithInspectorController { true };
     if (websitePolicies)
         m_mainFrameWebsitePolicies = websitePolicies->copy();
 
@@ -265,7 +270,6 @@ void ProvisionalPageProxy::initializeWebPage(RefPtr<API::WebsitePolicies>&& webs
                 existingRemotePageProxy->setDrawingArea(nullptr);
                 m_needsDidStartProvisionalLoad = false;
                 m_needsCookieAccessAddedInNetworkProcess = true;
-                registerWithInspectorController = false; // FIXME: <rdar://121240770> This is a hack. There seems to be a bug in our interaction with WebPageInspectorController.
                 existingRemotePageProxy->disconnect();
             } else
                 m_takenRemotePage = WTF::move(existingRemotePageProxy);
@@ -296,8 +300,7 @@ void ProvisionalPageProxy::initializeWebPage(RefPtr<API::WebsitePolicies>&& webs
     if (page->isLayerTreeFrozenDueToSwipeAnimation())
         send(Messages::WebPage::SwipeAnimationDidStart());
 
-    if (registerWithInspectorController)
-        page->inspectorController().didCreateProvisionalPage(*this);
+    page->inspectorController().didCreateProvisionalPage(*this);
 }
 
 void ProvisionalPageProxy::loadData(API::Navigation& navigation, Ref<WebCore::SharedBuffer>&& data, const String& mimeType, const String& encoding, const String& baseURL, API::Object* userData, WebCore::ShouldTreatAsContinuingLoad shouldTreatAsContinuingLoad, std::optional<NavigatingToAppBoundDomain> isNavigatingToAppBoundDomain, RefPtr<API::WebsitePolicies>&& websitePolicies, SubstituteData::SessionHistoryVisibility sessionHistoryVisibility)
@@ -334,6 +337,16 @@ void ProvisionalPageProxy::goToBackForwardItem(API::Navigation& navigation, WebB
 
     // FIXME: This is a static analysis false positive. The lamda passed to `setItemsAsRestoredFromSessionIf()` is marked as NOESCAPE so capturing
     // `this` is actually safe.
+#if ENABLE(BACK_FORWARD_LIST_SWIFT)
+    auto backForwardList = page->backForwardList();
+    SUPPRESS_UNCOUNTED_LAMBDA_CAPTURE backForwardList.setItemsAsRestoredFromSessionIf(WebBackForwardListItemFilter::create([this, targetItem = Ref { item }](auto& item) {
+        if (auto* backForwardCacheEntry = item.backForwardCacheEntry()) {
+            if (backForwardCacheEntry->processIdentifier() == process().coreProcessIdentifier())
+                return false;
+        }
+        return &item != targetItem.ptr();
+    }).ptr());
+#else
     Ref backForwardList = page->backForwardList();
     SUPPRESS_UNCOUNTED_LAMBDA_CAPTURE backForwardList->setItemsAsRestoredFromSessionIf([this, targetItem = protect(item)](auto& item) {
         if (auto* backForwardCacheEntry = item.backForwardCacheEntry()) {
@@ -342,6 +355,7 @@ void ProvisionalPageProxy::goToBackForwardItem(API::Navigation& navigation, WebB
         }
         return &item != targetItem.ptr();
     });
+#endif
 
     Ref process { this->process() };
     std::optional<WebsitePoliciesData> websitePoliciesData;
@@ -460,14 +474,17 @@ void ProvisionalPageProxy::didCommitLoadForFrame(IPC::Connection& connection, Fr
     RefPtr page = m_page.get();
     RefPtr pageMainFrame = page ? page->mainFrame() : nullptr;
     if (page && protect(page->preferences())->siteIsolationEnabled() && pageMainFrame) {
-        Ref pageMainFrameProces = pageMainFrame->frameProcess();
+        Ref pageMainFrameProcess = pageMainFrame->frameProcess();
         Site pageMainFrameSite { pageMainFrame->url() };
-        bool frameProecessChanged = m_frameProcess.ptr() != pageMainFrameProces.ptr();
-        if (frameProecessChanged)
+
+        bool frameProcessChanged = m_frameProcess.ptr() != pageMainFrameProcess.ptr();
+        if (frameProcessChanged)
             pageMainFrame->setProcess(m_frameProcess);
 
-        // Transit page in old frame process to remote because pages in that process still need access to this page.
-        if (frameProecessChanged && pageMainFrame == m_mainFrame && m_browsingContextGroup->isFrameProcessInUseForMainFrame(pageMainFrameProces.get())) {
+        // If the originating FrameProcess still has local frames and is still in the same
+        // BrowsingContext group, pages in that process still need access to this page.
+        // So transition the WebPageProxy in that process to a RemotePageProxy.
+        if (frameProcessChanged && pageMainFrame == m_mainFrame && pageMainFrameProcess->frameCount() && pageMainFrameProcess->browsingContextGroup() == m_browsingContextGroup.ptr()) {
             protect(page->legacyMainFrameProcess())->send(Messages::WebPage::LoadDidCommitInAnotherProcess(page->mainFrame()->frameID(), std::nullopt), page->webPageIDInMainFrameProcess());
             m_browsingContextGroup->transitionPageToRemotePage(*page, pageMainFrameSite);
         }
@@ -699,7 +716,7 @@ void ProvisionalPageProxy::didReceiveMessage(IPC::Connection& connection, IPC::D
 
     if (decoder.messageName() == Messages::WebBackForwardList::BackForwardUpdateItem::name()) {
         if (RefPtr page = m_page.get())
-            page->backForwardList().didReceiveMessage(connection, decoder);
+            page->backForwardListMessageReceiver().didReceiveMessage(connection, decoder);
         return;
     }
 
@@ -836,7 +853,7 @@ void ProvisionalPageProxy::didReceiveSyncMessage(IPC::Connection& connection, IP
     RefPtr page = m_page.get();
     if (page) {
         if (decoder.messageReceiverName() == Messages::WebBackForwardList::messageReceiverName())
-            page->backForwardList().didReceiveSyncMessage(connection, decoder, replyEncoder);
+            page->backForwardListMessageReceiver().didReceiveSyncMessage(connection, decoder, replyEncoder);
         else
             page->didReceiveSyncMessage(connection, decoder, replyEncoder);
     }

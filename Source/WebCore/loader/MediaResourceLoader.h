@@ -52,7 +52,7 @@ class WeakPtrImplWithEventTargetData;
 enum class LoadedFromOpaqueSource : bool;
 
 class MediaResourceLoader final
-    : public ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr<MediaResourceLoader>
+    : public ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr<MediaResourceLoader, WTF::DestructionThread::Main>
     , public PlatformMediaResourceLoader
     , public ContextDestructionObserver {
     WTF_MAKE_TZONE_ALLOCATED_EXPORT(MediaResourceLoader, WEBCORE_EXPORT);
@@ -71,7 +71,6 @@ public:
     void removeResource(MediaResource&);
 
     Document* document();
-    RefPtr<Document> protectedDocument();
     const String& crossOriginMode() const;
 
     WEBCORE_EXPORT static void recordResponsesForTesting();
@@ -125,7 +124,6 @@ public:
     void notifyFinished(CachedResource&, const NetworkLoadMetrics&, LoadWillContinueInAnotherProcess) override;
 
 private:
-    CachedResourceHandle<CachedRawResource> protectedResource() const;
 
     MediaResource(MediaResourceLoader&, CachedResourceHandle<CachedRawResource>&&);
     void ensureShutdown();

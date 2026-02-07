@@ -112,6 +112,13 @@ void RemoteFrame::updateRemoteFrameAccessibilityOffset(IntPoint offset)
     m_client->updateRemoteFrameAccessibilityOffset(frameID(), offset);
 }
 
+#if ENABLE(ACCESSIBILITY_LOCAL_FRAME)
+void RemoteFrame::updateRemoteFrameAccessibilityInheritedState(const InheritedFrameState& state)
+{
+    m_client->updateRemoteFrameAccessibilityInheritedState(frameID(), state);
+}
+#endif
+
 void RemoteFrame::unbindRemoteAccessibilityFrames(int processIdentifier)
 {
     m_client->unbindRemoteAccessibilityFrames(processIdentifier);

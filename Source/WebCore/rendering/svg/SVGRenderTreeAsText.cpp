@@ -205,7 +205,7 @@ static void writeSVGStrokePaintingResource(TextStream& ts, const RenderElement& 
 
     SVGLengthContext lengthContext(&shape);
     double dashOffset = lengthContext.valueForLength(style.strokeDashOffset(), Style::ZoomNeeded { });
-    double strokeWidth = lengthContext.valueForLength(style.strokeWidth(), Style::ZoomNeeded { });
+    double strokeWidth = lengthContext.valueForLength(style.strokeWidth(), style.usedZoomForLength());
     auto dashArray = DashArray::map(style.strokeDashArray(), [&](auto& length) -> DashArrayElement {
         return lengthContext.valueForLength(length, Style::ZoomNeeded { });
     });
@@ -261,7 +261,7 @@ void writeSVGPaintingFeatures(TextStream& ts, const RenderElement& renderer, Opt
         if (!element)
             return;
 
-        auto fragment = SVGURIReference::fragmentIdentifierFromIRIString(value, element->protectedDocument());
+        auto fragment = SVGURIReference::fragmentIdentifierFromIRIString(value, protect(element->document()));
         writeIfNotEmpty(ts, name, fragment);
     };
 

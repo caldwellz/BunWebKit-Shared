@@ -83,8 +83,7 @@
     [CEReactions=Needed] Node removeChild([ReturnValue] Node child);
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary GetRootNodeOptions {
+// https://dom.spec.whatwg.org/#dictdef-getrootnodeoptions
+dictionary GetRootNodeOptions {
     boolean composed = false;
 };

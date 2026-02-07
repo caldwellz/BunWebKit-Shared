@@ -105,7 +105,6 @@ public:
     void willPausePlayback();
 
     WEBCORE_EXPORT Document* document() const;
-    RefPtr<Document> protectedDocument() const;
 
 #if ENABLE(MEDIA_SESSION_COORDINATOR)
     MediaSessionReadyState readyState() const { return m_readyState; };

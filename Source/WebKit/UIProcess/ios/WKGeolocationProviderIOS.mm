@@ -109,7 +109,7 @@ static void setEnableHighAccuracy(WKGeolocationManagerRef geolocationManager, bo
     // If we have the last position, it is from the initialization or warm up. It is the last known
     // good position so we can return it directly.
     if (_lastActivePosition)
-        _geolocationManager->providerDidChangePosition(_lastActivePosition.get());
+        protect(_geolocationManager)->providerDidChangePosition(_lastActivePosition.get());
 }
 
 - (void)_stopUpdating
@@ -221,17 +221,17 @@ static void setEnableHighAccuracy(WKGeolocationManagerRef geolocationManager, bo
 - (void)positionChanged:(_WKGeolocationPosition *)position
 {
     _lastActivePosition = position->_geolocationPosition.get();
-    _geolocationManager->providerDidChangePosition(_lastActivePosition.get());
+    protect(_geolocationManager)->providerDidChangePosition(_lastActivePosition.get());
 }
 
 - (void)errorOccurred:(NSString *)errorMessage
 {
-    _geolocationManager->providerDidFailToDeterminePosition(errorMessage);
+    protect(_geolocationManager)->providerDidFailToDeterminePosition(errorMessage);
 }
 
 - (void)resetGeolocation
 {
-    _geolocationManager->resetPermissions();
+    protect(_geolocationManager)->resetPermissions();
 }
 
 @end

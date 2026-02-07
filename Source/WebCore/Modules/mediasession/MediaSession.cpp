@@ -410,11 +410,6 @@ Document* MediaSession::document() const
     return m_navigator->window()->document();
 }
 
-RefPtr<Document> MediaSession::protectedDocument() const
-{
-    return document();
-}
-
 RefPtr<MediaSessionManagerInterface> MediaSession::sessionManager() const
 {
     RefPtr document = this->document();
@@ -554,7 +549,7 @@ void MediaSession::updateNowPlayingInfo(NowPlayingInfo& info)
 
     if (!m_defaultArtworkAttempted && (!m_metadata || m_metadata->artwork().isEmpty())) {
         m_defaultArtworkAttempted = true;
-        if (auto images = fallbackArtwork(protectedDocument() ? protectedDocument()->loader() : nullptr); images.size())
+        if (auto images = fallbackArtwork(protect(document()) ? protect(document())->loader() : nullptr); images.size())
             m_defaultMetadata = MediaMetadata::create(*this, WTF::move(images));
     }
 
@@ -664,7 +659,7 @@ MediaTime MediaSession::mediaSessionDuration() const
 std::optional<MediaSessionGroupIdentifier> MediaSession::mediaSessionGroupIdentifier() const
 {
     RefPtr document = this->document();
-    return document && document->page() ? document->protectedPage()->mediaSessionGroupIdentifier() : std::nullopt;
+    return document && document->page() ? protect(document->page())->mediaSessionGroupIdentifier() : std::nullopt;
 }
 
 }

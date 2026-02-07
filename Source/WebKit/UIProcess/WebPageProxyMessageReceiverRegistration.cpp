@@ -66,9 +66,4 @@ void WebPageProxyMessageReceiverRegistration::transferMessageReceivingFrom(WebPa
     }
 }
 
-Ref<WebProcessProxy> WebPageProxyMessageReceiverRegistration::Data::protectedProcess()
-{
-    return process;
-}
-
 } // namespace WebKit

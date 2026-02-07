@@ -39,6 +39,9 @@
 
 #if USE(SKIA)
 #include <skia/core/SkImageInfo.h>
+WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_BEGIN
+#include <skia/core/SkSurface.h>
+WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_END
 #endif
 
 namespace WebCore {
@@ -192,6 +195,10 @@ public:
     // This is only safe to use when we know that the contents of the shareable bitmap won't change.
     WEBCORE_EXPORT RefPtr<cairo_surface_t> createPersistentCairoSurface();
     WEBCORE_EXPORT RefPtr<cairo_surface_t> createCairoSurface();
+#endif
+
+#if USE(SKIA)
+    WEBCORE_EXPORT sk_sp<SkSurface> createSurface();
 #endif
 
 private:

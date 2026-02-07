@@ -38,7 +38,6 @@
 
 [
     Conditional=PAYMENT_REQUEST,
-    LegacyNativeDictionaryRequiredInterfaceNullability,
 ] dictionary MerchantValidationEventInit : EventInit {
     DOMString methodName = "";
     USVString validationURL = "";

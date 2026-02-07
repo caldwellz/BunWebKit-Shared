@@ -27,6 +27,7 @@
 
 #if ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
 
+#include "MediaDeviceRouteLoadURLResult.h"
 #include <WebKitAdditions/MediaDeviceRouteAdditions.h>
 #include <wtf/AbstractRefCountedAndCanMakeWeakPtr.h>
 #include <wtf/Forward.h>
@@ -130,6 +131,8 @@ public:
 
     const WTF::UUID& identifier() const { return m_identifier; }
     WebMediaDevicePlatformRoute *platformRoute() const;
+
+    void loadURL(const URL&, CompletionHandler<void(const MediaDeviceRouteLoadURLResult&)>&&);
 
     float minValue() const;
     float maxValue() const;

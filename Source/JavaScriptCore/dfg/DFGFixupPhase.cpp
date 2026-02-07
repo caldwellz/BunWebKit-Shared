@@ -1109,6 +1109,14 @@ private:
             break;
         }
 
+        case StringStartsWith: {
+            fixEdge<StringUse>(node->child1());
+            fixEdge<StringUse>(node->child2());
+            if (node->child3())
+                fixEdge<Int32Use>(node->child3());
+            break;
+        }
+
         case StringLocaleCompare: {
             fixEdge<StringUse>(node->child1());
             fixEdge<StringUse>(node->child2());
@@ -2906,7 +2914,6 @@ private:
 
         case CreateRest: {
             watchHavingABadTime(node);
-            fixEdge<Int32Use>(node->child1());
             break;
         }
 
@@ -3074,6 +3081,16 @@ private:
             break;
         }
 
+        case MapOrSetSize: {
+            if (node->child1().useKind() == MapObjectUse)
+                fixEdge<MapObjectUse>(node->child1());
+            else {
+                ASSERT(node->child1().useKind() == SetObjectUse);
+                fixEdge<SetObjectUse>(node->child1());
+            }
+            break;
+        }
+
         case SetAdd: {
             fixEdge<SetObjectUse>(node->child1());
             fixEdge<Int32Use>(node->child3());
@@ -3121,6 +3138,13 @@ private:
                 fixEdge<UntypedUse>(propertyEdge);
             fixEdge<UntypedUse>(m_graph.varArgChild(node, 2));
             fixEdge<Int32Use>(m_graph.varArgChild(node, 3));
+            break;
+        }
+
+        case ObjectDefineProperty: {
+            fixEdge<ObjectUse>(node->child1()); // target
+            fixEdge<UntypedUse>(node->child2()); // key
+            fixEdge<ObjectUse>(node->child3()); // descriptor
             break;
         }
 
@@ -3460,7 +3484,6 @@ private:
         case GetCallee:
         case GetArgumentCountIncludingThis:
         case SetArgumentCountIncludingThis:
-        case GetRestLength:
         case GetArgument:
         case Flush:
         case PhantomLocal:
@@ -3483,8 +3506,6 @@ private:
         case TailCallInlinedCallerWasm:
         case ProfileControlFlow:
         case NewObject:
-        case NewGenerator:
-        case NewAsyncGenerator:
         case NewInternalFieldObject:
         case NewRegExp:
         case NewMap:

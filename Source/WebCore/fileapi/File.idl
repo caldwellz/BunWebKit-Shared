@@ -39,8 +39,6 @@ typedef (BufferSource or Blob or USVString) BlobPart;
     [EnabledBySetting=DirectoryUploadEnabled, ImplementedAs=relativePath] readonly attribute USVString webkitRelativePath;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary FilePropertyBag : BlobPropertyBag {
+dictionary FilePropertyBag : BlobPropertyBag {
     long long lastModified;
 };

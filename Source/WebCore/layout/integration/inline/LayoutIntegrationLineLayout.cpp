@@ -292,6 +292,12 @@ LineLayout* LineLayout::containing(RenderObject& renderer)
                 ASSERT(parentInlineBox->settings().blocksInInlineLayoutEnabled());
                 return dynamicDowncast<RenderBlockFlow>(parentInlineBox->containingBlock());
             }
+            if (auto* parentBlock = dynamicDowncast<RenderBlockFlow>(renderer.parent())) {
+                if (parentBlock->childrenInline()) {
+                    ASSERT(parentBlock->settings().anonymousBlockGenerationDisabled());
+                    return parentBlock;
+                }
+            }
             return { };
         };
         if (auto* blockContainer = adjustedContainingBlock())
@@ -1298,11 +1304,11 @@ bool LineLayout::hitTest(const HitTestRequest& request, HitTestResult& result, c
         auto shouldHitTestForPhase = [&] {
             switch (hitTestAction) {
             case HitTestForeground:
-                // Inline boxes around block-in-inline are hit tested in block background phase.
+                // Inline boxes around block-in-inline are hit tested in block background phases.
                 return !m_inlineContent->isInlineBoxWrapperForBlockLevelBox(box);
             case HitTestChildBlockBackground:
-                return box.isBlockLevelBox() || m_inlineContent->isInlineBoxWrapperForBlockLevelBox(box);
             case HitTestChildBlockBackgrounds:
+                return box.isBlockLevelBox() || m_inlineContent->isInlineBoxWrapperForBlockLevelBox(box);
             case HitTestFloat:
                 return box.isBlockLevelBox();
             case HitTestBlockBackground:

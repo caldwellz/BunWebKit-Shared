@@ -33,8 +33,6 @@
     readonly attribute DOMString statusMessage;
 };
 
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary WebGLContextEventInit : EventInit {
+dictionary WebGLContextEventInit : EventInit {
     DOMString statusMessage = "";
 };

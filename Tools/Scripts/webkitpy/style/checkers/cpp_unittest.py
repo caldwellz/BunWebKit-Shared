@@ -6406,32 +6406,30 @@ class WebKitStyleTest(CppStyleTestBase):
 
     def test_wtf_xpc_object_ptr(self):
         self.assert_lint(
-            'XPCObjectPtr<xpc_connection_t> connection = adoptXPCObject(xpc_connection_create_from_endpoint(endpoint));',
+            'OSObjectPtr<xpc_connection_t> connection = adoptOSObject(xpc_connection_create_from_endpoint(endpoint));',
             '',
             'foo.cpp')
 
         self.assert_lint(
             'RetainPtr<xpc_connection_t> m_connection;',
-            "Use 'XPCObjectPtr' instead of 'RetainPtr' for XPC objects."
+            "Use 'OSObjectPtr' instead of 'RetainPtr' for XPC objects."
             "  [runtime/wtf_xpc_object_ptr] [4]",
             'foo.mm')
 
         self.assert_lint(
             'OSObjectPtr<xpc_connection_t> m_connection;',
-            "Use 'XPCObjectPtr' instead of 'OSObjectPtr' for XPC objects."
-            "  [runtime/wtf_xpc_object_ptr] [4]",
+            '',
             'foo.mm')
 
         self.assert_lint(
             'auto connection = adoptNS(xpc_connection_create_from_endpoint(endpoint));',
-            "Use 'adoptXPCObject()' instead of 'adoptNS()' for XPC objects."
+            "Use 'adoptOSObject()' instead of 'adoptNS()' for XPC objects."
             "  [runtime/wtf_xpc_object_ptr] [4]",
             'foo.mm')
 
         self.assert_lint(
             'auto connection = adoptOSObject(xpc_connection_create_from_endpoint(endpoint));',
-            "Use 'adoptXPCObject()' instead of 'adoptOSObject()' for XPC objects."
-            "  [runtime/wtf_xpc_object_ptr] [4]",
+            '',
             'foo.mm')
 
     def test_lock_guard(self):
@@ -6811,6 +6809,46 @@ class WebKitStyleTest(CppStyleTestBase):
         self.assert_lint('postTask([foo = checkedFoo(), bar]() {', '')
         self.assert_lint('postTask([foo = checkedFoo(), bar](ScriptExecutionContext& context) {', '')
         self.assert_lint('postTask([foo = bar().checkedFoo(), bar](ScriptExecutionContext& context) {', '')
+
+        # Tests for protect() free function used in variable initialization (should warn)
+        self.assert_lint(
+            'auto foo = protect(m_foo);',
+            'Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().  [safercpp/protected_getter_for_init] [4]',
+            'foo.cpp')
+
+        self.assert_lint(
+            'Ref foo = protect(m_foo);',
+            'Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().  [safercpp/protected_getter_for_init] [4]',
+            'foo.cpp')
+
+        self.assert_lint(
+            'RefPtr foo = protect(m_foo);',
+            'Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().  [safercpp/protected_getter_for_init] [4]',
+            'foo.cpp')
+
+        self.assert_lint(
+            'CheckedRef foo = protect(m_foo);',
+            'Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().  [safercpp/protected_getter_for_init] [4]',
+            'foo.cpp')
+
+        self.assert_lint(
+            'CheckedPtr foo = protect(m_foo);',
+            'Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().  [safercpp/protected_getter_for_init] [4]',
+            'foo.cpp')
+
+        self.assert_lint(
+            'if (RefPtr bar = protect(m_bar)) {',
+            'Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().  [safercpp/protected_getter_for_init] [4]',
+            'foo.cpp')
+
+        # Valid uses of protect() - should NOT warn
+        self.assert_lint('protect(foo)->doSomething();', '', 'foo.cpp')
+        self.assert_lint('protect(foo).doSomething();', '', 'foo.cpp')
+        self.assert_lint('RefPtr foo = protect(bar())->foo();', '', 'foo.cpp')
+        self.assert_lint('someFunction(protect(foo));', '', 'foo.cpp')
+        self.assert_lint('return protect(m_foo);', '', 'foo.cpp')
+        self.assert_lint('postTask([foo = protect(m_foo)] {', '', 'foo.cpp')
+        self.assert_lint('postTask([foo = protect(m_foo), bar] {', '', 'foo.cpp')
 
     def test_ctype_fucntion(self):
         self.assert_lint(

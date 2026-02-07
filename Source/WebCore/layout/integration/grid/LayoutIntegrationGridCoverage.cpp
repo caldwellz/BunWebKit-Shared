@@ -225,18 +225,30 @@ static EnumSet<GridAvoidanceReason> gridLayoutAvoidanceReason(const RenderGrid& 
         ADD_REASON_AND_RETURN_IF_NEEDED(GridHasUnsupportedGridTemplateColumns, reasons, reasonCollectionMode);
 
     for (auto& columnsTrackListEntry : gridTemplateColumnsTrackList) {
-
         auto avoidanceReason = WTF::switchOn(columnsTrackListEntry,
             [&](const Style::GridTrackSize& trackSize) -> std::optional<GridAvoidanceReason> {
                 // Since a GridTrackSize type of Breadth sets the MinTrackBreadth and
                 // MaxTrackBreadth to the same value we only need to check one.
-                if (!trackSize.isBreadth() || !trackSize.minTrackBreadth().isLength())
+                if (!trackSize.isBreadth())
                     return GridAvoidanceReason::GridHasUnsupportedGridTemplateColumns;
 
-                auto& gridTrackBreadthLength = trackSize.minTrackBreadth().length();
-                if (!gridTrackBreadthLength.isFixed())
-                    return GridAvoidanceReason::GridHasUnsupportedGridTemplateColumns;
-                return std::nullopt;
+                auto& minBreadth = trackSize.minTrackBreadth();
+
+                if (minBreadth.isLength()) {
+                    auto& gridTrackBreadthLength = minBreadth.length();
+                    // Length types like auto, min-content, max-content, etc. not yet supported
+                    if (!gridTrackBreadthLength.isFixed())
+                        return GridAvoidanceReason::GridHasUnsupportedGridTemplateColumns;
+                    return std::nullopt;
+                }
+
+                if (minBreadth.isFlex()) {
+                    // Flex tracks (fr units) are now supported
+                    return std::nullopt;
+                }
+
+                ASSERT_NOT_REACHED();
+                return GridAvoidanceReason::GridHasUnsupportedGridTemplateColumns;
             },
             [&](const Vector<String>& names) -> std::optional<GridAvoidanceReason> {
                 if (!names.isEmpty())
@@ -271,13 +283,26 @@ static EnumSet<GridAvoidanceReason> gridLayoutAvoidanceReason(const RenderGrid& 
             [&](const Style::GridTrackSize& trackSize) -> std::optional<GridAvoidanceReason> {
                 // Since a GridTrackSize type of Breadth sets the MinTrackBreadth and
                 // MaxTrackBreadth to the same value we only need to check one.
-                if (!trackSize.isBreadth() || !trackSize.minTrackBreadth().isLength())
+                if (!trackSize.isBreadth())
                     return GridAvoidanceReason::GridHasUnsupportedGridTemplateRows;
 
-                auto& gridTrackBreadthLength = trackSize.minTrackBreadth().length();
-                if (!gridTrackBreadthLength.isFixed())
-                    return GridAvoidanceReason::GridHasUnsupportedGridTemplateRows;
-                return std::nullopt;
+                auto& minBreadth = trackSize.minTrackBreadth();
+
+                if (minBreadth.isLength()) {
+                    auto& gridTrackBreadthLength = minBreadth.length();
+                    // Length types like auto, min-content, max-content, etc. not yet supported
+                    if (!gridTrackBreadthLength.isFixed())
+                        return GridAvoidanceReason::GridHasUnsupportedGridTemplateRows;
+                    return std::nullopt;
+                }
+
+                if (minBreadth.isFlex()) {
+                    // Flex tracks (fr units) are now supported
+                    return std::nullopt;
+                }
+
+                ASSERT_NOT_REACHED();
+                return GridAvoidanceReason::GridHasUnsupportedGridTemplateRows;
             },
             [&](const Vector<String>& names) -> std::optional<GridAvoidanceReason> {
                 if (!names.isEmpty())

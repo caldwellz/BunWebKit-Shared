@@ -98,6 +98,19 @@ public:
     }
 };
 
+// This class should be used instead of SlowPathFrameTracer *only* in contexts where the sole
+// reason the topCallFrame is accessed is to update ShadowChicken. In other words, in contexts
+// where a JS exception cannot be thrown.
+class WasmSlowPathWithoutCallFrameTracer {
+public:
+    ALWAYS_INLINE WasmSlowPathWithoutCallFrameTracer(VM& vm)
+    {
+        // Wasm frames don't participate in ShadowChicken.
+        if (vm.shadowChicken()) [[unlikely]]
+            vm.topCallFrame = nullptr;
+    }
+};
+
 class NativeCallFrameTracer {
 public:
     ALWAYS_INLINE NativeCallFrameTracer(VM& vm, CallFrame* callFrame)

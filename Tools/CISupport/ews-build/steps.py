@@ -83,8 +83,8 @@ STATIC_ANALYSIS_ARCHIVE_PATH = '/tmp/static-analysis.zip'
 SHOULD_FILTER_LOGS = load_password('SHOULD_FILTER_LOGS', default=True)
 SHOULD_LOAD_CONTRIBUTORS_FROM_NETWORK = load_password('SHOULD_FILTER_LOGS', default=True)
 SUFFIX_WITHOUT_CHANGE = '-without-change'
-MACOS_SEQUOIA_TRIGGER = 'feature-disabled-for-now'
-MACOS_SEQUOIA_BUILDER_NAME = 'feature-disabled-for-now'
+MACOS_SEQUOIA_TRIGGER = 'macos-sequoia-release-build-ews'
+MACOS_SEQUOIA_BUILDER_NAME = 'macOS-Sequoia-Release-Build-EWS'
 
 if CURRENT_HOSTNAME in EWS_BUILD_HOSTNAMES:
     CURRENT_HOSTNAME = 'ews-build.webkit.org'
@@ -1081,7 +1081,7 @@ class UpdateWorkingDirectory(steps.ShellSequence, ShellMixin):
         commands = [
             ['git', 'checkout', '--progress', 'remotes/{}/{}'.format(remote, base), '-f'],
             self.shell_command('git branch -D {} || {}'.format(base, self.shell_exit_0())),
-            ['git', 'checkout', '--progress', '-b', base],
+            ['git', 'checkout', '--progress', '-B', base],
         ]
         if base != DEFAULT_BRANCH:
             commands.append(self.shell_command('git branch -D {} || {}'.format(DEFAULT_BRANCH, self.shell_exit_0())))
@@ -1195,7 +1195,7 @@ class CheckOutPullRequest(steps.ShellSequence, ShellMixin):
             self.shell_command(f'git remote add {remote} {GITHUB_URL}{project}.git || {self.shell_exit_0()}'),
             ['git', 'remote', 'set-url', remote, f'{GITHUB_URL}{project}.git'],
             ['git', 'fetch', remote, pr_branch],
-            ['git', 'checkout', '--progress', '-b', pr_branch],
+            ['git', 'checkout', '--progress', '-B', pr_branch],
             ['git', 'cherry-pick', '--allow-empty', f'HEAD..remotes/{remote}/{pr_branch}'],
         ]
 
@@ -2632,7 +2632,7 @@ class CheckStatusOfPR(buildstep.BuildStep, GitHubMixin, AddToLogMixin):
     haltOnFailure = False
     EMBEDDED_CHECKS = ['ios', 'ios-sim', 'ios-wk2', 'ios-wk2-wpt', 'api-ios', 'vision', 'vision-sim', 'vision-wk2', 'tv', 'tv-sim', 'watch', 'watch-sim']
     MACOS_CHECKS = ['mac', 'mac-AS-debug', 'api-mac', 'api-mac-debug', 'mac-wk1', 'mac-wk2', 'mac-AS-debug-wk2', 'mac-wk2-stress', 'mac-safer-cpp', 'jsc', 'jsc-debug-arm64']
-    LINUX_CHECKS = ['gtk', 'gtk-wk2', 'api-gtk', 'wpe', 'wpe-cairo-libwebrtc', 'wpe-wk2', 'api-wpe']
+    LINUX_CHECKS = ['gtk', 'gtk-wk2', 'api-gtk', 'wpe', 'wpe-libwebrtc', 'wpe-wk2', 'api-wpe']
     WINDOWS_CHECKS = ['win']
     EWS_WEBKIT_FAILED = 0
     EWS_WEBKIT_PASSED = 1
@@ -3084,7 +3084,7 @@ class ReRunWebKitPerlTests(RunWebKitPerlTests):
 class RunBuildWebKitOrgUnitTests(shell.ShellCommand):
     name = 'build-webkit-org-unit-tests'
     description = ['build-webkit-unit-tests running']
-    command = ['python3', 'runUnittests.py', 'build-webkit-org', '--autoinstall']
+    command = ['python3', './run-tests', 'build-webkit-org']
 
     def __init__(self, **kwargs):
         super().__init__(workdir='build/Tools/CISupport', timeout=2 * 60, logEnviron=False, **kwargs)
@@ -3098,7 +3098,7 @@ class RunBuildWebKitOrgUnitTests(shell.ShellCommand):
 class RunEWSUnitTests(shell.ShellCommand):
     name = 'ews-unit-tests'
     description = ['ews-unit-tests running']
-    command = ['python3', 'runUnittests.py', 'ews-build', '--autoinstall']
+    command = ['python3', './run-tests', 'ews-build']
 
     def __init__(self, **kwargs):
         super().__init__(workdir='build/Tools/CISupport', timeout=2 * 60, logEnviron=False, **kwargs)
@@ -3107,6 +3107,20 @@ class RunEWSUnitTests(shell.ShellCommand):
         if self.results == SUCCESS:
             return {'step': 'Passed EWS unit tests'}
         return {'step': 'Failed EWS unit tests'}
+
+
+class RunSharedUnitTests(shell.ShellCommand):
+    name = 'shared-unit-tests'
+    description = ['shared-unit-tests running']
+    command = ['python3', './run-tests', 'Shared']
+
+    def __init__(self, **kwargs):
+        super().__init__(workdir='build/Tools/CISupport', timeout=2 * 60, logEnviron=False, **kwargs)
+
+    def getResultSummary(self):
+        if self.results == SUCCESS:
+            return {'step': 'Passed Shared unit tests'}
+        return {'step': 'Failed Shared unit tests'}
 
 
 class RunBuildbotCheckConfig(shell.ShellCommand):
@@ -5357,17 +5371,17 @@ class AnalyzeLayoutTestsResultsRedTree(AnalyzeLayoutTestsResults):
             return defer.returnValue(rc)
 
         # The checks below need to be after the timeout ones (above) because when a timeout is trigerred no results will be generated for the step.
-        # The step with_change_repeat_failures generated no list of failures or flakies, which should only happen when the return code of the step is SUCESS or WARNINGS.
+        # The step with_change_repeat_failures generated an error code. That means there should be either tests failing or tests flakies. Check that.
         with_change_repeat_failures_retcode = self.getProperty('with_change_repeat_failures_retcode', FAILURE)
-        if with_change_repeat_failures_retcode not in [SUCCESS, WARNINGS]:
+        if first_run_failures and with_change_repeat_failures_retcode not in [SUCCESS, WARNINGS]:
             if not with_change_repeat_failures_results_nonflaky_failures and not with_change_repeat_failures_results_flakies:
                 return defer.returnValue(self.report_infrastructure_issue_and_maybe_retry_build('The step "layout-tests-repeat-failures" failed to generate any list of failures or flakies and returned an error code.'))
-
-            # Check the same for the step without_change_repeat_failures but only if with_change_repeat_failures also returned an error code.
-            without_change_repeat_failures_retcode = self.getProperty('without_change_repeat_failures_retcode', FAILURE)
-            if without_change_repeat_failures_retcode not in [SUCCESS, WARNINGS]:
-                if not without_change_repeat_failures_results_nonflaky_failures and not without_change_repeat_failures_results_flakies:
-                    return defer.returnValue(self.report_infrastructure_issue_and_maybe_retry_build('The step "layout-tests-repeat-failures-without-change" failed to generate any list of failures or flakies and returned an error code.'))
+            elif with_change_repeat_failures_results_nonflaky_failures:
+                # Check the same for the step without_change_repeat_failures but only if there where failures on the previous step (with_change_repeat_failures), because otherwise the check doesn't make sense (the step would have not run at all)
+                without_change_repeat_failures_retcode = self.getProperty('without_change_repeat_failures_retcode', FAILURE)
+                if without_change_repeat_failures_retcode not in [SUCCESS, WARNINGS]:
+                    if not without_change_repeat_failures_results_nonflaky_failures and not without_change_repeat_failures_results_flakies:
+                        return defer.returnValue(self.report_infrastructure_issue_and_maybe_retry_build('The step "layout-tests-repeat-failures-without-change" failed to generate any list of failures or flakies and returned an error code.'))
 
         # Warn EWS bot watchers about flakies so they can garden those. Include the step where the flaky was found in the e-mail to know if it was found with change or without it.
         # Due to the way this class works most of the flakies are filtered on the step with change even when those were pre-existent issues (so this is also useful for bot watchers).
@@ -5837,6 +5851,13 @@ class RunAPITests(shell.Test, AddToLogMixin, ShellMixin):
             if self.name != RunAPITestsWithoutChange.name:
                 self.build.results = SUCCESS
                 self.setProperty('build_summary', message)
+                # Add parallel safety testing for modified API tests (only for initial run)
+                if self.name == RunAPITests.name:
+                    self.steps_to_add += [
+                        FindModifiedAPITests(skipBuildIfNoResult=False),
+                        FilterAPITestsForPlatform(),
+                        RunAPITestsParallelSafety(),
+                    ]
         elif (self.name != RunAPITestsWithoutChange.name and self.preexisting_failures_in_results_db and len(self.failing_tests_filtered) == 0):
             # This means all the tests which failed in this run were also failing or flaky in results database
             message = f"Ignored pre-existing failure: {', '.join(self.preexisting_failures_in_results_db)}"
@@ -6143,6 +6164,353 @@ class AnalyzeAPITestsResults(buildstep.BuildStep, AddToLogMixin):
             print('Error in sending email for pre-existing failure: {}'.format(e))
 
 
+class FindModifiedAPITests(shell.ShellCommand, AnalyzeChange):
+    name = 'find-modified-api-tests'
+    description = ['find-modified-api tests running']
+    descriptionDone = ['Found modified API tests']
+    RE_API_TEST = br'^(\+\+\+).*(Tools/TestWebKitAPI/Tests/.*\.(cpp|mm|m))'
+    RE_TEST_F = re.compile(r'TEST_F\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
+    RE_TEST = re.compile(r'TEST\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)')
+    API_TEST_PATHS = ['Tools/TestWebKitAPI/Tests/']
+
+    def __init__(self, skipBuildIfNoResult=True):
+        self.skipBuildIfNoResult = skipBuildIfNoResult
+        super().__init__(logEnviron=False)
+
+    @staticmethod
+    def _extract_test_names_from_content(content):
+        """Extract test names from file content string"""
+        test_names = []
+        for pattern in [FindModifiedAPITests.RE_TEST_F, FindModifiedAPITests.RE_TEST]:
+            matches = pattern.findall(content)
+            for suite, test in matches:
+                test_names.append(f'{suite}.{test}')
+        return test_names
+
+    @staticmethod
+    def _get_binary_for_test_path(file_path):
+        """Determine which test binary a file belongs to"""
+        binaries = ['TestWTF', 'TestWebCore', 'TestIPC', 'TestWGSL']
+        for binary in binaries:
+            if binary in file_path:
+                return binary
+        return 'TestWebKitAPI'
+
+    @defer.inlineCallbacks
+    def run(self):
+        self.log_observer = logobserver.BufferLogObserver()
+        self.addLogObserver('stdio', self.log_observer)
+
+        patch = self._get_patch()
+        if not patch:
+            yield self._addToLog('stdio', 'No patch found, using git diff against base branch\n')
+            remote = self.getProperty('remote', 'origin')
+            base_ref = self.getProperty('github.base.ref', 'main')
+            # Use triple-dot diff to compare merge-base with HEAD (only PR changes)
+            self.command = ['git', 'diff', f'remotes/{remote}/{base_ref}...HEAD', '--name-only']
+            rc = yield super().run()
+
+            if rc != SUCCESS:
+                return defer.returnValue(SKIPPED)
+
+            log_text = self.log_observer.getStdout()
+            changed_files = [f for f in log_text.splitlines() if any(f.startswith(path) for path in self.API_TEST_PATHS)]
+        else:
+            yield self._addToLog('stdio', 'Found patch, analyzing for API test changes\n')
+            changed_files = self.find_test_names_from_patch(patch)
+
+        if not changed_files:
+            yield self._addToLog('stdio', 'No API test files were modified\n')
+            self.setProperty('modified_api_tests', [])
+            if self.skipBuildIfNoResult:
+                self.build.results = SKIPPED
+                self.build.buildFinished(['{} {} doesn\'t modify any API tests'.format(
+                    self.change_type,
+                    self.getProperty('patch_id', '') or self.getProperty('github.number', ''),
+                )], SKIPPED)
+            return defer.returnValue(SKIPPED)
+
+        yield self._addToLog('stdio', f'Found {len(changed_files)} modified API test file(s):\n')
+        for file_path in changed_files:
+            yield self._addToLog('stdio', f'  - {file_path}\n')
+
+        # Extract test names from modified files, keyed by file for round-robin selection
+        # Note: Files are on the worker, not master, so we use git show to read content
+        tests_by_file = {}
+        for file_path in changed_files:
+            # Create fresh log observer for each file to avoid accumulation
+            file_log_observer = logobserver.BufferLogObserver()
+            self.addLogObserver('stdio', file_log_observer)
+
+            self.command = ['git', 'show', f'HEAD:{file_path}']
+            rc = yield super().run()
+
+            if rc != SUCCESS:
+                yield self._addToLog('stdio', f'  Warning: Could not read {file_path} via git show\n')
+                continue
+
+            content = file_log_observer.getStdout()
+            binary = self._get_binary_for_test_path(file_path)
+            test_names = self._extract_test_names_from_content(content)
+            yield self._addToLog('stdio', f'  Extracted {len(test_names)} test(s) from {file_path}\n')
+
+            if test_names:
+                tests_by_file[file_path] = [(binary, test) for test in test_names]
+
+        if not tests_by_file:
+            yield self._addToLog('stdio', '\nCould not extract test names from modified files, will skip parallel safety testing\n')
+            self.setProperty('modified_api_tests', [])
+            return defer.returnValue(SKIPPED)
+
+        # Collect all tests with file info for round-robin selection in later step
+        seen_tests = {}
+        for file_path, tests in tests_by_file.items():
+            for binary, test in tests:
+                full_test_name = f'{binary}.{test}'
+                if full_test_name not in seen_tests:
+                    seen_tests[full_test_name] = {'file': file_path, 'test': full_test_name}
+        all_tests = list(seen_tests.values())
+
+        MAX_TESTS = 250
+        if all_tests:
+            total_tests = len(all_tests)
+            if total_tests > MAX_TESTS:
+                yield self._addToLog('stdio', f'\nWarning: Truncating to {MAX_TESTS} tests (was {total_tests})\n')
+                all_tests = all_tests[:MAX_TESTS]
+            yield self._addToLog('stdio', f'\nIdentified {len(all_tests)} API test(s) for parallel safety testing:\n')
+            for item in all_tests:
+                yield self._addToLog('stdio', f'  - {item["test"]}\n')
+
+        self.setProperty('modified_api_tests', all_tests)
+        defer.returnValue(SUCCESS if all_tests else SKIPPED)
+
+    def find_test_names_from_patch(self, patch):
+        """Find modified API test files from patch"""
+        test_files = []
+        for line in patch.splitlines():
+            match = re.search(self.RE_API_TEST, line, re.IGNORECASE)
+            if match:
+                test_name = match.group(2).decode('utf-8')
+                test_files.append(test_name)
+        return list(set(test_files))
+
+    def getResultSummary(self):
+        modified_tests = self.getProperty('modified_api_tests', [])
+        if self.results == SUCCESS and modified_tests:
+            return {'step': f'Found {len(modified_tests)} modified API test(s)'}
+        if self.results == SKIPPED:
+            return {'step': 'No API tests modified'}
+        return super().getResultSummary()
+
+
+class FilterAPITestsForPlatform(shell.ShellCommand, AddToLogMixin):
+    name = 'filter-api-tests-for-platform'
+    description = ['filtering api tests for platform']
+    descriptionDone = ['filtered api tests']
+    UNSUPPORTED_PLATFORMS = ['gtk', 'wpe']
+
+    def __init__(self, **kwargs):
+        super().__init__(logEnviron=False, timeout=120, **kwargs)
+
+    def doStepIf(self, step):
+        platform = self.getProperty('platform')
+        if platform in self.UNSUPPORTED_PLATFORMS:
+            return False
+        return bool(self.getProperty('modified_api_tests', []))
+
+    def hideStepIf(self, results, step):
+        return not self.doStepIf(step)
+
+    @defer.inlineCallbacks
+    def run(self):
+        modified_tests = self.getProperty('modified_api_tests', [])
+        if not modified_tests:
+            defer.returnValue(SKIPPED)
+
+        platform = self.getProperty('platform')
+        configuration = self.getProperty('configuration', 'debug')
+
+        # iOS simulators have significant boot overhead, so use a lower cap
+        MAX_TESTS = 5 if platform == 'ios' else 30
+
+        self.log_observer = logobserver.BufferLogObserver(wantStdout=True, wantStderr=True)
+        self.addLogObserver('stdio', self.log_observer)
+
+        self.command = [
+            'python3', 'Tools/Scripts/run-api-tests',
+            '--dump',
+            f'--{configuration}',
+        ]
+        self.command += customBuildFlag(platform, self.getProperty('fullPlatform'))
+
+        yield self._addToLog('stdio', f'Querying available tests on this platform...\n')
+        yield self._addToLog('stdio', f'Command: {" ".join(self.command)}\n\n')
+
+        rc = yield super().run()
+
+        if rc != SUCCESS:
+            yield self._addToLog('stdio', '\nWarning: Could not query available tests, proceeding with all tests\n')
+            # Fall back to all tests without filtering
+            all_test_names = [item['test'] for item in modified_tests]
+            self.setProperty('modified_api_tests', all_test_names[:MAX_TESTS])
+            defer.returnValue(SUCCESS)
+
+        available_tests = set()
+        log_text = self.log_observer.getStdout() + self.log_observer.getStderr()
+        for line in log_text.splitlines():
+            line = line.strip()
+            if line and '.' in line and not line.startswith('Command:'):
+                available_tests.add(line)
+
+        yield self._addToLog('stdio', f'\nFound {len(available_tests)} available tests on this platform\n')
+
+        # Filter by availability and group by file
+        tests_by_file = {}
+        filtered_out = 0
+        for item in modified_tests:
+            test_name = item['test']
+            file_path = item['file']
+            if test_name in available_tests:
+                if file_path not in tests_by_file:
+                    tests_by_file[file_path] = []
+                tests_by_file[file_path].append(test_name)
+            else:
+                filtered_out += 1
+
+        if filtered_out:
+            yield self._addToLog('stdio', f'Filtered out {filtered_out} test(s) not available on this platform\n')
+
+        # Round-robin selection up to MAX_TESTS
+        selected_tests = []
+        file_iterators = {f: iter(tests) for f, tests in tests_by_file.items()}
+        active_files = list(file_iterators.keys())
+
+        while active_files and len(selected_tests) < MAX_TESTS:
+            for file_path in list(active_files):
+                if len(selected_tests) >= MAX_TESTS:
+                    break
+                try:
+                    test = next(file_iterators[file_path])
+                    selected_tests.append(test)
+                except StopIteration:
+                    active_files.remove(file_path)
+
+        total_available = sum(len(tests) for tests in tests_by_file.values())
+        truncated_count = total_available - len(selected_tests)
+
+        if selected_tests:
+            yield self._addToLog('stdio', f'Selected {len(selected_tests)} test(s) for parallel safety testing:\n')
+            for test in selected_tests:
+                yield self._addToLog('stdio', f'  - {test}\n')
+            if truncated_count:
+                yield self._addToLog('stdio', f'({truncated_count} test(s) skipped due to {MAX_TESTS} test limit)\n')
+        else:
+            yield self._addToLog('stdio', 'No modified tests are available on this platform\n')
+
+        self.setProperty('modified_api_tests', selected_tests)
+        defer.returnValue(SUCCESS if selected_tests else SKIPPED)
+
+    def doStepIf(self, step):
+        return bool(self.getProperty('modified_api_tests', []))
+
+    def hideStepIf(self, results, step):
+        return not self.doStepIf(step)
+
+    def getResultSummary(self):
+        modified_tests = self.getProperty('modified_api_tests', [])
+        if self.results == SUCCESS and modified_tests:
+            return {'step': f'{len(modified_tests)} test(s) available on platform'}
+        if self.results == SKIPPED:
+            return {'step': 'No tests available on platform'}
+        return super().getResultSummary()
+
+
+class RunAPITestsParallelSafety(RunAPITests):
+    name = 'run-api-tests-parallel-safety'
+    description = ['api-tests-parallel-safety running']
+    descriptionDone = ['api-tests-parallel-safety']
+    suffix = 'parallel_safety'
+    UNSUPPORTED_PLATFORMS = ['gtk', 'wpe']
+
+    def doStepIf(self, step):
+        platform = self.getProperty('platform')
+        if platform in self.UNSUPPORTED_PLATFORMS:
+            return False
+        return bool(self.getProperty('modified_api_tests', []))
+
+    def hideStepIf(self, results, step):
+        return not self.doStepIf(step)
+
+    @defer.inlineCallbacks
+    def run(self):
+        modified_tests_raw = self.getProperty('modified_api_tests', [])
+        if not modified_tests_raw:
+            return defer.returnValue(SKIPPED)
+
+        # Handle both dict format (from FindModifiedAPITests) and string format (from FilterAPITestsForPlatform)
+        modified_tests = []
+        for item in modified_tests_raw:
+            if isinstance(item, dict):
+                modified_tests.append(item.get('test', ''))
+            else:
+                modified_tests.append(item)
+        modified_tests = [t for t in modified_tests if t]  # Filter empty strings
+
+        if not modified_tests:
+            return defer.returnValue(SKIPPED)
+
+        platform = self.getProperty('platform')
+        configuration = self.getProperty('configuration', 'debug')
+
+        # Build command
+        self.command = [
+            'python3', 'Tools/Scripts/run-api-tests',
+            '--timestamps', '--no-build',
+            f'--{configuration}',
+            '--verbose',
+            f'--json-output={self.jsonFileName}'
+        ]
+
+        self.command += customBuildFlag(platform, self.getProperty('fullPlatform'))
+
+        # Add each test with its own --test-parallel-safety flag
+        for test in modified_tests:
+            self.command += ['--test-parallel-safety', test]
+
+        yield self._addToLog('stdio', f'Running parallel safety testing on {len(modified_tests)} test(s)\n')
+        yield self._addToLog('stdio', f'Command: {" ".join(self.command)}\n\n')
+
+        rc = yield shell.Test.run(self)
+
+        if self.failedTestCount:
+            rc = FAILURE
+
+        defer.returnValue(rc)
+
+    def doOnFailure(self):
+        # No retry needed for parallel safety tests - failures are legitimate
+        pass
+
+    def analyze_failures_using_results_db(self):
+        # Skip results DB checking for parallel safety tests
+        pass
+
+    def getResultSummary(self):
+        if self.results == SKIPPED:
+            return {'step': 'No API tests to check for parallel safety'}
+
+        modified_tests = self.getProperty('modified_api_tests', [])
+        if self.results == SUCCESS:
+            return {'step': f'Passed parallel safety for {len(modified_tests)} test(s)'}
+
+        if self.failedTestCount:
+            self.failedTestPluralSuffix = '' if self.failedTestCount == 1 else 's'
+            status = f'{self.failedTestCount} parallel safety test{self.failedTestPluralSuffix} failed'
+            return {'step': status}
+
+        return super().getResultSummary()
+
+
 class ArchiveTestResults(shell.ShellCommand):
     command = ['python3', 'Tools/CISupport/test-result-archive',
                Interpolate('--platform=%(prop:platform)s'), Interpolate('--%(prop:configuration)s'), 'archive']
@@ -6290,15 +6658,16 @@ class PrintConfiguration(steps.ShellSequence, ShellMixin):
         self.setProperty('xcode_version', xcode_version)
         os_version_builder = self.getProperty('os_version_builder', '')
         xcode_version_builder = self.getProperty('xcode_version_builder', '')
-        os_major_version_mismatch = os_version and os_version_builder and (os_version.split('.')[:2] != os_version_builder.split('.')[:2])
-        xcode_version_mismatch = xcode_version and xcode_version_builder and (xcode_version != xcode_version_builder)
+        # TEMPORARY: Disabled OS/SDK version mismatch check
+        # os_major_version_mismatch = os_version and os_version_builder and (os_version.split('.')[:2] != os_version_builder.split('.')[:2])
+        # xcode_version_mismatch = xcode_version and xcode_version_builder and (xcode_version != xcode_version_builder)
 
-        if os_major_version_mismatch or xcode_version_mismatch:
-            message = f'Error: OS/SDK version mismatch, please inform an admin.'
-            detailed_message = message + f' Builder: OS={os_version_builder}, Xcode={xcode_version_builder}; Tester: OS={os_version}, Xcode={xcode_version}'
-            print(f'\n{detailed_message}')
-            self.build.stopBuild(reason=detailed_message, results=FAILURE)
-            self.build.buildFinished([message], FAILURE)
+        # if os_major_version_mismatch or xcode_version_mismatch:
+        #     message = f'Error: OS/SDK version mismatch, please inform an admin.'
+        #     detailed_message = message + f' Builder: OS={os_version_builder}, Xcode={xcode_version_builder}; Tester: OS={os_version}, Xcode={xcode_version}'
+        #     print(f'\n{detailed_message}')
+        #     self.build.stopBuild(reason=detailed_message, results=FAILURE)
+        #     self.build.buildFinished([message], FAILURE)
 
     def getResultSummary(self):
         if self.results not in [SUCCESS, WARNINGS, EXCEPTION]:

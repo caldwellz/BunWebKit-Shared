@@ -292,8 +292,6 @@ JS_BINDING_IDLS := \
     $(WebCore)/Modules/contact-picker/ContactsManager.idl \
     $(WebCore)/Modules/contact-picker/ContactsSelectOptions.idl \
     $(WebCore)/Modules/contact-picker/Navigator+Contacts.idl \
-    $(WebCore)/Modules/cookie-consent/Navigator+CookieConsent.idl \
-    $(WebCore)/Modules/cookie-consent/RequestCookieConsentOptions.idl \
     $(WebCore)/Modules/cookie-store/CookieChangeEvent.idl \
     $(WebCore)/Modules/cookie-store/CookieChangeEventInit.idl \
     $(WebCore)/Modules/cookie-store/CookieInit.idl \
@@ -461,6 +459,7 @@ JS_BINDING_IDLS := \
     $(WebCore)/Modules/mediastream/MediaStream.idl \
     $(WebCore)/Modules/mediastream/MediaStreamTrack.idl \
     $(WebCore)/Modules/mediastream/MediaStreamTrackEvent.idl \
+    $(WebCore)/Modules/mediastream/MediaStreamTrackHandle.idl \
     $(WebCore)/Modules/mediastream/MediaStreamTrackProcessor.idl \
     $(WebCore)/Modules/mediastream/MediaTrackCapabilities.idl \
     $(WebCore)/Modules/mediastream/MediaTrackConstraints.idl \
@@ -1789,6 +1788,7 @@ JS_BINDING_IDLS := \
     $(WebCore)/testing/MockContentFilterSettings.idl \
 	$(WebCore)/testing/MockMediaDeviceRoute.idl \
 	$(WebCore)/testing/MockMediaDeviceRouteController.idl \
+	$(WebCore)/testing/MockMediaDeviceRouteURLCallback.idl \
     $(WebCore)/testing/MockPageOverlay.idl \
     $(WebCore)/testing/MockPaymentAddress.idl \
     $(WebCore)/testing/MockPaymentContactFields.idl \

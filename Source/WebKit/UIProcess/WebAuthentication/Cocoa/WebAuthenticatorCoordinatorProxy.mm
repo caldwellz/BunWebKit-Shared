@@ -667,7 +667,7 @@ void WebAuthenticatorCoordinatorProxy::performRequest(WebAuthenticationRequestDa
                     if (credential.get().prf.second)
                         second = toArrayBuffer(retainPtr(credential.get().prf.second).get());
                     if (first)
-                        extensionOutputs.prf = { credential.get().prf.isSupported, { { first, second } } };
+                        extensionOutputs.prf = { credential.get().prf.isSupported, { { first.releaseNonNull(), WTF::move(second) } } };
                     else
                         extensionOutputs.prf = { credential.get().prf.isSupported, std::nullopt };
                 }
@@ -702,7 +702,7 @@ void WebAuthenticatorCoordinatorProxy::performRequest(WebAuthenticationRequestDa
                     RefPtr<ArrayBuffer> second = nullptr;
                     if (credential.get().prf.second)
                         second = toArrayBuffer(retainPtr(credential.get().prf.second).get());
-                    extensionOutputs.prf = { std::nullopt, { { first, second } } };
+                    extensionOutputs.prf = { std::nullopt, { { first.releaseNonNull(), WTF::move(second) } } };
                 }
 #endif
 
@@ -725,7 +725,7 @@ void WebAuthenticatorCoordinatorProxy::performRequest(WebAuthenticationRequestDa
                     if (credential.get().prf.second)
                         second = toArrayBuffer(retainPtr(credential.get().prf.second).get());
                     if (first)
-                        extensionOutputs.prf = { credential.get().prf.isSupported, { { first, second } } };
+                        extensionOutputs.prf = { credential.get().prf.isSupported, { { first.releaseNonNull(), WTF::move(second) } } };
                     else
                         extensionOutputs.prf = { credential.get().prf.isSupported, std::nullopt };
                 }
@@ -755,7 +755,7 @@ void WebAuthenticatorCoordinatorProxy::performRequest(WebAuthenticationRequestDa
                     RefPtr<ArrayBuffer> second = nullptr;
                     if (credential.get().prf.second)
                         second = toArrayBuffer(retainPtr(credential.get().prf.second).get());
-                    extensionOutputs.prf = { std::nullopt, { { first, second } } };
+                    extensionOutputs.prf = { std::nullopt, { { first.releaseNonNull(), WTF::move(second) } } };
                 }
 #endif
 

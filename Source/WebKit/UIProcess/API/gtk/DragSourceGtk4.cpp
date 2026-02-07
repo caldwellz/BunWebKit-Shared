@@ -63,11 +63,7 @@ static GRefPtr<GdkTexture> dragIconTexture(RefPtr<ShareableBitmap>&& iconImage)
         return nullptr;
 
     auto& platformImage = nativeImage->platformImage();
-#if USE(CAIRO)
-    return cairoSurfaceToGdkTexture(platformImage.get());
-#elif USE(SKIA)
     return skiaImageToGdkTexture(*platformImage.get());
-#endif
 }
 
 void DragSource::begin(SelectionData&& selectionData, OptionSet<DragOperation> operationMask, RefPtr<ShareableBitmap>&& image, IntPoint&& imageHotspot)

@@ -454,7 +454,7 @@ void WebEditorClient::textFieldDidEndEditing(Element& element)
     if (!inputElement)
         return;
 
-    auto webFrame = WebFrame::fromCoreFrame(*element.protectedDocument()->protectedFrame());
+    auto webFrame = WebFrame::fromCoreFrame(*protect(element.document())->protectedFrame());
     ASSERT(webFrame);
 
     if (RefPtr page = m_page.get())
@@ -469,7 +469,7 @@ void WebEditorClient::textDidChangeInTextField(Element& element)
 
     bool initiatedByUserTyping = UserTypingGestureIndicator::processingUserTypingGesture() && UserTypingGestureIndicator::focusedElementAtGestureStart() == inputElement;
 
-    auto webFrame = WebFrame::fromCoreFrame(*element.protectedDocument()->protectedFrame());
+    auto webFrame = WebFrame::fromCoreFrame(*protect(element.document())->protectedFrame());
     ASSERT(webFrame);
 
     if (RefPtr page = m_page.get())
@@ -485,7 +485,7 @@ void WebEditorClient::textDidChangeInTextArea(Element& element)
     if (!textAreaElement)
         return;
 
-    auto webFrame = WebFrame::fromCoreFrame(*element.protectedDocument()->protectedFrame());
+    auto webFrame = WebFrame::fromCoreFrame(*protect(element.document())->protectedFrame());
     ASSERT(webFrame);
 
     if (RefPtr page = m_page.get())
@@ -506,6 +506,16 @@ void WebEditorClient::subFrameScrollPositionChanged()
 }
 
 #endif
+
+#if PLATFORM(COCOA)
+
+bool WebEditorClient::shouldAllowSingleClickToChangeSelection(WebCore::Node& targetNode, const WebCore::VisibleSelection& newSelection) const
+{
+    RefPtr page = m_page.get();
+    return page ? page->shouldAllowSingleClickToChangeSelection(targetNode, newSelection) : false;
+}
+
+#endif // PLATFORM(COCOA)
 
 static bool getActionTypeForKeyEvent(KeyboardEvent* event, WKInputFieldActionType& type)
 {
@@ -562,7 +572,7 @@ bool WebEditorClient::doTextFieldCommandFromEvent(Element& element, KeyboardEven
     if (!getActionTypeForKeyEvent(event, actionType))
         return false;
 
-    auto webFrame = WebFrame::fromCoreFrame(*element.protectedDocument()->protectedFrame());
+    auto webFrame = WebFrame::fromCoreFrame(*protect(element.document())->protectedFrame());
     ASSERT(webFrame);
 
     RefPtr page = m_page.get();
@@ -575,7 +585,7 @@ void WebEditorClient::textWillBeDeletedInTextField(Element& element)
     if (!inputElement)
         return;
 
-    auto webFrame = WebFrame::fromCoreFrame(*element.protectedDocument()->protectedFrame());
+    auto webFrame = WebFrame::fromCoreFrame(*protect(element.document())->protectedFrame());
     ASSERT(webFrame);
 
     if (RefPtr page = m_page.get())

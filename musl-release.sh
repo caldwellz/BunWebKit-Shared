@@ -34,6 +34,16 @@ fi
 
 export WEBKIT_RELEASE_TYPE=${WEBKIT_RELEASE_TYPE:-"Release"}
 
+# Set default MARCH_FLAG based on architecture if not already set
+if [ -z "${MARCH_FLAG:-}" ]; then
+    if [ "$BUILDKIT_ARCH" == "arm64" ]; then
+        export MARCH_FLAG="-march=armv8-a+crc -mtune=ampere1"
+    elif [ "$BUILDKIT_ARCH" == "amd64" ]; then
+        export MARCH_FLAG="-march=nehalem"
+    fi
+fi
+export MARCH_FLAG="${MARCH_FLAG:-""}"
+
 export CONTAINER_NAME=bun-webkit-linux-$BUILDKIT_ARCH
 
 if [ "$WEBKIT_RELEASE_TYPE" == "relwithdebuginfo" ]; then
@@ -43,4 +53,4 @@ fi
 mkdir -p $temp
 rm -rf $temp/bun-webkit
 
-docker buildx build -f Dockerfile.musl -t $CONTAINER_NAME --build-arg LTO_FLAG="$LTO_FLAG" --build-arg WEBKIT_RELEASE_TYPE=$WEBKIT_RELEASE_TYPE --progress=plain --platform=linux/$BUILDKIT_ARCH --target=artifact --output type=local,dest=$temp/bun-webkit .
+docker buildx build -f Dockerfile.musl -t $CONTAINER_NAME --build-arg LTO_FLAG="$LTO_FLAG" --build-arg MARCH_FLAG="$MARCH_FLAG" --build-arg WEBKIT_RELEASE_TYPE=$WEBKIT_RELEASE_TYPE --progress=plain --platform=linux/$BUILDKIT_ARCH --target=artifact --output type=local,dest=$temp/bun-webkit .
