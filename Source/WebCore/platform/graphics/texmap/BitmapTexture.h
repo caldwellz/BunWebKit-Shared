@@ -62,6 +62,7 @@ public:
 #endif
         UseBGRALayout = 1 << 5,
         NearestFiltering = 1 << 6,
+        ExternalOESRenderTarget = 1 << 7,
     };
 
     static Ref<BitmapTexture> create(const IntSize& size, OptionSet<Flags> flags = { })
@@ -121,6 +122,8 @@ private:
     void clearIfNeeded();
     void createFboIfNeeded();
 
+    void determineRenderTargetAndBinding();
+
     GLenum textureFormat() const;
     void createTexture();
     void allocateTexture();
@@ -131,6 +134,8 @@ private:
     OptionSet<Flags> m_flags;
     IntSize m_size;
     GLuint m_id { 0 };
+    GLenum m_renderTarget { GL_TEXTURE_2D };
+    GLenum m_binding { GL_TEXTURE_BINDING_2D };
     GLuint m_fbo { 0 };
     GLuint m_depthBufferObject { 0 };
     GLuint m_stencilBufferObject { 0 };

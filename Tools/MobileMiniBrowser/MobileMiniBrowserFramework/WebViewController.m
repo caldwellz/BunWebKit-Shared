@@ -30,9 +30,11 @@
 #import <WebKit/WKNavigation.h>
 #import <WebKit/WKNavigationDelegate.h>
 #import <WebKit/WKPreferencesPrivate.h>
+#import <WebKit/WKProcessPoolPrivate.h>
 #import <WebKit/WKWebView.h>
 #import <WebKit/WKWebViewConfiguration.h>
 #import <WebKit/WKWebsiteDataStorePrivate.h>
+#import <WebKit/_WKProcessPoolConfiguration.h>
 #import <WebKit/_WKWebsiteDataStoreConfiguration.h>
 
 static const NSString * const kURLArgumentString = @"--url";
@@ -223,6 +225,14 @@ void* URLContext = &URLContext;
     configuration.preferences._appBadgeEnabled = YES;
     configuration.preferences.elementFullscreenEnabled = YES;
     configuration.websiteDataStore = [self dataStore];
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
+    _WKProcessPoolConfiguration *processConfiguration = [[_WKProcessPoolConfiguration alloc] init];
+    processConfiguration.usesWebProcessCache = YES;
+
+    configuration.processPool = [[WKProcessPool alloc] _initWithConfiguration:processConfiguration];
+#pragma clang diagnostic pop
 
     WKWebView *webView = [[WKWebView alloc] initWithFrame:self.webViewContainer.bounds configuration:configuration];
     webView.inspectable = YES;

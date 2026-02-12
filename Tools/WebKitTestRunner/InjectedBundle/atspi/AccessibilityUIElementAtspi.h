@@ -177,6 +177,7 @@ public:
     RefPtr<AccessibilityUIElement> rowAtIndex(unsigned) override;
 
     RefPtr<AccessibilityUIElement> controllerElementAtIndex(unsigned) override;
+    RefPtr<AccessibilityUIElement> ariaActionsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaControlsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaDescribedByElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> descriptionForElementAtIndex(unsigned) override;

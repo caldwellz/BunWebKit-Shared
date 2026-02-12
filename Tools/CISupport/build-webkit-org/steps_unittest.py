@@ -2269,7 +2269,7 @@ exit 1''')
 
 class TestScanBuild(BuildStepMixinAdditions, unittest.TestCase):
     WORK_DIR = 'wkdir'
-    EXPECTED_BUILD_COMMAND = ['/bin/bash', '--posix', '-o', 'pipefail', '-c', f'Tools/Scripts/build-and-analyze --output-dir wkdir/build/{SCAN_BUILD_OUTPUT_DIR} --configuration release --only-smart-pointers --analyzer-path=wkdir/llvm-project/build/bin/clang --scan-build-path=../llvm-project/clang/tools/scan-build/bin/scan-build --sdkroot=macosx --preprocessor-additions=CLANG_WEBKIT_BRANCH=1 2>&1 | python3 Tools/Scripts/filter-test-logs scan-build --output build-log.txt']
+    EXPECTED_BUILD_COMMAND = ['/bin/bash', '--posix', '-o', 'pipefail', '-c', f'Tools/Scripts/build-and-analyze --output-dir wkdir/build/{SCAN_BUILD_OUTPUT_DIR} --configuration release --only-smart-pointers --analyzer-path=wkdir/llvm-project/build/bin/clang --preprocessor-additions=CLANG_WEBKIT_BRANCH=1 --scan-build-path=../llvm-project/clang/tools/scan-build/bin/scan-build --sdkroot=macosx 2>&1 | python3 Tools/Scripts/filter-test-logs scan-build --output build-log.txt']
 
     def setUp(self):
         return self.setup_test_build_step()
@@ -2354,6 +2354,32 @@ class TestScanBuild(BuildStepMixinAdditions, unittest.TestCase):
         )
         self.expect_outcome(result=SUCCESS, state_string='scan-build found 300 issues')
         return self.run_step()
+
+    def test_success_ios(self):
+        self.configureStep()
+        self.setProperty('builddir', self.WORK_DIR)
+        self.setProperty('configuration', 'release')
+        self.setProperty('fullPlatform', 'ios-26')
+        self.setProperty('platform', 'ios')
+        self.setProperty('architecture', 'arm64')
+        next_steps = []
+        self.patch(self.build, 'addStepsAfterCurrentStep', lambda s: next_steps.extend(s))
+
+        expected_build_command = ['/bin/bash', '--posix', '-o', 'pipefail', '-c', f'Tools/Scripts/build-and-analyze --output-dir wkdir/build/{SCAN_BUILD_OUTPUT_DIR} --configuration release --only-smart-pointers --toolchains={SWIFT_TOOLCHAIN_BUNDLE_IDENTIFIER} --swift-conditions=SWIFT_WEBKIT_TOOLCHAIN --scan-build-path=../llvm-project/clang/tools/scan-build/bin/scan-build --sdkroot=iphonesimulator 2>&1 | python3 Tools/Scripts/filter-test-logs scan-build --output build-log.txt']
+        self.expectRemoteCommands(
+            ExpectShell(workdir=self.WORK_DIR,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', f'/bin/rm -rf wkdir/build/{SCAN_BUILD_OUTPUT_DIR}'],
+                        timeout=2 * 60 * 60)
+            .exit(0),
+            ExpectShell(workdir=self.WORK_DIR,
+                        command=expected_build_command,
+                        timeout=2 * 60 * 60)
+            .log('stdio', stdout='ANALYZE SUCCEEDED No issues found.\n')
+            .exit(0)
+        )
+        self.expect_outcome(result=SUCCESS, state_string='scan-build found 0 issues')
+        rc = self.run_step()
+        return rc
 
 
 class TestParseStaticAnalyzerResults(BuildStepMixinAdditions, unittest.TestCase):
@@ -2602,6 +2628,54 @@ class TestRunTest262Tests(BuildStepMixinAdditions, unittest.TestCase):
         self.expect_outcome(result=FAILURE, state_string='3 Test262 tests failed')
         return self.run_step()
 
+    def test_success_platform_portflag_mac(self):
+        self.setup_step(RunTest262Tests())
+        self.setProperty('platform', 'mac')
+        self.setProperty('fullPlatform', 'mac-sonoma')
+        self.setProperty('configuration', 'release')
+        # The "--${port}" flag is only passed for GTK/WPE
+        self.expectRemoteCommands(
+            ExpectShell(workdir='wkdir',
+                        timeout=3600,
+                        log_environ=True,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'perl Tools/Scripts/test262-runner --verbose --release 2>&1 | python3 Tools/Scripts/filter-test-logs test262'],
+                        )
+            .exit(0),
+        )
+        self.expect_outcome(result=SUCCESS, state_string='test262-test')
+        return self.run_step()
+
+    def test_success_platform_portflag_gtk(self):
+        self.setup_step(RunTest262Tests())
+        self.setProperty('platform', 'gtk')
+        self.setProperty('fullPlatform', 'gtk')
+        self.setProperty('configuration', 'release')
+        self.expectRemoteCommands(
+            ExpectShell(workdir='wkdir',
+                        timeout=3600,
+                        log_environ=True,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'perl Tools/Scripts/test262-runner --verbose --release --gtk 2>&1 | python3 Tools/Scripts/filter-test-logs test262'],
+                        )
+            .exit(0),
+        )
+        self.expect_outcome(result=SUCCESS, state_string='test262-test')
+        return self.run_step()
+
+    def test_success_platform_portflag_wpe(self):
+        self.setup_step(RunTest262Tests())
+        self.setProperty('platform', 'wpe')
+        self.setProperty('fullPlatform', 'wpe')
+        self.setProperty('configuration', 'debug')
+        self.expectRemoteCommands(
+            ExpectShell(workdir='wkdir',
+                        timeout=3600,
+                        log_environ=True,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'perl Tools/Scripts/test262-runner --verbose --debug --wpe 2>&1 | python3 Tools/Scripts/filter-test-logs test262'],
+                        )
+            .exit(0),
+        )
+        self.expect_outcome(result=SUCCESS, state_string='test262-test')
+        return self.run_step()
 
 class TestRunBenchmarkTests(BuildStepMixinAdditions, unittest.TestCase):
     def setUp(self):
@@ -2659,37 +2733,82 @@ class TestBuildSwift(BuildStepMixinAdditions, unittest.TestCase):
         self.setProperty('architecture', 'arm64')
         self.setProperty('builddir', 'webkit')
 
+    def expectedShellCommand(self):
+        builddir = 'webkit'
+        swift_install_dir = f'{builddir}/{SWIFT_DIR}/swift-nightly-install'
+        swift_symroot_dir = f'{builddir}/{SWIFT_DIR}/swift-nightly-symroot'
+        return (
+            f"utils/build-script "
+            f"'--swift-install-components=autolink-driver;back-deployment;compiler;clang-resource-dir-symlink;libexec;stdlib;sdk-overlay;static-mirror-lib;toolchain-tools;license;sourcekit-xpc-service;sourcekit-inproc;swift-remote-mirror;swift-remote-mirror-headers' "
+            f"'--llvm-install-components=llvm-ar;llvm-nm;llvm-ranlib;llvm-cov;llvm-profdata;llvm-objdump;llvm-objcopy;llvm-symbolizer;IndexStore;clang;clang-resource-headers;builtins;runtimes;clangd;libclang;dsymutil;LTO;clang-features-file;lld' "
+            f"--ios --release --no-assertions --compiler-vendor=apple --infer-cross-compile-hosts-on-darwin --build-ninja --skip-build-benchmarks --skip-tvos --skip-watchos --skip-xros --build-subdir=buildbot_osx "
+            f"--install-llvm --install-swift "
+            f"--install-destdir={swift_install_dir} "
+            f"--install-prefix=/Library/Developer/Toolchains/{SWIFT_TOOLCHAIN_NAME}.xctoolchain/usr "
+            f"--darwin-install-extract-symbols "
+            f"--install-symroot={swift_symroot_dir} "
+            f"--installable-package={swift_install_dir}/{SWIFT_TOOLCHAIN_NAME}-osx.tar.gz "
+            f"--symbols-package={swift_install_dir}/{SWIFT_TOOLCHAIN_NAME}-osx-symbols.tar.gz "
+            f"--darwin-toolchain-bundle-identifier={SWIFT_TOOLCHAIN_BUNDLE_IDENTIFIER} "
+            f"'--darwin-toolchain-display-name=WebKit Swift Toolchain' "
+            f"'--darwin-toolchain-display-name-short=WebKit Swift' "
+            f"--darwin-toolchain-name={SWIFT_TOOLCHAIN_NAME} "
+            f"--darwin-toolchain-version=6.0.0 --darwin-toolchain-alias=webkit --darwin-toolchain-require-use-os-runtime=0 "
+            f"--skip-test-swift=1 --skip-test-cmark=1 --swift-testing=1 --install-swift-testing=1 --swift-testing-macros=1 --install-swift-testing-macros=1 --swift-driver=1 --install-swift-driver=1 "
+            f"2>&1 | python3 {builddir}/build/Tools/Scripts/filter-test-logs swift --output {builddir}/build/swift-build-log.txt"
+        )
+
     def test_success(self):
         self.configureStep()
-        self.setProperty('has_swift_executable', False)
+        self.setProperty('has_swift_toolchain', False)
         self.expectRemoteCommands(
             ExpectShell(workdir=SWIFT_DIR,
                         log_environ=False,
                         timeout=1200,
-                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'utils/build-script --skip-build-benchmarks --swift-darwin-supported-archs arm64 --release --no-assertions --swift-disable-dead-stripping --bootstrapping=hosttools 2>&1 | python3 webkit/build/Tools/Scripts/filter-test-logs swift --output webkit/build/swift-build-log.txt'])
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf ../build'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf "$(getconf DARWIN_USER_CACHE_DIR)org.llvm.clang"'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', self.expectedShellCommand()])
             .exit(0),
         )
         self.expect_outcome(result=SUCCESS, state_string='Successfully built Swift')
         return self.run_step()
 
-    def test_skipped_executable_exists_same_tag(self):
+    def test_skipped_toolchain_exists_same_tag(self):
         self.configureStep()
-        self.setProperty('has_swift_executable', True)
+        self.setProperty('has_swift_toolchain', True)
         self.setProperty('canonical_swift_tag', 'swift-6.0.3-RELEASE')
         self.setProperty('current_swift_tag', 'swift-6.0.3-RELEASE')
-        self.expect_outcome(result=SKIPPED, state_string='Swift executable already exists')
+        self.expect_outcome(result=SKIPPED, state_string='Swift toolchain already exists')
         return self.run_step()
 
     def test_build_when_tag_changed(self):
         self.configureStep()
-        self.setProperty('has_swift_executable', True)
+        self.setProperty('has_swift_toolchain', True)
         self.setProperty('canonical_swift_tag', 'swift-6.0.3-RELEASE')
         self.setProperty('current_swift_tag', 'swift-6.0.2-RELEASE')
         self.expectRemoteCommands(
             ExpectShell(workdir=SWIFT_DIR,
                         log_environ=False,
                         timeout=1200,
-                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'utils/build-script --skip-build-benchmarks --swift-darwin-supported-archs arm64 --release --no-assertions --swift-disable-dead-stripping --bootstrapping=hosttools 2>&1 | python3 webkit/build/Tools/Scripts/filter-test-logs swift --output webkit/build/swift-build-log.txt'])
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf ../build'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf "$(getconf DARWIN_USER_CACHE_DIR)org.llvm.clang"'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', self.expectedShellCommand()])
             .exit(0),
         )
         self.expect_outcome(result=SUCCESS, state_string='Successfully built Swift')
@@ -2697,13 +2816,23 @@ class TestBuildSwift(BuildStepMixinAdditions, unittest.TestCase):
 
     def test_failure_with_previous_checkout(self):
         self.configureStep()
-        self.setProperty('has_swift_executable', False)
+        self.setProperty('has_swift_toolchain', False)
         self.setProperty('current_swift_tag', 'swift-6.0.2-RELEASE')
         self.expectRemoteCommands(
             ExpectShell(workdir=SWIFT_DIR,
                         log_environ=False,
                         timeout=1200,
-                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'utils/build-script --skip-build-benchmarks --swift-darwin-supported-archs arm64 --release --no-assertions --swift-disable-dead-stripping --bootstrapping=hosttools 2>&1 | python3 webkit/build/Tools/Scripts/filter-test-logs swift --output webkit/build/swift-build-log.txt'])
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf ../build'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf "$(getconf DARWIN_USER_CACHE_DIR)org.llvm.clang"'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', self.expectedShellCommand()])
             .exit(1),
         )
         self.expect_outcome(result=WARNINGS, state_string='Failed to update swift, using previous checkout')
@@ -2711,12 +2840,22 @@ class TestBuildSwift(BuildStepMixinAdditions, unittest.TestCase):
 
     def test_failure_without_previous_checkout(self):
         self.configureStep()
-        self.setProperty('has_swift_executable', False)
+        self.setProperty('has_swift_toolchain', False)
         self.expectRemoteCommands(
             ExpectShell(workdir=SWIFT_DIR,
                         log_environ=False,
                         timeout=1200,
-                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'utils/build-script --skip-build-benchmarks --swift-darwin-supported-archs arm64 --release --no-assertions --swift-disable-dead-stripping --bootstrapping=hosttools 2>&1 | python3 webkit/build/Tools/Scripts/filter-test-logs swift --output webkit/build/swift-build-log.txt'])
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf ../build'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', 'rm -rf "$(getconf DARWIN_USER_CACHE_DIR)org.llvm.clang"'])
+            .exit(0),
+            ExpectShell(workdir=SWIFT_DIR,
+                        log_environ=False,
+                        timeout=1200,
+                        command=['/bin/bash', '--posix', '-o', 'pipefail', '-c', self.expectedShellCommand()])
             .exit(1),
         )
         self.expect_outcome(result=FAILURE, state_string='Failed to build Swift')

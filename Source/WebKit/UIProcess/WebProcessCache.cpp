@@ -324,8 +324,10 @@ void WebProcessCache::updateCapacity(WebProcessPool& processPool)
     } else if (capacityOverride >= 0) {
         m_capacity = capacityOverride;
     } else {
-        constexpr unsigned maxProcesses = 32;
+        unsigned maxProcesses = 32;
 #if PLATFORM(IOS_FAMILY)
+        if (!processPool.hasUsedSiteIsolation())
+            maxProcesses = 10;
         size_t memorySize = WTF::ramSizeDisregardingJetsamLimit();
 #else
         size_t memorySize = WTF::ramSize();

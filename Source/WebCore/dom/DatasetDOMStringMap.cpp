@@ -199,17 +199,12 @@ ExceptionOr<void> DatasetDOMStringMap::setNamedItem(const String& name, const At
 {
     if (!isValidPropertyName(name))
         return Exception { ExceptionCode::SyntaxError };
-    return protectedElement()->setAttribute(convertPropertyNameToAttributeName(name), value);
+    return protect(element())->setAttribute(convertPropertyNameToAttributeName(name), value);
 }
 
 bool DatasetDOMStringMap::deleteNamedProperty(const String& name)
 {
-    return protectedElement()->removeAttribute(convertPropertyNameToAttributeName(name));
-}
-
-Ref<Element> DatasetDOMStringMap::protectedElement() const
-{
-    return m_element.get();
+    return protect(element())->removeAttribute(convertPropertyNameToAttributeName(name));
 }
 
 DatasetDOMStringMap::~DatasetDOMStringMap() = default;

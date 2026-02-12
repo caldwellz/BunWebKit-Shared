@@ -169,8 +169,6 @@ private:
 
     RefPtr<RemoteScrollingTree> scrollingTree();
 
-    CheckedPtr<RemoteLayerTreeEventDispatcherDisplayLinkClient> checkedDisplayLinkClient();
-
     Lock m_scrollingTreeLock;
     RefPtr<RemoteScrollingTree> m_scrollingTree WTF_GUARDED_BY_LOCK(m_scrollingTreeLock);
 

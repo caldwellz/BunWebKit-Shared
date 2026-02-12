@@ -103,7 +103,7 @@ SVGElement::~SVGElement()
     }
 
     Ref<Document> document = this->document();
-    document->checkedSVGExtensions()->removeElementToRebuild(*this);
+    protect(document->svgExtensions())->removeElementToRebuild(*this);
 
     if (hasPendingResources()) {
         treeScopeForSVGReferences().removeElementFromPendingSVGResources(*this);
@@ -534,7 +534,7 @@ void SVGElement::attributeChanged(const QualifiedName& name, const AtomString& o
 
     switch (name.nodeName()) {
     case AttributeNames::idAttr:
-        protect(document())->checkedSVGExtensions()->rebuildAllElementReferencesForTarget(*this);
+        protect(protect(document())->svgExtensions())->rebuildAllElementReferencesForTarget(*this);
         break;
     case AttributeNames::classAttr:
         m_className->setBaseValInternal(newValue);

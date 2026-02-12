@@ -146,7 +146,7 @@ private:
 
     CSSStyleSheet* parentStyleSheet() const final;
 
-    CSSRule* parentRule() const final;
+    CSSRule* NODELETE parentRule() const final;
 
     [[nodiscard]] bool willMutate() final;
     void didMutate(MutationType) final;

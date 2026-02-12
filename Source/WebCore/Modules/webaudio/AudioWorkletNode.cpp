@@ -90,7 +90,7 @@ ExceptionOr<Ref<AudioWorkletNode>> AudioWorkletNode::create(JSC::JSGlobalObject&
     if (!context.scriptExecutionContext())
         return Exception { ExceptionCode::InvalidStateError, "Audio context's frame is detached"_s };
 
-    auto messageChannel = MessageChannel::create(*context.protectedScriptExecutionContext());
+    auto messageChannel = MessageChannel::create(*protect(context.scriptExecutionContext()));
     auto& nodeMessagePort = messageChannel->port1();
     auto& processorMessagePort = messageChannel->port2();
 

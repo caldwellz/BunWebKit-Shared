@@ -45,7 +45,6 @@ public:
     virtual ~LegacyRenderSVGResourceMasker();
 
     inline SVGMaskElement& maskElement() const;
-    inline Ref<SVGMaskElement> protectedMaskElement() const;
 
     void removeAllClientsFromCache() override;
     void removeClientFromCache(RenderElement&) override;

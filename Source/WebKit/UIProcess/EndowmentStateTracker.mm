@@ -62,7 +62,7 @@ static NSSet<NSString *> *endowmentsForHandle(RBSProcessHandle *processHandle)
     if (!processHandle) {
         // We assume foreground when unable to determine state to maintain pre-existing behavior and to avoid
         // not rendering anything when we fail.
-        return [NSSet setWithObjects:visibilityEndowment, userfacingEndowment, nil];
+        return [NSSet setWithObjects:protect(visibilityEndowment).get(), protect(userfacingEndowment).get(), nil];
     }
 
     RBSProcessState *state = processHandle.currentState;
@@ -79,14 +79,14 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(EndowmentStateTracker);
 inline auto EndowmentStateTracker::stateFromEndowments(NSSet *endowments) -> State
 {
     return State {
-        !![endowments containsObject:userfacingEndowment],
-        !![endowments containsObject:visibilityEndowment]
+        !![endowments containsObject:protect(userfacingEndowment).get()],
+        !![endowments containsObject:protect(visibilityEndowment).get()]
     };
 }
 
 bool EndowmentStateTracker::isApplicationForeground(pid_t pid)
 {
-    return [endowmentsForHandle(handleForPID(pid)) containsObject:visibilityEndowment];
+    return [protect(endowmentsForHandle(protect(handleForPID(pid)).get())) containsObject:protect(visibilityEndowment).get()];
 }
 
 EndowmentStateTracker& EndowmentStateTracker::singleton()
@@ -129,7 +129,7 @@ void EndowmentStateTracker::removeClient(EndowmentStateTrackerClient& client)
 auto EndowmentStateTracker::ensureState() const -> const State&
 {
     if (!m_state)
-        m_state = stateFromEndowments(endowmentsForHandle([RBSProcessHandle currentProcess]));
+        m_state = stateFromEndowments(protect(endowmentsForHandle([RBSProcessHandle currentProcess])));
     return *m_state;
 }
 

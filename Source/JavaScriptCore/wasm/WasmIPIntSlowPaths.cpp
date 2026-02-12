@@ -304,6 +304,15 @@ WASM_IPINT_EXTERN_CPP_DECL(loop_osr, CallFrame* callFrame, uint8_t* pc, IPIntLoc
     auto* bbqCallee = uncheckedDowncast<Wasm::BBQCallee>(compiledCallee.get());
     ASSERT(bbqCallee->compilationMode() == Wasm::CompilationMode::BBQMode);
 
+    // The BBQ frame may use more stack than the IPInt frame. If there's not enough stack space,
+    // skip OSR and continue executing in IPInt.
+    if (bbqCallee->stackCheckSize() != Wasm::stackCheckNotNeeded) {
+        auto stackAtOSREntry = reinterpret_cast<uintptr_t>(pl - osrEntryData.numberOfStackValues);
+        auto candidateNewStackPointer = reinterpret_cast<void*>(stackAtOSREntry - bbqCallee->stackCheckSize());
+        if (candidateNewStackPointer < instance->softStackLimit()) [[unlikely]]
+            WASM_RETURN_TWO(nullptr, nullptr);
+    }
+
     auto* buffer = buildEntryBufferForLoopOSR(callee, bbqCallee, instance, osrEntryData, pl);
     if (!buffer)
         WASM_RETURN_TWO(nullptr, nullptr);
@@ -532,6 +541,7 @@ WASM_IPINT_EXTERN_CPP_DECL(table_init, IPIntStackEntry* sp, TableInitMetadata* m
     int32_t src = sp[1].i32;
     int32_t dst = sp[2].i32;
 
+    WasmSlowPathWithoutCallFrameTracer tracer(instance->vm());
     if (!Wasm::tableInit(instance, metadata->elementIndex, metadata->tableIndex, dst, src, n))
         IPINT_THROW(Wasm::ExceptionType::OutOfBoundsTableAccess);
     IPINT_END();

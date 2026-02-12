@@ -146,8 +146,6 @@ private:
     void sendErrorReply(ProtocolError);
 
     void selectDebuggeeIfNeeded(VM& fallbackVM) WTF_REQUIRES_LOCK(m_lock);
-    void markVMStates(VM* debuggee) WTF_REQUIRES_LOCK(m_lock);
-    void clearOtherVMStopData(VM* debuggee) WTF_REQUIRES_LOCK(m_lock);
 
     bool requiresStopConfirmation() const WTF_REQUIRES_LOCK(m_lock)
     {

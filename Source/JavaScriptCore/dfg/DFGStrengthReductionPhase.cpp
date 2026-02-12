@@ -1391,7 +1391,10 @@ private:
             break;
         }
 
-        case StringStartsWith: {
+        case StringStartsWith:
+        case StringEndsWith: {
+            bool isStartsWith = m_node->op() == StringStartsWith;
+
             Node* stringNode = m_node->child1().node();
             String string = stringNode->tryGetString(m_graph);
             if (!string)
@@ -1401,22 +1404,29 @@ private:
             if (!searchString)
                 break;
 
-            unsigned startPosition = 0;
+            unsigned position = isStartsWith ? 0 : string.length();
             if (m_node->child3()) {
                 if (!m_node->child3()->isInt32Constant())
                     break;
                 int32_t pos = m_node->child3()->asInt32();
                 if (pos < 0)
-                    startPosition = 0;
+                    position = 0;
                 else
-                    startPosition = std::min<unsigned>(pos, string.length());
+                    position = std::min<unsigned>(pos, string.length());
             }
 
             bool result;
-            if (!startPosition)
-                result = string.startsWith(searchString);
-            else
-                result = string.hasInfixStartingAt(searchString, startPosition);
+            if (isStartsWith) {
+                if (!position)
+                    result = string.startsWith(searchString);
+                else
+                    result = string.hasInfixStartingAt(searchString, position);
+            } else {
+                if (position == string.length())
+                    result = string.endsWith(searchString);
+                else
+                    result = string.hasInfixEndingAt(searchString, position);
+            }
 
             m_changed = true;
             m_insertionSet.insertNode(m_nodeIndex, SpecNone, Check, m_node->origin, m_node->children.justChecks());

@@ -33,7 +33,7 @@
 #include "Pagination.h"
 #include "RenderBlock.h"
 #include "RenderElement.h"
-#include "RenderStyleBase+ConstructionInlines.h"
+#include "RenderStyleProperties+ConstructionInlines.h"
 #include "RenderStyle+SettersInlines.h"
 #include "RenderTheme.h"
 #include "StyleCustomPropertyRegistry.h"
@@ -117,7 +117,7 @@ RenderStyle RenderStyle::createAnonymousStyleWithDisplay(const RenderStyle& pare
 
 RenderStyle RenderStyle::createStyleInheritingFromPseudoStyle(const RenderStyle& pseudoStyle)
 {
-    ASSERT(pseudoStyle.pseudoElementType() == PseudoElementType::Before || pseudoStyle.pseudoElementType() == PseudoElementType::After);
+    ASSERT(pseudoStyle.pseudoElementType() == PseudoElementType::Before || pseudoStyle.pseudoElementType() == PseudoElementType::After || pseudoStyle.pseudoElementType() == PseudoElementType::Checkmark);
 
     auto style = create();
     style.inheritFrom(pseudoStyle);

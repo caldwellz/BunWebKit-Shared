@@ -177,9 +177,16 @@ void BoxTreeUpdater::tearDown()
 void BoxTreeUpdater::adjustStyleIfNeeded(const RenderElement& renderer, RenderStyle& style, RenderStyle* firstLineStyle)
 {
     auto adjustStyle = [&] (auto& styleToAdjust) {
+        // If we end up here with a box that has a table display type, just treat it as a regular block-level box.
+        if (styleToAdjust.isInternalTableBox() || styleToAdjust.display() == DisplayType::TableCaption) {
+            styleToAdjust.setDisplay(DisplayType::Block);
+            return;
+        }
+
         if (is<RenderBlock>(renderer)) {
             if (styleToAdjust.display() == DisplayType::Inline)
                 styleToAdjust.setDisplay(DisplayType::InlineBlock);
+
             if (renderer.isAnonymousBlock()) {
                 auto& anonBlockParentStyle = renderer.parent()->style();
                 // overflow and text-overflow property values don't get forwarded to anonymous block boxes.
@@ -188,17 +195,9 @@ void BoxTreeUpdater::adjustStyleIfNeeded(const RenderElement& renderer, RenderSt
                 styleToAdjust.setOverflowX(anonBlockParentStyle.overflowX());
                 styleToAdjust.setOverflowY(anonBlockParentStyle.overflowY());
             }
-            if (renderer.isRenderTextControl()
-#if ENABLE(MATHML)
-                || renderer.isRenderMathMLMath()
-#endif
-            ) {
-                // Something like <input style="appearance:none; display:table-header-group"> confuses IFC.
-                if (styleToAdjust.isInternalTableBox() || styleToAdjust.display() == DisplayType::TableCaption)
-                    styleToAdjust.setDisplay(DisplayType::Block);
-            }
             return;
         }
+
         if (auto* renderInline = dynamicDowncast<RenderInline>(renderer)) {
             auto shouldNotRetainBorderPaddingAndMarginStart = renderInline->isContinuation();
             auto shouldNotRetainBorderPaddingAndMarginEnd = !renderInline->isContinuation() && renderInline->inlineContinuation();
@@ -228,6 +227,7 @@ void BoxTreeUpdater::adjustStyleIfNeeded(const RenderElement& renderer, RenderSt
                 styleToAdjust.setDisplay(DisplayType::Inline);
             return;
         }
+
         if (auto* renderLineBreak = dynamicDowncast<RenderLineBreak>(renderer)) {
             if (!styleToAdjust.hasOutOfFlowPosition()) {
                 // Force in-flow display value to inline (see webkit.org/b/223151).

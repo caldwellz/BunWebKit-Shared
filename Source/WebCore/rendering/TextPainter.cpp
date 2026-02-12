@@ -264,7 +264,7 @@ String TextPainter::cachedGlyphDisplayListsForTextNodeAsText(Text& textNode, Opt
 
     StringBuilder builder;
 
-    for (auto textBox : InlineIterator::textBoxesFor(*textNode.checkedRenderer())) {
+    for (auto textBox : InlineIterator::textBoxesFor(*protect(textNode.renderer()))) {
         RefPtr<const DisplayList::DisplayList> displayList;
         if (auto* legacyInlineBox = textBox.legacyInlineBox())
             displayList = TextPainter::glyphDisplayListIfExists(*legacyInlineBox);

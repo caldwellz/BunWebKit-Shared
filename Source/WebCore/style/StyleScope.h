@@ -137,7 +137,6 @@ public:
 #endif
 
     WEBCORE_EXPORT Resolver& resolver();
-    Ref<Resolver> protectedResolver();
     Resolver* resolverIfExists() { return m_resolver.get(); }
     const Resolver* resolverIfExists() const { return m_resolver.get(); }
     void clearResolver();
@@ -230,7 +229,7 @@ private:
     void pendingUpdateTimerFired();
     void clearPendingUpdate();
 
-    TreeScope& treeScope();
+    TreeScope& NODELETE treeScope();
 
     using MediaQueryViewportState = std::tuple<IntSize, float, bool>;
     static MediaQueryViewportState mediaQueryViewportStateForDocument(const Document&);

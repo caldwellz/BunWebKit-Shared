@@ -119,7 +119,7 @@ private:
 
 bool MouseWheelRegionOverlay::updateRegion()
 {
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return false;
 #if ENABLE(WHEEL_EVENT_REGIONS)
@@ -174,7 +174,7 @@ private:
 
 bool NonFastScrollableRegionOverlay::updateRegion()
 {
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return false;
     bool regionChanged = false;
@@ -327,7 +327,7 @@ static Vector<Path> pathsForRect(const FloatRect& rect, float borderRadius)
 
 std::optional<std::pair<RenderLayer&, GraphicsLayer&>> InteractionRegionOverlay::activeLayer() const
 {
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return std::nullopt;
     constexpr OptionSet<HitTestRequest::Type> hitType {
@@ -346,7 +346,7 @@ std::optional<std::pair<RenderLayer&, GraphicsLayer&>> InteractionRegionOverlay:
     if (!hitNode || !hitNode->renderer())
         return std::nullopt;
 
-    CheckedPtr rendererLayer = hitNode->checkedRenderer()->enclosingLayer();
+    CheckedPtr rendererLayer = protect(hitNode->renderer())->enclosingLayer();
     if (!rendererLayer)
         return std::nullopt;
 
@@ -368,7 +368,7 @@ std::optional<std::pair<RenderLayer&, GraphicsLayer&>> InteractionRegionOverlay:
 std::optional<InteractionRegion> InteractionRegionOverlay::activeRegion() const
 {
 #if ENABLE(INTERACTION_REGIONS_IN_EVENT_REGION)
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return std::nullopt;
     auto layerPair = activeLayer();
@@ -463,7 +463,7 @@ static void drawCheckbox(const String& text, GraphicsContext& context, const Fon
 
 FloatRect InteractionRegionOverlay::rectForSettingAtIndex(unsigned index) const
 {
-    RefPtr mainFrameView = RefPtr { m_page.get() }->protectedMainFrame()->virtualView();
+    RefPtr mainFrameView = protect(protect(m_page)->mainFrame())->virtualView();
     if (!mainFrameView)
         return FloatRect();
     auto viewSize = mainFrameView->layoutSize();
@@ -564,14 +564,14 @@ void InteractionRegionOverlay::drawRect(PageOverlay&, GraphicsContext& context, 
                 AffineTransform transform;
 
                 transform.translate(rectInLayerCoordinates.location());
-                if (RefPtr page = m_page.get())
+                if (RefPtr page = m_page)
                     transform.scale(page->pageScaleFactor());
 
                 existingClip.transform(transform);
                 clipPaths.append(existingClip);
             } else {
                 auto scaleFactor = 1.f;
-                if (RefPtr page = m_page.get())
+                if (RefPtr page = m_page)
                     scaleFactor = page->pageScaleFactor();
 
                 if (region->useContinuousCorners) {
@@ -639,7 +639,7 @@ void InteractionRegionOverlay::drawRect(PageOverlay&, GraphicsContext& context, 
 
 bool InteractionRegionOverlay::mouseEvent(PageOverlay& overlay, const PlatformMouseEvent& event)
 {
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return false;
     RefPtr localMainFrame = page->localMainFrame();
@@ -705,7 +705,7 @@ private:
 
 void EnhancedSecurityOverlay::drawRect(PageOverlay&, GraphicsContext& context, const IntRect& dirtyRect)
 {
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return;
 
@@ -751,7 +751,7 @@ RegionOverlay::RegionOverlay(Page& page, Color regionColor)
 
 RegionOverlay::~RegionOverlay()
 {
-    RefPtr page = m_page.get();
+    RefPtr page = m_page;
     if (!page)
         return;
     if (RefPtr overlay = m_overlay)

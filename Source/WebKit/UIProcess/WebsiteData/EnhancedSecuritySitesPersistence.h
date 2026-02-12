@@ -51,8 +51,6 @@ public:
     void trackEnhancedSecurityForDomain(WebCore::RegistrableDomain&&, EnhancedSecurity);
 
 private:
-    CheckedPtr<WebCore::SQLiteDatabase> checkedDatabase() const;
-
     enum class StatementType : uint8_t {
         SelectSite,
         InsertSite,

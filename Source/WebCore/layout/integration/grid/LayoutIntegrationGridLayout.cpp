@@ -55,6 +55,38 @@ void GridLayout::updateFormattingContextGeometries()
     boxGeometryUpdater.setFormattingContextContentGeometry(CheckedRef { layoutState() }->geometryForBox(gridBox()).contentBoxWidth(), { });
 }
 
+static std::optional<LayoutUnit> minimumSizeConstraint(const Style::MinimumSize& computedMinimumSize, const Style::ZoomFactor& gridContainerZoom)
+{
+    return WTF::switchOn(computedMinimumSize,
+        [&gridContainerZoom](const Style::MinimumSize::Fixed& fixedValue) -> std::optional<LayoutUnit> {
+            return Style::evaluate<LayoutUnit>(fixedValue, gridContainerZoom);
+        },
+        [](const CSS::Keyword::Auto&) -> std::optional<LayoutUnit> {
+            return 0_lu;
+        },
+        [](const auto&) -> std::optional<LayoutUnit> {
+            ASSERT_NOT_IMPLEMENTED_YET();
+            return { };
+        }
+    );
+}
+
+static std::optional<LayoutUnit> maximumSizeConstraint(const Style::MaximumSize& computedMaximumSize, const Style::ZoomFactor& gridContainerZoom)
+{
+    return WTF::switchOn(computedMaximumSize,
+        [&gridContainerZoom](const Style::MaximumSize::Fixed& fixedValue) -> std::optional<LayoutUnit> {
+            return Style::evaluate<LayoutUnit>(fixedValue, gridContainerZoom);
+        },
+        [](const CSS::Keyword::None&) -> std::optional<LayoutUnit> {
+            return { };
+        },
+        [](const auto&) -> std::optional<LayoutUnit> {
+            ASSERT_NOT_IMPLEMENTED_YET();
+            return { };
+        }
+    );
+}
+
 static inline Layout::GridLayoutConstraints constraintsForGridContent(const Layout::ElementBox& gridContainer)
 {
     CheckedRef gridContainerRenderer = downcast<RenderGrid>(*gridContainer.rendererForIntegration());
@@ -66,10 +98,44 @@ static inline Layout::GridLayoutConstraints constraintsForGridContent(const Layo
     }();
     auto availableBlockSpace = gridContainerRenderer->availableLogicalHeightForContentBox();
 
-    return {
-        .inlineAxisAvailableSpace = availableInlineSpace,
-        .blockAxisAvailableSpace = availableBlockSpace
-    };
+    CheckedRef gridContainerStyle = gridContainerRenderer->style();
+    auto gridContainerZoom = gridContainerStyle->usedZoomForLength();
+
+    auto inlineAxisMinMaxSizes = [&]() -> std::pair<std::optional<LayoutUnit>, std::optional<LayoutUnit>> {
+        return {
+            minimumSizeConstraint(gridContainerStyle->minWidth(), gridContainerZoom),
+            maximumSizeConstraint(gridContainerStyle->maxWidth(), gridContainerZoom)
+        };
+    }();
+
+    auto blockAxisMinMaxSizes = [&]() -> std::pair<std::optional<LayoutUnit>, std::optional<LayoutUnit>> {
+        return {
+            minimumSizeConstraint(gridContainerStyle->minHeight(), gridContainerZoom),
+            maximumSizeConstraint(gridContainerStyle->maxHeight(), gridContainerZoom)
+        };
+    }();
+
+    auto inlineAxisConstraint = Layout::AxisConstraint::definite(
+        availableInlineSpace,
+        inlineAxisMinMaxSizes.first,
+        inlineAxisMinMaxSizes.second
+    );
+
+    auto blockAxisConstraint = [&]() -> Layout::AxisConstraint {
+        if (availableBlockSpace.has_value()) {
+            return Layout::AxisConstraint::definite(
+                *availableBlockSpace,
+                blockAxisMinMaxSizes.first,
+                blockAxisMinMaxSizes.second
+            );
+        }
+        return Layout::AxisConstraint::maxContent(
+            blockAxisMinMaxSizes.first,
+            blockAxisMinMaxSizes.second
+        );
+    }();
+
+    return { inlineAxisConstraint, blockAxisConstraint };
 }
 
 void GridLayout::updateGridItemRenderers()
@@ -99,6 +165,13 @@ void GridLayout::updateFormattingContextRootRenderer()
 
     for (CheckedRef layoutBox : formattingContextBoxes(gridBox()))
         orderIteratorPopulator.collectChild(CheckedRef { downcast<RenderBox>(*layoutBox->rendererForIntegration()) });
+}
+
+std::pair<LayoutUnit, LayoutUnit> GridLayout::computeIntrinsicWidths()
+{
+    auto gridFormattingContext = Layout::GridFormattingContext { gridBox(), layoutState() };
+    auto intrinsicWidths = gridFormattingContext.computeIntrinsicWidths();
+    return { intrinsicWidths.minimum, intrinsicWidths.maximum };
 }
 
 void GridLayout::layout()

@@ -80,7 +80,7 @@ void ensureOnMainRunLoop(Function<void()>&& function)
 void callOnMainThread(Function<void()>&& function)
 {
 #if USE(WEB_THREAD)
-    if (auto* webRunLoop = RunLoop::webIfExists()) {
+    SUPPRESS_UNCOUNTED_LOCAL if (auto* webRunLoop = RunLoop::webIfExists()) { // WebRunLoop is a singleton.
         webRunLoop->dispatch(WTF::move(function));
         return;
     }

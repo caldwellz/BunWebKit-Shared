@@ -405,7 +405,7 @@ void JSTestMapLikeWithOverriddenOperationsOwner::finalize(JSC::Handle<JSC::Unkno
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestMapLikeWithOverriddenOperations = static_cast<JSTestMapLikeWithOverriddenOperations*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestMapLikeWithOverriddenOperations->protectedWrapped().ptr(), jsTestMapLikeWithOverriddenOperations);
+    uncacheWrapper(world, protect(jsTestMapLikeWithOverriddenOperations->wrapped()).ptr(), jsTestMapLikeWithOverriddenOperations);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

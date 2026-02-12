@@ -313,6 +313,20 @@ static void runSameSiteHttpsUpgrade(bool useSiteIsolation)
 }
 TEST_WITH_AND_WITHOUT_SITE_ISOLATION(SameSiteHttpsUpgrade)
 
+static void runHttpLocalhostLoad(bool useSiteIsolation)
+{
+    HTTPServer plaintextServer({
+        { "/"_s, { "<script>alert('insecure-page')</script>"_s } },
+    });
+
+    auto webView = enhancedSecurityTestConfiguration(nullptr, nullptr, useSiteIsolation);
+
+    loadRequestAndCheckEnhancedSecurityAlerts(webView, [plaintextServer.requestWithLocalhost().URL absoluteString], {
+        { "insecure-page"_s, ExpectedEnhancedSecurity::Disabled }
+    });
+}
+TEST_WITH_AND_WITHOUT_SITE_ISOLATION(HttpLocalhostLoad)
+
 // MARK: - Frame Tests
 
 static void runHttpEmbeddingHttpIframe(bool useSiteIsolation)

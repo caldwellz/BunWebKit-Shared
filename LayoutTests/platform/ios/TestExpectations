@@ -1367,8 +1367,15 @@ fast/scrolling/v-rl-scrollbars-initial-position.html [ Skip ]
 fast/scrolling/vertical-scrollbar-position.html [ Skip ]
 fast/scrolling/content-box-smaller-than-scrollbar.html [ Skip ]
 
+# These tests time out on iOS for some reason
+imported/w3c/web-platform-tests/css/css-overflow/keyboard-scroll.html [ Failure ]
+imported/w3c/web-platform-tests/css/css-overflow/overflow-auto-scrolling-with-margin-and-transform.html [ Failure ]
+imported/w3c/web-platform-tests/css/css-overflow/scrollable-overflow-padding-input.html [ Failure ]
+
+# scrollbar-gutter
 imported/w3c/web-platform-tests/css/css-overflow/scrollbar-gutter-root-both-edges.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-overflow/scrollbar-gutter-root.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/css/css-overflow/scrollbar-gutter-with-background-gradient.html [ ImageOnlyFailure ]
 
 # Subpixel line positioning
 imported/w3c/web-platform-tests/css/css-overflow/line-clamp/webkit-line-clamp-027.html [ ImageOnlyFailure ]
@@ -2337,6 +2344,7 @@ fast/dom/linkify-phone-numbers.html [ Pass ]
 accessibility/table-exposure-updates-dynamically.html [ Pass ]
 accessibility/accessibility-node-reparent.html [ Pass ]
 accessibility/area-element-bounding-box.html [ Pass ]
+accessibility/aria-actions.html [ Pass ]
 accessibility/aria-owns-text-stitching.html [ Pass ]
 accessibility/aria-braillelabel.html [ Pass ]
 accessibility/aria-brailleroledescription.html [ Pass ]
@@ -3664,6 +3672,7 @@ webkit.org/b/296195 imported/w3c/web-platform-tests/dom/events/scrolling/scrolle
 webkit.org/b/296195 imported/w3c/web-platform-tests/dom/events/scrolling/scrollend-event-fired-after-snap.html [ Skip ]
 webkit.org/b/296195 imported/w3c/web-platform-tests/dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=subframe-inline-end-block-end-behavior-auto [ Skip ]
 webkit.org/b/296195 imported/w3c/web-platform-tests/dom/events/scrolling/scrollend-event-fired-for-scrollIntoView.html?include=subframe-inline-start-block-start-behavior-smooth [ Skip ]
+webkit.org/b/307555 imported/w3c/web-platform-tests/dom/events/scrolling/scrollend-event-fired-for-programmatic-scroll.html?include=root-scrollBy-smooth [ Failure ]
 
 webkit.org/b/231337 imported/w3c/web-platform-tests/xhr/send-timeout-events.htm [ Pass Failure ]
 
@@ -3786,17 +3795,6 @@ webkit.org/b/240918 [ Debug ] fast/loader/create-frame-in-DOMContentLoaded.html 
 webkit.org/b/240918 [ Debug ] fast/loader/user-style-sheet-resource-load-callbacks.html [ Pass Failure ]
 
 webkit.org/b/241253 fast/text/bulgarian-system-language-shaping.html [ Pass ]
-
-# These tests have different results or fail on iOS
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/adjustments-in-scroll-event-handler.tentative.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/after-scrollable-range-shrinkage-002.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/after-scrollable-range-shrinkage-003.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/contenteditable-insert-line-at-top.tentative.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/device-pixel-adjustment.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/history-restore-anchors.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/infinite-scroll-event.tentative.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/zero-scroll-offset-001.html
-webkit.org/b/306639 imported/w3c/web-platform-tests/css/css-scroll-anchoring/zero-scroll-offset-002.html
 
 webkit.org/b/258184 [ Debug ] media/track/track-webvtt-no-snap-to-lines-overlap.html [ Pass Crash ]
 
@@ -5759,6 +5757,7 @@ imported/w3c/web-platform-tests/html/semantics/forms/the-select-element/customiz
 imported/w3c/web-platform-tests/html/semantics/forms/the-select-element/customizable-select/select-option-arrow-scroll.optional.html [ Skip ]
 imported/w3c/web-platform-tests/html/semantics/forms/the-select-element/customizable-select/select-tabindex-order.html [ Skip ]
 imported/w3c/web-platform-tests/html/semantics/forms/the-select-element/customizable-select/select-events-2.optional.html [ Skip ]
+imported/w3c/web-platform-tests/html/semantics/forms/the-select-element/customizable-select/select-picker-hover-active-pseudo.html [ Skip ]
 imported/w3c/web-platform-tests/html/semantics/forms/the-select-element/select-tab-navigation.tentative.html [ Skip ]
 imported/w3c/web-platform-tests/uievents/click/auxclick_event.html [ Skip ]
 imported/w3c/web-platform-tests/uievents/click/click_event_target_child_parent.html [ Skip ]
@@ -7606,8 +7605,17 @@ imported/w3c/web-platform-tests/workers/SharedWorker_dataUrl.html [ Pass Failure
 # webkit.org/b/261919 NEW TEST(247465@main): [ macOS wk2 ] webanimations/frame-rate/animation-frame-rate-alignment-started-with-one-frame-separation.html is a flaky failure.
 webanimations/frame-rate/animation-frame-rate-alignment-started-with-one-frame-separation.html [ Pass Failure ]
 
-# webkit.org/b/277905 [ iOS ] fast/scrolling/ios/scroll-anchoring-momentum-scroll.html is a flaky text failure
-fast/scrolling/ios/scroll-anchoring-momentum-scroll.html [ Pass Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/adjustments-in-scroll-event-handler.tentative.html [ Pass Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/after-scrollable-range-shrinkage-002.html [ Pass Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/contenteditable-insert-line-at-top.tentative.html [ Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/dirty-contents-reselect-anchor.tentative.html [ Pass Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/ignore-adjustments-while-scrolling-to-anchor.tentative.html [ Pass Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/shadow-dom-subscroller.html [ Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/zero-scroll-offset-001.html [ Pass Failure ]
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/zero-scroll-offset-002.html [ Pass Failure ]
+
+# Requires user interaction.
+imported/w3c/web-platform-tests/css/css-scroll-anchoring/fullscreen-crash.html [ Skip ]
 
 # rdar://124971386 (css-box/margin-trim/computed-margin-values layout tests failing in recursive cases)
 imported/w3c/web-platform-tests/css/css-box/margin-trim/computed-margin-values/block-container-block-start-child-with-border.html [ Pass Failure ]
@@ -7813,15 +7821,6 @@ webkit.org/b/289097 imported/w3c/web-platform-tests/css/css-position/sticky/posi
 webkit.org/b/289094 imported/w3c/web-platform-tests/webcodecs/audio-data.crossOriginIsolated.https.any.html [ Pass Timeout ]
 
 webkit.org/b/289109 imported/w3c/web-platform-tests/css/css-view-transitions/transition-skipped-after-animation-started.html [ Pass Crash ]
-
-# webkit.org/b/289392 REGRESSION(291726@main): 7x imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-*.svg are constant failures.
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-basic-001.svg [ Failure ]
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-basic-002.svg [ Failure ]
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-basic-003.svg [ Failure ]
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-basic-004.svg [ Failure ]
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-basic-005.svg [ Failure ]
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-bicubic-001.svg [ Failure ]
-imported/w3c/web-platform-tests/svg/pservers/reftests/meshgradient-complex-001.svg [ Failure ]
 
 # webkit.org/b/289656 ([iOS-18-Simulator-WK2-Tests-EWS] fast/forms/ios/focus-input-via-button-no-scaling.html is crashing
 fast/forms/ios/focus-input-via-button-no-scaling.html [ Pass Crash ]
@@ -8252,8 +8251,6 @@ webkit.org/b/295435 compositing/layer-creation/overlap-animation-container.html 
 
 imported/w3c/web-platform-tests/css/css-break/block-in-inline-012.html [ ImageOnlyFailure ]
 
-webkit.org/b/300905 imported/w3c/web-platform-tests/css/css-scroll-anchoring/shadow-dom-subscroller.html [ Pass Failure ]
-
 webkit.org/b/298269 [ Release ] imported/w3c/web-platform-tests/html/anonymous-iframe/session-storage.tentative.https.window.html [ Pass Failure ]
 
 webkit.org/b/298278 imported/w3c/web-platform-tests/html/anonymous-iframe/local-storage.tentative.https.window.html [ Pass Failure ]
@@ -8470,10 +8467,6 @@ webkit.org/b/306778 webrtc/video-addTransceiver.html [ Pass Failure ]
 
 webkit.org/b/306785 imported/w3c/web-platform-tests/storage-access-api/requestStorageAccess-insecure.sub.window.html [ Pass Failure ]
 
-webkit.org/b/306984 [ Debug ] fast/canvas/fallback-content.html [ Skip ]
-webkit.org/b/306984 [ Debug ] fast/rendering/render-style-null-optgroup-crash.html [ Skip ]
-webkit.org/b/306984 [ Debug ] fast/dom/HTMLProgressElement/progress-element-with-child-crash.html [ Skip ]
-
 webkit.org/b/306998 [ Debug ] inspector/animation/nameChanged.html [ Skip ]
 webkit.org/b/306998 [ Debug ] inspector/audit/basic-error.html [ Skip ]
 webkit.org/b/306998 [ Debug ] inspector/canvas/console-record-offscreen-webgl.html [ Skip ]
@@ -8482,3 +8475,6 @@ webkit.org/b/306998 [ Debug ] inspector/injected-script/observable.html [ Skip ]
 webkit.org/b/306998 [ Debug ] inspector/page/filter-cookies-for-domain.html [ Skip ]
 
 webkit.org/b/307091 inspector/network/intercept-aborted-request.html [ Skip ]
+
+# Requires mousedown
+media/caption-display-settings/caption-display-settings-default-anchorBounds.html [ Skip ]

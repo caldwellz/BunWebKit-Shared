@@ -91,7 +91,7 @@ bool WebEventFactory::shouldBeHandledAsContextClick(const WebCore::PlatformMouse
     return (static_cast<NSMenuType>(event.menuTypeForEvent()) == NSMenuTypeContextMenu);
 }
 
-WebMouseEvent WebEventFactory::createWebMouseEvent(NSEvent *event, NSEvent *lastPressureEvent, NSView *windowView)
+WebMouseEvent WebEventFactory::createWebMouseEvent(NSEvent *event, NSEvent *lastPressureEvent, NSView *windowView, WebMouseEventInputSource inputSource)
 {
     NSPoint position = WebCore::pointForEvent(event, windowView);
     NSPoint globalPosition = WebCore::globalPointForEvent(event);
@@ -125,7 +125,7 @@ WebMouseEvent WebEventFactory::createWebMouseEvent(NSEvent *event, NSEvent *last
 
     auto unadjustedMovementDelta = WebCore::unadjustedMovementForEvent(event);
 
-    return WebMouseEvent({ type, modifiers, timestamp, WTF::UUID::createVersion4() }, button, buttons, WebCore::DoublePoint(position), WebCore::DoublePoint(globalPosition), deltaX, deltaY, deltaZ, clickCount, force, WebMouseEventSyntheticClickType::NoTap, eventNumber, menuTypeForEvent, GestureWasCancelled::No, unadjustedMovementDelta);
+    return WebMouseEvent({ type, modifiers, timestamp, WTF::UUID::createVersion4() }, button, buttons, WebCore::DoublePoint(position), WebCore::DoublePoint(globalPosition), deltaX, deltaY, deltaZ, clickCount, force, inputSource, WebMouseEventSyntheticClickType::NoTap, eventNumber, menuTypeForEvent, GestureWasCancelled::No, unadjustedMovementDelta);
 }
 
 WebWheelEvent WebEventFactory::createWebWheelEvent(NSEvent *event, NSView *windowView)

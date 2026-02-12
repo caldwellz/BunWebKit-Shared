@@ -65,13 +65,11 @@ public:
 
     void setInnerNonSharedNode(Node*);
     Node* innerNonSharedNode() const { return m_innerNonSharedNode.get(); }
-    WEBCORE_EXPORT RefPtr<Node> protectedInnerNonSharedNode() const;
 
     WEBCORE_EXPORT Element* innerNonSharedElement() const;
 
     void setURLElement(Element*);
     Element* URLElement() const { return m_innerURLElement.get(); }
-    WEBCORE_EXPORT RefPtr<Element> protectedURLElement() const;
 
     void setScrollbar(RefPtr<Scrollbar>&&);
     Scrollbar* scrollbar() const { return m_scrollbar.get(); }
@@ -172,9 +170,7 @@ public:
     Vector<String> dictationAlternatives() const;
 
     Node* targetNode() const { return innerNode(); }
-    WEBCORE_EXPORT RefPtr<Node> protectedTargetNode() const;
     WEBCORE_EXPORT Element* targetElement() const;
-    RefPtr<Element> protectedTargetElement() const;
 
 private:
     NodeSet& mutableListBasedTestResult(); // See above.

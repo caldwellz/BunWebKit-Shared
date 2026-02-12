@@ -389,7 +389,7 @@ std::optional<AXTextMarkerRange> AXTextMarkerRange::intersectionWith(const AXTex
     }
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
-    if (AXObjectCache::useAXThreadTextApis()) {
+    if (!isMainThread()) {
         if (!*this || !other)
             return { };
 
@@ -455,13 +455,13 @@ std::optional<AXTextMarkerRange> AXTextMarkerRange::intersectionWith(const AXTex
     }
 #endif // ENABLE(ACCESSIBILITY_ISOLATED_TREE)
 
-    return Accessibility::retrieveValueFromMainThread<std::optional<AXTextMarkerRange>>([this, &other] () -> std::optional<AXTextMarkerRange> {
-        auto intersection = WebCore::intersection(*this, other);
-        if (intersection.isNull())
-            return std::nullopt;
+    // We handle the !isMainThread() case above.
+    AX_ASSERT(isMainThread());
 
-        return { AXTextMarkerRange(intersection) };
-    });
+    auto intersection = WebCore::intersection(*this, other);
+    if (intersection.isNull())
+        return std::nullopt;
+    return { AXTextMarkerRange(intersection) };
 }
 
 String AXTextMarkerRange::debugDescription() const
@@ -496,22 +496,16 @@ std::partial_ordering operator<=>(const AXTextMarker& marker1, const AXTextMarke
     if (otherObject && !marker2.offset() && otherObject->isRootWebArea())
         return std::partial_ordering::greater;
 
-#if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
-    if (AXObjectCache::useAXThreadTextApis())
+    if (!isMainThread())
         return object && otherObject ? object->partialOrder(*otherObject) : std::partial_ordering::unordered;
-#endif // ENABLE(ACCESSIBILITY_ISOLATED_TREE)
 
-    auto result = std::partial_ordering::unordered;
-    Accessibility::performFunctionOnMainThreadAndWait([&] () {
-        auto startBoundaryPoint = marker1.boundaryPoint();
-        if (!startBoundaryPoint)
-            return;
-        auto endBoundaryPoint = marker2.boundaryPoint();
-        if (!endBoundaryPoint)
-            return;
-        result = treeOrder<ComposedTree>(*startBoundaryPoint, *endBoundaryPoint);
-    });
-    return result;
+    std::optional startBoundaryPoint = marker1.boundaryPoint();
+    if (!startBoundaryPoint)
+        return std::partial_ordering::unordered;
+    std::optional endBoundaryPoint = marker2.boundaryPoint();
+    if (!endBoundaryPoint)
+        return std::partial_ordering::unordered;
+    return treeOrder<ComposedTree>(*startBoundaryPoint, *endBoundaryPoint);
 }
 
 bool AXTextMarkerRange::isConfinedTo(std::optional<AXID> objectID) const
@@ -558,7 +552,7 @@ String AXTextMarkerRange::toString(IncludeListMarkerText includeListMarkerText, 
 #endif // !ENABLE(ACCESSIBILITY_ISOLATED_TREE)
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
-    if (!isMainThread() && AXObjectCache::useAXThreadTextApis()) {
+    if (!isMainThread()) {
         // Traverses from m_start to m_end, collecting all text along the way.
         auto start = m_start.toTextRunMarker();
         if (!start.isValid())
@@ -611,40 +605,36 @@ String AXTextMarkerRange::toString(IncludeListMarkerText includeListMarkerText, 
     }
 #endif // ENABLE(ACCESSIBILITY_ISOLATED_TREE)
 
-    return Accessibility::retrieveValueFromMainThread<String>([this, includeImageAltText] () -> String {
+    std::optional range = simpleRange();
+    if (!range)
+        return { };
 
-        auto range = simpleRange();
-        if (!range)
-            return { };
+    OptionSet<TextIteratorBehavior> behaviors = { TextIteratorBehavior::IgnoresFullSizeKana };
+    if (includeImageAltText == IncludeImageAltText::Yes)
+        behaviors.add(TextIteratorBehavior::EmitsImageAltText);
 
-        OptionSet<TextIteratorBehavior> behaviors = { TextIteratorBehavior::IgnoresFullSizeKana };
-        if (includeImageAltText == IncludeImageAltText::Yes)
-            behaviors.add(TextIteratorBehavior::EmitsImageAltText);
+    TextIterator it = TextIterator(*range, behaviors);
+    if (it.atEnd())
+        return { };
 
-        TextIterator it = TextIterator(*range, behaviors);
-        if (it.atEnd())
-            return { };
-
-        StringBuilder builder;
-        for (; !it.atEnd(); it.advance()) {
-            RefPtr node = it.node();
-            // non-zero length means textual node, zero length means replaced node (AKA "attachments" in AX)
-            if (it.text().length()) {
-                // If this is in a list item, we need to add the text for the list marker
-                // because a RenderListMarker does not have a Node equivalent and thus does not appear
-                // when iterating text.
-                // Don't add list marker text for new line character.
-                if (it.text().length() != 1 || !isASCIIWhitespace(it.text()[0]))
-                    builder.append(AccessibilityObject::listMarkerTextForNodeAndPosition(node.get(), makeDeprecatedLegacyPosition(it.range().start)));
-                it.appendTextToStringBuilder(builder);
-            } else {
-                if (AccessibilityObject::replacedNodeNeedsCharacter(*node))
-                    builder.append(objectReplacementCharacter);
-            }
+    StringBuilder builder;
+    for (; !it.atEnd(); it.advance()) {
+        RefPtr node = it.node();
+        // non-zero length means textual node, zero length means replaced node (AKA "attachments" in AX)
+        if (it.text().length()) {
+            // If this is in a list item, we need to add the text for the list marker
+            // because a RenderListMarker does not have a Node equivalent and thus does not appear
+            // when iterating text.
+            // Don't add list marker text for new line character.
+            if (it.text().length() != 1 || !isASCIIWhitespace(it.text()[0]))
+                builder.append(AccessibilityObject::listMarkerTextForNodeAndPosition(node.get(), makeDeprecatedLegacyPosition(it.range().start)));
+            it.appendTextToStringBuilder(builder);
+        } else {
+            if (AccessibilityObject::replacedNodeNeedsCharacter(*node))
+                builder.append(objectReplacementCharacter);
         }
-
-        return builder.toString().isolatedCopy();
-    });
+    }
+    return builder.toString().isolatedCopy();
 }
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)

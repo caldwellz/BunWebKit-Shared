@@ -166,7 +166,7 @@ Ref<HTMLTableRowsCollection> HTMLTableRowsCollection::create(HTMLTableElement& t
 
 Element* HTMLTableRowsCollection::customElementAfter(Element* previous) const
 {
-    return rowAfter(protectedTableElement().get(), downcast<HTMLTableRowElement>(previous));
+    return rowAfter(protect(tableElement()), downcast<HTMLTableRowElement>(previous));
 }
 
 }

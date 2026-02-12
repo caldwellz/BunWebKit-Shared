@@ -134,14 +134,14 @@ struct PermissionRequest {
 
     _diskDispatchQueue = adoptOSObject(dispatch_queue_create("com.apple.WebKit.WKWebGeolocationPolicyDecider", DISPATCH_QUEUE_SERIAL));
 
-    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenterSingleton(), self, clearGeolocationCache, CLAppResetChangedNotification, NULL, CFNotificationSuspensionBehaviorCoalesce);
+    CFNotificationCenterAddObserver(CFNotificationCenterGetDarwinNotifyCenterSingleton(), self, clearGeolocationCache, protect(CLAppResetChangedNotification), NULL, CFNotificationSuspensionBehaviorCoalesce);
 
     return self;
 }
 
 - (void)dealloc
 {
-    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenterSingleton(), self, CLAppResetChangedNotification, NULL);
+    CFNotificationCenterRemoveObserver(CFNotificationCenterGetDarwinNotifyCenterSingleton(), self, protect(CLAppResetChangedNotification), NULL);
     [super dealloc];
 }
 
@@ -244,7 +244,7 @@ struct PermissionRequest {
 {
     static NSString *sSiteFile = nil;
     if (!sSiteFile)
-        sSiteFile = [[self _siteFileInContainerDirectory:NSHomeDirectory() creatingIntermediateDirectoriesIfNecessary:YES] retain];
+        sSiteFile = [[self _siteFileInContainerDirectory:protect(NSHomeDirectory()).get() creatingIntermediateDirectoriesIfNecessary:YES] retain];
     return sSiteFile;
 }
 

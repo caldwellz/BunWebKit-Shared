@@ -134,7 +134,7 @@ void SVGGeometryElement::attributeChanged(const QualifiedName& name, const AtomS
         Ref pathLength = m_pathLength;
         pathLength->setBaseValInternal(newValue.toFloat());
         if (pathLength->baseVal() < 0)
-            protect(document())->checkedSVGExtensions()->reportError("A negative value for path attribute <pathLength> is not allowed"_s);
+            protect(protect(document())->svgExtensions())->reportError("A negative value for path attribute <pathLength> is not allowed"_s);
     }
 
     SVGGraphicsElement::attributeChanged(name, oldValue, newValue, attributeModificationReason);

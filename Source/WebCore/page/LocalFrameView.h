@@ -110,10 +110,8 @@ public:
     void writeRenderTreeAsText(TextStream&, OptionSet<RenderAsTextFlag>) override;
 
     WEBCORE_EXPORT LocalFrame& frame() const final;
-    Ref<LocalFrame> protectedFrame() const;
 
     WEBCORE_EXPORT RenderView* renderView() const;
-    WEBCORE_EXPORT CheckedPtr<RenderView> checkedRenderView() const;
 
     int mapFromLayoutToCSSUnits(LayoutUnit) const;
     LayoutUnit mapFromCSSToLayoutUnits(int) const;
@@ -130,8 +128,6 @@ public:
 
     const LocalFrameViewLayoutContext& layoutContext() const { return m_layoutContext; }
     LocalFrameViewLayoutContext& layoutContext() { return m_layoutContext; }
-    CheckedRef<const LocalFrameViewLayoutContext> checkedLayoutContext() const;
-    CheckedRef<LocalFrameViewLayoutContext> checkedLayoutContext();
 
     WEBCORE_EXPORT bool didFirstLayout() const;
 
@@ -322,7 +318,6 @@ public:
 
     // These are in document coordinates, unaffected by page scale (but affected by zooming).
     WEBCORE_EXPORT LayoutRect layoutViewportRect() const final;
-    void updateLayoutViewportRect();
     WEBCORE_EXPORT LayoutRect visualViewportRect() const;
 
     LayoutRect layoutViewportRectIncludingObscuredInsets() const;
@@ -506,6 +501,8 @@ public:
     void maintainScrollPositionAtScrollToTextFragmentRange(SimpleRange&);
     WEBCORE_EXPORT void scrollElementToRect(const Element&, const IntRect&);
 
+    ScrollableArea* scrollableAreaForNode(ContainerNode&);
+
     // Coordinate systems:
     //
     // "View"
@@ -549,6 +546,12 @@ public:
     DoublePoint documentToClientPoint(DoublePoint) const;
     WEBCORE_EXPORT FloatRect clientToDocumentRect(FloatRect) const;
     WEBCORE_EXPORT FloatPoint clientToDocumentPoint(FloatPoint) const;
+
+    WEBCORE_EXPORT FloatPoint absoluteToLayoutViewportPoint(FloatPoint) const;
+    FloatPoint layoutViewportToAbsolutePoint(FloatPoint) const;
+
+    WEBCORE_EXPORT FloatRect absoluteToLayoutViewportRect(FloatRect) const;
+    FloatRect layoutViewportToAbsoluteRect(FloatRect) const;
 
     // Unlike client coordinates, layout viewport coordinates are affected by page zoom.
     WEBCORE_EXPORT FloatRect clientToLayoutViewportRect(FloatRect) const;
@@ -736,9 +739,16 @@ public:
     ScrollbarWidth scrollbarWidthStyle() const final;
     std::optional<ScrollbarColor> scrollbarColorStyle() const final;
 
+    // overflow:hidden scrollable areas can participate in anchoring, so they need their own set.
+    void addScrollableAreaForScrollAnchoring(ScrollableArea&);
+    void removeScrollableAreaForScrollAnchoring(ScrollableArea&);
+    const ScrollableAreaSet* scrollableAreasForScrollAnchoring() const { return m_anchoringScrollableAreas.get(); }
+
     void dequeueScrollableAreaForScrollAnchoringUpdate(ScrollableArea&);
     void queueScrollableAreaForScrollAnchoringUpdate(ScrollableArea&);
-    void updateScrollAnchoringElementsForScrollableAreas();
+    void clearScrollAnchorsInScrollableAreas();
+
+    void updateScrollAnchoringBeforeLayoutForScrollableAreas();
     void adjustScrollAnchoringPositionForScrollableAreas();
     ScrollAnchoringController* scrollAnchoringController() const final { return m_scrollAnchoringController.get(); }
 
@@ -1062,6 +1072,7 @@ private:
 
     std::unique_ptr<ScrollableAreaSet> m_scrollableAreas;
     std::unique_ptr<ScrollableAreaSet> m_scrollableAreasForAnimatedScroll;
+    std::unique_ptr<ScrollableAreaSet> m_anchoringScrollableAreas;
     std::unique_ptr<SingleThreadWeakHashSet<RenderLayerModelObject>> m_viewportConstrainedObjects;
     mutable std::optional<bool> m_hasAnchorPositionedViewportConstrainedObjects;
 

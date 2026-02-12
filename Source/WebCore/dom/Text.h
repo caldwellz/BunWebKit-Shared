@@ -54,7 +54,6 @@ public:
     bool canContainRangeEndPoint() const final { return true; }
 
     RenderText* renderer() const;
-    CheckedPtr<RenderText> checkedRenderer() const;
 
     void updateRendererAfterContentChange(unsigned offsetOfReplacedData, unsigned lengthOfReplacedData);
 

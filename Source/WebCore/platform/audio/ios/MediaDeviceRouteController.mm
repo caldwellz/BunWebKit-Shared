@@ -28,6 +28,7 @@
 
 #if ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
 
+#import "MediaDeviceRoute.h"
 #import "MediaStrategy.h"
 #import "PlatformStrategies.h"
 #import <WebKitAdditions/MediaDeviceRouteControllerAdditions.mm>
@@ -44,13 +45,12 @@ MediaDeviceRouteController& MediaDeviceRouteController::singleton()
 
 MediaDeviceRouteController::MediaDeviceRouteController()
 #if HAVE(AVROUTING_FRAMEWORK)
-    : m_controller { adoptNS([[WebMediaDeviceRouteController alloc] init]) }
-    , m_platformController { [WebMediaDevicePlatformRouteControllerClass sharedRoutingSystemController] }
+    : m_routeObserver { adoptNS([[WebMediaDeviceRouteObserver alloc] init]) }
+    , m_platformController { [WebMediaDevicePlatformRouteControllerClass sharedController] }
 #endif
 {
 #if HAVE(AVROUTING_FRAMEWORK)
-    ASSERT([m_platformController systemDelegate] == nil);
-    [m_platformController setSystemDelegate:m_controller.get()];
+    [m_platformController addObserver:m_routeObserver.get()];
 #endif
 }
 

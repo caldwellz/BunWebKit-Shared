@@ -183,7 +183,7 @@ void HTMLCanvasElement::attributeChanged(const QualifiedName& name, const AtomSt
 RenderPtr<RenderElement> HTMLCanvasElement::createElementRenderer(RenderStyle&& style, const RenderTreePosition& insertionPosition)
 {
     RefPtr frame = document().frame();
-    if (frame && frame->checkedScript()->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
+    if (frame && protect(frame->script())->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
         return createRenderer<RenderHTMLCanvas>(*this, WTF::move(style));
     return HTMLElement::createElementRenderer(WTF::move(style), insertionPosition);
 }
@@ -191,7 +191,7 @@ RenderPtr<RenderElement> HTMLCanvasElement::createElementRenderer(RenderStyle&& 
 bool HTMLCanvasElement::isReplaced(const RenderStyle*) const
 {
     RefPtr frame = document().frame();
-    return frame && frame->checkedScript()->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript);
+    return frame && protect(frame->script())->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript);
 }
 
 bool HTMLCanvasElement::canContainRangeEndPoint() const
@@ -241,13 +241,13 @@ ExceptionOr<std::optional<RenderingContext>> HTMLCanvasElement::getContext(JSC::
         if (RefPtr context = dynamicDowncast<CanvasRenderingContext2D>(*m_context)) {
             if (!is2dType(contextId))
                 return std::optional<RenderingContext> { std::nullopt };
-            return std::optional<RenderingContext> { WTF::move(context) };
+            return std::optional<RenderingContext> { context.releaseNonNull() };
         }
 
         if (RefPtr context = dynamicDowncast<ImageBitmapRenderingContext>(*m_context)) {
             if (!isBitmapRendererType(contextId))
                 return std::optional<RenderingContext> { std::nullopt };
-            return std::optional<RenderingContext> { WTF::move(context) };
+            return std::optional<RenderingContext> { context.releaseNonNull() };
         }
 
 #if ENABLE(WEBGL)
@@ -258,15 +258,15 @@ ExceptionOr<std::optional<RenderingContext>> HTMLCanvasElement::getContext(JSC::
             if ((version == WebGLVersion::WebGL1) != m_context->isWebGL1())
                 return std::optional<RenderingContext> { std::nullopt };
             if (RefPtr context = dynamicDowncast<WebGLRenderingContext>(*m_context))
-                return std::optional<RenderingContext> { WTF::move(context) };
-            return std::optional<RenderingContext> { RefPtr { &downcast<WebGL2RenderingContext>(*m_context) } };
+                return std::optional<RenderingContext> { context.releaseNonNull() };
+            return std::optional<RenderingContext> { downcast<WebGL2RenderingContext>(*m_context) };
         }
 #endif
 
         if (RefPtr context = dynamicDowncast<GPUCanvasContext>(m_context.get())) {
             if (!isWebGPUType(contextId))
                 return { std::nullopt };
-            return { context };
+            return { context.releaseNonNull() };
         }
 
         ASSERT_NOT_REACHED();
@@ -284,7 +284,7 @@ ExceptionOr<std::optional<RenderingContext>> HTMLCanvasElement::getContext(JSC::
         RefPtr context = createContext2d(contextId, settings.releaseReturnValue());
         if (!context)
             return std::optional<RenderingContext> { std::nullopt };
-        return std::optional<RenderingContext> { WTF::move(context) };
+        return std::optional<RenderingContext> { context.releaseNonNull() };
     }
 
     if (isBitmapRendererType(contextId)) {
@@ -298,7 +298,7 @@ ExceptionOr<std::optional<RenderingContext>> HTMLCanvasElement::getContext(JSC::
         RefPtr context = createContextBitmapRenderer(contextId, settings.releaseReturnValue());
         if (!context)
             return std::optional<RenderingContext> { std::nullopt };
-        return std::optional<RenderingContext> { WTF::move(context) };
+        return std::optional<RenderingContext> { context.releaseNonNull() };
     }
 
 #if ENABLE(WEBGL)
@@ -314,10 +314,10 @@ ExceptionOr<std::optional<RenderingContext>> HTMLCanvasElement::getContext(JSC::
         if (!context)
             return std::optional<RenderingContext> { std::nullopt };
 
-        if (RefPtr webGLContext = dynamicDowncast<WebGLRenderingContext>(*context))
-            return { WTF::move(webGLContext) };
+        if (RefPtr webGLContext = dynamicDowncast<WebGLRenderingContext>(context))
+            return { webGLContext.releaseNonNull() };
 
-        return std::optional<RenderingContext> { downcast<WebGL2RenderingContext>(WTF::move(context)) };
+        return std::optional<RenderingContext> { downcast<WebGL2RenderingContext>(context.releaseNonNull()) };
     }
 #endif
 
@@ -330,7 +330,7 @@ ExceptionOr<std::optional<RenderingContext>> HTMLCanvasElement::getContext(JSC::
         RefPtr context = createContextWebGPU(contextId, gpu.get());
         if (!context)
             return { std::nullopt };
-        return { context };
+        return { context.releaseNonNull() };
     }
 
     return std::optional<RenderingContext> { std::nullopt };
@@ -733,7 +733,7 @@ ExceptionOr<UncachedString> HTMLCanvasElement::toDataURL(const String& mimeType,
     if (auto url = document->quirks().advancedPrivacyProtectionSubstituteDataURLForScriptWithFeatures(lastFillText(), width(), height()); !url.isNull()) {
         RELEASE_LOG(FingerprintingMitigation, "HTMLCanvasElement::toDataURL: Quirking returned URL for identified fingerprinting script");
         auto consoleMessage = "Detected fingerprinting script. Quirking value returned from HTMLCanvasElement.toDataURL()"_s;
-        protectedCanvasBaseScriptExecutionContext()->addConsoleMessage(MessageSource::Rendering, MessageLevel::Info, consoleMessage);
+        protect(canvasBaseScriptExecutionContext())->addConsoleMessage(MessageSource::Rendering, MessageLevel::Info, consoleMessage);
         return UncachedString { url };
     }
     RefPtr buffer = makeRenderingResultsAvailable();

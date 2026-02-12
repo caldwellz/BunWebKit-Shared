@@ -42,11 +42,6 @@
     RetainPtr<id <WKWebProcessPlugIn>> _principalClassInstance;
 }
 
-static Ref<WebKit::InjectedBundle> protectedBundle(WKWebProcessPlugInController *controller)
-{
-    return *controller->_bundle;
-}
-
 - (void)dealloc
 {
     if (WebCoreObjCScheduleDeallocateOnMainRunLoop(WKWebProcessPlugInController.class, self))
@@ -93,12 +88,12 @@ static void setUpBundleClient(WKWebProcessPlugInController *plugInController, We
     ASSERT(!_principalClassInstance);
     _principalClassInstance = principalClassInstance;
 
-    setUpBundleClient(self, protectedBundle(self));
+    setUpBundleClient(self, protect(*_bundle));
 }
 
 - (id)parameters
 {
-    return protectedBundle(self)->bundleParameters();
+    return protect(*_bundle)->bundleParameters();
 }
 
 static Ref<API::Array> createWKArray(NSArray *array)
@@ -118,7 +113,7 @@ static Ref<API::Array> createWKArray(NSArray *array)
 - (void)extendClassesForParameterCoder:(NSArray *)classes
 {
     auto classList = createWKArray(classes);
-    protectedBundle(self)->extendClassesForParameterCoder(classList.get());
+    protect(*_bundle)->extendClassesForParameterCoder(classList.get());
 }
 
 #pragma mark WKObject protocol implementation
@@ -134,7 +129,7 @@ static Ref<API::Array> createWKArray(NSArray *array)
 
 - (WKBundleRef)_bundleRef
 {
-    return toAPI(protectedBundle(self).ptr());
+    return toAPI(protect(*_bundle).ptr());
 }
 
 @end

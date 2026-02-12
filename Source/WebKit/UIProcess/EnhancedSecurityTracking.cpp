@@ -28,6 +28,7 @@
 #include "EnhancedSecurityTracking.h"
 
 #include <WebCore/IPAddressSpace.h>
+#include <WebCore/SecurityOrigin.h>
 #include <wtf/Condition.h>
 #include <wtf/Lock.h>
 
@@ -168,7 +169,8 @@ bool EnhancedSecurityTracking::enableIfRequired(const API::Navigation& navigatio
 {
     auto currentRequestURL = navigation.currentRequest().url();
 
-    if (currentRequestURL.protocolIs("http"_s) && !WebCore::isLocalIPAddressSpace(currentRequestURL)) {
+    if (currentRequestURL.protocolIs("http"_s)
+        && !SecurityOrigin::isLocalHostOrLoopbackIPAddress(currentRequestURL.host())) {
         enableFor(EnhancedSecurityReason::InsecureProvisional, navigation);
         return true;
     }

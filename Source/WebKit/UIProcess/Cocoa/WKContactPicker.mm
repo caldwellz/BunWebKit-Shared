@@ -83,7 +83,7 @@ SOFT_LINK_CLASS(ContactsUI, CNContactPickerViewController)
 #if HAVE(CNCONTACTPICKERVIEWCONTROLLER)
 - (void)contactPickerDidCancel:(CNContactPickerViewController *)picker
 {
-    [_contactPickerDelegate contactPickerDidCancel:picker];
+    [_contactPickerDelegate.get() contactPickerDidCancel:picker];
 }
 #endif
 
@@ -97,7 +97,7 @@ SOFT_LINK_CLASS(ContactsUI, CNContactPickerViewController)
 #if HAVE(CNCONTACTPICKERVIEWCONTROLLER)
 - (void)contactPicker:(CNContactPickerViewController *)picker didSelectContact:(CNContact *)contact
 {
-    [_contactPickerDelegate contactPicker:picker didSelectContact:contact];
+    [_contactPickerDelegate.get() contactPicker:picker didSelectContact:contact];
 }
 #endif
 
@@ -111,7 +111,7 @@ SOFT_LINK_CLASS(ContactsUI, CNContactPickerViewController)
 #if HAVE(CNCONTACTPICKERVIEWCONTROLLER)
 - (void)contactPicker:(CNContactPickerViewController *)picker didSelectContacts:(NSArray<CNContact*> *)contacts
 {
-    [_contactPickerDelegate contactPicker:picker didSelectContacts:contacts];
+    [_contactPickerDelegate.get() contactPicker:picker didSelectContacts:contacts];
 }
 #endif
 
@@ -170,7 +170,7 @@ SOFT_LINK_CLASS(ContactsUI, CNContactPickerViewController)
     [_contactPickerViewController setDelegate:_contactPickerDelegate.get()];
     [_contactPickerViewController setPrompt:requestData.url.createNSString().get()];
 
-    auto presentationViewController = [_webView _wk_viewControllerForFullScreenPresentation];
+    RetainPtr presentationViewController = [_webView.get() _wk_viewControllerForFullScreenPresentation];
 #if PLATFORM(VISION)
     if (RetainPtr webView = _webView.get())
         [webView _page]->dispatchWillPresentModalUI();

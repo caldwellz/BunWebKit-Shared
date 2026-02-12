@@ -69,7 +69,7 @@ String makeLogMessage(const URL&, ScriptTrackingPrivacyCategory);
 ASCIILiteral description(ScriptTrackingPrivacyCategory);
 WEBCORE_EXPORT ScriptTrackingPrivacyFlag scriptCategoryAsFlag(ScriptTrackingPrivacyCategory);
 
-bool shouldEnableScriptTrackingPrivacy(ScriptTrackingPrivacyCategory, OptionSet<AdvancedPrivacyProtections>);
+bool shouldEnableScriptTrackingPrivacy(ScriptTrackingPrivacyCategory, OptionSet<AdvancedPrivacyProtections>, bool needsConsistentPrivacy = false);
 
 } // namespace WebCore
 

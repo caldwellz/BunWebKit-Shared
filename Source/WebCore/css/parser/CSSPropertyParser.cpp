@@ -271,7 +271,7 @@ static bool consumeInternalAutoBaseFunction(CSSParserTokenRange& range, CSSPrope
         const auto& autoProperty = autoProperties[index];
         const auto& baseProperty = baseProperties[index];
 
-        Ref value = CSSFunctionValue::create(CSSValueInternalAutoBase, autoProperty.protectedValue(), baseProperty.protectedValue());
+        Ref value = CSSFunctionValue::create(CSSValueInternalAutoBase, protect(*autoProperty.value()), protect(*baseProperty.value()));
         result.addProperty(CSSProperty(autoProperty.metadata(), WTF::move(value)));
     }
 

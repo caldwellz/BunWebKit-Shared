@@ -82,7 +82,7 @@ void WakeLock::request(WakeLockType lockType, Ref<DeferredPromise>&& promise)
                 permission = PermissionState::Denied;
         } else if (*permission == PermissionState::Denied)
             m_wasPreviouslyAuthorizedDueToTransientActivation = false;
-        document->checkedEventLoop()->queueTask(TaskSource::ScreenWakelock, [protectedThis = WTF::move(protectedThis), document = WTF::move(document), promise = WTF::move(promise), lockType, permission]() mutable {
+        protect(document->eventLoop())->queueTask(TaskSource::ScreenWakelock, [protectedThis = WTF::move(protectedThis), document = WTF::move(document), promise = WTF::move(promise), lockType, permission]() mutable {
             if (permission == PermissionState::Denied) {
                 promise->reject(Exception { ExceptionCode::NotAllowedError, "Permission was denied"_s });
                 return;

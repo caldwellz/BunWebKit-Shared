@@ -91,14 +91,21 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
     FunctionCodeIndex toCodeIndex(FunctionSpaceIndex index) const { ASSERT(importFunctionCount() <= index && index < functionIndexSpaceSize()); return FunctionCodeIndex(index - importFunctionCount()); }
     FunctionSpaceIndex toSpaceIndex(FunctionCodeIndex index) const { ASSERT(index < internalFunctionCount()); return FunctionSpaceIndex(index + importFunctionCount()); }
 
-    // Currently, our wasm implementation allows only one memory.
-    // If we need to remove this limitation, we would have MemoryInformation in the Vectors.
-    uint32_t memoryCount() const { return memory ? 1 : 0; }
+    // FIXME(wasm-multimemory): delete this method by the time multimemory is finished:
+    // it will expose code that assumes there is only one memory
+    const MemoryInformation& theOnlyMemory() const
+    {
+        RELEASE_ASSERT(memories.size() > 0);
+        return memories[0];
+    }
+
+    uint32_t memoryCount() const { return memories.size(); }
     uint32_t tableCount() const { return tables.size(); }
     uint32_t elementCount() const { return elements.size(); }
     uint32_t globalCount() const { return globals.size(); }
     uint32_t dataSegmentsCount() const { return numberOfDataSegments.value_or(0); }
 
+    const MemoryInformation& memory(unsigned index) const { return memories[index]; }
     const TableInformation& table(unsigned index) const { return tables[index]; }
     const GlobalInformation& global(unsigned index) const { return globals[index]; }
 
@@ -155,7 +162,15 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
     uint32_t typeCount() const { return typeSignatures.size(); }
 
     bool hasGCObjectTypes() const { return m_hasGCObjectTypes; }
-    bool hasMemoryImport() const { return memory.isImport(); }
+
+    bool hasMemoryImport() const
+    {
+        for (auto& m : memories) {
+            if (m.isImport())
+                return true;
+        }
+        return false;
+    }
 
     BranchHint getBranchHint(uint32_t functionOffset, uint32_t branchOffset) const
     {
@@ -190,7 +205,7 @@ struct ModuleInformation final : public ThreadSafeRefCounted<ModuleInformation> 
     Vector<Ref<TypeDefinition>> typeSignatures;
     Vector<Ref<TypeDefinition>> recursionGroups;
 
-    MemoryInformation memory;
+    Vector<MemoryInformation> memories;
     bool m_hasGCObjectTypes { false };
     mutable Atomic<bool> m_usesLegacyExceptions { false };
     mutable Atomic<bool> m_usesModernExceptions { false };

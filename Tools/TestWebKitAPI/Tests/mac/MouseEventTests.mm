@@ -35,6 +35,7 @@
 #import "TestWKWebView.h"
 #import <WebKit/WKProcessPoolPrivate.h>
 #import <WebKit/WKWebViewConfigurationPrivate.h>
+#import <WebKit/WKWebViewPrivate.h>
 #import <WebKit/_WKProcessPoolConfiguration.h>
 #import <wtf/RunLoop.h>
 #import <wtf/cocoa/TypeCastsCocoa.h>
@@ -400,6 +401,52 @@ TEST(MouseEventTests, WindowChangeShouldNotCauseMouseLeaveEvent)
 {
     runDispatchMouseLeaveEventOnWindowMoveTest(NSMakePoint(250, 50), NSMakeRect(0, 0, 400, 400), NSMakeRect(100, 0, 400, 400), 0);
 }
+
+TEST(MouseEventTests, AutoscrollOnMouseDragBelowWindow)
+{
+    auto webView = adoptNS([[TestWKWebView alloc] initWithFrame:NSMakeRect(0, 0, 400, 400)]);
+    [webView synchronouslyLoadHTMLString:@"<!DOCTYPE html>"
+        "<html>"
+        "<head>"
+        "<style>"
+        "    body, html { margin: 0; width: 100%; height: 100%; }"
+        "    .tall { height: 5000px; line-height: 1.5; }"
+        "</style>"
+        "</head>"
+        "<body>"
+        "<div class='tall'>Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "Line of text. Line of text. Line of text. Line of text. Line of text. "
+        "</div>"
+        "</body>"
+        "</html>"];
+
+    EXPECT_EQ([[webView stringByEvaluatingJavaScript:@"window.scrollY"] intValue], 0);
+
+    ClassMethodSwizzler swizzler([NSEvent class], @selector(pressedMouseButtons), imp_implementationWithBlock(^NSUInteger(id) {
+        return 1 << 0; // Left button
+    }));
+
+    [webView mouseEnterAtPoint:NSMakePoint(200, 380)];
+    [webView mouseDownAtPoint:NSMakePoint(200, 380) simulatePressure:NO];
+    [webView waitForPendingMouseEvents];
+
+    RetainPtr exitEvent = [NSEvent enterExitEventWithType:NSEventTypeMouseExited location:NSMakePoint(200, -50) modifierFlags:0 timestamp:[webView eventTimestamp] windowNumber:[[webView window] windowNumber] context:nil eventNumber:0 trackingNumber:1 userData:nil];
+    [webView _simulateMouseExit:exitEvent.get()];
+
+    Util::runFor(100_ms);
+
+    int scrollY = [[webView stringByEvaluatingJavaScript:@"window.scrollY"] intValue];
+    EXPECT_GT(scrollY, 0);
+}
+
 } // namespace TestWebKitAPI
 
 #endif // PLATFORM(MAC)

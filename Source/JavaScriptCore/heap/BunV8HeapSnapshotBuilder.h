@@ -37,9 +37,11 @@ public:
     // V8 snapshot generation
     void buildSnapshot();
     String json();
+    Vector<uint8_t> jsonBytes();
 
 private:
     String generateV8HeapSnapshot();
+    Vector<uint8_t> generateV8HeapSnapshotBytes();
     unsigned analyzeNodeInternal(JSCell*, void* optionalHashId = nullptr);
 
     struct TraceLocation {

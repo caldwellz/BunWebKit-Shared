@@ -568,7 +568,7 @@ void LineLayout::updateRenderTreePositions(const Vector<LineAdjustment>& lineAdj
 
     if (m_inlineContent) {
         for (auto& box : m_inlineContent->displayContent().boxes) {
-            if (box.isInlineBox() || box.isText())
+            if (box.isInlineBox() || box.isTextOrSoftLineBreak())
                 continue;
 
             auto& layoutBox = box.layoutBox();
@@ -1353,7 +1353,7 @@ bool LineLayout::hitTest(const HitTestRequest& request, HitTestResult& result, c
             continue;
         
         renderer.updateHitTestResult(result, flow().flipForWritingMode(locationInContainer.point() - toLayoutSize(accumulatedOffset)));
-        if (result.addNodeToListBasedTestResult(renderer.protectedNodeForHitTest().get(), request, locationInContainer, boxRect) == HitTestProgress::Stop)
+        if (result.addNodeToListBasedTestResult(protect(renderer.nodeForHitTest()).get(), request, locationInContainer, boxRect) == HitTestProgress::Stop)
             return true;
     }
 

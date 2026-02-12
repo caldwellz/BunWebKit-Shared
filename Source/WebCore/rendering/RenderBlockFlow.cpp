@@ -674,7 +674,7 @@ void RenderBlockFlow::layoutBlock(RelayoutChildren relayoutChildren, LayoutUnit 
         contentArea.shiftMaxYEdgeTo(afterPaddingEdge - paddingAfter());
     else
         contentArea.shiftMaxXEdgeTo(afterPaddingEdge - paddingAfter());
-    computeOverflow(contentArea);
+    computeOverflow(contentArea, isHorizontalWritingMode() ? ComputeOverflowOptions::MarginsExtendContentAreaX : ComputeOverflowOptions::MarginsExtendContentAreaY);
 
     auto* state = view().frameView().layoutContext().layoutState();
     if (state && state->pageLogicalHeight())
@@ -3758,7 +3758,7 @@ PositionWithAffinity RenderBlockFlow::positionForPointWithInlineChildren(const L
         }
     }
 
-    bool moveCaretToBoundary = protect(protectedFrame()->editor())->behavior().shouldMoveCaretToHorizontalBoundaryWhenPastTopOrBottom();
+    bool moveCaretToBoundary = protect(protect(frame())->editor())->behavior().shouldMoveCaretToHorizontalBoundaryWhenPastTopOrBottom();
 
     if (!moveCaretToBoundary && !closestBox && lastLineBoxWithChildren) {
         // y coordinate is below last root line box, pretend we hit it
@@ -3922,7 +3922,7 @@ void RenderBlockFlow::invalidateLineLayout(InvalidationReason invalidationReason
     switch (invalidationReason) {
     case InvalidationReason::InternalMove:
         if (AXObjectCache* cache = protect(document())->existingAXObjectCache())
-            cache->deferRecomputeIsIgnored(protectedElement().get());
+            cache->deferRecomputeIsIgnored(protect(element()).get());
         break;
     case InvalidationReason::ContentChange: {
         // Since we eagerly remove the display content here, repaints issued between this invalidation (triggered by style change/content mutation) and the subsequent layout would produce empty rects.
@@ -3982,8 +3982,18 @@ bool RenderBlockFlow::layoutSimpleBlockContentInInline(MarginInfo& marginInfo)
             return false;
         }
 
-        auto logicalTop = blockRenderer->logicalTop();
-        marginInfo = layoutBlockChildFromInlineLayout(*blockRenderer, logicalTop, marginInfo).marginInfo;
+        auto borderBoxLogicalTop = blockRenderer->logicalTop();
+        auto marginBoxLogicalTop = borderBoxLogicalTop;
+
+        if (!marginInfo.canCollapseWithMarginBefore()) {
+            // Although this box is not expected to change position or size (since no self-layout is set),
+            // we treat layout as starting at the box's top margin to avoid confusion when the container performs layout on it.
+            // This logic is copied from estimateLogicalTopPosition.
+            auto marginValues = marginValuesForChild(*blockRenderer);
+            marginBoxLogicalTop -= std::max(marginInfo.positiveMargin(), marginValues.positiveMarginBefore()) - std::max(marginInfo.negativeMargin(), marginValues.negativeMarginBefore());
+        }
+
+        marginInfo = layoutBlockChildFromInlineLayout(*blockRenderer, marginBoxLogicalTop, marginInfo).marginInfo;
         auto shouldFallbackToNormalInlineLayout = [&] {
             if (logicalHeight != blockRenderer->logicalHeight())
                 return true;
@@ -3993,7 +4003,7 @@ bool RenderBlockFlow::layoutSimpleBlockContentInInline(MarginInfo& marginInfo)
         };
         if (shouldFallbackToNormalInlineLayout())
             return false;
-        blockRenderer->setLogicalTop(logicalTop);
+        blockRenderer->setLogicalTop(borderBoxLogicalTop);
     }
     inlineLayout()->updateOverflow();
     return true;
@@ -4059,13 +4069,16 @@ RenderBlockFlow::InlineContentStatus RenderBlockFlow::markInlineContentDirtyForL
 {
     auto contentNeedsNormalChildLayoutOnly = std::optional<bool> { };
     auto hasInFlowBlockLevelElement = false;
+    auto hasDirtyInFlowBlockLevelElement = false;
     auto hasSimpleOutOfFlowContentOnly = !hasLineIfEmpty();
     auto hasSimpleStaticPositionForInlineLevelOutOfFlowContentByStyle = hasSimpleStaticPositionForInlineLevelOutOfFlowChildrenByStyle(style());
 
     for (auto walker = InlineWalker(*this); !walker.atEnd(); walker.advance()) {
         auto& renderer = *walker.current();
         auto* box = dynamicDowncast<RenderBox>(renderer);
-        hasInFlowBlockLevelElement = hasInFlowBlockLevelElement || (box && box->isBlockLevelBox() && box->isInFlow());
+        auto isInFlowBlockLevelElement = box && box->isBlockLevelBox() && box->isInFlow();
+        hasInFlowBlockLevelElement |= isInFlowBlockLevelElement;
+        hasDirtyInFlowBlockLevelElement |= (isInFlowBlockLevelElement && box->needsLayout());
         auto childNeedsLayout = relayoutChildren == RelayoutChildren::Yes || (box && box->hasRelativeDimensions() && !box->isBlockLevelBox());
         auto childNeedsPreferredWidthComputation = relayoutChildren == RelayoutChildren::Yes && box && box->shouldInvalidatePreferredWidths();
         if (childNeedsLayout)
@@ -4124,7 +4137,7 @@ RenderBlockFlow::InlineContentStatus RenderBlockFlow::markInlineContentDirtyForL
             continue;
         }
     }
-    return { hasSimpleOutOfFlowContentOnly, hasInFlowBlockLevelElement ? contentNeedsNormalChildLayoutOnly : std::nullopt };
+    return { hasSimpleOutOfFlowContentOnly, hasDirtyInFlowBlockLevelElement, hasInFlowBlockLevelElement ? contentNeedsNormalChildLayoutOnly : std::nullopt };
 }
 
 std::optional<LayoutUnit> RenderBlockFlow::updateLineClampStateAndLogicalHeightAfterLayout()
@@ -4230,7 +4243,8 @@ void RenderBlockFlow::layoutInlineContent(RelayoutChildren relayoutChildren, Lay
     inlineLayout.updateFormattingContexGeometries(containingBlock() ? containingBlockLogicalWidthForContent() : LayoutUnit());
 
     auto marginInfo = MarginInfo { *this, MarginInfo::IgnoreScrollbarForAfterMargin::No };
-    auto partialRepaintRect = inlineLayout.layout(marginInfo, relayoutChildren == RelayoutChildren::Yes ? LayoutIntegration::LineLayout::ForceFullLayout::Yes : LayoutIntegration::LineLayout::ForceFullLayout::No);
+    auto shouldForceFullLayout = relayoutChildren == RelayoutChildren::Yes || inlineContentStatus.hasDirtyInFlowBlockLevelElement ? LayoutIntegration::LineLayout::ForceFullLayout::Yes : LayoutIntegration::LineLayout::ForceFullLayout::No;
+    auto partialRepaintRect = inlineLayout.layout(marginInfo, shouldForceFullLayout);
 
     auto contentBoxHeight = [&]() -> LayoutUnit {
         if (auto clampedContentHeight = updateLineClampStateAndLogicalHeightAfterLayout())
@@ -4435,7 +4449,7 @@ void RenderBlockFlow::adjustComputedFontSizes(float size, float visibleWidth)
             float candidateNewSize = roundf(std::min(minFontSize, specifiedSize * lineTextMultiplier));
 
             if (candidateNewSize > specifiedSize && candidateNewSize != fontDescription.computedSize() && text.textNode() && oldStyle.textSizeAdjust().isAuto())
-                protect(document())->textAutoSizing().addTextNode(*text.protectedTextNode(), candidateNewSize);
+                protect(document())->textAutoSizing().addTextNode(*protect(text.textNode()), candidateNewSize);
         }
 
         descendant = RenderObjectTraversal::nextSkippingChildren(text, this);

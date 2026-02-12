@@ -666,7 +666,7 @@ public:
     WritingSuggestionData* writingSuggestionData() const { return m_writingSuggestionData.get(); }
     bool isInsertingTextForWritingSuggestion() const { return m_isInsertingTextForWritingSuggestion; }
 
-    RenderInline* writingSuggestionRenderer() const;
+    RenderInline* NODELETE writingSuggestionRenderer() const;
     void setWritingSuggestionRenderer(RenderInline&);
 
     WEBCORE_EXPORT void closeTyping();

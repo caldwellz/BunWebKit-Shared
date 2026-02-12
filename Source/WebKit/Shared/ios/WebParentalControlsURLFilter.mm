@@ -36,6 +36,14 @@
 #import <wtf/CrossThreadCopier.h>
 #import <wtf/WorkQueue.h>
 
+#if USE(APPLE_INTERNAL_SDK)
+#import <WebKitAdditions/BEKAdditions.h>
+#endif
+
+#if HAVE(WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST)
+#import <WebCore/DeprecatedGlobalSettings.h>
+#endif
+
 namespace WebKit {
 
 Ref<WebParentalControlsURLFilter> WebParentalControlsURLFilter::create()
@@ -69,11 +77,15 @@ void WebParentalControlsURLFilter::isURLAllowedImpl(const URL& mainDocumentURL, 
             return;
         }
 
+        RetainPtr filter = ensureWebContentFilter();
 #if HAVE(WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST)
-        [ensureWebContentFilter() evaluateURL:url.createNSURL().get() mainDocumentURL:mainDocumentURL.createNSURL().get() completionHandler:makeBlockPtr([completionHandler = WTF::move(completionHandler)](BOOL shouldBlock, NSData *replacementData) mutable {
-#else
-        [ensureWebContentFilter() evaluateURL:url.createNSURL().get() completionHandler:makeBlockPtr([completionHandler = WTF::move(completionHandler)](BOOL shouldBlock, NSData *replacementData) mutable {
+#if __has_include(<WebKitAdditions/BEKAdditions.h>)
+    if (WebCore::DeprecatedGlobalSettings::webContentRestrictionsTransitiveTrustEnabled()) {
+        MAYBE_EVALUATE_URL_WITH_TRANSITIVE_TRUST
+    }
 #endif
+#endif
+        [filter evaluateURL:url.createNSURL().get() completionHandler:makeBlockPtr([completionHandler = WTF::move(completionHandler)](BOOL shouldBlock, NSData *replacementData) mutable {
             completionHandler(!shouldBlock, replacementData);
         }).get()];
     });
@@ -89,7 +101,7 @@ void WebParentalControlsURLFilter::allowURL(const URL& url, CompletionHandler<vo
             return;
         }
 
-        [ensureWebContentFilter() allowURL:url.createNSURL().get() completionHandler:makeBlockPtr([completionHandler = WTF::move(completionHandler)](BOOL didAllow, NSError *) mutable {
+        [protect(ensureWebContentFilter()) allowURL:url.createNSURL().get() completionHandler:makeBlockPtr([completionHandler = WTF::move(completionHandler)](BOOL didAllow, NSError *) mutable {
             RELEASE_LOG(Loading, "WebParentalControlsURLFilter::allowURL result %d.\n", didAllow);
             callOnMainRunLoop([didAllow, completionHandler = WTF::move(completionHandler)] mutable {
                 completionHandler(didAllow);

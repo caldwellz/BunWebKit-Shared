@@ -48,6 +48,7 @@ class WebWheelEvent;
 class WebKeyboardEvent;
 enum class WebEventType : uint32_t;
 enum class WebMouseEventButton : int8_t;
+enum class WebMouseEventInputSource : uint8_t;
 
 #if ENABLE(TOUCH_EVENTS)
 class WebTouchEvent;
@@ -72,6 +73,8 @@ WebCore::PlatformTouchPoint platform(const WebTouchPoint&);
 #if ENABLE(MAC_GESTURE_EVENTS)
 WebCore::PlatformGestureEvent platform(const WebGestureEvent&);
 #endif
+
+WebCore::MouseEventInputSource platform(WebMouseEventInputSource);
 
 WebCore::MouseButton platform(WebMouseEventButton);
 WebMouseEventButton kit(WebCore::MouseButton);

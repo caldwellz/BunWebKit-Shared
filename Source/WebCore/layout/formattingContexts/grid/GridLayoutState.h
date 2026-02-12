@@ -33,6 +33,8 @@ struct GridLayoutConstraints;
 struct GridLayoutState {
     const GridLayoutConstraints gridLayoutConstraints;
     const GridDefinition gridDefinition;
+    const StyleContentAlignmentData usedJustifyContent;
+    const StyleContentAlignmentData usedAlignContent;
 };
 
 } // namespace Layout

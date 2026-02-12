@@ -33,7 +33,7 @@ class HTMLSlotElement final : public HTMLElement {
     WTF_MAKE_TZONE_ALLOCATED(HTMLSlotElement);
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(HTMLSlotElement);
 public:
-    using ElementOrText = Variant<RefPtr<Element>, RefPtr<Text>>;
+    using ElementOrText = Variant<Ref<Element>, Ref<Text>>;
 
     static Ref<HTMLSlotElement> create(const QualifiedName&, Document&);
 

@@ -55,10 +55,7 @@ ExceptionOr<void> WebXRTransientInputHitTestSource::cancel()
     RefPtr session = m_session.get();
     if (!session)
         return Exception { ExceptionCode::InvalidStateError };
-    RefPtr device = session->device();
-    if (!device)
-        return Exception { ExceptionCode::InvalidStateError };
-    device->deleteTransientInputHitTestSource(*m_source);
+    session->cancelTransientInputHitTestSource(*m_source);
     m_source = std::nullopt;
     return { };
 }

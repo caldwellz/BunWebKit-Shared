@@ -524,7 +524,7 @@ ExceptionOr<Ref<IDBIndex>> IDBObjectStore::index(const String& indexName)
     if (!info)
         return Exception { ExceptionCode::NotFoundError, "Failed to execute 'index' on 'IDBObjectStore': The specified index was not found."_s };
 
-    auto index = IDBIndex::create(*protectedScriptExecutionContext(), *info, *this);
+    auto index = IDBIndex::create(*protect(scriptExecutionContext()), *info, *this);
 
     Ref referencedIndex { index.get() };
 

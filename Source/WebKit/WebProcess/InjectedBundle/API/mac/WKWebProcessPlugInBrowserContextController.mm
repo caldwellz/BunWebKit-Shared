@@ -83,11 +83,6 @@
     RetainPtr<_WKRemoteObjectRegistry> _remoteObjectRegistry;
 }
 
-static Ref<WebKit::WebPage> protectedPage(WKWebProcessPlugInBrowserContextController *controller)
-{
-    return *controller->_page;
-}
-
 static void didStartProvisionalLoadForFrame(WKBundlePageRef page, WKBundleFrameRef frame, WKTypeRef* userDataRef, const void *clientInfo)
 {
     auto pluginContextController = (__bridge WKWebProcessPlugInBrowserContextController *)clientInfo;
@@ -405,7 +400,7 @@ static void setUpResourceLoadClient(WKWebProcessPlugInBrowserContextController *
 
 - (WKDOMDocument *)mainFrameDocument
 {
-    RefPtr webCoreMainFrame = dynamicDowncast<WebCore::LocalFrame>(protectedPage(self)->mainFrame());
+    RefPtr webCoreMainFrame = dynamicDowncast<WebCore::LocalFrame>(protect(*_page)->mainFrame());
     if (!webCoreMainFrame)
         return nil;
 
@@ -414,7 +409,7 @@ static void setUpResourceLoadClient(WKWebProcessPlugInBrowserContextController *
 
 - (WKDOMRange *)selectedRange
 {
-    auto range = protectedPage(self)->currentSelectionAsRange();
+    auto range = protect(*_page)->currentSelectionAsRange();
     if (!range)
         return nil;
 
@@ -439,7 +434,7 @@ static void setUpResourceLoadClient(WKWebProcessPlugInBrowserContextController *
 
 - (WKBundlePageRef)_bundlePageRef
 {
-    return toAPI(protectedPage(self).ptr());
+    return toAPI(protect(*_page).ptr());
 }
 
 - (WKBrowsingContextHandle *)handle
@@ -579,9 +574,9 @@ static void setUpResourceLoadClient(WKWebProcessPlugInBrowserContextController *
     };
 
     if (formDelegate)
-        protectedPage(self)->setInjectedBundleFormClient(makeUnique<FormClient>(self));
+        protect(*_page)->setInjectedBundleFormClient(makeUnique<FormClient>(self));
     else
-        protectedPage(self)->setInjectedBundleFormClient(nullptr);
+        protect(*_page)->setInjectedBundleFormClient(nullptr);
 }
 
 - (id <WKWebProcessPlugInEditingDelegate>)_editingDelegate
@@ -722,9 +717,9 @@ static inline WKEditorInsertAction toWK(WebCore::EditorInsertAction action)
     };
 
     if (editingDelegate)
-        protectedPage(self)->setInjectedBundleEditorClient(makeUnique<Client>(self));
+        protect(*_page)->setInjectedBundleEditorClient(makeUnique<Client>(self));
     else
-        protectedPage(self)->setInjectedBundleEditorClient(nullptr);
+        protect(*_page)->setInjectedBundleEditorClient(nullptr);
 }
 
 - (BOOL)_defersLoading
@@ -738,7 +733,7 @@ static inline WKEditorInsertAction toWK(WebCore::EditorInsertAction action)
 
 - (BOOL)_usesNonPersistentWebsiteDataStore
 {
-    return protectedPage(self)->usesEphemeralSession();
+    return protect(*_page)->usesEphemeralSession();
 }
 
 - (NSString *)_groupIdentifier

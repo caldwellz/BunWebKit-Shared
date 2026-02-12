@@ -88,7 +88,7 @@ CSSFilterRenderer::CSSFilterRenderer(Vector<Ref<FilterFunction>>&& functions, co
 
 static RefPtr<SVGFilterElement> referenceFilterElement(const Style::FilterReference& filterReference, RenderElement& renderer)
 {
-    RefPtr filterElement = ReferencedSVGResources::referencedFilterElement(renderer.protectedTreeScopeForSVGReferences(), filterReference);
+    RefPtr filterElement = ReferencedSVGResources::referencedFilterElement(protect(renderer.treeScopeForSVGReferences()), filterReference);
 
     if (!filterElement) {
         LOG_WITH_STREAM(Filters, stream << " buildReferenceFilter: failed to find filter renderer, adding pending resource " << filterReference.url);

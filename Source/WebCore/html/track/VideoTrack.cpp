@@ -82,7 +82,7 @@ void VideoTrack::setPrivate(VideoTrackPrivate& trackPrivate)
     m_private = trackPrivate;
     addClientToTrackPrivateBase(*this, trackPrivate);
 #if !RELEASE_LOG_DISABLED
-    trackPrivate.setLogger(protectedLogger().get(), logIdentifier());
+    trackPrivate.setLogger(protect(logger()), logIdentifier());
 #endif
 
     trackPrivate.setSelected(m_selected);

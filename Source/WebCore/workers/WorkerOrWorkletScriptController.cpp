@@ -451,7 +451,7 @@ void WorkerOrWorkletScriptController::linkAndEvaluateModule(WorkerScriptFetcher&
     JSLockHolder lock { vm };
 
     NakedPtr<JSC::Exception> returnedException;
-    JSExecState::linkAndEvaluateModule(globalObject, Identifier::fromUid(vm, scriptFetcher.protectedModuleKey().get()), jsUndefined(), returnedException);
+    JSExecState::linkAndEvaluateModule(globalObject, Identifier::fromUid(vm, protect(scriptFetcher.moduleKey()).get()), jsUndefined(), returnedException);
     if ((returnedException && vm.isTerminationException(returnedException)) || isTerminatingExecution()) {
         forbidExecution();
         return;

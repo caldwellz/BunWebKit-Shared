@@ -97,7 +97,505 @@ inline bool RenderStyle::scrollSnapDataEquivalent(const RenderStyle& other) cons
     return m_computedStyle.scrollSnapDataEquivalent(other.m_computedStyle);
 }
 
-// MARK: Derived values
+// MARK: - Non-property getters
+
+inline bool RenderStyle::usesViewportUnits() const
+{
+    return m_computedStyle.usesViewportUnits();
+}
+
+inline bool RenderStyle::usesContainerUnits() const
+{
+    return m_computedStyle.usesContainerUnits();
+}
+
+inline bool RenderStyle::useTreeCountingFunctions() const
+{
+    return m_computedStyle.useTreeCountingFunctions();
+}
+
+inline InsideLink RenderStyle::insideLink() const
+{
+    return m_computedStyle.insideLink();
+}
+
+inline bool RenderStyle::isLink() const
+{
+    return m_computedStyle.isLink();
+}
+
+inline bool RenderStyle::emptyState() const
+{
+    return m_computedStyle.emptyState();
+}
+
+inline bool RenderStyle::firstChildState() const
+{
+    return m_computedStyle.firstChildState();
+}
+
+inline bool RenderStyle::lastChildState() const
+{
+    return m_computedStyle.lastChildState();
+}
+
+inline bool RenderStyle::hasExplicitlyInheritedProperties() const
+{
+    return m_computedStyle.hasExplicitlyInheritedProperties();
+}
+
+inline bool RenderStyle::disallowsFastPathInheritance() const
+{
+    return m_computedStyle.disallowsFastPathInheritance();
+}
+
+inline bool RenderStyle::effectiveInert() const
+{
+    return m_computedStyle.effectiveInert();
+}
+
+inline bool RenderStyle::isEffectivelyTransparent() const
+{
+    return m_computedStyle.isEffectivelyTransparent();
+}
+
+inline bool RenderStyle::insideDefaultButton() const
+{
+    return m_computedStyle.insideDefaultButton();
+}
+
+inline bool RenderStyle::insideSubmitButton() const
+{
+    return m_computedStyle.insideSubmitButton();
+}
+
+inline bool RenderStyle::isForceHidden() const
+{
+    return m_computedStyle.isForceHidden();
+}
+
+inline bool RenderStyle::hasDisplayAffectedByAnimations() const
+{
+    return m_computedStyle.hasDisplayAffectedByAnimations();
+}
+
+inline bool RenderStyle::transformStyleForcedToFlat() const
+{
+    return m_computedStyle.transformStyleForcedToFlat();
+}
+
+inline bool RenderStyle::usesAnchorFunctions() const
+{
+    return m_computedStyle.usesAnchorFunctions();
+}
+
+inline EnumSet<BoxAxis> RenderStyle::anchorFunctionScrollCompensatedAxes() const
+{
+    return m_computedStyle.anchorFunctionScrollCompensatedAxes();
+}
+
+inline bool RenderStyle::isPopoverInvoker() const
+{
+    return m_computedStyle.isPopoverInvoker();
+}
+
+inline bool RenderStyle::autoRevealsWhenFound() const
+{
+    return m_computedStyle.autoRevealsWhenFound();
+}
+
+inline bool RenderStyle::nativeAppearanceDisabled() const
+{
+    return m_computedStyle.nativeAppearanceDisabled();
+}
+
+inline OptionSet<EventListenerRegionType> RenderStyle::eventListenerRegionTypes() const
+{
+    return m_computedStyle.eventListenerRegionTypes();
+}
+
+inline bool RenderStyle::hasAttrContent() const
+{
+    return m_computedStyle.hasAttrContent();
+}
+
+inline std::optional<size_t> RenderStyle::usedPositionOptionIndex() const
+{
+    return m_computedStyle.usedPositionOptionIndex();
+}
+
+inline constexpr DisplayType RenderStyle::originalDisplay() const
+{
+    return m_computedStyle.originalDisplay();
+}
+
+inline DisplayType RenderStyle::effectiveDisplay() const
+{
+    return m_computedStyle.effectiveDisplay();
+}
+
+inline StyleAppearance RenderStyle::usedAppearance() const
+{
+    return m_computedStyle.usedAppearance();
+}
+
+inline ContentVisibility RenderStyle::usedContentVisibility() const
+{
+    return m_computedStyle.usedContentVisibility();
+}
+
+inline Style::TouchAction RenderStyle::usedTouchAction() const
+{
+    return m_computedStyle.usedTouchAction();
+}
+
+inline Style::ZIndex RenderStyle::usedZIndex() const
+{
+    return m_computedStyle.usedZIndex();
+}
+
+#if HAVE(CORE_MATERIAL)
+
+inline AppleVisualEffect RenderStyle::usedAppleVisualEffectForSubtree() const
+{
+    return m_computedStyle.usedAppleVisualEffectForSubtree();
+}
+
+#endif
+
+#if ENABLE(TEXT_AUTOSIZING)
+
+inline AutosizeStatus RenderStyle::autosizeStatus() const
+{
+    return m_computedStyle.autosizeStatus();
+}
+
+#endif // ENABLE(TEXT_AUTOSIZING)
+
+// MARK: - Pseudo element/style
+
+inline bool RenderStyle::hasAnyPublicPseudoStyles() const
+{
+    return m_computedStyle.hasAnyPublicPseudoStyles();
+}
+
+inline bool RenderStyle::hasPseudoStyle(PseudoElementType pseudo) const
+{
+    return m_computedStyle.hasPseudoStyle(pseudo);
+}
+
+inline std::optional<PseudoElementType> RenderStyle::pseudoElementType() const
+{
+    return m_computedStyle.pseudoElementType();
+}
+
+inline const AtomString& RenderStyle::pseudoElementNameArgument() const
+{
+    return m_computedStyle.pseudoElementNameArgument();
+}
+
+inline std::optional<Style::PseudoElementIdentifier> RenderStyle::pseudoElementIdentifier() const
+{
+    return m_computedStyle.pseudoElementIdentifier();
+}
+
+inline RenderStyle* RenderStyle::getCachedPseudoStyle(const Style::PseudoElementIdentifier& pseudoElementIdentifier) const
+{
+    return m_computedStyle.getCachedPseudoStyle(pseudoElementIdentifier);
+}
+
+// MARK: - Custom properties
+
+inline const Style::CustomPropertyData& RenderStyle::inheritedCustomProperties() const
+{
+    return m_computedStyle.inheritedCustomProperties();
+}
+
+inline const Style::CustomPropertyData& RenderStyle::nonInheritedCustomProperties() const
+{
+    return m_computedStyle.nonInheritedCustomProperties();
+}
+
+inline const Style::CustomProperty* RenderStyle::customPropertyValue(const AtomString& property) const
+{
+    return m_computedStyle.customPropertyValue(property);
+}
+
+inline bool RenderStyle::customPropertyValueEqual(const RenderStyle& other, const AtomString& property) const
+{
+    return m_computedStyle.customPropertyValueEqual(other.m_computedStyle, property);
+}
+
+inline bool RenderStyle::customPropertiesEqual(const RenderStyle& other) const
+{
+    return m_computedStyle.customPropertiesEqual(other.m_computedStyle);
+}
+
+inline void RenderStyle::deduplicateCustomProperties(const RenderStyle& other)
+{
+    m_computedStyle.deduplicateCustomProperties(other.m_computedStyle);
+}
+
+// MARK: - Custom paint
+
+inline void RenderStyle::addCustomPaintWatchProperty(const AtomString& property)
+{
+    m_computedStyle.addCustomPaintWatchProperty(property);
+}
+
+// MARK: - Zoom
+
+inline bool RenderStyle::evaluationTimeZoomEnabled() const
+{
+    return m_computedStyle.evaluationTimeZoomEnabled();
+}
+
+inline float RenderStyle::deviceScaleFactor() const
+{
+    return m_computedStyle.deviceScaleFactor();
+}
+
+inline bool RenderStyle::useSVGZoomRulesForLength() const
+{
+    return m_computedStyle.useSVGZoomRulesForLength();
+}
+
+inline float RenderStyle::usedZoom() const
+{
+    return m_computedStyle.usedZoom();
+}
+
+inline Style::ZoomFactor RenderStyle::usedZoomForLength() const
+{
+    return m_computedStyle.usedZoomForLength();
+}
+
+// MARK: - Fonts
+
+inline const FontCascade& RenderStyle::fontCascade() const
+{
+    return m_computedStyle.fontCascade();
+}
+
+inline CheckedRef<const FontCascade> RenderStyle::checkedFontCascade() const
+{
+    return m_computedStyle.checkedFontCascade();
+}
+
+inline FontCascade& RenderStyle::mutableFontCascadeWithoutUpdate()
+{
+    return m_computedStyle.mutableFontCascadeWithoutUpdate();
+}
+
+inline void RenderStyle::setFontCascade(FontCascade&& fontCascade)
+{
+    m_computedStyle.setFontCascade(WTF::move(fontCascade));
+}
+
+inline const FontCascadeDescription& RenderStyle::fontDescription() const
+{
+    return m_computedStyle.fontDescription();
+}
+
+inline FontCascadeDescription& RenderStyle::mutableFontDescriptionWithoutUpdate()
+{
+    return m_computedStyle.mutableFontDescriptionWithoutUpdate();
+}
+
+inline void RenderStyle::setFontDescription(FontCascadeDescription&& description)
+{
+    m_computedStyle.setFontDescription(WTF::move(description));
+}
+
+inline bool RenderStyle::setFontDescriptionWithoutUpdate(FontCascadeDescription&& description)
+{
+    return m_computedStyle.setFontDescriptionWithoutUpdate(WTF::move(description));
+}
+
+inline const FontMetrics& RenderStyle::metricsOfPrimaryFont() const
+{
+    return m_computedStyle.metricsOfPrimaryFont();
+}
+
+inline std::pair<FontOrientation, NonCJKGlyphOrientation> RenderStyle::fontAndGlyphOrientation()
+{
+    return m_computedStyle.fontAndGlyphOrientation();
+}
+
+inline Style::WebkitLocale RenderStyle::computedLocale() const
+{
+    return m_computedStyle.computedLocale();
+}
+
+inline float RenderStyle::computedFontSize() const
+{
+    return m_computedStyle.computedFontSize();
+}
+
+inline const Style::LineHeight& RenderStyle::specifiedLineHeight() const
+{
+    return m_computedStyle.specifiedLineHeight();
+}
+
+inline void RenderStyle::synchronizeLetterSpacingWithFontCascade()
+{
+    m_computedStyle.synchronizeLetterSpacingWithFontCascade();
+}
+
+inline void RenderStyle::synchronizeLetterSpacingWithFontCascadeWithoutUpdate()
+{
+    m_computedStyle.synchronizeLetterSpacingWithFontCascadeWithoutUpdate();
+}
+
+inline void RenderStyle::synchronizeWordSpacingWithFontCascade()
+{
+    m_computedStyle.synchronizeWordSpacingWithFontCascade();
+}
+
+inline void RenderStyle::synchronizeWordSpacingWithFontCascadeWithoutUpdate()
+{
+    m_computedStyle.synchronizeWordSpacingWithFontCascadeWithoutUpdate();
+}
+
+inline float RenderStyle::usedLetterSpacing() const
+{
+    return m_computedStyle.usedLetterSpacing();
+}
+
+inline float RenderStyle::usedWordSpacing() const
+{
+    return m_computedStyle.usedWordSpacing();
+}
+
+// MARK: Used Counter Directives
+
+inline const CounterDirectiveMap& RenderStyle::usedCounterDirectives() const
+{
+    return m_computedStyle.usedCounterDirectives();
+}
+
+// MARK: - Aggregates
+
+inline const Style::InsetBox& RenderStyle::insetBox() const
+{
+    return m_computedStyle.insetBox();
+}
+
+inline const Style::MarginBox& RenderStyle::marginBox() const
+{
+    return m_computedStyle.marginBox();
+}
+
+inline const Style::PaddingBox& RenderStyle::paddingBox() const
+{
+    return m_computedStyle.paddingBox();
+}
+
+inline const Style::ScrollMarginBox& RenderStyle::scrollMarginBox() const
+{
+    return m_computedStyle.scrollMarginBox();
+}
+
+inline const Style::ScrollPaddingBox& RenderStyle::scrollPaddingBox() const
+{
+    return m_computedStyle.scrollPaddingBox();
+}
+
+inline const Style::ScrollTimelines& RenderStyle::scrollTimelines() const
+{
+    return m_computedStyle.scrollTimelines();
+}
+
+inline const Style::ViewTimelines& RenderStyle::viewTimelines() const
+{
+    return m_computedStyle.viewTimelines();
+}
+
+inline const Style::Animations& RenderStyle::animations() const
+{
+    return m_computedStyle.animations();
+}
+
+inline const Style::Transitions& RenderStyle::transitions() const
+{
+    return m_computedStyle.transitions();
+}
+
+inline const Style::BackgroundLayers& RenderStyle::backgroundLayers() const
+{
+    return m_computedStyle.backgroundLayers();
+}
+
+inline const Style::MaskLayers& RenderStyle::maskLayers() const
+{
+    return m_computedStyle.maskLayers();
+}
+
+inline const Style::MaskBorder& RenderStyle::maskBorder() const
+{
+    return m_computedStyle.maskBorder();
+}
+
+inline const Style::BorderImage& RenderStyle::borderImage() const
+{
+    return m_computedStyle.borderImage();
+}
+
+inline const Style::TransformOrigin& RenderStyle::transformOrigin() const
+{
+    return m_computedStyle.transformOrigin();
+}
+
+inline const Style::PerspectiveOrigin& RenderStyle::perspectiveOrigin() const
+{
+    return m_computedStyle.perspectiveOrigin();
+}
+
+inline const BorderData& RenderStyle::border() const
+{
+    return m_computedStyle.border();
+}
+
+inline const Style::BorderRadius& RenderStyle::borderRadii() const
+{
+    return m_computedStyle.borderRadii();
+}
+
+inline const BorderValue& RenderStyle::borderBottom() const
+{
+    return m_computedStyle.borderBottom();
+}
+
+inline const BorderValue& RenderStyle::borderLeft() const
+{
+    return m_computedStyle.borderLeft();
+}
+
+inline const BorderValue& RenderStyle::borderRight() const
+{
+    return m_computedStyle.borderRight();
+}
+
+inline const BorderValue& RenderStyle::borderTop() const
+{
+    return m_computedStyle.borderTop();
+}
+
+// MARK: - Properties/descriptors that are not yet generated
+
+inline CursorType RenderStyle::cursorType() const
+{
+    return m_computedStyle.cursorType();
+}
+
+// FIXME: Support descriptors
+
+inline const Style::PageSize& RenderStyle::pageSize() const
+{
+    return m_computedStyle.pageSize();
+}
+
+// MARK: - Derived values
 
 inline bool RenderStyle::collapseWhiteSpace() const
 {
@@ -608,12 +1106,6 @@ inline bool RenderStyle::hasAnimations() const
 inline bool RenderStyle::hasAnimationsOrTransitions() const
 {
     return hasAnimations() || hasTransitions();
-}
-
-// FIXME: Rename this function.
-inline bool RenderStyle::hasAppearance() const
-{
-    return appearance() != StyleAppearance::None && appearance() != StyleAppearance::Base;
 }
 
 #if HAVE(CORE_MATERIAL)

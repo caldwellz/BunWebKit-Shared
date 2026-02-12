@@ -49,8 +49,8 @@ HTMLMeterElement* RenderMeter::meterElement() const
     if (auto* meterElement = dynamicDowncast<HTMLMeterElement>(*element()))
         return meterElement;
 
-    ASSERT(protectedElement()->shadowHost());
-    return downcast<HTMLMeterElement>(protectedElement()->shadowHost());
+    ASSERT(protect(element())->shadowHost());
+    return downcast<HTMLMeterElement>(protect(element())->shadowHost());
 }
 
 void RenderMeter::updateLogicalWidth()

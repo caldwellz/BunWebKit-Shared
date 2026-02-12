@@ -60,7 +60,7 @@ WebVTTParser& InbandWebVTTTextTrack::parser()
 {
     ASSERT(is<Document>(scriptExecutionContext()));
     if (!m_webVTTParser)
-        m_webVTTParser = makeUnique<WebVTTParser>(static_cast<WebVTTParserClient&>(*this), downcast<Document>(*protectedScriptExecutionContext()));
+        m_webVTTParser = makeUnique<WebVTTParser>(static_cast<WebVTTParserClient&>(*this), downcast<Document>(*protect(scriptExecutionContext())));
     return *m_webVTTParser;
 }
 

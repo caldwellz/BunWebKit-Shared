@@ -3499,7 +3499,7 @@ private:
                 int32_t toHeapType = cast->targetHeapType();
                 SUPPRESS_UNCOUNTED_LOCAL const Wasm::RTT* targetRTT = cast->targetRTT();
                 if (!Wasm::typeIndexIsType(static_cast<Wasm::TypeIndex>(toHeapType))) {
-                    if (targetRTT->isSubRTT(rtt)) {
+                    if (rtt->isSubRTT(*targetRTT)) {
                         replaceWithIdentity(structNew);
                         break;
                     }
@@ -3565,7 +3565,7 @@ private:
                 int32_t toHeapType = cast->targetHeapType();
                 SUPPRESS_UNCOUNTED_LOCAL const Wasm::RTT* targetRTT = cast->targetRTT();
                 if (!Wasm::typeIndexIsType(static_cast<Wasm::TypeIndex>(toHeapType))) {
-                    replaceWithNewValue(m_proc.addIntConstant(m_value, !!targetRTT->isSubRTT(rtt)));
+                    replaceWithNewValue(m_proc.addIntConstant(m_value, !!rtt->isSubRTT(*targetRTT)));
                     break;
                 }
             }

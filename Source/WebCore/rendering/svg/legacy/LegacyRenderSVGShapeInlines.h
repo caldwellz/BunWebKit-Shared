@@ -41,9 +41,4 @@ inline SVGGraphicsElement& LegacyRenderSVGShape::graphicsElement() const
     return downcast<SVGGraphicsElement>(LegacyRenderSVGModelObject::element());
 }
 
-inline Ref<SVGGraphicsElement> LegacyRenderSVGShape::protectedGraphicsElement() const
-{
-    return graphicsElement();
-}
-
 } // namespace WebCore

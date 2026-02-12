@@ -151,14 +151,14 @@ bool FileInputType::valueMissing(const String& value) const
 String FileInputType::valueMissingText() const
 {
     ASSERT(element());
-    return protectedElement()->multiple() ? validationMessageValueMissingForMultipleFileText() : validationMessageValueMissingForFileText();
+    return protect(element())->multiple() ? validationMessageValueMissingForMultipleFileText() : validationMessageValueMissingForFileText();
 }
 
 void FileInputType::handleDOMActivateEvent(Event& event)
 {
     ASSERT(element());
 
-    if (protectedElement()->isDisabledFormControl())
+    if (protect(element())->isDisabledFormControl())
         return;
 
     if (!UserGestureIndicator::processingUserGesture())
@@ -173,7 +173,7 @@ void FileInputType::showPicker()
     ASSERT(element());
     if (auto* chrome = this->chrome()) {
         applyFileChooserSettings();
-        chrome->runOpenPanel(*element()->document().protectedFrame(), *protectedFileChooser());
+        chrome->runOpenPanel(*element()->document().protectedFrame(), *protect(m_fileChooser));
     }
 }
 
@@ -186,7 +186,7 @@ RenderPtr<RenderElement> FileInputType::createInputRenderer(RenderStyle&& style)
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderFileUploadControl>(*protectedElement(), WTF::move(style));
+    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderFileUploadControl>(*protect(element()), WTF::move(style));
 }
 
 bool FileInputType::canSetStringValue() const
@@ -205,7 +205,7 @@ String FileInputType::firstElementPathForInputValue() const
     // decided to try to parse the value by looking for backslashes
     // (because that's what Windows file paths use). To be compatible
     // with that code, we make up a fake path for the file.
-    return makeString("C:\\fakepath\\"_s, protectedFiles()->file(0).name());
+    return makeString("C:\\fakepath\\"_s, protect(files())->file(0).name());
 }
 
 void FileInputType::setValue(const String&, bool valueChanged, TextFieldEventBehavior, TextControlSetValueSelection)
@@ -214,7 +214,7 @@ void FileInputType::setValue(const String&, bool valueChanged, TextFieldEventBeh
     if (!valueChanged)
         return;
     
-    protectedFiles()->clear();
+    protect(files())->clear();
     m_icon = nullptr;
     ASSERT(element());
     Ref element = *this->element();
@@ -300,7 +300,7 @@ FileChooserSettings FileInputType::fileChooserSettings() const
     settings.allowsMultipleFiles = element->hasAttributeWithoutSynchronization(multipleAttr);
     settings.acceptMIMETypes = element->acceptMIMETypes();
     settings.acceptFileExtensions = element->acceptFileExtensions();
-    settings.selectedFiles = protectedFiles()->paths();
+    settings.selectedFiles = protect(files())->paths();
 #if ENABLE(MEDIA_CAPTURE)
     settings.mediaCaptureType = element->mediaCaptureType();
 #endif
@@ -363,7 +363,7 @@ void FileInputType::setFiles(RefPtr<FileList>&& files, RequestIcon shouldRequest
     element->updateValidity();
 
     if (shouldRequestIcon == RequestIcon::Yes)
-        requestIcon(protectedFiles()->paths());
+        requestIcon(protect(this->files())->paths());
 
     if (CheckedPtr renderer = element->renderer())
         renderer->repaint();
@@ -419,7 +419,7 @@ void FileInputType::filesChosen(const Vector<String>& paths, const Vector<String
     ASSERT(element());
     ASSERT(!paths.isEmpty());
 
-    size_t size = protectedElement()->hasAttributeWithoutSynchronization(multipleAttr) ? paths.size() : 1;
+    size_t size = protect(element())->hasAttributeWithoutSynchronization(multipleAttr) ? paths.size() : 1;
 
     Vector<FileChooserFileInfo> files(size, [&](size_t i) {
         return FileChooserFileInfo { paths[i], i < replacementPaths.size() ? replacementPaths[i] : nullString(), { } };
@@ -431,7 +431,7 @@ void FileInputType::filesChosen(const Vector<String>& paths, const Vector<String
 void FileInputType::fileChoosingCancelled()
 {
     ASSERT(element());
-    protectedElement()->dispatchCancelEvent();
+    protect(element())->dispatchCancelEvent();
 }
 
 void FileInputType::didCreateFileList(Ref<FileList>&& fileList, RefPtr<Icon>&& icon)
@@ -526,7 +526,7 @@ String FileInputType::defaultToolTip() const
     unsigned listSize = m_fileList->length();
     if (!listSize) {
         ASSERT(element());
-        if (protectedElement()->multiple())
+        if (protect(element())->multiple())
             return fileButtonNoFilesSelectedLabel();
         return fileButtonNoFileSelectedLabel();
     }

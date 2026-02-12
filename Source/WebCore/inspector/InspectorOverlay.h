@@ -205,7 +205,7 @@ public:
 
     void setShowRulers(bool);
 
-    Node* highlightedNode() const;
+    Node* NODELETE highlightedNode() const;
     unsigned gridOverlayCount() const { return m_activeGridOverlays.size(); }
     unsigned flexOverlayCount() const { return m_activeFlexOverlays.size(); }
 

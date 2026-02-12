@@ -85,6 +85,8 @@ public:
     virtual bool isLibWebRTCProvider() const { return false; }
     virtual bool isWebCoreLibWebRTCProvider() const { return false; }
 
+    virtual bool isWebCoreGStreamerWebRTCProvider() const;
+
 protected:
 #if ENABLE(WEB_RTC)
     std::optional<RTCRtpCapabilities>& audioDecodingCapabilities();

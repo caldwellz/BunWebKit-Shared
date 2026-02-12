@@ -70,6 +70,7 @@ WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #include "JSPropertyNameEnumerator.h"
 #include "JSRegExpStringIterator.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "JSWebAssemblyInstance.h"
 #include "JSWrapForValidIterator.h"
 #include "LLIntEntrypoint.h"
@@ -6363,7 +6364,104 @@ void SpeculativeJIT::compileArithMod(Node* node)
 #endif
         return;
     }
-        
+
+#if USE(JSVALUE64)
+    case Int52RepUse: {
+        SpeculateStrictInt52Operand op1(this, node->child1());
+        SpeculateStrictInt52Operand op2(this, node->child2());
+
+        GPRReg op1GPR = op1.gpr();
+        GPRReg op2GPR = op2.gpr();
+
+#if CPU(X86_64)
+        GPRTemporary eax(this, X86Registers::eax);
+        GPRTemporary edx(this, X86Registers::edx);
+
+        GPRReg op1SaveGPR;
+        if (op1GPR == X86Registers::eax || op1GPR == X86Registers::edx) {
+            op1SaveGPR = allocate();
+            move(op1GPR, op1SaveGPR);
+        } else
+            op1SaveGPR = op1GPR;
+
+        GPRReg op2TempGPR = InvalidGPRReg;
+        if (op2GPR == X86Registers::eax || op2GPR == X86Registers::edx) {
+            op2TempGPR = allocate();
+            move(op2GPR, op2TempGPR);
+            op2GPR = op2TempGPR;
+        }
+
+        JumpList doneCases;
+
+        if (shouldCheckOverflow(node->arithMode()))
+            speculationCheck(Int52Overflow, JSValueRegs(), nullptr, branchTest64(Zero, op2GPR));
+        else {
+            // If the denominator is zero, return 0 instead of trapping.
+            Jump notZero = branchTest64(NonZero, op2GPR);
+            move(TrustedImm64(0), X86Registers::edx);
+            doneCases.append(jump());
+
+            notZero.link(this);
+        }
+
+        move(op1GPR, X86Registers::eax);
+        x86ConvertToQuadWord64();
+        x86Div64(op2GPR);
+
+        if (shouldCheckNegativeZero(node->arithMode())) {
+            Jump numeratorPositive = branch64(GreaterThanOrEqual, op1SaveGPR, TrustedImm64(0));
+            speculationCheck(NegativeZero, JSValueRegs(), nullptr, branchTest64(Zero, X86Registers::edx));
+            numeratorPositive.link(this);
+        }
+
+        doneCases.link(this);
+
+        if (op1SaveGPR != op1GPR)
+            unlock(op1SaveGPR);
+        if (op2TempGPR != InvalidGPRReg)
+            unlock(op2TempGPR);
+
+        strictInt52Result(X86Registers::edx, node);
+#elif CPU(ARM64)
+        GPRTemporary quotient(this);
+        GPRTemporary result(this);
+
+        GPRReg quotientGPR = quotient.gpr();
+        GPRReg resultGPR = result.gpr();
+
+        JumpList doneCases;
+
+        if (shouldCheckOverflow(node->arithMode()))
+            speculationCheck(Int52Overflow, JSValueRegs(), nullptr, branchTest64(Zero, op2GPR));
+        else {
+            // If the denominator is zero, return 0 instead of trapping.
+            // ARM64 sdiv returns 0 for division by zero, so we just need to handle it for the remainder.
+            Jump notZero = branchTest64(NonZero, op2GPR);
+            move(TrustedImm64(0), resultGPR);
+            doneCases.append(jump());
+
+            notZero.link(this);
+        }
+
+        div64(op1GPR, op2GPR, quotientGPR);
+        mul64(quotientGPR, op2GPR, resultGPR);
+        sub64(op1GPR, resultGPR, resultGPR);
+
+        if (shouldCheckNegativeZero(node->arithMode())) {
+            Jump numeratorPositive = branch64(GreaterThanOrEqual, op1GPR, TrustedImm64(0));
+            speculationCheck(NegativeZero, JSValueRegs(), nullptr, branchTest64(Zero, resultGPR));
+            numeratorPositive.link(this);
+        }
+
+        doneCases.link(this);
+        strictInt52Result(resultGPR, node);
+#else
+        RELEASE_ASSERT_NOT_REACHED();
+#endif
+        return;
+    }
+#endif // USE(JSVALUE64)
+
     case DoubleRepUse: {
         SpeculateDoubleOperand op1(this, node->child1());
         SpeculateDoubleOperand op2(this, node->child2());
@@ -15669,6 +15767,9 @@ void SpeculativeJIT::compileNewInternalFieldObject(Node* node)
     case JSSetIteratorType:
         compileNewInternalFieldObjectImpl<JSSetIterator>(node, operationNewSetIterator);
         break;
+    case JSStringIteratorType:
+        compileNewInternalFieldObjectImpl<JSStringIterator>(node, operationNewStringIterator);
+        break;
     case JSIteratorHelperType:
         compileNewInternalFieldObjectImpl<JSIteratorHelper>(node, operationNewIteratorHelper);
         break;
@@ -15914,6 +16015,31 @@ void SpeculativeJIT::compileMapOrSetSize(Node* node)
 
     nullCase.link(this);
     strictInt32Result(resultGPR, node);
+}
+
+void SpeculativeJIT::compileGetRegExpFlag(Node* node)
+{
+    SpeculateCellOperand regExpObject(this, node->child1());
+    GPRTemporary regExp(this);
+    GPRTemporary result(this);
+
+    GPRReg regExpObjectGPR = regExpObject.gpr();
+    GPRReg regExpGPR = regExp.gpr();
+    GPRReg resultGPR = result.gpr();
+
+    speculateRegExpObject(node->child1(), regExpObjectGPR);
+
+    // Load RegExp* from RegExpObject (mask off low 2 flag bits).
+    loadPtr(Address(regExpObjectGPR, RegExpObject::offsetOfRegExpAndFlags()), regExpGPR);
+    andPtr(TrustedImmPtr(RegExpObject::regExpMask), regExpGPR);
+
+    // Load m_flags from RegExp.
+    load16(Address(regExpGPR, RegExp::offsetOfFlags()), resultGPR);
+
+    // Test specific flag bit and produce boolean result.
+    Yarr::Flags flag = node->regExpFlag();
+    test32(NonZero, resultGPR, TrustedImm32(static_cast<uint16_t>(flag)), resultGPR);
+    unblessedBooleanResult(resultGPR, node);
 }
 
 void SpeculativeJIT::compileSetAdd(Node* node)
@@ -17289,16 +17415,18 @@ void SpeculativeJIT::compileStringIndexOf(Node* node)
     strictInt32Result(resultGPR, node);
 }
 
-void SpeculativeJIT::compileStringStartsWith(Node* node)
+void SpeculativeJIT::compileStringStartsOrEndsWith(Node* node)
 {
+    bool isStartsWith = node->op() == StringStartsWith;
+
     if (node->child3()) {
         SpeculateCellOperand base(this, node->child1());
         SpeculateCellOperand argument(this, node->child2());
-        SpeculateInt32Operand index(this, node->child3());
+        SpeculateInt32Operand position(this, node->child3());
 
         GPRReg baseGPR = base.gpr();
         GPRReg argumentGPR = argument.gpr();
-        GPRReg indexGPR = index.gpr();
+        GPRReg positionGPR = position.gpr();
 
         speculateString(node->child1(), baseGPR);
         speculateString(node->child2(), argumentGPR);
@@ -17306,7 +17434,10 @@ void SpeculativeJIT::compileStringStartsWith(Node* node)
         flushRegisters();
         GPRFlushedCallResult result(this);
         GPRReg resultGPR = result.gpr();
-        callOperation(operationStringStartsWithWithIndex, resultGPR, LinkableConstant::globalObject(*this, node), baseGPR, argumentGPR, indexGPR);
+        if (isStartsWith)
+            callOperation(operationStringStartsWithWithIndex, resultGPR, LinkableConstant::globalObject(*this, node), baseGPR, argumentGPR, positionGPR);
+        else
+            callOperation(operationStringEndsWithWithEndPosition, resultGPR, LinkableConstant::globalObject(*this, node), baseGPR, argumentGPR, positionGPR);
 
         unblessedBooleanResult(resultGPR, node);
         return;
@@ -17324,7 +17455,10 @@ void SpeculativeJIT::compileStringStartsWith(Node* node)
     flushRegisters();
     GPRFlushedCallResult result(this);
     GPRReg resultGPR = result.gpr();
-    callOperation(operationStringStartsWith, resultGPR, LinkableConstant::globalObject(*this, node), baseGPR, argumentGPR);
+    if (isStartsWith)
+        callOperation(operationStringStartsWith, resultGPR, LinkableConstant::globalObject(*this, node), baseGPR, argumentGPR);
+    else
+        callOperation(operationStringEndsWith, resultGPR, LinkableConstant::globalObject(*this, node), baseGPR, argumentGPR);
 
     unblessedBooleanResult(resultGPR, node);
 }

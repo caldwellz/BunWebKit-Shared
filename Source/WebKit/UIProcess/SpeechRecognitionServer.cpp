@@ -101,11 +101,6 @@ void SpeechRecognitionServer::requestPermissionForRequest(WebCore::SpeechRecogni
     });
 }
 
-CheckedPtr<WebCore::SpeechRecognizer> SpeechRecognitionServer::checkedRecognizer() const
-{
-    return m_recognizer.get();
-}
-
 void SpeechRecognitionServer::handleRequest(Ref<WebCore::SpeechRecognitionRequest>&& request)
 {
     if (CheckedPtr recognizer = m_recognizer.get()) {
@@ -124,12 +119,12 @@ void SpeechRecognitionServer::handleRequest(Ref<WebCore::SpeechRecognitionReques
         if (update.type() == WebCore::SpeechRecognitionUpdateType::Error) {
             // Do this asynchronously to as synchronous object destruction trips CheckedPtrs.
             callOnMainRunLoop([protectedThis] {
-                protectedThis->checkedRecognizer()->abort();
+                protect(protectedThis->m_recognizer)->abort();
             });
         } else if (update.type() == WebCore::SpeechRecognitionUpdateType::End) {
             // Do this asynchronously to as synchronous object destruction trips CheckedPtrs.
             callOnMainRunLoop([protectedThis] {
-                protectedThis->checkedRecognizer()->setInactive();
+                protect(protectedThis->m_recognizer)->setInactive();
             });
         }
     }, WTF::move(request));
@@ -143,7 +138,7 @@ void SpeechRecognitionServer::handleRequest(Ref<WebCore::SpeechRecognitionReques
 
     WebProcessProxy::muteCaptureInPagesExcept(m_identifier);
     bool mockDeviceCapturesEnabled = m_checkIfMockSpeechRecognitionEnabled();
-    checkedRecognizer()->start(sourceOrError.source(), mockDeviceCapturesEnabled);
+    protect(m_recognizer)->start(sourceOrError.source(), mockDeviceCapturesEnabled);
 #else
     sendUpdate(clientIdentifier, WebCore::SpeechRecognitionUpdateType::Error, WebCore::SpeechRecognitionError { WebCore::SpeechRecognitionErrorType::AudioCapture, "Audio capture is not implemented"_s });
 #endif

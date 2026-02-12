@@ -101,21 +101,35 @@ public:
     
     WebAssemblyModuleRecord* moduleRecord() { return m_moduleRecord.get(); }
 
-    JSWebAssemblyMemory* memory() const { return m_memory.get(); }
-    void setMemory(VM& vm, JSWebAssemblyMemory* value)
+    // FIXME(wasm-multimemory): eventually get rid of memory() with no parameters
+    // Temporarily keep memory() so the code still compiles
+    JSWebAssemblyMemory* memory() const { return m_memories[0].get(); }
+
+    JSWebAssemblyMemory* memory(unsigned i) const { return m_memories[i].get(); }
+
+    void setMemory(VM& vm, unsigned i, JSWebAssemblyMemory* value)
     {
-        RELEASE_ASSERT(!m_wasmMemory);
-        m_memory.set(vm, this, value);
-        WTF::storeStoreFence();
-        m_wasmMemory = value->memory();
-        m_wasmMemory->registerInstance(*this);
+        if (!i)
+            RELEASE_ASSERT(!m_wasmMemory);
+
+        m_memories[i].set(vm, this, value);
+        if (!i) {
+            WTF::storeStoreFence();
+            m_wasmMemory = value->memory();
+            m_wasmMemory->registerInstance(*this);
+        }
     }
 
+    // FIXME: is setDummyMemory necessary at all?
     void setDummyMemory(VM& vm, JSWebAssemblyMemory* value)
     {
         // Do not set m_wasmMemory.
         RELEASE_ASSERT(!m_wasmMemory);
-        m_memory.set(vm, this, value);
+
+        // If there are any imported memories, they will be filled in later
+        // If there are zero memories then there will be space for a dummy memory (handled in constructor)
+
+        m_memories[0].set(vm, this, value);
     }
 
     MemoryMode memoryMode() const { return memory()->memory().mode(); }
@@ -143,7 +157,6 @@ public:
     void finalizeUnconditionally(VM&, CollectionScope);
 
     static constexpr ptrdiff_t offsetOfJSModule() { return OBJECT_OFFSETOF(JSWebAssemblyInstance, m_jsModule); }
-    static constexpr ptrdiff_t offsetOfJSMemory() { return OBJECT_OFFSETOF(JSWebAssemblyInstance, m_memory); }
     static constexpr ptrdiff_t offsetOfVM() { return OBJECT_OFFSETOF(JSWebAssemblyInstance, m_vm); }
     static constexpr ptrdiff_t offsetOfModuleRecord() { return OBJECT_OFFSETOF(JSWebAssemblyInstance, m_moduleRecord); }
 
@@ -201,9 +214,10 @@ public:
 #else
             m_cachedBoundsCheckingSize = m_wasmMemory->mappedCapacity();
 #endif
+            // only memory 0 is cached
             m_cachedMemorySize = m_wasmMemory->size();
             m_cachedMemory = CagedPtr<Gigacage::Primitive, void>(m_wasmMemory->basePointer());
-            m_cachedIsMemory64 = moduleInformation().memory.isMemory64();
+            m_cachedIsMemory64 = moduleInformation().memory(0).isMemory64();
             ASSERT(m_wasmMemory->basePointer() == cachedMemory());
         }
     }
@@ -423,10 +437,10 @@ private:
     VM* const m_vm;
     WriteBarrier<JSWebAssemblyModule> m_jsModule;
     WriteBarrier<WebAssemblyModuleRecord> m_moduleRecord;
-    WriteBarrier<JSWebAssemblyMemory> m_memory;
+    FixedVector<WriteBarrier<JSWebAssemblyMemory>> m_memories;
     FixedVector<WriteBarrier<JSWebAssemblyTable>> m_tables;
     StackManager::Mirror m_stackMirror;
-    CagedPtr<Gigacage::Primitive, void> m_cachedMemory;
+    CagedPtr<Gigacage::Primitive, void> m_cachedMemory; // only memory 0 is cached
     size_t m_cachedBoundsCheckingSize { 0 };
     size_t m_cachedMemorySize { 0 };
     Wasm::FuncRefTable::Function* m_cachedTable0Buffer { nullptr };

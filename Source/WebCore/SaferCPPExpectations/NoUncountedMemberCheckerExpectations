@@ -19,7 +19,6 @@ dom/Node.cpp
 dom/Node.h
 dom/TreeScope.h
 layout/formattingContexts/inline/InlineItemsBuilder.h
-[ iOS ] page/ios/ContentChangeObserver.h
 platform/PODInterval.h
 [ iOS ] platform/audio/ios/AudioSessionIOS.mm
 platform/graphics/filters/software/FEConvolveMatrixSoftwareApplier.h

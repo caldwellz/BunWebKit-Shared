@@ -2562,7 +2562,7 @@ void GraphicsLayerCA::updateGeometry(float pageScaleFactor, const FloatPoint& po
 
 void GraphicsLayerCA::updateTransform()
 {
-    protectedPrimaryLayer()->setTransform(transform());
+    protect(primaryLayer())->setTransform(transform());
 
     if (LayerMap* layerCloneMap = primaryLayerClones()) {
         for (auto& clone : *layerCloneMap) {
@@ -2579,7 +2579,7 @@ void GraphicsLayerCA::updateTransform()
 
 void GraphicsLayerCA::updateChildrenTransform()
 {
-    protectedPrimaryLayer()->setSublayerTransform(childrenTransform());
+    protect(primaryLayer())->setSublayerTransform(childrenTransform());
 
     if (LayerMap* layerCloneMap = primaryLayerClones()) {
         for (auto& layer : layerCloneMap->values())
@@ -2665,7 +2665,7 @@ void GraphicsLayerCA::updateBackfaceVisibility()
 
 void GraphicsLayerCA::updateFilters()
 {
-    protectedPrimaryLayer()->setFilters(m_filters);
+    protect(primaryLayer())->setFilters(m_filters);
 
     if (LayerMap* layerCloneMap = primaryLayerClones()) {
         for (auto& clone : *layerCloneMap) {
@@ -2800,7 +2800,7 @@ void GraphicsLayerCA::updateBackdropRoot()
 
 void GraphicsLayerCA::updateBlendMode()
 {
-    protectedPrimaryLayer()->setBlendMode(m_blendMode);
+    protect(primaryLayer())->setBlendMode(m_blendMode);
 
     if (LayerMap* layerCloneMap = primaryLayerClones()) {
         for (auto& clone : *layerCloneMap) {
@@ -2909,7 +2909,7 @@ bool GraphicsLayerCA::ensureStructuralLayer(StructuralLayerPurpose purpose)
             // If m_layer doesn't have a parent, it means it's the root layer and
             // is likely hosted by something that is not expecting to be changed
             ASSERT(structuralLayer->superlayer());
-            structuralLayer->protectedSuperlayer()->replaceSublayer(*structuralLayer, *layer);
+            protect(structuralLayer->superlayer())->replaceSublayer(*structuralLayer, *layer);
 
             moveAnimations(structuralLayer.get(), layer.get());
 
@@ -4820,7 +4820,7 @@ void GraphicsLayerCA::dumpAdditionalProperties(TextStream& textStream, OptionSet
 String GraphicsLayerCA::platformLayerTreeAsText(OptionSet<PlatformLayerTreeAsTextFlags> flags) const
 {
     TextStream ts(TextStream::LineMode::MultipleLine, TextStream::Formatting::SVGStyleRect);
-    dumpInnerLayer(ts, protectedPrimaryLayer().get(), flags);
+    dumpInnerLayer(ts, protect(primaryLayer()).get(), flags);
     return ts.release();
 }
 
@@ -4893,7 +4893,7 @@ void GraphicsLayerCA::changeLayerTypeTo(PlatformCALayer::LayerType newLayerType)
         // Skip this step if we don't have a superlayer. This is probably a benign
         // case that happens while restructuring the layer tree, and also occurs with
         // WebKit2 page overlays, which can become tiled but are out-of-tree.
-        oldLayer->protectedSuperlayer()->replaceSublayer(*oldLayer, newLayer);
+        protect(oldLayer->superlayer())->replaceSublayer(*oldLayer, newLayer);
     }
 
     addUncommittedChanges(ChildrenChanged
@@ -5176,7 +5176,7 @@ Ref<PlatformCALayer> GraphicsLayerCA::cloneLayer(PlatformCALayer *layer, CloneLe
 
 void GraphicsLayerCA::updateOpacityOnLayer()
 {
-    protectedPrimaryLayer()->setOpacity(m_opacity);
+    protect(primaryLayer())->setOpacity(m_opacity);
 
     if (LayerMap* layerCloneMap = primaryLayerClones()) {
         for (auto& clone : *layerCloneMap) {

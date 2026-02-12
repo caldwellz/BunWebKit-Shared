@@ -69,6 +69,7 @@
 #include "MarkingConstraintSet.h"
 #include "MegamorphicCache.h"
 #include "NumberObject.h"
+#include "PinballCompletion.h"
 #include "PreventCollectionScope.h"
 #include "SamplingProfiler.h"
 #include "ShadowChicken.h"
@@ -890,16 +891,21 @@ void Heap::gatherStackRoots(ConservativeRoots& roots)
 #endif
 }
 
-void Heap::gatherScratchBufferRoots(ConservativeRoots& roots)
+void Heap::gatherVMRoots(ConservativeRoots& roots)
 {
-#if ENABLE(DFG_JIT)
-    if (!Options::useJIT())
-        return;
     VM& vm = this->vm();
-    vm.gatherScratchBufferRoots(roots);
-    vm.scanSideState(roots);
-#else
+#if ENABLE(DFG_JIT)
+    if (Options::useJIT()) {
+        vm.gatherScratchBufferRoots(roots);
+        vm.scanSideState(roots);
+    }
+#endif
+#if ENABLE(WEBASSEMBLY)
+    vm.gatherEvacuatedStackRoots(roots);
+#endif
+#if !(ENABLE(DFG_JIT) || ENABLE(WEBASSEMBLY))
     UNUSED_PARAM(roots);
+    UNUSED_VARIABLE(vm);
 #endif
 }
 
@@ -3001,7 +3007,7 @@ void Heap::addCoreConstraints()
                 ConservativeRoots conservativeRoots(*this);
 
                 gatherStackRoots(conservativeRoots);
-                gatherScratchBufferRoots(conservativeRoots);
+                gatherVMRoots(conservativeRoots);
 
                 SetRootMarkReasonScope rootScope(visitor, RootMarkReason::ConservativeScan);
                 visitor.append(conservativeRoots);

@@ -815,8 +815,8 @@ TEST(ResourceLoadStatistics, GetResourceLoadStatisticsDataSummary)
         _WKResourceLoadStatisticsFirstParty *evil3FirstParty3 = [evil3Enumerator nextObject];
 
         EXPECT_WK_STREQ(evil3FirstParty1.firstPartyDomain, @"webkit2.org");
-        EXPECT_WK_STREQ(evil3FirstParty2.firstPartyDomain, @"webkit3.org");
-        EXPECT_WK_STREQ(evil3FirstParty3.firstPartyDomain, @"webkit.org");
+        EXPECT_WK_STREQ(evil3FirstParty2.firstPartyDomain, @"webkit.org");
+        EXPECT_WK_STREQ(evil3FirstParty3.firstPartyDomain, @"webkit3.org");
 
         EXPECT_FALSE(evil3FirstParty1.thirdPartyStorageAccessGranted);
         EXPECT_FALSE(evil3FirstParty2.thirdPartyStorageAccessGranted);

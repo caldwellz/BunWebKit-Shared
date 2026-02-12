@@ -286,7 +286,7 @@ bool RemoteWebInspectorUI::supportsDiagnosticLogging()
 
 void RemoteWebInspectorUI::logDiagnosticEvent(const String& eventName,  const DiagnosticLoggingClient::ValueDictionary& dictionary)
 {
-    protect(protectedWebPage()->corePage())->checkedDiagnosticLoggingClient()->logDiagnosticMessageWithValueDictionary(eventName, "Remote Web Inspector Frontend Diagnostics"_s, dictionary, ShouldSample::No);
+    protect(protect(protectedWebPage()->corePage())->diagnosticLoggingClient())->logDiagnosticMessageWithValueDictionary(eventName, "Remote Web Inspector Frontend Diagnostics"_s, dictionary, ShouldSample::No);
 }
 
 void RemoteWebInspectorUI::setDiagnosticLoggingAvailable(bool available)

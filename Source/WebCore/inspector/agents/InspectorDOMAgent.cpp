@@ -2049,7 +2049,7 @@ Ref<Inspector::Protocol::DOM::Node> InspectorDOMAgent::buildObjectForNode(Node* 
         }
 
         if (RefPtr templateElement = dynamicDowncast<HTMLTemplateElement>(*element))
-            value->setTemplateContent(buildObjectForNode(templateElement->protectedContent().ptr(), 0));
+            value->setTemplateContent(buildObjectForNode(protect(templateElement->content()).ptr(), 0));
 
         if (is<HTMLStyleElement>(element) || (is<HTMLScriptElement>(element) && !element->hasAttributeWithoutSynchronization(HTMLNames::srcAttr)))
             value->setContentSecurityPolicyHash(computeContentSecurityPolicySHA256Hash(*element));

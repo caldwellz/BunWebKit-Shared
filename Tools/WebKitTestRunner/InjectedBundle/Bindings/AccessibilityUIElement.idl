@@ -126,6 +126,7 @@ interface AccessibilityUIElement {
     readonly attribute boolean isFirstItemInSuggestion;
     readonly attribute boolean isLastItemInSuggestion;
     readonly attribute boolean isRemoteFrame;
+    readonly attribute boolean isRemotePlatformElement;
 
     readonly attribute long pageX;
     readonly attribute long pageY;
@@ -153,6 +154,7 @@ interface AccessibilityUIElement {
     undefined syncPress();
     undefined showMenu();
     boolean dismiss();
+    boolean invokeCustomActionAtIndex(unsigned long index);
 
     // Attribute info.
     DOMString allAttributes();
@@ -194,6 +196,7 @@ interface AccessibilityUIElement {
     object selectedCells();
 
     // Relationships.
+    AccessibilityUIElement ariaActionsElementAtIndex(unsigned long index);
     AccessibilityUIElement controllerElementAtIndex(unsigned long index);
     AccessibilityUIElement ariaControlsElementAtIndex(unsigned long index);
     AccessibilityUIElement ariaDescribedByElementAtIndex(unsigned long index);

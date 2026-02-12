@@ -48,7 +48,7 @@ XSLImportRule::XSLImportRule(XSLStyleSheet& parent, const String& href)
 XSLImportRule::~XSLImportRule()
 {
     if (m_styleSheet)
-        protectedStyleSheet()->setParentStyleSheet(nullptr);
+        protect(styleSheet())->setParentStyleSheet(nullptr);
 
     if (m_cachedSheet)
         m_cachedSheet->removeClient(*this);
@@ -57,13 +57,13 @@ XSLImportRule::~XSLImportRule()
 void XSLImportRule::setXSLStyleSheet(const String& href, const URL& baseURL, const String& sheet)
 {
     if (m_styleSheet)
-        protectedStyleSheet()->setParentStyleSheet(nullptr);
+        protect(styleSheet())->setParentStyleSheet(nullptr);
 
     // FIXME: parentStyleSheet() should never be null here.
     RefPtr parent = parentStyleSheet();
     m_styleSheet = XSLStyleSheet::create(parent.get(), href, baseURL);
 
-    protectedStyleSheet()->parseString(sheet);
+    protect(styleSheet())->parseString(sheet);
     m_loading = false;
 
     if (parent)

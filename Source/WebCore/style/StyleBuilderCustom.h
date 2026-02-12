@@ -709,11 +709,11 @@ inline float BuilderCustom::determineMathDepthScale(BuilderState& builderState)
 #if ENABLE(MATHML)
     Ref primaryFont = builderState.style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData()) {
-        float scriptPercentScaleDown = mathData->getMathConstant(primaryFont, OpenTypeMathData::ScriptPercentScaleDown);
+        float scriptPercentScaleDown = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::ScriptPercentScaleDown);
         if (!scriptPercentScaleDown)
             scriptPercentScaleDown = 0.71;
 
-        float scriptScriptPercentScaleDown = mathData->getMathConstant(primaryFont, OpenTypeMathData::ScriptScriptPercentScaleDown);
+        float scriptScriptPercentScaleDown = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::ScriptScriptPercentScaleDown);
         if (!scriptScriptPercentScaleDown)
             scriptScriptPercentScaleDown = 0.5041;
 

@@ -1418,7 +1418,7 @@ void EditingStyle::mergeStyle(const StyleProperties* style, CSSPropertyOverrideM
         }
 
         if (mode == CSSPropertyOverrideMode::OverrideValues || (mode == CSSPropertyOverrideMode::DoNotOverrideValues && !value))
-            mutableStyle->setProperty(property.id(), property.protectedValue(), property.isImportant() ? IsImportant::Yes : IsImportant::No);
+            mutableStyle->setProperty(property.id(), protect(*property.value()), property.isImportant() ? IsImportant::Yes : IsImportant::No);
     }
 
     int oldFontSizeDelta = m_fontSizeDelta;
@@ -1434,7 +1434,7 @@ static Ref<MutableStyleProperties> styleFromMatchedRulesForElement(Element& elem
         return style;
 
     for (auto& matchedRule : Ref { element.styleResolver() }->styleRulesForElement(&element, rulesToInclude))
-        style->mergeAndOverrideOnConflict(matchedRule->protectedProperties());
+        style->mergeAndOverrideOnConflict(protect(matchedRule->properties()));
     
     return style;
 }

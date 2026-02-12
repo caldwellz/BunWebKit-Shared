@@ -344,6 +344,7 @@ struct PerWebProcessState {
 
     NSUInteger _partialIntelligenceTextAnimationCount;
     BOOL _writingToolsTextReplacementsFinished;
+    BOOL _activeWritingToolsSessionIsForProofreadingReview;
 #endif
 
 #if ENABLE(SCREEN_TIME)
@@ -646,6 +647,9 @@ struct PerWebProcessState {
 - (WKPageRef)_pageForTesting;
 - (NakedPtr<WebKit::WebPageProxy>)_page;
 - (RefPtr<WebKit::WebPageProxy>)_protectedPage;
+#if PLATFORM(MAC)
+- (WebKit::WebViewImpl * _Null_unspecified)_impl;
+#endif
 #if ENABLE(SCREEN_TIME)
 - (nullable STWebpageController *)_screenTimeWebpageController;
 #if PLATFORM(MAC)
@@ -681,6 +685,10 @@ struct PerWebProcessState {
 @property (nonatomic, setter=_setAlwaysBounceHorizontal:) BOOL _alwaysBounceHorizontal;
 
 - (void)_setContentOffsetX:(nullable NSNumber *)x y:(nullable NSNumber *)y animated:(BOOL)animated NS_SWIFT_NAME(_setContentOffset(x:y:animated:));
+
+#if ENABLE(BANNER_VIEW_OVERLAYS)
+@property (nonatomic, readonly) CGFloat _bannerViewOverlayHeight;
+#endif
 #endif // PLATFORM(MAC)
 
 @property (nonatomic, readonly) NSString *_nameForVisualIdentificationOverlay;

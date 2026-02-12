@@ -114,7 +114,7 @@ public:
     std::optional<TextBoxTrim> textBoxTrim() const { return m_textBoxTrim; }
     void setTextBoxTrim(std::optional<TextBoxTrim> textBoxTrim) { m_textBoxTrim = textBoxTrim; }
 
-    RenderElement* subtreeLayoutRoot() const;
+    RenderElement* NODELETE subtreeLayoutRoot() const;
     void clearSubtreeLayoutRoot() { m_subtreeLayoutRoot.clear(); }
     void convertSubtreeLayoutToFullLayout();
 
@@ -231,7 +231,6 @@ private:
     LocalFrame& frame() const;
     Ref<LocalFrame> protectedFrame();
     LocalFrameView& view() const;
-    Ref<LocalFrameView> protectedView() const;
     RenderView* renderView() const;
     Document* document() const;
     RefPtr<Document> protectedDocument() const;

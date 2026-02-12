@@ -91,6 +91,7 @@ class WebMouseEvent;
 class WebWheelEvent;
 enum class SelectionEndpoint : bool;
 enum class SelectionWasFlipped : bool;
+enum class PDFDisplayMode : uint8_t;
 struct DocumentEditingContextRequest;
 struct DocumentEditingContext;
 struct EditorState;
@@ -154,6 +155,8 @@ public:
     virtual double scaleFactor() const = 0;
     virtual void setPageScaleFactor(double, std::optional<WebCore::IntPoint> origin) = 0;
     virtual void mainFramePageScaleFactorDidChange() { }
+
+    virtual void setDisplayModeAndUpdateLayout(PDFDisplayMode) { }
 
     virtual double minScaleFactor() const { return 0.25; }
     virtual double maxScaleFactor() const { return 5; }

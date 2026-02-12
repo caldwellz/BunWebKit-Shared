@@ -390,7 +390,7 @@ void RenderLayerScrollableArea::scrollTo(const ScrollPosition& position)
 
         // Update regions, scrolling may change the clip of a particular region.
         protect(renderer.document())->invalidateRenderingDependentRegions();
-        DebugPageOverlays::didLayout(renderer.protectedFrame());
+        DebugPageOverlays::didLayout(protect(renderer.frame()));
     }
 
     Ref frame = renderer.frame();
@@ -1290,7 +1290,7 @@ void RenderLayerScrollableArea::updateScrollbarsAfterStyleChange(const RenderSty
 
 void RenderLayerScrollableArea::updateScrollbarsAfterLayout()
 {
-    RenderBox* box = m_layer.renderBox();
+    CheckedPtr box = m_layer.renderBox();
     ASSERT(box);
 
     // List box parts handle the scrollbars by themselves so we have nothing to do.
@@ -1357,6 +1357,9 @@ void RenderLayerScrollableArea::updateScrollbarsAfterLayout()
     };
 
     updateScrollableAreaSet(hasScrollableOverflow());
+
+    if (CheckedPtr scrollAnchoringController = this->scrollAnchoringController())
+        scrollAnchoringController->scrollerDidLayout();
 }
 
 void RenderLayerScrollableArea::updateScrollbarSteps()
@@ -1972,7 +1975,7 @@ LayoutRect RenderLayerScrollableArea::scrollRectToVisible(const LayoutRect& abso
 
     auto revealRect = getRectToExposeForScrollIntoView(layerBounds, localExposeRect, options.alignX, options.alignY, localVisiblityRect);
     auto scrollPositionOptions = ScrollPositionChangeOptions::createProgrammatic();
-    if (!box->frame().eventHandler().autoscrollInProgress() && box->element() && useSmoothScrolling(options.behavior, box->protectedElement().get()))
+    if (!box->frame().eventHandler().autoscrollInProgress() && box->element() && useSmoothScrolling(options.behavior, protect(box->element()).get()))
         scrollPositionOptions.animated = ScrollIsAnimated::Yes;
     if (auto result = updateScrollPositionForScrollIntoView(scrollPositionOptions, revealRect, localExposeRect))
         return result.value();

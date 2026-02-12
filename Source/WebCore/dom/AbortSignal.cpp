@@ -134,7 +134,7 @@ void AbortSignal::signalAbort(JSC::JSValue reason)
     // 2. ... if the reason is not given, set it to a new "AbortError" DOMException.
     ASSERT(reason);
     if (reason.isUndefined()) {
-        auto* globalObject = JSC::jsCast<JSDOMGlobalObject*>(protectedScriptExecutionContext()->globalObject());
+        auto* globalObject = JSC::jsCast<JSDOMGlobalObject*>(protect(scriptExecutionContext())->globalObject());
         if (!globalObject)
             return;
         reason = toJS(globalObject, globalObject, DOMException::create(ExceptionCode::AbortError));

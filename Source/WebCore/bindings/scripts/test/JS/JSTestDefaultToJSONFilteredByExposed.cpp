@@ -291,7 +291,7 @@ void JSTestDefaultToJSONFilteredByExposedOwner::finalize(JSC::Handle<JSC::Unknow
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestDefaultToJSONFilteredByExposed = static_cast<JSTestDefaultToJSONFilteredByExposed*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestDefaultToJSONFilteredByExposed->protectedWrapped().ptr(), jsTestDefaultToJSONFilteredByExposed);
+    uncacheWrapper(world, protect(jsTestDefaultToJSONFilteredByExposed->wrapped()).ptr(), jsTestDefaultToJSONFilteredByExposed);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

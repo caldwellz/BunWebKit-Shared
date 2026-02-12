@@ -188,6 +188,11 @@ if (COMPILER_IS_GCC_OR_CLANG)
                                          -Wno-psabi
                                          -Wno-nullability-completeness)
 
+    # FIXME: Remove once Clang 18 does no longer need to be supported for the GTK and WPE ports
+    if ((CMAKE_CXX_COMPILER_ID STREQUAL Clang) AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS 19))
+        WEBKIT_PREPEND_GLOBAL_CXX_FLAGS(-frelaxed-template-template-args)
+    endif ()
+
     # GCC < 12.0 gives false warnings for mismatched-new-delete <https://webkit.org/b/241516>
     if ((CMAKE_CXX_COMPILER_ID MATCHES "GNU") AND (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "12.0.0"))
         WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-Wno-mismatched-new-delete)
@@ -197,6 +202,16 @@ if (COMPILER_IS_GCC_OR_CLANG)
     # GCC gives false warnings for subobject-linkage <https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105595>
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-Wno-subobject-linkage)
+    endif ()
+
+    # Older GCC versions sometimes miscompile switches with that flag on.
+    # Observed in testMoveConditionallyFloatingPointSameArg (testmasm), turn it
+    # off throughout to avoid hard-to-diagnose bugs.
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+      # This and later versions don't seem to exhibit the issue.
+      if (${CMAKE_CXX_COMPILER_VERSION} VERSION_LESS "14.0.1")
+        WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-fno-unswitch-loops)
+      endif ()
     endif ()
 
     WEBKIT_PREPEND_GLOBAL_CXX_FLAGS(-Wno-noexcept-type)
@@ -249,7 +264,8 @@ if (COMPILER_IS_GCC_OR_CLANG)
                                                 -Wl,-U,_WTFTimer__isActive
                                                 -Wl,-U,_WTFTimer__secondsUntilTimer
                                                 -Wl,-U,_WTFTimer__cancel
-                                                -Wl,-U,_Bun__errorInstance__finalize)
+                                                -Wl,-U,_Bun__errorInstance__finalize
+                                                -Wl,-U,_Bun__reportUnhandledError)
         else()
             WEBKIT_PREPEND_GLOBAL_COMPILER_FLAGS(-Wl,-u,_WTFTimer__create
                                                 -Wl,-u,_WTFTimer__update
@@ -257,7 +273,8 @@ if (COMPILER_IS_GCC_OR_CLANG)
                                                 -Wl,-u,_WTFTimer__isActive
                                                 -Wl,-u,_WTFTimer__secondsUntilTimer
                                                 -Wl,-u,_WTFTimer__cancel
-                                                -Wl,-u,_Bun__errorInstance__finalize)
+                                                -Wl,-u,_Bun__errorInstance__finalize
+                                                -Wl,-u,_Bun__reportUnhandledError)
         endif()
     endif ()
 

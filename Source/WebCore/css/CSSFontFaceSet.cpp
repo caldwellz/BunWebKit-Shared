@@ -119,7 +119,7 @@ void CSSFontFaceSet::ensureLocalFontFacesForFamilyRegistered(const AtomString& f
     Ref owningFontSelector = *m_owningFontSelector;
     if (!owningFontSelector->scriptExecutionContext())
         return;
-    auto allowUserInstalledFonts = owningFontSelector->protectedScriptExecutionContext()->settingsValues().shouldAllowUserInstalledFonts ? AllowUserInstalledFonts::Yes : AllowUserInstalledFonts::No;
+    auto allowUserInstalledFonts = protect(owningFontSelector->scriptExecutionContext())->settingsValues().shouldAllowUserInstalledFonts ? AllowUserInstalledFonts::Yes : AllowUserInstalledFonts::No;
     auto capabilities = FontCache::forCurrentThread()->getFontSelectionCapabilitiesInFamily(familyName, allowUserInstalledFonts);
     if (capabilities.isEmpty())
         return;
@@ -128,7 +128,7 @@ void CSSFontFaceSet::ensureLocalFontFacesForFamilyRegistered(const AtomString& f
     for (auto item : capabilities) {
         auto face = CSSFontFace::create(owningFontSelector, nullptr, nullptr, true);
 
-        auto& pool = owningFontSelector->protectedScriptExecutionContext()->cssValuePool();
+        auto& pool = protect(owningFontSelector->scriptExecutionContext())->cssValuePool();
         face->setFamily(pool.createFontFamilyValue(familyName));
         face->setFontSelectionCapabilities(item);
         face->adoptSource(makeUniqueWithoutRefCountedCheck<CSSFontFaceSource>(face.get(), familyName));

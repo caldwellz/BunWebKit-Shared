@@ -33,7 +33,6 @@ list(APPEND WebKitLegacy_SOURCES
     cf/WebCoreSupport/WebInspectorClientCF.cpp
 
     mac/DefaultDelegates/WebDefaultEditingDelegate.m
-    mac/DefaultDelegates/WebDefaultPolicyDelegate.m
     mac/DefaultDelegates/WebDefaultUIDelegate.mm
 
     mac/History/BackForwardList.mm

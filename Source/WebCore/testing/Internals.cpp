@@ -500,7 +500,7 @@ InspectorStubFrontend::InspectorStubFrontend(Page& inspectedPage, LocalFrame& ma
 
     frontendPage()->inspectorController().setInspectorFrontendClient(this);
     inspectedPage.protectedInspectorController()->connectFrontend(*this);
-    mainFrame.protectedInspectorController()->connectFrontend(*this);
+    protect(mainFrame.inspectorController())->connectFrontend(*this);
 }
 
 InspectorStubFrontend::~InspectorStubFrontend()
@@ -867,7 +867,7 @@ ExceptionOr<bool> Internals::areSVGAnimationsPaused() const
     if (!document->svgExtensionsIfExists())
         return Exception { ExceptionCode::NotFoundError, "No SVG animations"_s };
 
-    return document->checkedSVGExtensions()->areAnimationsPaused();
+    return protect(document->svgExtensions())->areAnimationsPaused();
 }
 
 ExceptionOr<double> Internals::svgAnimationsInterval(SVGSVGElement& element) const
@@ -1119,11 +1119,7 @@ std::optional<Internals::ResourceLoadPriority> Internals::getResourcePriority(co
 
 bool Internals::isFetchObjectContextStopped(const FetchObject& object)
 {
-    return switchOn(object, [](const RefPtr<FetchRequest>& request) {
-        return request->isContextStopped();
-    }, [](auto& response) {
-        return response->isContextStopped();
-    });
+    return switchOn(object, [](const auto& item) { return item->isContextStopped(); });
 }
 
 void Internals::clearMemoryCache()
@@ -4689,7 +4685,7 @@ Vector<String> Internals::mediaResponseContentRanges(HTMLMediaElement& media)
 void Internals::simulateAudioInterruption(HTMLMediaElement& element)
 {
 #if USE(GSTREAMER)
-    element.protectedPlayer()->simulateAudioInterruption();
+    protect(element.player())->simulateAudioInterruption();
 #else
     UNUSED_PARAM(element);
 #endif

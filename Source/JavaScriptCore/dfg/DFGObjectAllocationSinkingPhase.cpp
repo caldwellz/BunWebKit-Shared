@@ -50,6 +50,7 @@
 #include "JSPromiseReaction.h"
 #include "JSRegExpStringIterator.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "JSWrapForValidIterator.h"
 #include "StructureInlines.h"
 #include <wtf/StdList.h>
@@ -1131,6 +1132,9 @@ private:
                 break;
             case JSSetIteratorType:
                 target = handleInternalFieldClass<JSSetIterator>(node, writes);
+                break;
+            case JSStringIteratorType:
+                target = handleInternalFieldClass<JSStringIterator>(node, writes);
                 break;
             case JSIteratorHelperType:
                 target = handleInternalFieldClass<JSIteratorHelper>(node, writes);

@@ -71,4 +71,9 @@ enum class CanNavigateState : uint8_t {
     Able
 };
 
+enum class CanTriggerCrossDocumentViewTransition : bool {
+    No,
+    Yes
+};
+
 } // namespace WebCore

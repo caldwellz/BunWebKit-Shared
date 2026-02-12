@@ -106,11 +106,6 @@ inline bool AccessibilityObject::hasElementName(ElementName name) const
     return elementName() == name;
 }
 
-inline RefPtr<Document> AccessibilityObject::protectedDocument() const
-{
-    return document();
-}
-
 inline SRGBA<uint8_t> AccessibilityObject::colorValue() const
 {
     return Color::black;

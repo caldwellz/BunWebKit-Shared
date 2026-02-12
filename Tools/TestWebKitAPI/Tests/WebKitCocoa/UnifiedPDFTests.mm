@@ -1123,6 +1123,21 @@ UNIFIED_PDF_TEST(WebViewBackgroundColor)
     EXPECT_TRUE(CGColorEqualToColor([webView scrollView].backgroundColor.CGColor, redColor.get()));
 }
 
+UNIFIED_PDF_TEST(ScrollPositionAfterChangeToTwoUpContinuous)
+{
+    RetainPtr webView = adoptNS([[TestWKWebView alloc] initWithFrame:CGRectMake(0, 0, 1024, 768) configuration:configurationForWebViewTestingUnifiedPDF().get()]);
+    RetainPtr request = [NSURLRequest requestWithURL:[NSBundle.test_resourcesBundle URLForResource:@"multiple-pages" withExtension:@"pdf"]];
+    [webView synchronouslyLoadRequest:request.get()];
+    [webView waitForNextPresentationUpdate];
+
+    EXPECT_EQ([webView scrollView].contentOffset, CGPointZero);
+
+    [webView objectByEvaluatingJavaScript:@"internals.setPDFDisplayModeForTesting(document.querySelector('embed'), 'TwoUpContinuous')"];
+    [webView waitForNextPresentationUpdate];
+
+    EXPECT_EQ([webView scrollView].contentOffset, CGPointZero);
+}
+
 #endif // PLATFORM(IOS_FAMILY)
 
 #if HAVE(UIKIT_WITH_MOUSE_SUPPORT)

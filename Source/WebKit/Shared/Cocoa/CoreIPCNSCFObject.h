@@ -30,6 +30,12 @@
 #include "ArgumentCodersCocoa.h"
 #include "CoreIPCPKDateComponentsRange.h"
 #if USE(PASSKIT)
+#if HAVE(WK_SECURE_CODING_PKPAYMENTMETHOD)
+#include "CoreIPCPKPaymentMethod.h"
+#endif
+#if HAVE(WK_SECURE_CODING_PKPAYMENT)
+#include "CoreIPCPKPayment.h"
+#endif
 #if HAVE(WK_SECURE_CODING_PKPAYMENTMERCHANTSESSION)
 #include "CoreIPCPKPaymentMerchantSession.h"
 #endif
@@ -38,6 +44,9 @@
 #endif
 #if HAVE(WK_SECURE_CODING_PKPAYMENTSETUPFEATURE)
 #include "CoreIPCPKPaymentSetupFeature.h"
+#endif
+#if HAVE(WK_SECURE_CODING_PKSHIPPINGMETHOD)
+#include "CoreIPCPKShippingMethod.h"
 #endif
 #endif
 #include <wtf/RetainPtr.h>
@@ -49,7 +58,9 @@ class CoreIPCArray;
 class CoreIPCCFType;
 class CoreIPCColor;
 #if USE(PASSKIT)
+#if !HAVE(WK_SECURE_CODING_PKPAYMENTMETHOD)
 class CoreIPCPKPaymentMethod;
+#endif
 #if !HAVE(WK_SECURE_CODING_PKPAYMENTMERCHANTSESSION)
 class CoreIPCPKPaymentMerchantSession;
 #endif
@@ -58,11 +69,15 @@ class CoreIPCPKPaymentSetupFeature;
 #endif
 class CoreIPCPKContact;
 class CoreIPCPKSecureElementPass;
+#if !HAVE(WK_SECURE_CODING_PKPAYMENT)
 class CoreIPCPKPayment;
+#endif
 #if !HAVE(WK_SECURE_CODING_PKPAYMENTTOKEN)
 class CoreIPCPKPaymentToken;
 #endif
+#if !HAVE(WK_SECURE_CODING_PKSHIPPINGMETHOD)
 class CoreIPCPKShippingMethod;
+#endif
 class CoreIPCCNContact;
 class CoreIPCCNPhoneNumber;
 class CoreIPCCNPostalAddress;

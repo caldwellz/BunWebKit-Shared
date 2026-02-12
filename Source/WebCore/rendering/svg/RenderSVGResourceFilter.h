@@ -41,7 +41,6 @@ public:
     virtual ~RenderSVGResourceFilter();
 
     inline SVGFilterElement& filterElement() const;
-    inline Ref<SVGFilterElement> protectedFilterElement() const;
 
     inline SVGUnitTypes::SVGUnitType filterUnits() const;
     inline SVGUnitTypes::SVGUnitType primitiveUnits() const;

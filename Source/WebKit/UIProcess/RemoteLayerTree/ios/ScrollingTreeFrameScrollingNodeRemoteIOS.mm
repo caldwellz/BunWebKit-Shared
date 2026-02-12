@@ -69,7 +69,7 @@ ScrollingTreeScrollingNodeDelegateIOS* ScrollingTreeFrameScrollingNodeRemoteIOS:
 
 WKBaseScrollView *ScrollingTreeFrameScrollingNodeRemoteIOS::scrollView() const
 {
-    return m_delegate ? delegate()->scrollView() : nil;
+    return m_delegate ? protect(delegate())->scrollView() : nil;
 }
 
 bool ScrollingTreeFrameScrollingNodeRemoteIOS::commitStateBeforeChildren(const ScrollingStateNode& stateNode)
@@ -98,7 +98,7 @@ bool ScrollingTreeFrameScrollingNodeRemoteIOS::commitStateBeforeChildren(const S
     }
 
     if (m_delegate)
-        delegate()->commitStateBeforeChildren(*scrollingStateNode);
+        protect(delegate())->commitStateBeforeChildren(*scrollingStateNode);
 
     return true;
 }
@@ -110,7 +110,7 @@ bool ScrollingTreeFrameScrollingNodeRemoteIOS::commitStateAfterChildren(const Sc
         if (!scrollingStateNode)
             return false;
 
-        delegate()->commitStateAfterChildren(*scrollingStateNode);
+        protect(delegate())->commitStateAfterChildren(*scrollingStateNode);
     }
 
     return ScrollingTreeFrameScrollingNode::commitStateAfterChildren(stateNode);
@@ -140,7 +140,7 @@ FloatPoint ScrollingTreeFrameScrollingNodeRemoteIOS::maximumScrollPosition() con
 void ScrollingTreeFrameScrollingNodeRemoteIOS::repositionScrollingLayers()
 {
     if (m_delegate) {
-        delegate()->repositionScrollingLayers();
+        protect(delegate())->repositionScrollingLayers();
         return;
     }
 

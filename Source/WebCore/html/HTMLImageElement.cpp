@@ -642,7 +642,7 @@ unsigned HTMLImageElement::naturalWidth() const
     if (!m_imageLoader->image())
         return 0;
 
-    return m_imageLoader->image()->unclampedImageSizeForRenderer(checkedRenderer().get(), effectiveImageDevicePixelRatio()).width().toUnsigned();
+    return m_imageLoader->image()->unclampedImageSizeForRenderer(protect(renderer()).get(), effectiveImageDevicePixelRatio()).width().toUnsigned();
 }
 
 unsigned HTMLImageElement::naturalHeight() const
@@ -650,7 +650,7 @@ unsigned HTMLImageElement::naturalHeight() const
     if (!m_imageLoader->image())
         return 0;
 
-    return m_imageLoader->image()->unclampedImageSizeForRenderer(checkedRenderer().get(), effectiveImageDevicePixelRatio()).height().toUnsigned();
+    return m_imageLoader->image()->unclampedImageSizeForRenderer(protect(renderer()).get(), effectiveImageDevicePixelRatio()).height().toUnsigned();
 }
 
 bool HTMLImageElement::isURLAttribute(const Attribute& attribute) const
@@ -901,12 +901,18 @@ bool HTMLImageElement::childShouldCreateRenderer(const Node& child) const
 }
 #endif
 
-#if PLATFORM(IOS_FAMILY)
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
 // FIXME: We should find a better place for the touch callout logic. See rdar://problem/48937767.
 bool HTMLImageElement::willRespondToMouseClickEventsWithEditability(Editability editability, IgnoreTouchCallout ignoreTouchCallout) const
 {
-    auto renderer = this->renderer();
-    if (ignoreTouchCallout == IgnoreTouchCallout::No && (!renderer || renderer->style().touchCallout() == Style::WebkitTouchCallout::Default))
+#if ENABLE(WEBKIT_TOUCH_CALLOUT_CSS_PROPERTY)
+    CheckedPtr renderer = this->renderer();
+    bool touchCalloutIsDefault = !renderer || renderer->style().touchCallout() == Style::WebkitTouchCallout::Default;
+#else
+    bool touchCalloutIsDefault = true;
+#endif
+
+    if (ignoreTouchCallout == IgnoreTouchCallout::No && touchCalloutIsDefault)
         return true;
     return HTMLElement::willRespondToMouseClickEventsWithEditability(editability);
 }
@@ -989,7 +995,7 @@ bool HTMLImageElement::isDeferred() const
 
 bool HTMLImageElement::isLazyLoadable() const
 {
-    if (!document().frame() || !document().frame()->checkedScript()->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
+    if (!document().frame() || !protect(document().frame()->script())->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
         return false;
     return hasLazyLoadableAttributeValue(attributeWithoutSynchronization(HTMLNames::loadingAttr));
 }

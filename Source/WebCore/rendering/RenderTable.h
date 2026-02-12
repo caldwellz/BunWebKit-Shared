@@ -104,9 +104,9 @@ public:
         m_columnPos[index] = position;
     }
 
-    RenderTableSection* header() const;
-    RenderTableSection* footer() const;
-    RenderTableSection* firstBody() const;
+    RenderTableSection* NODELETE header() const;
+    RenderTableSection* NODELETE footer() const;
+    RenderTableSection* NODELETE firstBody() const;
 
     // This function returns 0 if the table has no section.
     RenderTableSection* topSection() const;

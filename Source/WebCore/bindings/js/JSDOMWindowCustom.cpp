@@ -396,22 +396,21 @@ template void addCrossOriginOwnPropertyNames<CrossOriginObject::Location>(JSC::J
 
 static void addScopedChildrenIndexes(JSGlobalObject& lexicalGlobalObject, DOMWindow& window, PropertyNameArrayBuilder& propertyNames)
 {
-    RefPtr localDOMWindow = dynamicDowncast<LocalDOMWindow>(window);
-    if (!localDOMWindow)
-        return;
-
-    CheckedPtr document = localDOMWindow->document();
-    if (!document)
-        return;
-
-    auto* frame = document->frame();
+    RefPtr frame = window.frame();
     if (!frame)
         return;
 
     VM& vm = lexicalGlobalObject.vm();
-    unsigned scopedChildCount = frame->tree().scopedChildCount();
-    for (unsigned i = 0; i < scopedChildCount; ++i)
-        propertyNames.add(Identifier::from(vm, i));
+    // FIXME: scopedChild/scopedChildCount and RemoteFrame need to work together well. We're using child/childCount until then.
+    if (window.documentIfLocal()) {
+        unsigned scopedChildCount = frame->tree().scopedChildCount();
+        for (unsigned i = 0; i < scopedChildCount; ++i)
+            propertyNames.add(Identifier::from(vm, i));
+    } else {
+        unsigned childCount = frame->tree().childCount();
+        for (unsigned i = 0; i < childCount; ++i)
+            propertyNames.add(Identifier::from(vm, i));
+    }
 }
 
 // https://html.spec.whatwg.org/#windowproxy-ownpropertykeys

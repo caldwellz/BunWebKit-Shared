@@ -929,3 +929,25 @@ TEST(WKBackForwardList, GoBackToPageAfterNavigatingIframeAndRestoringSession)
     EXPECT_WK_STREQ([webView _test_waitForAlert], "b");
     EXPECT_WK_STREQ([webView URL].absoluteString, server.request("/example"_s).URL.absoluteString.UTF8String);
 }
+
+TEST(WKBackForwardList, RestoreSessionForSiteWithCOOP)
+{
+    TestWebKitAPI::HTTPServer server({
+        { "/main"_s, { { { "Content-Type"_s, "text/html"_s }, { "cross-origin-opener-policy"_s, "same-origin"_s } }, "<p>main</p><iframe src='/frame'></iframe>"_s } },
+        { "/frame"_s, { "<p>iframe</p><script>alert(location.href + ' is loaded');</script>"_s } },
+    }, TestWebKitAPI::HTTPServer::Protocol::HttpsProxy);
+
+    RetainPtr configuration = server.httpsProxyConfiguration();
+    RetainPtr navigationDelegate = adoptNS([TestNavigationDelegate new]);
+    [navigationDelegate allowAnyTLSCertificate];
+    RetainPtr webView = adoptNS([[TestWKWebView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600) configuration:configuration.get()]);
+    webView.get().navigationDelegate = navigationDelegate.get();
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"https://example.com/main"]]];
+    EXPECT_WK_STREQ([webView _test_waitForAlert], "https://example.com/frame is loaded");
+
+    RetainPtr webView2 = adoptNS([[TestWKWebView alloc] initWithFrame:NSMakeRect(0, 0, 800, 600) configuration:configuration.get()]);
+    webView2.get().navigationDelegate = navigationDelegate.get();
+    [webView2 _restoreSessionState:[webView _sessionState] andNavigate:YES];
+    EXPECT_WK_STREQ([webView2 _test_waitForAlert], "https://example.com/frame is loaded");
+}

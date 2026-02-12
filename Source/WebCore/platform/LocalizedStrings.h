@@ -191,9 +191,7 @@ namespace WebCore {
     WEBCORE_EXPORT String contextMenuItemPDFOpenWithDefaultViewer(const String& appName);
 #endif
 #if ENABLE(PDFJS) || ENABLE(UNIFIED_PDF)
-    WEBCORE_EXPORT String contextMenuItemPDFSinglePage();
     WEBCORE_EXPORT String contextMenuItemPDFSinglePageContinuous();
-    WEBCORE_EXPORT String contextMenuItemPDFTwoPages();
     WEBCORE_EXPORT String contextMenuItemPDFTwoPagesContinuous();
     WEBCORE_EXPORT String contextMenuItemPDFZoomIn();
     WEBCORE_EXPORT String contextMenuItemPDFZoomOut();
@@ -203,6 +201,11 @@ namespace WebCore {
     WEBCORE_EXPORT String contextMenuItemPDFAutoSize();
 #endif
 #endif // ENABLE(CONTEXT_MENU)
+
+#if ENABLE(PDFJS) || ENABLE(UNIFIED_PDF)
+    WEBCORE_EXPORT String contextMenuItemPDFSinglePage();
+    WEBCORE_EXPORT String contextMenuItemPDFTwoPages();
+#endif
 
     WEBCORE_EXPORT String pdfDocumentTypeDescription();
 

@@ -35,17 +35,17 @@
 
 namespace WebCore {
 
-using GPURenderPassDepthAttachmentView = Variant<RefPtr<GPUTexture>, RefPtr<GPUTextureView>>;
+using GPURenderPassDepthAttachmentView = Variant<Ref<GPUTexture>, Ref<GPUTextureView>>;
 
 struct GPURenderPassDepthStencilAttachment {
     WebGPU::RenderPassDepthStencilAttachment convertToBacking() const
     {
         return {
             WTF::switchOn(view,
-                [&](const RefPtr<GPUTexture>& texture) -> WebGPU::RenderPassDepthAttachmentView {
+                [](const Ref<GPUTexture>& texture) -> WebGPU::RenderPassDepthAttachmentView {
                     return texture->backing();
                 },
-                [&](const RefPtr<GPUTextureView>& view) -> WebGPU::RenderPassDepthAttachmentView {
+                [](const Ref<GPUTextureView>& view) -> WebGPU::RenderPassDepthAttachmentView {
                     return view->backing();
                 }
             ),

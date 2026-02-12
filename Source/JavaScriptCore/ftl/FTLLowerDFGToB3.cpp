@@ -94,6 +94,7 @@
 #include "JSPromiseReaction.h"
 #include "JSRegExpStringIterator.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "JSWeakMap.h"
 #include "JSWebAssemblyInstance.h"
 #include "JSWrapForValidIterator.h"
@@ -1362,7 +1363,8 @@ private:
             compileStringIndexOf();
             break;
         case StringStartsWith:
-            compileStringStartsWith();
+        case StringEndsWith:
+            compileStringStartsOrEndsWith();
             break;
         case GetByOffset:
         case GetGetterSetterByOffset:
@@ -1657,6 +1659,9 @@ private:
             break;
         case MapOrSetSize:
             compileMapOrSetSize();
+            break;
+        case GetRegExpFlag:
+            compileGetRegExpFlag();
             break;
         case SetAdd:
             compileSetAdd();
@@ -3353,6 +3358,33 @@ private:
             }
 
             setInt32(remainder);
+            break;
+        }
+
+        case Int52RepUse: {
+            LValue numerator = lowStrictInt52(m_node->child1());
+            LValue denominator = lowStrictInt52(m_node->child2());
+
+            if (shouldCheckOverflow(m_node->arithMode()))
+                speculate(Int52Overflow, noValue(), nullptr, m_out.isZero64(denominator));
+
+            LValue remainder = m_out.chillMod(numerator, denominator);
+
+            if (shouldCheckNegativeZero(m_node->arithMode())) {
+                LBasicBlock negativeNumerator = m_out.newBlock();
+                LBasicBlock continuation = m_out.newBlock();
+
+                m_out.branch(
+                    m_out.lessThan(numerator, m_out.int64Zero),
+                    unsure(negativeNumerator), unsure(continuation));
+
+                LBasicBlock innerLastNext = m_out.appendTo(negativeNumerator, continuation);
+                speculate(NegativeZero, noValue(), nullptr, m_out.isZero64(remainder));
+                m_out.jump(continuation);
+                m_out.appendTo(continuation, innerLastNext);
+            }
+
+            setStrictInt52(remainder);
             break;
         }
 
@@ -9485,6 +9517,9 @@ IGNORE_CLANG_WARNINGS_END
         case JSSetIteratorType:
             compileNewInternalFieldObjectImpl<JSSetIterator>(operationNewSetIterator);
             break;
+        case JSStringIteratorType:
+            compileNewInternalFieldObjectImpl<JSStringIterator>(operationNewStringIterator);
+            break;
         case JSIteratorHelperType:
             compileNewInternalFieldObjectImpl<JSIteratorHelper>(operationNewIteratorHelper);
             break;
@@ -11595,15 +11630,23 @@ IGNORE_CLANG_WARNINGS_END
             setInt32(vmCall(Int32, operationStringIndexOf, weakPointer(globalObject), base, search));
     }
 
-    void compileStringStartsWith()
+    void compileStringStartsOrEndsWith()
     {
+        bool isStartsWith = m_node->op() == StringStartsWith;
         LValue base = lowString(m_node->child1());
         LValue search = lowString(m_node->child2());
         auto* globalObject = m_graph.globalObjectFor(m_origin.semantic);
-        if (m_node->child3())
-            setBoolean(vmCall(Int32, operationStringStartsWithWithIndex, weakPointer(globalObject), base, search, lowInt32(m_node->child3())));
-        else
-            setBoolean(vmCall(Int32, operationStringStartsWith, weakPointer(globalObject), base, search));
+        if (m_node->child3()) {
+            if (isStartsWith)
+                setBoolean(vmCall(Int32, operationStringStartsWithWithIndex, weakPointer(globalObject), base, search, lowInt32(m_node->child3())));
+            else
+                setBoolean(vmCall(Int32, operationStringEndsWithWithEndPosition, weakPointer(globalObject), base, search, lowInt32(m_node->child3())));
+        } else {
+            if (isStartsWith)
+                setBoolean(vmCall(Int32, operationStringStartsWith, weakPointer(globalObject), base, search));
+            else
+                setBoolean(vmCall(Int32, operationStringEndsWith, weakPointer(globalObject), base, search));
+        }
     }
 
     void compileGetByOffset()
@@ -13884,13 +13927,12 @@ IGNORE_CLANG_WARNINGS_END
                 // and we should attempt to perform constant-folding etc. And also, we can avoid usign this at all for DFG Int64 value.
                 LValue argument = lowCell(m_graph.varArgChild(node, 2 + i));
                 PatchpointValue* patchpoint = m_out.patchpoint(Int64);
-                patchpoint->numGPScratchRegisters = 2;
                 patchpoint->append(ConstrainedValue(argument, ValueRep::SomeLateRegister));
                 patchpoint->clobber(RegisterSetBuilder::macroClobberedGPRs());
                 patchpoint->setGenerator(
                     [=](CCallHelpers& jit, const StackmapGenerationParams& params) {
                         AllowMacroScratchRegisterUsage allowScratch(jit);
-                        jit.toBigInt64(params[1].gpr(), params[0].gpr(), params.gpScratch(0), params.gpScratch(1));
+                        jit.toBigInt64(params[1].gpr(), params[0].gpr());
                     });
                 if (isStack)
                     arguments.append(ConstrainedValue(patchpoint, ValueRep::stackArgument(safeCast<Value::OffsetType>(wasmCallInfo.params[i].location.offsetFromSP()))));
@@ -13931,7 +13973,7 @@ IGNORE_CLANG_WARNINGS_END
         bool wasmBaseMemoryPointerConfiguredAsInputContraints = false;
         auto* instance = wasmFunction->instance();
         arguments.append(ConstrainedValue(frozenPointer(m_graph.freeze(instance)), ValueRep::reg(GPRInfo::wasmContextInstancePointer)));
-        if (!!instance->module().moduleInformation().memory) {
+        if (instance->module().moduleInformation().memoryCount()) {
             auto mode = instance->memoryMode();
             if (mode == MemoryMode::Signaling || (mode == MemoryMode::BoundsChecking && instance->memory()->sharingMode() == MemorySharingMode::Shared)) {
                 // Capacity and basePointer will not be changed.
@@ -14015,7 +14057,7 @@ IGNORE_CLANG_WARNINGS_END
                 constexpr GPRReg scratchGPR = GPRInfo::nonPreservedNonArgumentGPR0;
                 static_assert(noOverlap(GPRInfo::wasmBoundsCheckingSizeRegister, GPRInfo::wasmBaseMemoryPointer, scratchGPR));
                 ASSERT(!RegisterSetBuilder::macroClobberedGPRs().contains(scratchGPR, IgnoreVectors));
-                if (!!instance->module().moduleInformation().memory) {
+                if (instance->module().moduleInformation().memoryCount()) {
                     auto mode = instance->memoryMode();
                     if (!(mode == MemoryMode::Signaling || (mode == MemoryMode::BoundsChecking && instance->memory()->sharingMode() == MemorySharingMode::Shared))) {
                         // We always clobber GPRInfo::wasmBoundsCheckingSizeRegister regardless of mode. It is OK since patchpoint already said it is clobbered.
@@ -15808,6 +15850,23 @@ IGNORE_CLANG_WARNINGS_END
 
         m_out.appendTo(continuation, lastNext);
         setInt32(m_out.phi(Int32, noStorageResult, hasStorageResult));
+    }
+
+    void compileGetRegExpFlag()
+    {
+        LValue regExpObject = lowRegExpObject(m_node->child1());
+
+        // Load RegExp* from RegExpObject (mask off low 2 flag bits).
+        LValue regExpAndFlags = m_out.loadPtr(regExpObject, m_heaps.RegExpObject_regExpAndFlags);
+        LValue regExp = m_out.bitAnd(regExpAndFlags, m_out.constIntPtr(RegExpObject::regExpMask));
+
+        // Load m_flags (uint16_t) from RegExp.
+        LValue flags = m_out.load16ZeroExt32(regExp, m_heaps.RegExp_flags);
+
+        // Test specific flag bit.
+        Yarr::Flags flag = m_node->regExpFlag();
+        LValue test = m_out.bitAnd(flags, m_out.constInt32(static_cast<uint16_t>(flag)));
+        setBoolean(m_out.notZero32(test));
     }
 
     void compileSetAdd()
@@ -18120,6 +18179,9 @@ IGNORE_CLANG_WARNINGS_END
             break;
         case JSSetIteratorType:
             compileMaterializeNewInternalFieldObjectImpl<JSSetIterator>(operationNewSetIterator);
+            break;
+        case JSStringIteratorType:
+            compileMaterializeNewInternalFieldObjectImpl<JSStringIterator>(operationNewStringIterator);
             break;
         case JSIteratorHelperType:
             compileMaterializeNewInternalFieldObjectImpl<JSIteratorHelper>(operationNewIteratorHelper);

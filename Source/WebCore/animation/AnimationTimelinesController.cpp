@@ -214,7 +214,7 @@ void AnimationTimelinesController::updateAnimationsAndSendEvents(ReducedResoluti
     }
 
     // 3. Perform a microtask checkpoint.
-    protectedDocument()->checkedEventLoop()->performMicrotaskCheckpoint();
+    protect(protectedDocument()->eventLoop())->performMicrotaskCheckpoint();
 
     if (RefPtr documentTimeline = m_document->existingTimeline()) {
         // FIXME: pending animation events should be owned by this controller rather
@@ -229,7 +229,7 @@ void AnimationTimelinesController::updateAnimationsAndSendEvents(ReducedResoluti
 
         // 7. Dispatch each of the events in events to dispatch at their corresponding target using the order established in the previous step.
         for (auto& event : events)
-            event->protectedTarget()->dispatchEvent(event);
+            protect(event->target())->dispatchEvent(event);
     }
 
     // This will cancel any scheduled invalidation if we end up removing all animations.
@@ -350,7 +350,7 @@ void AnimationTimelinesController::cacheCurrentTime(ReducedResolutionSeconds new
     // start time.
     if (!m_pendingAnimationsProcessingTaskCancellationGroup.hasPendingTask()) {
         CancellableTask task(m_pendingAnimationsProcessingTaskCancellationGroup, std::bind(&AnimationTimelinesController::processPendingAnimations, this));
-        protectedDocument()->checkedEventLoop()->queueTask(TaskSource::InternalAsyncTask, WTF::move(task));
+        protect(protectedDocument()->eventLoop())->queueTask(TaskSource::InternalAsyncTask, WTF::move(task));
     }
 
     if (!m_isSuspended) {

@@ -40,6 +40,7 @@
 #import "RenderObject.h"
 #import "WAKView.h"
 #import "WebAccessibilityObjectWrapperIOS.h"
+#import <pal/ios/UIKitSoftLink.h>
 #import <pal/spi/ios/AXRuntimeSPI.h>
 #import <wtf/SoftLinking.h>
 #import <wtf/cocoa/SpanCocoa.h>
@@ -262,7 +263,7 @@ static void attributeStringSetStyle(NSMutableAttributedString *attrString, Rende
     };
 
     if (Accessibility::findAncestor<AccessibilityObject>(*object, true, WTF::move(matchFunc)))
-        [attrString addAttribute:UIAccessibilityTextAttributeContext value:UIAccessibilityTextualContextSourceCode range:range];
+        [attrString addAttribute:PAL::get_UIKit_UIAccessibilityTextAttributeContextSingleton() value:PAL::get_UIKit_UIAccessibilityTextualContextSourceCodeSingleton() range:range];
 }
 
 static void attributedStringSetCompositionAttributes(NSMutableAttributedString *attributedString, RenderObject* renderer)

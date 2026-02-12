@@ -27,7 +27,6 @@
 
 #if HAVE(WEBGPU_IMPLEMENTATION)
 
-#include "ModelConvertToBackingContext.h"
 #include "WebGPU.h"
 #include "WebGPUConvertToBackingContext.h"
 #include "WebGPUPtr.h"
@@ -38,16 +37,9 @@
 #include <wtf/Function.h>
 #include <wtf/TZoneMalloc.h>
 
-namespace WebModel {
-struct MeshDescriptor;
-}
-
 namespace WebCore {
-class ConvertToBackingContext;
 class GraphicsContext;
 class IntSize;
-class Mesh;
-class ModelConvertToBackingContext;
 class NativeImage;
 }
 
@@ -87,9 +79,9 @@ public:
     void ref() const final { RefCounted::ref(); }
     void deref() const final { RefCounted::deref(); }
 
-    static Ref<GPUImpl> create(WebGPUPtr<WGPUInstance>&& instance, ConvertToBackingContext& convertToBackingContext, ModelConvertToBackingContext& modelConvertToBackingContext)
+    static Ref<GPUImpl> create(WebGPUPtr<WGPUInstance>&& instance, ConvertToBackingContext& convertToBackingContext)
     {
-        return adoptRef(*new GPUImpl(WTF::move(instance), convertToBackingContext, modelConvertToBackingContext));
+        return adoptRef(*new GPUImpl(WTF::move(instance), convertToBackingContext));
     }
 
     virtual ~GPUImpl();
@@ -99,7 +91,7 @@ public:
 private:
     friend class DowncastConvertToBackingContext;
 
-    GPUImpl(WebGPUPtr<WGPUInstance>&&, ConvertToBackingContext&, ModelConvertToBackingContext&);
+    GPUImpl(WebGPUPtr<WGPUInstance>&&, ConvertToBackingContext&);
 
     GPUImpl(const GPUImpl&) = delete;
     GPUImpl(GPUImpl&&) = delete;
@@ -110,7 +102,6 @@ private:
     bool isGPUImpl() const final { return true; }
 
     void requestAdapter(const RequestAdapterOptions&, CompletionHandler<void(RefPtr<Adapter>&&)>&&) final;
-    RefPtr<WebCore::Mesh> createModelBacking(unsigned width, unsigned height, const WebModel::ImageAsset& diffuseTexture, const WebModel::ImageAsset& specularTexture, CompletionHandler<void(Vector<MachSendRight>&&)>&&) final;
 
     RefPtr<PresentationContext> createPresentationContext(const PresentationContextDescriptor&) final;
 
@@ -145,7 +136,6 @@ private:
 
     WebGPUPtr<WGPUInstance> m_backing;
     const Ref<ConvertToBackingContext> m_convertToBackingContext;
-    const Ref<ModelConvertToBackingContext> m_modelConvertToBackingContext;
 };
 
 } // namespace WebCore::WebGPU

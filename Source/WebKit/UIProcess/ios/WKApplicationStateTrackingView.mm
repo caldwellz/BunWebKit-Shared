@@ -55,7 +55,7 @@
     if ((self.window && !self._contentView.window) || newWindow)
         return;
 
-    auto page = [_webViewToTrack _page];
+    auto page = [_webViewToTrack.get() _page];
     RELEASE_LOG(ViewState, "%p - WKApplicationStateTrackingView: View with page [%p, pageProxyID=%" PRIu64 "] was removed from a window, _lastObservedStateWasBackground=%d", self, page.get(), page ? page->identifier().toUInt64() : 0, page ? page->lastObservedStateWasBackground() : false);
     protect(*_applicationStateTracker)->setWindow(nil);
 }
@@ -65,7 +65,7 @@
     if (!self._contentView.window)
         return;
 
-    auto page = [_webViewToTrack _page];
+    auto page = [_webViewToTrack.get() _page];
     bool lastObservedStateWasBackground = page ? page->lastObservedStateWasBackground() : false;
 
     protect(*_applicationStateTracker)->setWindow(self._contentView.window);
@@ -79,7 +79,7 @@
 
 - (void)_applicationDidEnterBackground
 {
-    RefPtr page = [_webViewToTrack _page].get();
+    RefPtr page = [_webViewToTrack.get() _page].get();
     if (!page)
         return;
 
@@ -89,7 +89,7 @@
 
 - (void)_applicationDidFinishSnapshottingAfterEnteringBackground
 {
-    RefPtr page = [_webViewToTrack _page].get();
+    RefPtr page = [_webViewToTrack.get() _page].get();
     if (!page)
         return;
 
@@ -99,7 +99,7 @@
 
 - (void)_applicationWillEnterForeground
 {
-    RefPtr page = [_webViewToTrack _page].get();
+    RefPtr page = [_webViewToTrack.get() _page].get();
     if (!page)
         return;
 
@@ -109,7 +109,7 @@
 
 - (void)_willBeginSnapshotSequence
 {
-    RefPtr page = [_webViewToTrack _page].get();
+    RefPtr page = [_webViewToTrack.get() _page].get();
     if (!page)
         return;
 
@@ -122,7 +122,7 @@
 
 - (void)_didCompleteSnapshotSequence
 {
-    RefPtr page = [_webViewToTrack _page].get();
+    RefPtr page = [_webViewToTrack.get() _page].get();
     if (!page)
         return;
 

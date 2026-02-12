@@ -422,6 +422,8 @@ void RemoteLayerTreeDrawingArea::updateRendering()
 
     m_backingStoreFlusher->markHasPendingFlush();
 
+    send(Messages::RemoteLayerTreeDrawingAreaProxy::NotifyFlushingLayerTree(transactionID));
+
     auto pageID = webPage->identifier();
     m_commitQueue->dispatch([backingStoreFlusher = m_backingStoreFlusher, commitEncoder = WTF::move(commitEncoder), flushers = WTF::move(flushers), pageID] () mutable {
         bool flushSucceeded = backingStoreFlusher->flush(WTF::move(commitEncoder), WTF::move(flushers));

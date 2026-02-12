@@ -7203,7 +7203,7 @@ class GenerateStyleComputedStyleProperties:
                 )
 
 
-# Generates `RenderStyleProperties.h`, `RenderStyleProperties+GettersInlines.h` and `RenderStyleProperties+SettersInlines.h`.
+# Generates `RenderStyleProperties.h`, `RenderStyleProperties.cpp`, `RenderStyleProperties+ConstructionInlines.h`, `RenderStyleProperties+GettersInlines.h` and `RenderStyleProperties+SettersInlines.h`.
 class GenerateRenderStyleProperties:
     def __init__(self, generation_context):
         self.generation_context = generation_context
@@ -7218,6 +7218,8 @@ class GenerateRenderStyleProperties:
 
     def generate(self):
         self.generate_render_style_properties_h()
+        self.generate_render_style_properties_cpp()
+        self.generate_render_style_properties_construction_inlines_h()
         self.generate_render_style_properties_getters_inlines_h()
         self.generate_render_style_properties_setters_inlines_h()
 
@@ -7448,6 +7450,15 @@ class GenerateRenderStyleProperties:
                 to.write(f"// FIXME: Add support for logical getter/setters of kind '{property_group['kind']}'.")
             to.newline()
 
+    def _generate_checked_ptr_delegation(self, *, to):
+        to.write(f"// Delegation to `Style::ComputedStyle` for `CheckedPtr` support.")
+        to.write(f"ALWAYS_INLINE uint32_t checkedPtrCount() const {{ return m_computedStyle.checkedPtrCount(); }}")
+        to.write(f"ALWAYS_INLINE void incrementCheckedPtrCount() const {{ m_computedStyle.incrementCheckedPtrCount(); }}")
+        to.write(f"ALWAYS_INLINE void decrementCheckedPtrCount() const {{ m_computedStyle.decrementCheckedPtrCount(); }}")
+        to.write(f"ALWAYS_INLINE uint32_t checkedPtrCountWithoutThreadCheck() const {{ return m_computedStyle.checkedPtrCountWithoutThreadCheck(); }}")
+        to.write(f"ALWAYS_INLINE void setDidBeginCheckedPtrDeletion() {{ m_computedStyle.setDidBeginCheckedPtrDeletion(); }}")
+        to.newline()
+
     def generate_render_style_properties_h(self):
         with open('RenderStyleProperties.h', 'w') as output_file:
             writer = Writer(output_file)
@@ -7463,15 +7474,26 @@ class GenerateRenderStyleProperties:
             self.generation_context.generate_includes(
                 to=writer,
                 system_headers=[
-                    "<WebCore/RenderStyleBase.h>",
+                    "<WebCore/StyleComputedStyle.h>",
                 ]
             )
 
             with self.generation_context.namespace("WebCore", to=writer):
-                writer.write(f"class RenderStyleProperties : public RenderStyleBase {{")
+                writer.write(f"DECLARE_ALLOCATOR_WITH_HEAP_IDENTIFIER(RenderStyleProperties);")
+                writer.write(f"class RenderStyleProperties {{")
+                with writer.indent():
+                    writer.write(f"WTF_DEPRECATED_MAKE_FAST_ALLOCATED_WITH_HEAP_IDENTIFIER(RenderStyleProperties, RenderStyleProperties);")
+                    writer.write(f"WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(RenderStyleProperties);")
                 writer.write(f"public:")
 
                 with writer.indent():
+                    writer.write(f"~RenderStyleProperties() = default;")
+                    writer.newline()
+
+                    self._generate_checked_ptr_delegation(
+                        to=writer
+                    )
+
                     self._generate_property_function_declarations(
                         to=writer
                     )
@@ -7482,17 +7504,96 @@ class GenerateRenderStyleProperties:
                 writer.write(f"protected:")
 
                 with writer.indent():
-                    writer.write(f"RenderStyleProperties(RenderStyleProperties&&) = default;")
-                    writer.write(f"RenderStyleProperties& operator=(RenderStyleProperties&&) = default;")
+                    writer.write(f"friend class RenderStyle;")
+                    writer.write(f"friend class Style::DifferenceFunctions;")
                     writer.newline()
 
-                    writer.write(f"RenderStyleProperties(CreateDefaultStyleTag tag) : RenderStyleBase {{ tag }} {{ }}")
-                    writer.write(f"RenderStyleProperties(const RenderStyleProperties& other, CloneTag tag) : RenderStyleBase {{ other, tag }} {{ }}")
+                    writer.write(f"enum CloneTag {{ Clone }};")
+                    writer.write(f"enum CreateDefaultStyleTag {{ CreateDefaultStyle }};")
                     writer.newline()
 
-                    writer.write(f"RenderStyleProperties(RenderStyleProperties& a, RenderStyleProperties&& b) : RenderStyleBase {{ a, WTF::move(b) }} {{ }}")
+                    writer.write(f"RenderStyleProperties(RenderStyleProperties&&);")
+                    writer.write(f"RenderStyleProperties& operator=(RenderStyleProperties&&);")
+                    writer.newline()
 
+                    writer.write(f"RenderStyleProperties(CreateDefaultStyleTag);")
+                    writer.write(f"RenderStyleProperties(const RenderStyleProperties&, CloneTag);")
+                    writer.newline()
+
+                    writer.write(f"RenderStyleProperties(RenderStyleProperties&, RenderStyleProperties&&);")
+                    writer.newline()
+
+                    writer.write(f"Style::ComputedStyle m_computedStyle;")
                 writer.write(f"}};")
+                writer.newline()
+
+    # Generate RenderStyleProperties.cpp
+
+    def generate_render_style_properties_cpp(self):
+        with open('RenderStyleProperties.cpp', 'w') as output_file:
+            writer = Writer(output_file)
+
+            writer = Writer(output_file)
+
+            self.generation_context.generate_heading(
+                to=writer
+            )
+
+            self.generation_context.generate_cpp_required_includes(
+                to=writer,
+                header="RenderStyleProperties.h"
+            )
+
+            with self.generation_context.namespace("WebCore", to=writer):
+                writer.write(f"DEFINE_ALLOCATOR_WITH_HEAP_IDENTIFIER(RenderStyleProperties);")
+                writer.newline()
+
+    # Generate RenderStyleProperties+ConstructionInlines.h
+
+    def generate_render_style_properties_construction_inlines_h(self):
+        with open('RenderStyleProperties+ConstructionInlines.h', 'w') as output_file:
+            writer = Writer(output_file)
+
+            self.generation_context.generate_heading(
+                to=writer
+            )
+
+            self.generation_context.generate_required_header_pragma(
+                to=writer
+            )
+
+            self.generation_context.generate_includes(
+                to=writer,
+                headers=[
+                    "RenderStyleProperties.h",
+                    "StyleComputedStyle+ConstructionInlines.h",
+                ]
+            )
+
+            with self.generation_context.namespace("WebCore", to=writer):
+                writer.write(f"inline RenderStyleProperties::RenderStyleProperties(RenderStyleProperties&&) = default;")
+                writer.write(f"inline RenderStyleProperties& RenderStyleProperties::operator=(RenderStyleProperties&&) = default;")
+                writer.newline()
+
+                writer.write(f"inline RenderStyleProperties::RenderStyleProperties(CreateDefaultStyleTag)")
+                with writer.indent():
+                    writer.write(f": m_computedStyle(Style::ComputedStyle::CreateDefaultStyle)")
+                writer.write(f"{{")
+                writer.write(f"}}")
+                writer.newline()
+
+                writer.write(f"inline RenderStyleProperties::RenderStyleProperties(const RenderStyleProperties& other, CloneTag)")
+                with writer.indent():
+                    writer.write(f": m_computedStyle(other.m_computedStyle, Style::ComputedStyle::Clone)")
+                writer.write(f"{{")
+                writer.write(f"}}")
+                writer.newline()
+
+                writer.write(f"inline RenderStyleProperties::RenderStyleProperties(RenderStyleProperties& a, RenderStyleProperties&& b)")
+                with writer.indent():
+                    writer.write(f": m_computedStyle(a.m_computedStyle, WTF::move(b.m_computedStyle))")
+                writer.write(f"{{")
+                writer.write(f"}}")
                 writer.newline()
 
     # Generate RenderStyleProperties+GettersInlines.h
@@ -7677,7 +7778,6 @@ class GenerateRenderStyleProperties:
             self.generation_context.generate_includes(
                 to=writer,
                 system_headers=[
-                    "<WebCore/RenderStyleBase+GettersInlines.h>",
                     "<WebCore/StyleComputedStyle+GettersInlines.h>",
                 ]
             )
@@ -7844,7 +7944,6 @@ class GenerateRenderStyleProperties:
             self.generation_context.generate_includes(
                 to=writer,
                 headers=[
-                    "RenderStyleBase+SettersInlines.h",
                     "StyleComputedStyle+SettersInlines.h",
                 ]
             )

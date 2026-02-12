@@ -47,7 +47,7 @@ public:
     // Manage the relationship with the owner.
     bool isAttached() const { return !!m_contextElement; }
     void detach() { m_contextElement = nullptr; }
-    SVGElement* contextElement() const;
+    SVGElement* NODELETE contextElement() const;
 
     virtual String baseValAsString() const { return emptyString(); }
     virtual String animValAsString() const { return emptyString(); }

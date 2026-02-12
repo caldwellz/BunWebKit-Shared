@@ -474,7 +474,7 @@ String roleToString(AccessibilityRole role)
 bool needsLayoutOrStyleRecalc(const Document& document)
 {
     if (RefPtr frameView = document.view()) {
-        if (frameView->needsLayout() || frameView->checkedLayoutContext()->isLayoutPending())
+        if (frameView->needsLayout() || protect(frameView->layoutContext())->isLayoutPending())
             return true;
     }
     return document.hasPendingStyleRecalc();

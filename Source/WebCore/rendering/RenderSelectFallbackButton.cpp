@@ -76,17 +76,27 @@ static size_t selectedOptionCount(HTMLSelectElement& selectElement)
 
 void RenderSelectFallbackButton::updateFromElement()
 {
+    setTextFromOption(nullptr, -1);
+}
+
+void RenderSelectFallbackButton::setTextFromOption(HTMLOptionElement* selectedOption, int optionIndex)
+{
     Ref selectElement = protect(selectFallbackButtonElement())->selectElement();
-    int optionIndex = selectElement->selectedIndex();
 
-    const auto& listItems = selectElement->listItems();
-    int size = listItems.size();
+    if (optionIndex < 0)
+        optionIndex = selectElement->selectedIndex();
 
-    int i = selectElement->optionToListIndex(optionIndex);
     String text = emptyString();
-    if (i >= 0 && i < size) {
-        if (RefPtr option = dynamicDowncast<HTMLOptionElement>(*listItems[i]))
-            text = option->textIndentedToRespectGroupLabel();
+    if (selectedOption)
+        text = selectedOption->textIndentedToRespectGroupLabel();
+    else {
+        auto& listItems = selectElement->listItems();
+        int size = listItems.size();
+        int i = selectElement->optionToListIndex(optionIndex);
+        if (i >= 0 && i < size) {
+            if (RefPtr option = dynamicDowncast<HTMLOptionElement>(*listItems[i]))
+                text = option->textIndentedToRespectGroupLabel();
+        }
     }
 
 #if PLATFORM(IOS_FAMILY)
@@ -101,27 +111,6 @@ void RenderSelectFallbackButton::updateFromElement()
 
     selectElement->didUpdateActiveOption(optionIndex);
 }
-
-#if !PLATFORM(COCOA)
-void RenderSelectFallbackButton::setTextFromOption(int optionIndex)
-{
-    Ref selectElement = protect(selectFallbackButtonElement())->selectElement();
-
-    const auto& listItems = selectElement->listItems();
-    int size = listItems.size();
-
-    int i = selectElement->optionToListIndex(optionIndex);
-    String text = emptyString();
-    if (i >= 0 && i < size) {
-        if (RefPtr option = dynamicDowncast<HTMLOptionElement>(*listItems[i]))
-            text = option->textIndentedToRespectGroupLabel();
-    }
-
-    setText(text.trim(deprecatedIsSpaceOrNewline));
-
-    selectElement->didUpdateActiveOption(optionIndex);
-}
-#endif
 
 void RenderSelectFallbackButton::setText(const String& s)
 {

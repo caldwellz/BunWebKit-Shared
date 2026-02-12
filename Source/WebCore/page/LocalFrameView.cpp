@@ -103,6 +103,7 @@
 #include "RenderLayerBacking.h"
 #include "RenderLayerCompositor.h"
 #include "RenderLayerScrollableArea.h"
+#include "RenderListBox.h"
 #include "RenderObjectInlines.h"
 #include "RenderSVGRoot.h"
 #include "RenderScrollbar.h"
@@ -1269,6 +1270,9 @@ void LocalFrameView::adjustScrollbarsForLayout(bool isFirstLayout)
 
 void LocalFrameView::willDoLayout(SingleThreadWeakPtr<RenderElement> layoutRoot)
 {
+    if (!m_frame->document()->isInStyleInterleavedLayout())
+        updateScrollAnchoringBeforeLayoutForScrollableAreas();
+
     bool subtreeLayout = !is<RenderView>(*layoutRoot);
     if (subtreeLayout)
         return;
@@ -1945,7 +1949,7 @@ void LocalFrameView::setLayoutViewportOverrideRect(std::optional<LayoutRect> rec
     LayoutRect newRect = layoutViewportRect();
 
     if (oldRect != newRect)
-        updateScrollAnchoringElement();
+        clearScrollAnchor();
 
     // Triggering layout on height changes is necessary to make bottom-fixed elements behave correctly.
     if (oldRect.height() != newRect.height())
@@ -2036,11 +2040,6 @@ LayoutRect LocalFrameView::layoutViewportRect() const
 
     // Size of initial containing block, anchored at scroll position, in document coordinates (unchanged by scale factor).
     return LayoutRect(m_layoutViewportOrigin, baseLayoutViewportSize());
-}
-
-void LocalFrameView::updateLayoutViewportRect()
-{
-    m_frame->loader().client().broadcastFrameLayoutViewportRectToOtherProcesses(layoutViewportRect());
 }
 
 // visibleContentRect is in the bounds of the scroll view content. That consists of an
@@ -3181,6 +3180,23 @@ void LocalFrameView::scrollElementToRect(const Element& element, const IntRect& 
     setScrollPosition(IntPoint(bounds.x() - centeringOffsetX - rect.x(), bounds.y() - centeringOffsetY - rect.y()));
 }
 
+ScrollableArea* LocalFrameView::scrollableAreaForNode(ContainerNode& node)
+{
+    if (node.isDocumentNode())
+        return this;
+
+    if (CheckedPtr renderer = node.renderer()) {
+        if (auto* renderListBox = dynamicDowncast<RenderListBox>(*renderer))
+            return renderListBox;
+
+        if (CheckedPtr layer = renderer->enclosingLayer()) {
+            if (CheckedPtr scrollableLayer = layer->enclosingScrollableLayer(IncludeSelfOrNot::IncludeSelf, CrossFrameBoundaries::No))
+                return scrollableLayer->scrollableArea();
+        }
+    }
+    return nullptr;
+}
+
 void LocalFrameView::setScrollOffsetWithOptions(std::optional<int> x, std::optional<int> y, const ScrollPositionChangeOptions& options)
 {
     if (x && y) {
@@ -3625,7 +3641,7 @@ void LocalFrameView::scrollOffsetChangedViaPlatformWidgetImpl(const ScrollOffset
     updateCompositingLayersAfterScrolling();
     repaintSlowRepaintObjects();
     scrollPositionChanged(scrollPositionFromOffset(oldOffset), scrollPositionFromOffset(newOffset));
-    updateScrollAnchoringElement();
+    clearScrollAnchor();
 
     if (auto* renderView = this->renderView()) {
         if (renderView->usesCompositing())
@@ -4555,24 +4571,26 @@ void LocalFrameView::scrollToPendingTextFragmentRange()
             return;
 
         auto textRects = RenderObject::absoluteTextRects(range);
+        if (!textRects.size())
+            return;
 
         static constexpr OptionSet hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::AllowVisibleChildFrameContentOnly };
         auto result = localMainFrame->eventHandler().hitTestResultAtPoint(LayoutPoint(textRects.first().center()), hitType);
-        if (!intersects(range, *result.protectedTargetNode()))
+        if (!intersects(range, *protect(result.targetNode())))
             return;
 
         if (textRects.size() >= 2) {
             result = localMainFrame->eventHandler().hitTestResultAtPoint(LayoutPoint(textRects[1].center()), hitType);
-            if (!intersects(range, *result.protectedTargetNode()))
+            if (!intersects(range, *protect(result.targetNode())))
                 return;
         }
 
         if (textRects.size() >= 4) {
             result = localMainFrame->eventHandler().hitTestResultAtPoint(LayoutPoint(textRects.last().center()), hitType);
-            if (!intersects(range, *result.protectedTargetNode()))
+            if (!intersects(range, *protect(result.targetNode())))
                 return;
             result = localMainFrame->eventHandler().hitTestResultAtPoint(LayoutPoint(textRects[textRects.size() - 2].center()), hitType);
-            if (!intersects(range, *result.protectedTargetNode()))
+            if (!intersects(range, *protect(result.targetNode())))
                 return;
         }
         if (m_haveCreatedTextIndicator)
@@ -4645,16 +4663,6 @@ void LocalFrameView::flushAnyPendingPostLayoutTasks()
         updateEmbeddedObjectsTimerFired();
 }
 
-CheckedRef<const LocalFrameViewLayoutContext> LocalFrameView::checkedLayoutContext() const
-{
-    return m_layoutContext;
-}
-
-CheckedRef<LocalFrameViewLayoutContext> LocalFrameView::checkedLayoutContext()
-{
-    return m_layoutContext;
-}
-
 void LocalFrameView::performPostLayoutTasks()
 {
     ScriptDisallowedScope::InMainThread scriptDisallowedScope;
@@ -4701,6 +4709,8 @@ void LocalFrameView::performPostLayoutTasks()
     updateLayoutViewport();
     viewportContentsChanged();
 
+    adjustScrollAnchoringPositionForScrollableAreas();
+
     resnapAfterLayout();
 
     m_frame->document()->scheduleDeferredAXObjectCacheUpdate();
@@ -4708,6 +4718,20 @@ void LocalFrameView::performPostLayoutTasks()
     RefPtr document = m_frame->document();
     if (document && !document->quirks().needsSuppressPostLayoutBoundaryEventsQuirk())
         m_frame->eventHandler().scheduleMouseEventTargetUpdateAfterLayout();
+}
+
+void LocalFrameView::addScrollableAreaForScrollAnchoring(ScrollableArea& scrollableArea)
+{
+    if (!m_anchoringScrollableAreas)
+        m_anchoringScrollableAreas = makeUnique<ScrollableAreaSet>();
+
+    m_anchoringScrollableAreas->add(scrollableArea);
+}
+
+void LocalFrameView::removeScrollableAreaForScrollAnchoring(ScrollableArea& scrollableArea)
+{
+    if (m_anchoringScrollableAreas)
+        m_anchoringScrollableAreas->remove(scrollableArea);
 }
 
 void LocalFrameView::dequeueScrollableAreaForScrollAnchoringUpdate(ScrollableArea& scrollableArea)
@@ -4720,13 +4744,28 @@ void LocalFrameView::queueScrollableAreaForScrollAnchoringUpdate(ScrollableArea&
     m_scrollableAreasWithScrollAnchoringControllersNeedingUpdate.add(scrollableArea);
 }
 
-void LocalFrameView::updateScrollAnchoringElementsForScrollableAreas()
+void LocalFrameView::clearScrollAnchorsInScrollableAreas()
 {
-    updateScrollAnchoringElement(ComputeNewScrollAnchor::No);
-    if (!m_scrollableAreas)
+    clearScrollAnchor();
+    if (!m_anchoringScrollableAreas)
         return;
-    for (auto& scrollableArea : *m_scrollableAreas)
-        scrollableArea.updateScrollAnchoringElement();
+
+    for (auto& scrollableArea : *m_anchoringScrollableAreas)
+        scrollableArea.clearScrollAnchor();
+}
+
+void LocalFrameView::updateScrollAnchoringBeforeLayoutForScrollableAreas()
+{
+    if (CheckedPtr controller = scrollAnchoringController())
+        controller->updateBeforeLayout();
+
+    if (!m_anchoringScrollableAreas)
+        return;
+
+    for (auto& scrollableArea : *m_anchoringScrollableAreas) {
+        if (CheckedPtr controller = scrollableArea.scrollAnchoringController())
+            controller->updateBeforeLayout();
+    }
 }
 
 void LocalFrameView::adjustScrollAnchoringPositionForScrollableAreas()
@@ -4798,7 +4837,7 @@ void LocalFrameView::scheduleResizeEventIfNeeded()
     }
 
     // TODO: move this to a method called for all scrollable areas
-    updateScrollAnchoringElement();
+    clearScrollAnchor();
 
     LOG_WITH_STREAM(Events, stream << "LocalFrameView " << this << " scheduleResizeEventIfNeeded scheduling resize event for document" << document << ", size " << currentSize);
     document->setNeedsDOMWindowResizeEvent();
@@ -6187,6 +6226,37 @@ FloatPoint LocalFrameView::clientToDocumentPoint(FloatPoint point) const
     return point;
 }
 
+FloatPoint LocalFrameView::absoluteToLayoutViewportPoint(FloatPoint p) const
+{
+    ASSERT(m_frame->settings().visualViewportEnabled());
+    p.scale(1 / m_frame->frameScaleFactor());
+    p.moveBy(-layoutViewportRect().location());
+    return p;
+}
+
+FloatPoint LocalFrameView::layoutViewportToAbsolutePoint(FloatPoint p) const
+{
+    ASSERT(m_frame->settings().visualViewportEnabled());
+    p.moveBy(layoutViewportRect().location());
+    return p.scaled(m_frame->frameScaleFactor());
+}
+
+FloatRect LocalFrameView::layoutViewportToAbsoluteRect(FloatRect rect) const
+{
+    ASSERT(m_frame->settings().visualViewportEnabled());
+    rect.moveBy(layoutViewportRect().location());
+    rect.scale(m_frame->frameScaleFactor());
+    return rect;
+}
+
+FloatRect LocalFrameView::absoluteToLayoutViewportRect(FloatRect rect) const
+{
+    ASSERT(m_frame->settings().visualViewportEnabled());
+    rect.scale(1 / m_frame->frameScaleFactor());
+    rect.moveBy(-layoutViewportRect().location());
+    return rect;
+}
+
 FloatRect LocalFrameView::clientToLayoutViewportRect(FloatRect rect) const
 {
     ASSERT(m_frame->settings().visualViewportEnabled());
@@ -6639,19 +6709,9 @@ LocalFrame& LocalFrameView::frame() const
     return m_frame;
 }
 
-Ref<LocalFrame> LocalFrameView::protectedFrame() const
-{
-    return m_frame;
-}
-
 RenderView* LocalFrameView::renderView() const
 {
     return m_frame->contentRenderer();
-}
-
-CheckedPtr<RenderView> LocalFrameView::checkedRenderView() const
-{
-    return renderView();
 }
 
 int LocalFrameView::mapFromLayoutToCSSUnits(LayoutUnit value) const

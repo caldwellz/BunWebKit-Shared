@@ -308,7 +308,6 @@ InlineItemPosition InlineFormattingUtils::leadingInlineItemPositionForNextLine(I
 
 InlineLayoutUnit InlineFormattingUtils::inlineItemWidth(const InlineItem& inlineItem, InlineLayoutUnit contentLogicalLeft, bool useFirstLineStyle) const
 {
-    ASSERT(inlineItem.layoutBox().isInlineLevelBox() || inlineItem.isBlock());
     if (auto* inlineTextItem = dynamicDowncast<InlineTextItem>(inlineItem)) {
         if (auto contentWidth = inlineTextItem->width())
             return *contentWidth;

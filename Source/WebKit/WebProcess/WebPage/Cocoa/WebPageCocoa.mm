@@ -30,10 +30,12 @@
 #import "EditorState.h"
 #import "GPUProcessConnection.h"
 #import "InsertTextOptions.h"
+#import "InteractionInformationAtPosition.h"
 #import "LoadParameters.h"
 #import "MessageSenderInlines.h"
 #import "PDFPlugin.h"
 #import "PluginView.h"
+#import "PositionInformationForWebPage.h"
 #import "PrintInfo.h"
 #import "RemoteLayerTreeCommitBundle.h"
 #import "RemoteLayerTreeTransaction.h"
@@ -56,6 +58,9 @@
 #import <WebCore/AnimationTimelinesController.h>
 #import <WebCore/Chrome.h>
 #import <WebCore/ChromeClient.h>
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+#import <WebCore/ContentChangeObserver.h>
+#endif
 #import <WebCore/DeprecatedGlobalSettings.h>
 #import <WebCore/DictionaryLookup.h>
 #import <WebCore/DocumentMarkerController.h>
@@ -65,6 +70,7 @@
 #import <WebCore/Editing.h>
 #import <WebCore/EditingHTMLConverter.h>
 #import <WebCore/Editor.h>
+#import <WebCore/ElementAncestorIteratorInlines.h>
 #import <WebCore/EventHandler.h>
 #import <WebCore/EventNames.h>
 #import <WebCore/FixedContainerEdges.h>
@@ -73,9 +79,13 @@
 #import <WebCore/FrameLoader.h>
 #import <WebCore/FrameView.h>
 #import <WebCore/GraphicsContextCG.h>
+#import <WebCore/HTMLAnchorElement.h>
 #import <WebCore/HTMLBodyElement.h>
+#import <WebCore/HTMLIFrameElement.h>
 #import <WebCore/HTMLImageElement.h>
 #import <WebCore/HTMLOListElement.h>
+#import <WebCore/HTMLSelectElement.h>
+#import <WebCore/HTMLTextAreaElement.h>
 #import <WebCore/HTMLTextFormControlElement.h>
 #import <WebCore/HTMLUListElement.h>
 #import <WebCore/HitTestResult.h>
@@ -152,6 +162,28 @@
 namespace WebKit {
 
 using namespace WebCore;
+
+// FIXME: Unclear if callers in this file are correctly choosing which of these two functions to use.
+
+String plainTextForContext(const SimpleRange& range)
+{
+    return WebCore::plainTextReplacingNoBreakSpace(range);
+}
+
+String plainTextForContext(const std::optional<SimpleRange>& range)
+{
+    return range ? plainTextForContext(*range) : emptyString();
+}
+
+String plainTextForDisplay(const SimpleRange& range)
+{
+    return WebCore::plainTextReplacingNoBreakSpace(range, { }, true);
+}
+
+String plainTextForDisplay(const std::optional<SimpleRange>& range)
+{
+    return range ? plainTextForDisplay(*range) : emptyString();
+}
 
 void WebPage::platformInitialize(const WebPageCreationParameters& parameters)
 {
@@ -381,7 +413,7 @@ void WebPage::insertDictatedTextAsync(const String& text, const EditingRange& re
     if (replacementEditingRange.location != notFound) {
         auto replacementRange = EditingRange::toRange(*frame, replacementEditingRange);
         if (replacementRange)
-            frame->checkedSelection()->setSelection(VisibleSelection { *replacementRange });
+            protect(frame->selection())->setSelection(VisibleSelection { *replacementRange });
     }
 
     if (options.registerUndoGroup)
@@ -394,7 +426,7 @@ void WebPage::insertDictatedTextAsync(const String& text, const EditingRange& re
     if (frame->editor().hasComposition())
         return;
 
-    frame->protectedEditor()->insertDictatedText(text, dictationAlternativeLocations, nullptr /* triggeringEvent */);
+    protect(frame->editor())->insertDictatedText(text, dictationAlternativeLocations, nullptr /* triggeringEvent */);
 
     if (focusedElement && options.shouldSimulateKeyboardInput) {
         focusedElement->dispatchEvent(Event::create(eventNames().keyupEvent, Event::CanBubble::Yes, Event::IsCancelable::Yes));
@@ -437,7 +469,7 @@ void WebPage::addDictationAlternative(const String& text, DictationContext conte
         return;
     }
 
-    document->checkedMarkers()->addMarker(matchRange, DocumentMarkerType::DictationAlternatives, { DocumentMarker::DictationData { context, text } });
+    protect(document->markers())->addMarker(matchRange, DocumentMarkerType::DictationAlternatives, { DocumentMarker::DictationData { context, text } });
     completion(true);
 }
 
@@ -460,7 +492,7 @@ void WebPage::dictationAlternativesAtSelection(CompletionHandler<void(Vector<Dic
         return;
     }
 
-    auto markers = document->checkedMarkers()->markersInRange(*expandedSelectionRange, DocumentMarkerType::DictationAlternatives);
+    auto markers = protect(document->markers())->markersInRange(*expandedSelectionRange, DocumentMarkerType::DictationAlternatives);
     auto contexts = WTF::compactMap(markers, [](auto& marker) -> std::optional<DictationContext> {
         if (std::holds_alternative<DocumentMarker::DictationData>(marker->data()))
             return std::get<DocumentMarker::DictationData>(marker->data()).context;
@@ -485,7 +517,7 @@ void WebPage::clearDictationAlternatives(Vector<DictationContext>&& contexts)
         setOfContextsToRemove.add(context);
 
     auto documentRange = makeRangeSelectingNodeContents(*document);
-    document->checkedMarkers()->filterMarkers(documentRange, [&] (auto& marker) {
+    protect(document->markers())->filterMarkers(documentRange, [&] (auto& marker) {
         if (!std::holds_alternative<DocumentMarker::DictationData>(marker.data()))
             return FilterMarkerResult::Keep;
         return setOfContextsToRemove.contains(std::get<WebCore::DocumentMarker::DictationData>(marker.data()).context) ? FilterMarkerResult::Remove : FilterMarkerResult::Keep;
@@ -761,7 +793,7 @@ void WebPage::getPlatformEditorStateCommon(LocalFrame& frame, EditorState& resul
                 ASSERT_NOT_REACHED();
         }
 
-        postLayoutData.baseWritingDirection = frame.protectedEditor()->baseWritingDirectionForSelectionStart();
+        postLayoutData.baseWritingDirection = protect(frame.editor())->baseWritingDirectionForSelectionStart();
         postLayoutData.canEnableWritingSuggestions = [&] {
             if (!selection.canEnableWritingSuggestions())
                 return false;
@@ -769,7 +801,7 @@ void WebPage::getPlatformEditorStateCommon(LocalFrame& frame, EditorState& resul
             if (!m_lastNodeBeforeWritingSuggestions)
                 return true;
 
-            RefPtr currentNode = frame.protectedEditor()->nodeBeforeWritingSuggestions();
+            RefPtr currentNode = protect(frame.editor())->nodeBeforeWritingSuggestions();
             return !currentNode || m_lastNodeBeforeWritingSuggestions == currentNode.get();
         }();
     }
@@ -895,7 +927,7 @@ void WebPage::replaceImageForRemoveBackground(const ElementContext& elementConte
     {
         OverridePasteboardForSelectionReplacement overridePasteboard { types, data };
         IgnoreSelectionChangeForScope ignoreSelectionChanges { *frame };
-        frame->protectedEditor()->replaceNodeFromPasteboard(*element, replaceSelectionPasteboardName(), EditAction::RemoveBackground);
+        protect(frame->editor())->replaceNodeFromPasteboard(*element, replaceSelectionPasteboardName(), EditAction::RemoveBackground);
 
         auto position = frame->selection().selection().visibleStart();
         if (auto imageRange = makeSimpleRange(WebCore::VisiblePositionRange { position.previous(), position })) {
@@ -910,7 +942,7 @@ void WebPage::replaceImageForRemoveBackground(const ElementContext& elementConte
 
     constexpr auto restoreSelectionOptions = FrameSelection::defaultSetSelectionOptions(UserTriggered::Yes);
     if (!originalSelection.isNoneOrOrphaned()) {
-        frame->checkedSelection()->setSelection(originalSelection, restoreSelectionOptions);
+        protect(frame->selection())->setSelection(originalSelection, restoreSelectionOptions);
         return;
     }
 
@@ -929,7 +961,7 @@ void WebPage::replaceImageForRemoveBackground(const ElementContext& elementConte
     // The node replacement may have orphaned the original selection range; in this case, try to restore
     // the original selected character range.
     auto newSelectionRange = resolveCharacterRange(selectionHostRange, *rangeToRestore, iteratorOptions);
-    frame->checkedSelection()->setSelection(newSelectionRange, restoreSelectionOptions);
+    protect(frame->selection())->setSelection(newSelectionRange, restoreSelectionOptions);
 }
 
 #endif // ENABLE(IMAGE_ANALYSIS_ENHANCEMENTS)
@@ -947,7 +979,7 @@ void WebPage::readSelectionFromPasteboard(const String& pasteboardName, Completi
         return completionHandler(false);
     if (frame->selection().isNone())
         return completionHandler(false);
-    frame->protectedEditor()->readSelectionFromPasteboard(pasteboardName);
+    protect(frame->editor())->readSelectionFromPasteboard(pasteboardName);
     completionHandler(true);
 }
 
@@ -1755,7 +1787,7 @@ void WebPage::handleAlternativeTextUIResult(const String& result)
     if (!frame)
         return;
 
-    frame->protectedEditor()->handleAlternativeTextUIResult(result);
+    protect(frame->editor())->handleAlternativeTextUIResult(result);
 }
 
 void WebPage::setTextAsync(const String& text)
@@ -1766,11 +1798,11 @@ void WebPage::setTextAsync(const String& text)
 
     if (frame->selection().selection().isContentEditable()) {
         UserTypingGestureIndicator indicator(*frame);
-        frame->checkedSelection()->selectAll();
+        protect(frame->selection())->selectAll();
         if (text.isEmpty())
-            frame->protectedEditor()->deleteSelectionWithSmartDelete(false);
+            protect(frame->editor())->deleteSelectionWithSmartDelete(false);
         else
-            frame->protectedEditor()->insertText(text, nullptr, TextEventInputKeyboard);
+            protect(frame->editor())->insertText(text, nullptr, TextEventInputKeyboard);
         return;
     }
 
@@ -1799,7 +1831,7 @@ void WebPage::insertTextAsync(const String& text, const EditingRange& replacemen
     if (replacementEditingRange.location != notFound) {
         if (auto replacementRange = EditingRange::toRange(*frame, replacementEditingRange, options.editingRangeIsRelativeTo)) {
             SetForScope isSelectingTextWhileInsertingAsynchronously(m_isSelectingTextWhileInsertingAsynchronously, options.suppressSelectionUpdate);
-            frame->checkedSelection()->setSelection(VisibleSelection(*replacementRange));
+            protect(frame->selection())->setSelection(VisibleSelection(*replacementRange));
             replacesText = replacementEditingRange.length;
         }
     }
@@ -1870,7 +1902,7 @@ void WebPage::getMarkedRangeAsync(CompletionHandler<void(const EditingRange&)>&&
     if (!frame)
         return completionHandler({ });
 
-    completionHandler(EditingRange::fromRange(*frame, frame->protectedEditor()->compositionRange()));
+    completionHandler(EditingRange::fromRange(*frame, protect(frame->editor())->compositionRange()));
 }
 
 void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& selectedRange, const EditingRange& compositionRange)>&& completionHandler)
@@ -1880,7 +1912,7 @@ void WebPage::getSelectedRangeAsync(CompletionHandler<void(const EditingRange& s
         return completionHandler({ }, { });
 
     completionHandler(EditingRange::fromRange(*frame, frame->selection().selection().toNormalizedRange()),
-        EditingRange::fromRange(*frame, frame->protectedEditor()->compositionRange()));
+        EditingRange::fromRange(*frame, protect(frame->editor())->compositionRange()));
 }
 
 void WebPage::characterIndexForPointAsync(const WebCore::IntPoint& point, CompletionHandler<void(uint64_t)>&& completionHandler)
@@ -1908,7 +1940,7 @@ void WebPage::firstRectForCharacterRangeAsync(const EditingRange& editingRange, 
     if (!range)
         return completionHandler({ }, editingRange);
 
-    auto rect = RefPtr(frame->view())->contentsToWindow(frame->protectedEditor()->firstRectForRange(*range));
+    auto rect = RefPtr(frame->view())->contentsToWindow(protect(frame->editor())->firstRectForRange(*range));
     auto startPosition = makeContainerOffsetPosition(range->start);
 
     auto endPosition = endOfLine(startPosition);
@@ -1943,9 +1975,9 @@ void WebPage::setCompositionAsync(const String& text, const Vector<CompositionUn
     if (frame->selection().selection().isContentEditable()) {
         if (replacementEditingRange.location != notFound) {
             if (auto replacementRange = EditingRange::toRange(*frame, replacementEditingRange))
-                frame->checkedSelection()->setSelection(VisibleSelection(*replacementRange));
+                protect(frame->selection())->setSelection(VisibleSelection(*replacementRange));
         }
-        frame->protectedEditor()->setComposition(text, underlines, highlights, annotations, selection.location, selection.location + selection.length);
+        protect(frame->editor())->setComposition(text, underlines, highlights, annotations, selection.location, selection.location + selection.length);
     }
 }
 
@@ -1957,7 +1989,7 @@ void WebPage::setWritingSuggestion(const String& fullTextWithPrediction, const E
     if (!frame)
         return;
 
-    frame->protectedEditor()->setWritingSuggestion(fullTextWithPrediction, { selection.location, selection.length });
+    protect(frame->editor())->setWritingSuggestion(fullTextWithPrediction, { selection.location, selection.length });
 }
 
 void WebPage::confirmCompositionAsync()
@@ -1968,7 +2000,7 @@ void WebPage::confirmCompositionAsync()
     if (!frame)
         return;
 
-    frame->protectedEditor()->confirmComposition();
+    protect(frame->editor())->confirmComposition();
 }
 
 void WebPage::getInformationFromImageData(const Vector<uint8_t>& data, CompletionHandler<void(Expected<std::pair<String, Vector<IntSize>>, WebCore::ImageDecodingError>&&)>&& completionHandler)
@@ -1989,7 +2021,7 @@ void WebPage::insertTextPlaceholder(const IntSize& size, CompletionHandler<void(
     if (!frame)
         return completionHandler({ });
 
-    auto placeholder = frame->protectedEditor()->insertTextPlaceholder(size);
+    auto placeholder = protect(frame->editor())->insertTextPlaceholder(size);
     completionHandler(placeholder ? contextForElement(*placeholder) : std::nullopt);
 }
 
@@ -1997,7 +2029,7 @@ void WebPage::removeTextPlaceholder(const ElementContext& placeholder, Completio
 {
     if (auto element = elementForContext(placeholder)) {
         if (RefPtr frame = element->document().frame())
-            frame->protectedEditor()->removeTextPlaceholder(downcast<TextPlaceholderElement>(*element));
+            protect(frame->editor())->removeTextPlaceholder(downcast<TextPlaceholderElement>(*element));
     }
     completionHandler();
 }
@@ -2391,6 +2423,53 @@ VisiblePosition WebPage::visiblePositionInFocusedNodeForPoint(const LocalFrame& 
     IntPoint adjustedPoint(WTF::protect(frame.view())->rootViewToContents(point));
     IntPoint constrainedPoint = m_focusedElement && isInteractingWithFocusedElement ? WebPage::constrainPoint(adjustedPoint, frame, WTF::protect(*m_focusedElement)) : adjustedPoint;
     return frame.visiblePositionForPoint(constrainedPoint);
+}
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER) && !PLATFORM(IOS_FAMILY)
+void WebPage::didFinishContentChangeObserving(WebCore::FrameIdentifier, WebCore::ContentChange)
+{
+    notImplemented();
+}
+#endif
+
+InteractionInformationAtPosition WebPage::positionInformation(const InteractionInformationRequest& request)
+{
+    return WebKit::positionInformationForWebPage(*this, request);
+}
+
+void WebPage::requestPositionInformation(const InteractionInformationRequest& request)
+{
+    sendEditorStateUpdate();
+    send(Messages::WebPageProxy::DidReceivePositionInformation(positionInformation(request)));
+}
+
+bool WebPage::isAssistableElement(Element& element)
+{
+    if (is<HTMLSelectElement>(element))
+        return true;
+    if (is<HTMLTextAreaElement>(element))
+        return true;
+    if (RefPtr inputElement = dynamicDowncast<HTMLInputElement>(element)) {
+        // FIXME: This laundry list of types is not a good way to factor this. Need a suitable function on HTMLInputElement itself.
+#if ENABLE(INPUT_TYPE_WEEK_PICKER)
+        if (inputElement->isWeekField())
+            return true;
+#endif
+        return inputElement->isTextField() || inputElement->isDateField() || inputElement->isDateTimeLocalField() || inputElement->isMonthField() || inputElement->isTimeField() || inputElement->isColorControl();
+    }
+    if (is<HTMLIFrameElement>(element))
+        return false;
+    return element.isContentEditable();
+}
+
+RefPtr<HTMLAnchorElement> WebPage::containingLinkAnchorElement(Element& element)
+{
+    // FIXME: There is code in the drag controller that supports any link, even if it's not an HTMLAnchorElement. Why is this different?
+    for (Ref currentElement : lineageOfType<HTMLAnchorElement>(element)) {
+        if (currentElement->isLink())
+            return currentElement;
+    }
+    return nullptr;
 }
 
 } // namespace WebKit

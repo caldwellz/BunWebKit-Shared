@@ -167,13 +167,13 @@ MediaPlayerPrivateMediaStreamAVFObjC::~MediaPlayerPrivateMediaStreamAVFObjC()
         mediaStreamPrivate->removeObserver(*this);
 
     for (auto& track : m_audioTrackMap.values())
-        track->protectedStreamTrack()->removeObserver(*this);
+        protect(track->streamTrack())->removeObserver(*this);
 
     for (auto& track : m_videoTrackMap.values())
-        track->protectedStreamTrack()->removeObserver(*this);
+        protect(track->streamTrack())->removeObserver(*this);
 
     if (m_activeVideoTrack)
-        m_activeVideoTrack->protectedStreamTrack()->protectedSource()->removeVideoFrameObserver(*this);
+        protect(protect(m_activeVideoTrack->streamTrack())->source())->removeVideoFrameObserver(*this);
 
     [m_boundsChangeListener invalidate];
 
@@ -977,12 +977,12 @@ void MediaPlayerPrivateMediaStreamAVFObjC::checkSelectedVideoTrack()
 
     if (oldVideoTrack != m_activeVideoTrack) {
         if (oldVideoTrack)
-            oldVideoTrack->protectedStreamTrack()->protectedSource()->removeVideoFrameObserver(*this);
+            protect(protect(oldVideoTrack->streamTrack())->source())->removeVideoFrameObserver(*this);
         m_isActiveVideoTrackEnabled = m_activeVideoTrack ? m_activeVideoTrack->streamTrack().enabled() : true;
         if (m_activeVideoTrack) {
-            if (m_sampleBufferDisplayLayer && m_activeVideoTrack->protectedStreamTrack()->source().isCaptureSource())
+            if (m_sampleBufferDisplayLayer && protect(m_activeVideoTrack->streamTrack())->source().isCaptureSource())
                 m_sampleBufferDisplayLayer->setRenderPolicy(SampleBufferDisplayLayer::RenderPolicy::Immediately);
-            m_activeVideoTrack->protectedStreamTrack()->protectedSource()->addVideoFrameObserver(*this);
+            protect(protect(m_activeVideoTrack->streamTrack())->source())->addVideoFrameObserver(*this);
             ALWAYS_LOG(LOGIDENTIFIER, "observing video source ", m_activeVideoTrack->streamTrack().logIdentifier());
         }
     } else
@@ -1006,12 +1006,12 @@ void MediaPlayerPrivateMediaStreamAVFObjC::updateTracks()
 
         switch (state) {
         case TrackState::Remove:
-            track.protectedStreamTrack()->removeObserver(*protectedThis);
+            protect(track.streamTrack())->removeObserver(*protectedThis);
             track.clear();
             player->removeAudioTrack(track);
             break;
         case TrackState::Add:
-            track.protectedStreamTrack()->addObserver(*protectedThis);
+            protect(track.streamTrack())->addObserver(*protectedThis);
             player->addAudioTrack(track);
             break;
         case TrackState::Configure:
@@ -1040,12 +1040,12 @@ void MediaPlayerPrivateMediaStreamAVFObjC::updateTracks()
 
         switch (state) {
         case TrackState::Remove:
-            track.protectedStreamTrack()->removeObserver(*protectedThis);
+            protect(track.streamTrack())->removeObserver(*protectedThis);
             player->removeVideoTrack(track);
             protectedThis->checkSelectedVideoTrack();
             break;
         case TrackState::Add:
-            track.protectedStreamTrack()->addObserver(*protectedThis);
+            protect(track.streamTrack())->addObserver(*protectedThis);
             player->addVideoTrack(track);
             break;
         case TrackState::Configure:

@@ -508,14 +508,14 @@ void Adjuster::adjustFromBuilder(RenderStyle& style)
         style.setUsedZIndex(style.specifiedZIndex());
 
     // Adjust any coordinated value lists.
-    style.adjustAnimations();
-    style.adjustTransitions();
-    style.adjustBackgroundLayers();
-    style.adjustMaskLayers();
+    adjustAnimations(style);
+    adjustTransitions(style);
+    adjustBackgroundLayers(style);
+    adjustMaskLayers(style);
 
     // Do the same for scroll-timeline and view-timeline longhands.
-    style.adjustScrollTimelines();
-    style.adjustViewTimelines();
+    adjustScrollTimelines(style);
+    adjustViewTimelines(style);
 }
 
 void Adjuster::adjustFirstLetterStyle(RenderStyle& style)
@@ -597,18 +597,20 @@ void Adjuster::adjust(RenderStyle& style) const
             || style.display() == DisplayType::TableHeaderGroup || style.display() == DisplayType::TableRow || style.display() == DisplayType::TableRowGroup)
             style.setWritingMode(m_parentStyle.writingMode().computedWritingMode());
 
-
         // FIXME: Adjust this once CSSWG clarifies exactly how the initial value should compute on other display types.
         // For now, this gives mostly backwards-compatible behavior.
         if (style.display() == DisplayType::Grid || style.display() == DisplayType::InlineGrid) {
-            if (style.gridAutoFlow().direction() == GridAutoFlow::Direction::Normal)
-                style.setGridAutoFlowDirection(Style::GridAutoFlow::Direction::Row);
+            if (auto gridAutoFlow = style.gridAutoFlow(); gridAutoFlow.direction() == GridAutoFlow::Direction::Normal) {
+                gridAutoFlow.setDirection(Style::GridAutoFlow::Direction::Row);
+                style.setGridAutoFlow(gridAutoFlow);
+            }
         } else if (style.display() == DisplayType::GridLanes || style.display() == DisplayType::InlineGridLanes) {
-            if (style.gridAutoFlow().direction() == GridAutoFlow::Direction::Normal) {
+            if (auto gridAutoFlow = style.gridAutoFlow(); gridAutoFlow.direction() == GridAutoFlow::Direction::Normal) {
                 if (!style.gridTemplateRows().isNone() && style.gridTemplateColumns().isNone())
-                    style.setGridAutoFlowDirection(Style::GridAutoFlow::Direction::Column);
+                    gridAutoFlow.setDirection(Style::GridAutoFlow::Direction::Column);
                 else
-                    style.setGridAutoFlowDirection(Style::GridAutoFlow::Direction::Row);
+                    gridAutoFlow.setDirection(Style::GridAutoFlow::Direction::Row);
+                style.setGridAutoFlow(gridAutoFlow);
             }
         }
 
@@ -732,10 +734,12 @@ void Adjuster::adjust(RenderStyle& style) const
             style.setAutoRevealsWhenFound();
     }
 
-    if (shouldInheritTextDecorationsInEffect(style, m_element.get()))
-        style.addToTextDecorationLineInEffect(style.textDecorationLine());
-    else
-        style.setTextDecorationLineInEffect(Style::TextDecorationLine { style.textDecorationLine() });
+    if (shouldInheritTextDecorationsInEffect(style, m_element.get())) {
+        auto updatedTextDecorationLineInEffect = style.textDecorationLineInEffect();
+        updatedTextDecorationLineInEffect.addOrReplaceIfNotNone(style.textDecorationLine());
+        style.setTextDecorationLineInEffect(updatedTextDecorationLineInEffect);
+    } else
+        style.setTextDecorationLineInEffect(style.textDecorationLine());
 
     bool overflowIsClipOrVisible = isOverflowClipOrVisible(style.overflowY()) && isOverflowClipOrVisible(style.overflowX());
 
@@ -778,7 +782,7 @@ void Adjuster::adjust(RenderStyle& style) const
     // styles are specified on a root element, then they will be incorporated in
     // Style::createForm_document.
     if ((style.overflowY() == Overflow::PagedX || style.overflowY() == Overflow::PagedY) && !(m_element && (m_element->hasTagName(htmlTag) || m_element->hasTagName(bodyTag))))
-        style.setColumnStylesFromPaginationMode(WebCore::paginationModeForRenderStyle(style));
+        adjustColumnStylesForPaginationMode(style, WebCore::paginationModeForRenderStyle(style));
 
 #if ENABLE(WEBKIT_OVERFLOW_SCROLLING_CSS_PROPERTY)
     // Touch overflow scrolling creates a stacking context.
@@ -801,7 +805,7 @@ void Adjuster::adjust(RenderStyle& style) const
 #endif
 
     // Let the theme also have a crack at adjusting the style.
-    if (style.hasAppearance())
+    if (style.appearance() != StyleAppearance::None && style.appearance() != StyleAppearance::Base)
         adjustThemeStyle(style, m_parentStyle);
 
     // This should be kept in sync with requiresRenderingConsolidationForViewTransition
@@ -893,8 +897,8 @@ void Adjuster::adjust(RenderStyle& style) const
             style.setUsedContentVisibility(style.contentVisibility());
     }
     if (style.contentVisibility() == ContentVisibility::Auto) {
-        style.containIntrinsicWidthAddAuto();
-        style.containIntrinsicHeightAddAuto();
+        style.setContainIntrinsicWidth(style.containIntrinsicWidth().addingAuto());
+        style.setContainIntrinsicHeight(style.containIntrinsicHeight().addingAuto());
     }
 
     adjustForSiteSpecificQuirks(style);
@@ -1026,13 +1030,16 @@ void Adjuster::adjustAnimatedStyle(RenderStyle& style, OptionSet<AnimationImpact
 
 void Adjuster::adjustThemeStyle(RenderStyle& style, const RenderStyle& parentStyle) const
 {
-    ASSERT(style.hasAppearance());
+    ASSERT(style.appearance() != StyleAppearance::None && style.appearance() != StyleAppearance::Base);
     auto isOldWidthAuto = style.width().isAuto();
     auto isOldMinWidthAuto = style.minWidth().isAuto();
     auto isOldHeightAuto = style.height().isAuto();
     auto isOldMinHeightAuto = style.minHeight().isAuto();
 
     RenderTheme::singleton().adjustStyle(style, parentStyle, m_element.get());
+
+    if (style.usedAppearance() == StyleAppearance::None || style.usedAppearance() == StyleAppearance::Base)
+        return;
 
     if (style.usedContain().contains(Style::ContainValue::Size)) {
         if (!style.containIntrinsicWidth().isNone()) {
@@ -1178,6 +1185,50 @@ void Adjuster::adjustForSiteSpecificQuirks(RenderStyle& style) const
         style.setFlexGrow(1);
 }
 
+void Adjuster::adjustColumnStylesForPaginationMode(RenderStyle& style, PaginationMode paginationMode)
+{
+    if (paginationMode == Pagination::Mode::Unpaginated)
+        return;
+
+    style.setColumnFill(ColumnFill::Auto);
+
+    auto writingMode = style.writingMode();
+
+    switch (paginationMode) {
+    case Pagination::Mode::LeftToRightPaginated:
+        style.setColumnAxis(ColumnAxis::Horizontal);
+        if (writingMode.isHorizontal())
+            style.setColumnProgression(writingMode.isBidiLTR() ? ColumnProgression::Normal : ColumnProgression::Reverse);
+        else
+            style.setColumnProgression(writingMode.isBlockFlipped() ? ColumnProgression::Reverse : ColumnProgression::Normal);
+        break;
+    case Pagination::Mode::RightToLeftPaginated:
+        style.setColumnAxis(ColumnAxis::Horizontal);
+        if (writingMode.isHorizontal())
+            style.setColumnProgression(writingMode.isBidiLTR() ? ColumnProgression::Reverse : ColumnProgression::Normal);
+        else
+            style.setColumnProgression(writingMode.isBlockFlipped() ? ColumnProgression::Normal : ColumnProgression::Reverse);
+        break;
+    case Pagination::Mode::TopToBottomPaginated:
+        style.setColumnAxis(ColumnAxis::Vertical);
+        if (writingMode.isHorizontal())
+            style.setColumnProgression(writingMode.isBlockFlipped() ? ColumnProgression::Reverse : ColumnProgression::Normal);
+        else
+            style.setColumnProgression(writingMode.isBidiLTR() ? ColumnProgression::Normal : ColumnProgression::Reverse);
+        break;
+    case Pagination::Mode::BottomToTopPaginated:
+        style.setColumnAxis(ColumnAxis::Vertical);
+        if (writingMode.isHorizontal())
+            style.setColumnProgression(writingMode.isBlockFlipped() ? ColumnProgression::Normal : ColumnProgression::Reverse);
+        else
+            style.setColumnProgression(writingMode.isBidiLTR() ? ColumnProgression::Reverse : ColumnProgression::Normal);
+        break;
+    case Pagination::Mode::Unpaginated:
+        ASSERT_NOT_REACHED();
+        break;
+    }
+}
+
 void Adjuster::propagateToDocumentElementAndInitialContainingBlock(Update& update, const Document& document)
 {
     RefPtr body = document.body();
@@ -1218,7 +1269,7 @@ void Adjuster::propagateToDocumentElementAndInitialContainingBlock(Update& updat
         auto newRootStyle = RenderStyle::clonePtr(document.renderView()->style());
         newRootStyle->setWritingMode(writingMode);
         newRootStyle->setDirection(direction);
-        newRootStyle->setColumnStylesFromPaginationMode(document.view()->pagination().mode);
+        adjustColumnStylesForPaginationMode(*newRootStyle, document.view()->pagination().mode);
         update.addInitialContainingBlockUpdate(WTF::move(newRootStyle));
     }
 
@@ -1345,6 +1396,72 @@ void Adjuster::adjustVisibilityForPseudoElement(RenderStyle& style, const Elemen
     if ((style.pseudoElementType() == PseudoElementType::After && host.visibilityAdjustment().contains(VisibilityAdjustment::AfterPseudo))
         || (style.pseudoElementType() == PseudoElementType::Before && host.visibilityAdjustment().contains(VisibilityAdjustment::BeforePseudo)))
         style.setIsForceHidden();
+}
+
+void Adjuster::adjustAnimations(RenderStyle& style)
+{
+    if (style.animations().isInitial())
+        return;
+
+    style.ensureAnimations().prepareForUse();
+}
+
+void Adjuster::adjustTransitions(RenderStyle& style)
+{
+    if (style.transitions().isInitial())
+        return;
+
+    style.ensureTransitions().prepareForUse();
+}
+
+void Adjuster::adjustBackgroundLayers(RenderStyle& style)
+{
+    if (style.backgroundLayers().isInitial())
+        return;
+
+    style.ensureBackgroundLayers().prepareForUse();
+}
+
+void Adjuster::adjustMaskLayers(RenderStyle& style)
+{
+    if (style.maskLayers().isInitial())
+        return;
+
+    style.ensureMaskLayers().prepareForUse();
+}
+
+void Adjuster::adjustScrollTimelines(RenderStyle& style)
+{
+    auto& names = style.scrollTimelineNames();
+    if (names.isNone() && style.scrollTimelines().isEmpty())
+        return;
+
+    auto& axes = style.scrollTimelineAxes();
+    auto numberOfAxes = axes.size();
+    ASSERT(numberOfAxes > 0);
+
+    style.computedStyle().m_nonInheritedData.access().rareData.access().scrollTimelines = { FixedVector<Ref<ScrollTimeline>>::createWithSizeFromGenerator(names.size(), [&](auto i) {
+        return ScrollTimeline::create(names[i].value.value, axes[i % numberOfAxes]);
+    }) };
+}
+
+void Adjuster::adjustViewTimelines(RenderStyle& style)
+{
+    auto& names = style.viewTimelineNames();
+    if (names.isNone() && style.viewTimelines().isEmpty())
+        return;
+
+    auto& axes = style.viewTimelineAxes();
+    auto numberOfAxes = axes.size();
+    ASSERT(numberOfAxes > 0);
+
+    auto& insets = style.viewTimelineInsets();
+    auto numberOfInsets = insets.size();
+    ASSERT(numberOfInsets > 0);
+
+    style.computedStyle().m_nonInheritedData.access().rareData.access().viewTimelines = { FixedVector<Ref<ViewTimeline>>::createWithSizeFromGenerator(names.size(), [&](auto i) {
+        return ViewTimeline::create(names[i].value.value, axes[i % numberOfAxes], insets[i % numberOfInsets]);
+    }) };
 }
 
 }

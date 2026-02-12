@@ -78,7 +78,7 @@ void ApplePaySetup::getSetupFeatures(Document& document, SetupFeaturesPromise&& 
 
     m_setupFeaturesPromise = WTF::move(promise);
 
-    page->protectedPaymentCoordinator()->getSetupFeatures(m_configuration, document.url(), [pendingActivity = makePendingActivity(*this)](Vector<Ref<ApplePaySetupFeature>>&& setupFeatures) {
+    protect(page->paymentCoordinator())->getSetupFeatures(m_configuration, document.url(), [pendingActivity = makePendingActivity(*this)](Vector<Ref<ApplePaySetupFeature>>&& setupFeatures) {
         if (pendingActivity->object().m_setupFeaturesPromise)
             std::exchange(pendingActivity->object().m_setupFeaturesPromise, std::nullopt)->resolve(WTF::move(setupFeatures));
     });
@@ -110,7 +110,7 @@ void ApplePaySetup::begin(Document& document, Vector<Ref<ApplePaySetupFeature>>&
 
     m_beginPromise = WTF::move(promise);
 
-    page->protectedPaymentCoordinator()->beginApplePaySetup(m_configuration, page->mainFrameURL(), WTF::move(features), [pendingActivity = makePendingActivity(*this)](bool result) {
+    protect(page->paymentCoordinator())->beginApplePaySetup(m_configuration, page->mainFrameURL(), WTF::move(features), [pendingActivity = makePendingActivity(*this)](bool result) {
         if (pendingActivity->object().m_beginPromise)
             std::exchange(pendingActivity->object().m_beginPromise, std::nullopt)->resolve(result);
     });
@@ -138,7 +138,7 @@ void ApplePaySetup::stop()
         std::exchange(m_beginPromise, std::nullopt)->reject(Exception { ExceptionCode::AbortError });
 
     if (RefPtr page = downcast<Document>(*scriptExecutionContext()).page())
-        page->protectedPaymentCoordinator()->endApplePaySetup();
+        protect(page->paymentCoordinator())->endApplePaySetup();
 }
 
 void ApplePaySetup::suspend(ReasonForSuspension)

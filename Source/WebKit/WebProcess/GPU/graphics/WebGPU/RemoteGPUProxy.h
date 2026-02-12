@@ -44,14 +44,12 @@ struct MeshDescriptor;
 namespace WebCore {
 class IntSize;
 class GraphicsContext;
-class Mesh;
 class NativeImage;
-class Mesh;
-class ModelConvertToBackingContext;
 }
 
 namespace WebKit {
 class ConvertToBackingContext;
+class Mesh;
 class ModelConvertToBackingContext;
 class RemoteRenderingBackendProxy;
 class WebPage;
@@ -80,6 +78,7 @@ public:
 
     void paintToCanvas(WebCore::NativeImage&, const WebCore::IntSize&, WebCore::GraphicsContext&) final;
     WebGPUIdentifier backing() const { return m_backing; }
+    RefPtr<WebKit::Mesh> createModelBacking(unsigned width, unsigned height, const WebModel::ImageAsset& diffuseTexture, const WebModel::ImageAsset& specularTexture, CompletionHandler<void(Vector<MachSendRight>&&)>&&);
 
 private:
     friend class WebGPU::DowncastConvertToBackingContext;
@@ -121,7 +120,6 @@ private:
     }
 
     void requestAdapter(const WebCore::WebGPU::RequestAdapterOptions&, CompletionHandler<void(RefPtr<WebCore::WebGPU::Adapter>&&)>&&) final;
-    RefPtr<WebCore::Mesh> createModelBacking(unsigned width, unsigned height, const WebModel::ImageAsset& diffuseTexture, const WebModel::ImageAsset& specularTexture, CompletionHandler<void(Vector<MachSendRight>&&)>&&) final;
 
     RefPtr<WebCore::WebGPU::PresentationContext> createPresentationContext(const WebCore::WebGPU::PresentationContextDescriptor&) final;
 

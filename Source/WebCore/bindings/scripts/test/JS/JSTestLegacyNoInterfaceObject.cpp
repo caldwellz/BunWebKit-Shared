@@ -361,7 +361,7 @@ void JSTestLegacyNoInterfaceObjectOwner::finalize(JSC::Handle<JSC::Unknown> hand
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestLegacyNoInterfaceObject = static_cast<JSTestLegacyNoInterfaceObject*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestLegacyNoInterfaceObject->protectedWrapped().ptr(), jsTestLegacyNoInterfaceObject);
+    uncacheWrapper(world, protect(jsTestLegacyNoInterfaceObject->wrapped()).ptr(), jsTestLegacyNoInterfaceObject);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

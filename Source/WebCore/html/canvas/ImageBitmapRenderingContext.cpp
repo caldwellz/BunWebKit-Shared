@@ -59,9 +59,9 @@ ImageBitmapCanvas ImageBitmapRenderingContext::canvas()
     WeakRef base = canvasBase();
 #if ENABLE(OFFSCREEN_CANVAS)
     if (RefPtr offscreenCanvas = dynamicDowncast<OffscreenCanvas>(base.get()))
-        return offscreenCanvas;
+        return offscreenCanvas.releaseNonNull();
 #endif
-    return &downcast<HTMLCanvasElement>(base.get());
+    return downcast<HTMLCanvasElement>(base.get());
 }
 
 ExceptionOr<void> ImageBitmapRenderingContext::transferFromImageBitmap(RefPtr<ImageBitmap> imageBitmap)

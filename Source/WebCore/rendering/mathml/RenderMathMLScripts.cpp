@@ -168,7 +168,7 @@ LayoutUnit RenderMathMLScripts::spaceAfterScript()
 {
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData())
-        return LayoutUnit(mathData->getMathConstant(primaryFont, OpenTypeMathData::SpaceAfterScript));
+        return LayoutUnit(mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SpaceAfterScript));
     return LayoutUnit(style().fontCascade().size() / 5);
 }
 
@@ -247,14 +247,14 @@ auto RenderMathMLScripts::verticalParameters() const -> VerticalParameters
     VerticalParameters parameters;
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData()) {
-        parameters.subscriptShiftDown = mathData->getMathConstant(primaryFont, OpenTypeMathData::SubscriptShiftDown);
-        parameters.superscriptShiftUp = mathData->getMathConstant(primaryFont, style().mathShift() == MathShift::Compact ? OpenTypeMathData::SuperscriptShiftUpCramped : OpenTypeMathData::SuperscriptShiftUp);
-        parameters.subscriptBaselineDropMin = mathData->getMathConstant(primaryFont, OpenTypeMathData::SubscriptBaselineDropMin);
-        parameters.superScriptBaselineDropMax = mathData->getMathConstant(primaryFont, OpenTypeMathData::SuperscriptBaselineDropMax);
-        parameters.subSuperscriptGapMin = mathData->getMathConstant(primaryFont, OpenTypeMathData::SubSuperscriptGapMin);
-        parameters.superscriptBottomMin = mathData->getMathConstant(primaryFont, OpenTypeMathData::SuperscriptBottomMin);
-        parameters.subscriptTopMax = mathData->getMathConstant(primaryFont, OpenTypeMathData::SubscriptTopMax);
-        parameters.superscriptBottomMaxWithSubscript = mathData->getMathConstant(primaryFont, OpenTypeMathData::SuperscriptBottomMaxWithSubscript);
+        parameters.subscriptShiftDown = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SubscriptShiftDown);
+        parameters.superscriptShiftUp = mathData->getMathConstant(primaryFont, style().mathShift() == MathShift::Compact ? OpenTypeMathData::MathConstant::SuperscriptShiftUpCramped : OpenTypeMathData::MathConstant::SuperscriptShiftUp);
+        parameters.subscriptBaselineDropMin = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SubscriptBaselineDropMin);
+        parameters.superScriptBaselineDropMax = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SuperscriptBaselineDropMax);
+        parameters.subSuperscriptGapMin = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SubSuperscriptGapMin);
+        parameters.superscriptBottomMin = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SuperscriptBottomMin);
+        parameters.subscriptTopMax = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SubscriptTopMax);
+        parameters.superscriptBottomMaxWithSubscript = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::SuperscriptBottomMaxWithSubscript);
     } else {
         // Default heuristic values when you do not have a font.
         float xHeight = style().metricsOfPrimaryFont().xHeight().value_or(0);

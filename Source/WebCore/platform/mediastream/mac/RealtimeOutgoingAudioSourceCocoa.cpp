@@ -52,7 +52,7 @@ RealtimeOutgoingAudioSourceCocoa::RealtimeOutgoingAudioSourceCocoa(Ref<MediaStre
     : RealtimeOutgoingAudioSource(WTF::move(audioSource))
     , m_sampleConverter(AudioSampleDataSource::create(LibWebRTCAudioFormat::sampleRate * 2, source()))
 {
-    if (auto* description = source().protectedSource()->audioStreamDescription())
+    if (auto* description = protect(source().source())->audioStreamDescription())
         updateSampleConverter(*description);
 }
 
@@ -163,7 +163,7 @@ void RealtimeOutgoingAudioSourceCocoa::pullAudioData()
 
 void RealtimeOutgoingAudioSourceCocoa::sourceUpdated()
 {
-    if (auto* description = source().protectedSource()->audioStreamDescription())
+    if (auto* description = protect(source().source())->audioStreamDescription())
         updateSampleConverter(*description);
 
 #if !RELEASE_LOG_DISABLED

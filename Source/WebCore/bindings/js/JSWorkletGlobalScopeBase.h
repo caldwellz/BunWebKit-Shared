@@ -47,7 +47,7 @@ public:
     DECLARE_VISIT_CHILDREN;
 
     WorkletGlobalScope& wrapped() const { return *m_wrapped; }
-    ScriptExecutionContext* scriptExecutionContext() const;
+    ScriptExecutionContext* NODELETE scriptExecutionContext() const;
 
     static JSC::Structure* createStructure(JSC::VM& vm, JSC::JSGlobalObject* globalObject, JSC::JSValue prototype)
     {

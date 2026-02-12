@@ -43,7 +43,7 @@ class CSSMathSum;
 
 template<typename> class ExceptionOr;
 
-using CSSNumberish = Variant<double, RefPtr<CSSNumericValue>>;
+using CSSNumberish = Variant<double, Ref<CSSNumericValue>>;
 
 class CSSNumericValue : public CSSStyleValue {
     WTF_MAKE_TZONE_ALLOCATED(CSSNumericValue);

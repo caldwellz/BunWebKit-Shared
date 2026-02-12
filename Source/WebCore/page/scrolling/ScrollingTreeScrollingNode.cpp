@@ -383,7 +383,8 @@ void ScrollingTreeScrollingNode::requestKeyboardScroll(const RequestedKeyboardSc
 
 void ScrollingTreeScrollingNode::handleScrollPositionRequest(const RequestedScrollData& requestedScrollData)
 {
-    stopAnimatedScroll();
+    if (requestedScrollData.requestType != ScrollRequestType::DeltaUpdate)
+        stopAnimatedScroll();
 
     if (requestedScrollData.requestType == ScrollRequestType::CancelAnimatedScroll) {
         ASSERT(!requestedScrollData.requestedDataBeforeAnimatedScroll);
@@ -419,6 +420,7 @@ void ScrollingTreeScrollingNode::handleScrollPositionRequest(const RequestedScro
         return;
     }
 
+    m_scrollbarRevealBehaviorForNextScrollbarUpdate = requestedScrollData.scrollbarRevealBehavior;
     scrollTo(destinationPosition, requestedScrollData.scrollType, requestedScrollData.clamping);
     didStopProgrammaticScroll();
 }
@@ -552,6 +554,11 @@ void ScrollingTreeScrollingNode::setCurrentHorizontalSnapPointIndex(std::optiona
 void ScrollingTreeScrollingNode::setCurrentVerticalSnapPointIndex(std::optional<unsigned> index)
 {
     m_currentVerticalSnapPointIndex = index;
+}
+
+ScrollbarRevealBehavior ScrollingTreeScrollingNode::takeScrollbarRevealBehaviorForNextScrollbarUpdate()
+{
+    return std::exchange(m_scrollbarRevealBehaviorForNextScrollbarUpdate, ScrollbarRevealBehavior::Default);
 }
 
 PlatformWheelEvent ScrollingTreeScrollingNode::eventForPropagation(const PlatformWheelEvent& wheelEvent) const

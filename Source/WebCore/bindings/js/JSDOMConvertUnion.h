@@ -407,12 +407,11 @@ template<typename... T> struct Converter<IDLUnion<T...>> : DefaultConverter<IDLU
     }
 };
 
-// FIXME: This is needed to work around unions storing non-nullable interfaces using RefPtr rather than Ref<>.
-// See "Support using Ref for interfaces and typed arrays in IDL unions (https://bugs.webkit.org/show_bug.cgi?id=274729)".
-template<typename T> struct AddNullableIfInterfaceOrArrayBufferSource {
+// FIXME: This is needed to work around unions storing non-nullable buffer source types using RefPtr rather than Ref<>.
+// See "Support using Ref for buffer source types in IDL unions" (https://bugs.webkit.org/show_bug.cgi?id=306967)".
+template<typename T> struct AddNullableIfArrayBufferSource {
     using type = std::conditional_t<
-        IsIDLInterface<T>::value
-            || IsIDLTypedArray<T>::value
+               IsIDLTypedArray<T>::value
             || IsIDLArrayBuffer<T>::value
             || IsIDLArrayBufferView<T>::value
             || std::same_as<T, IDLDataView>,
@@ -439,7 +438,7 @@ template<typename... T> struct JSConverter<IDLUnion<T...>> {
         forEach<Sequence>([&]<typename I>() {
             if (I::value == index) {
                 ASSERT(!returnValue);
-                returnValue = toJS<typename AddNullableIfInterfaceOrArrayBufferSource<brigand::at<TypeList, I>>::type>(lexicalGlobalObject, globalObject, std::get<I::value>(variant));
+                returnValue = toJS<typename AddNullableIfArrayBufferSource<brigand::at<TypeList, I>>::type>(lexicalGlobalObject, globalObject, std::get<I::value>(variant));
             }
         });
 

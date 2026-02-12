@@ -71,7 +71,7 @@ public:
     void documentDetached(Document&);
     bool isLocked() const;
     WEBCORE_EXPORT bool lockPending() const;
-    WEBCORE_EXPORT Element* element() const;
+    WEBCORE_EXPORT Element* NODELETE element() const;
 
     WEBCORE_EXPORT void didAcquirePointerLock();
     WEBCORE_EXPORT void didNotAcquirePointerLock();

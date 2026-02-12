@@ -72,6 +72,7 @@ MediaPlaybackTargetContextSerialized::MediaPlaybackTargetContextSerialized(const
         m_contextID = downcast<MediaPlaybackTargetSerialized>(target).context().contextID();
         m_contextType = downcast<MediaPlaybackTargetSerialized>(target).context().contextType();
 #endif
+        m_identifier = downcast<MediaPlaybackTargetSerialized>(target).context().identifier();
     }
 #if ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
     else if (is<MediaPlaybackTargetWirelessPlayback>(target))

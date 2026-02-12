@@ -52,7 +52,7 @@ CachedResourceHandle<CachedScript> CachedScriptFetcher::requestScriptWithCache(D
         return nullptr;
 
     ASSERT(document.contentSecurityPolicy());
-    bool hasKnownNonce = document.checkedContentSecurityPolicy()->allowScriptWithNonce(m_nonce, m_isInUserAgentShadowTree);
+    bool hasKnownNonce = protect(document.contentSecurityPolicy())->allowScriptWithNonce(m_nonce, m_isInUserAgentShadowTree);
     ResourceLoaderOptions options = CachedResourceLoader::defaultCachedResourceOptions();
     options.contentSecurityPolicyImposition = hasKnownNonce ? ContentSecurityPolicyImposition::SkipPolicyCheck : ContentSecurityPolicyImposition::DoPolicyCheck;
     options.sameOriginDataURLFlag = SameOriginDataURLFlag::Set;

@@ -405,7 +405,6 @@ protected:
     }
 
     HTMLInputElement* element() const { return m_element; }
-    RefPtr<HTMLInputElement> protectedElement() const { return m_element; }
     Chrome* chrome() const;
     Decimal parseToNumberOrNaN(const String&) const;
 

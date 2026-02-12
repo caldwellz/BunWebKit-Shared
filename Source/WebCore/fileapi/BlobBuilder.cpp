@@ -60,10 +60,8 @@ void BlobBuilder::append(RefPtr<ArrayBufferView>&& arrayBufferView)
     m_appendableData.append(arrayBufferView->span());
 }
 
-void BlobBuilder::append(RefPtr<Blob>&& blob)
+void BlobBuilder::append(Ref<Blob>&& blob)
 {
-    if (!blob)
-        return;
     if (!m_appendableData.isEmpty())
         m_items.append(std::exchange(m_appendableData, { }));
     m_items.append(blob->url());

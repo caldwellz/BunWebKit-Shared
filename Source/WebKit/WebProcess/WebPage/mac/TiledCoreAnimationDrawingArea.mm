@@ -665,7 +665,7 @@ static FloatPoint shadowLayerPositionForFrame(LocalFrameView& frameView, FloatPo
 
 static FloatRect shadowLayerBoundsForFrame(LocalFrameView& frameView, float transientScale)
 {
-    FloatRect clipLayerFrame(frameView.checkedRenderView()->documentRect());
+    FloatRect clipLayerFrame(protect(frameView.renderView())->documentRect());
     FloatRect shadowLayerFrame = clipLayerFrame;
     
     shadowLayerFrame.scale(transientScale / frameView.frame().page()->pageScaleFactor());

@@ -28,6 +28,7 @@
 #if ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
 
 #include "DestinationColorSpace.h"
+#include "MediaDeviceRoute.h"
 #include "MediaPlayerPrivate.h"
 #include <wtf/CanMakeWeakPtr.h>
 #include <wtf/LoggerHelper.h>
@@ -39,10 +40,12 @@
 
 namespace WebCore {
 
+class MediaDeviceRoute;
 class MediaPlaybackTarget;
 
 class MediaPlayerPrivateWirelessPlayback final
     : public MediaPlayerPrivateInterface
+    , private MediaDeviceRouteClient
 #if !RELEASE_LOG_DISABLED
     , private LoggerHelper
 #endif
@@ -61,6 +64,8 @@ private:
     friend class MediaPlayerFactoryWirelessPlayback;
 
     explicit MediaPlayerPrivateWirelessPlayback(MediaPlayer&);
+
+    MediaDeviceRoute* route() const;
 
     void updateURLIfNeeded();
 
@@ -104,6 +109,10 @@ private:
     void setWirelessPlaybackTarget(Ref<MediaPlaybackTarget>&&) final;
     void setShouldPlayToPlaybackTarget(bool) final;
 #endif
+
+    // MediaDeviceRouteClient
+    void readyDidChange(MediaDeviceRoute&) final;
+    void playbackErrorDidChange(MediaDeviceRoute&) final;
 
 #if !RELEASE_LOG_DISABLED
     // LoggerHelper

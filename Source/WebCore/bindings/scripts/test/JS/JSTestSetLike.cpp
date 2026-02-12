@@ -365,7 +365,7 @@ void JSTestSetLikeOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* contex
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestSetLike = static_cast<JSTestSetLike*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestSetLike->protectedWrapped().ptr(), jsTestSetLike);
+    uncacheWrapper(world, protect(jsTestSetLike->wrapped()).ptr(), jsTestSetLike);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

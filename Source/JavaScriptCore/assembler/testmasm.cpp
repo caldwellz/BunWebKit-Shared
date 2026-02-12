@@ -6945,6 +6945,164 @@ static void testBranchConvertDoubleToInt52()
 }
 #endif
 
+#if CPU(ARM64)
+// Test that the CachedTempRegister properly normalizes 32-bit immediates
+// to their zero-extended form. On ARM64, 32-bit W-register writes implicitly
+// zero-extend to the full 64-bit X-register. The cache must store the
+// zero-extended value to avoid false hits when mixing 32/64-bit operations.
+static void testCachedTempRegisterImm32Normalization()
+{
+    // Scenario 1: store32(TrustedImm32(-1)) then store64(TrustedImm64(-1))
+    // The 32-bit store caches 0x00000000FFFFFFFF (zero-extended).
+    // The 64-bit store needs 0xFFFFFFFFFFFFFFFF and must NOT cache-hit.
+    {
+        uint32_t val32 = 0;
+        uint64_t val64 = 0;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+            jit.store32(CCallHelpers::TrustedImm32(-1), &val32);
+            jit.store64(CCallHelpers::TrustedImm64(-1LL), &val64);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        invoke<void>(test);
+        CHECK_EQ(val32, static_cast<uint32_t>(0xFFFFFFFF));
+        CHECK_EQ(val64, static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF));
+    }
+
+    // Scenario 2: store64(TrustedImm64(-1)) then store32(TrustedImm32(-1))
+    // The 64-bit store caches 0xFFFFFFFFFFFFFFFF.
+    // The 32-bit store must not confuse the cache; result should be correct.
+    {
+        uint64_t val64 = 0;
+        uint32_t val32 = 0;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+            jit.store64(CCallHelpers::TrustedImm64(-1LL), &val64);
+            jit.store32(CCallHelpers::TrustedImm32(-1), &val32);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        invoke<void>(test);
+        CHECK_EQ(val64, static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF));
+        CHECK_EQ(val32, static_cast<uint32_t>(0xFFFFFFFF));
+    }
+
+    // Scenario 3: store32 with high bit set (0x80000000) then store64
+    // int32_t(0x80000000) sign-extends to 0xFFFFFFFF80000000 in intptr_t,
+    // but hardware zero-extends to 0x0000000080000000.
+    // After fix, store64(0x80000000) should cache-hit since both are 0x0000000080000000.
+    {
+        uint32_t val32 = 0;
+        uint64_t val64 = 0;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+            jit.store32(CCallHelpers::TrustedImm32(static_cast<int32_t>(0x80000000)), &val32);
+            jit.store64(CCallHelpers::TrustedImm64(0x80000000LL), &val64);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        invoke<void>(test);
+        CHECK_EQ(val32, static_cast<uint32_t>(0x80000000));
+        CHECK_EQ(val64, static_cast<uint64_t>(0x80000000));
+    }
+
+    // Scenario 4: store32(0x7FFFFFFF) then store64(0x7FFFFFFF)
+    // Positive value: sign-extension and zero-extension produce the same result.
+    // Should cache-hit.
+    {
+        uint32_t val32 = 0;
+        uint64_t val64 = 0;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+            jit.store32(CCallHelpers::TrustedImm32(0x7FFFFFFF), &val32);
+            jit.store64(CCallHelpers::TrustedImm64(0x7FFFFFFFLL), &val64);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        invoke<void>(test);
+        CHECK_EQ(val32, static_cast<uint32_t>(0x7FFFFFFF));
+        CHECK_EQ(val64, static_cast<uint64_t>(0x7FFFFFFF));
+    }
+
+    // Scenario 5: Multiple alternating 32/64-bit stores with different negative values
+    {
+        uint32_t val1 = 0;
+        uint64_t val2 = 0;
+        uint32_t val3 = 0;
+        uint64_t val4 = 0;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+            jit.store32(CCallHelpers::TrustedImm32(-1), &val1);
+            jit.store64(CCallHelpers::TrustedImm64(static_cast<int64_t>(0xDEADBEEFCAFEBABE)), &val2);
+            jit.store32(CCallHelpers::TrustedImm32(-2), &val3);
+            jit.store64(CCallHelpers::TrustedImm64(-1LL), &val4);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        invoke<void>(test);
+        CHECK_EQ(val1, static_cast<uint32_t>(0xFFFFFFFF));
+        CHECK_EQ(val2, static_cast<uint64_t>(0xDEADBEEFCAFEBABE));
+        CHECK_EQ(val3, static_cast<uint32_t>(0xFFFFFFFE));
+        CHECK_EQ(val4, static_cast<uint64_t>(0xFFFFFFFFFFFFFFFF));
+    }
+
+    // Scenario 6: Same positive value in both widths (cache should hit)
+    {
+        uint32_t val32 = 0;
+        uint64_t val64 = 0;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+            jit.store32(CCallHelpers::TrustedImm32(42), &val32);
+            jit.store64(CCallHelpers::TrustedImm64(42LL), &val64);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        invoke<void>(test);
+        CHECK_EQ(val32, static_cast<uint32_t>(42));
+        CHECK_EQ(val64, static_cast<uint64_t>(42));
+    }
+
+    // Scenario 7: branch32/branch64 mixing with cached registers
+    // branch32 with TrustedImm32(-1) uses moveToCachedReg for values that
+    // don't fit a shifted 12-bit immediate. A subsequent branch64 with
+    // TrustedImm64(-1) must not false-hit on the cached 32-bit value.
+    {
+        uint32_t input32 = 0xFFFFFFFF;
+        uint64_t input64 = 0xFFFFFFFFFFFFFFFF;
+        auto test = compile([&] (CCallHelpers& jit) {
+            emitFunctionPrologue(jit);
+
+            // Load test values into registers
+            jit.load32(&input32, GPRInfo::regT0);
+            jit.load64(&input64, GPRInfo::regT1);
+
+            // branch32 compare: regT0 should equal -1 (as 32-bit)
+            // This uses moveToCachedReg(TrustedImm32(-1), dataMemoryTempRegister())
+            auto fail1 = jit.branch32(CCallHelpers::NotEqual, GPRInfo::regT0, CCallHelpers::TrustedImm32(-1));
+
+            // branch64 compare: regT1 should equal -1 (as 64-bit: 0xFFFFFFFFFFFFFFFF)
+            // This uses moveToCachedReg(TrustedImm64(-1), dataMemoryTempRegister())
+            // Must NOT false-hit on the cached 32-bit 0x00000000FFFFFFFF
+            auto fail2 = jit.branch64(CCallHelpers::NotEqual, GPRInfo::regT1, CCallHelpers::TrustedImm64(-1LL));
+
+            // Both comparisons passed
+            jit.move(CCallHelpers::TrustedImm32(1), GPRInfo::returnValueGPR);
+            auto done = jit.jump();
+
+            fail1.link(&jit);
+            fail2.link(&jit);
+            jit.move(CCallHelpers::TrustedImm32(0), GPRInfo::returnValueGPR);
+
+            done.link(&jit);
+            emitFunctionEpilogue(jit);
+            jit.ret();
+        });
+        CHECK_EQ(invoke<int>(test), 1);
+    }
+}
+#endif
+
 #if CPU(X86_64)
 #define CHECK_CODE_WAS_EMITTED(_jit, _emitter) do {                      \
         size_t _beforeCodeSize = _jit.m_assembler.buffer().codeSize();   \
@@ -8561,6 +8719,7 @@ void run(const char* filter) WTF_IGNORES_THREAD_SAFETY_ANALYSIS
 #if CPU(ARM64)
     RUN(testMove16ToFloat16Comprehensive());
     RUN(testFMovHalfPrecisionEncoding());
+    RUN(testCachedTempRegisterImm32Normalization());
 #endif
 
     RUN(testGPRInfoConsistency());

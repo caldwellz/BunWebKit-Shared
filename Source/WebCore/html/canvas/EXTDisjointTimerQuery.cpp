@@ -209,7 +209,7 @@ WebGLAny EXTDisjointTimerQuery::getQueryEXT(GCGLenum target, GCGLenum pname)
     switch (pname) {
     case GraphicsContextGL::CURRENT_QUERY_EXT:
         if (target == GraphicsContextGL::TIME_ELAPSED_EXT)
-            return context->m_activeQuery;
+            return toWebGLAny(context->m_activeQuery);
         return nullptr;
     case GraphicsContextGL::QUERY_COUNTER_BITS_EXT:
         return context->graphicsContextGL()->getQueryiEXT(target, pname);

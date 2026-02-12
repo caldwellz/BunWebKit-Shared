@@ -117,11 +117,11 @@ inline static RetainPtr<UIToolbar> createToolbarWithItems(NSArray<UIBarButtonIte
     label.numberOfLines = 2;
     _autoFillButtonItem = adoptNS([[UIBarButtonItem alloc] initWithCustomView:button]);
 
-    _previousItem = adoptNS([[UIBarButtonItem alloc] initWithImage:WebKit::upArrow() style:UIBarButtonItemStylePlain target:self action:@selector(_previousTapped)]);
+    _previousItem = adoptNS([[UIBarButtonItem alloc] initWithImage:protect(WebKit::upArrow()).get() style:UIBarButtonItemStylePlain target:self action:@selector(_previousTapped)]);
     [_previousItem setTintColor:UIColor.blackColor];
     [_previousItem setEnabled:NO];
 
-    _nextItem = adoptNS([[UIBarButtonItem alloc] initWithImage:WebKit::downArrow() style:UIBarButtonItemStylePlain target:self action:@selector(_nextTapped)]);
+    _nextItem = adoptNS([[UIBarButtonItem alloc] initWithImage:protect(WebKit::downArrow()).get() style:UIBarButtonItemStylePlain target:self action:@selector(_nextTapped)]);
     [_nextItem setTintColor:UIColor.blackColor];
     [_nextItem setEnabled:NO];
 
@@ -159,7 +159,7 @@ inline static RetainPtr<UIToolbar> createToolbarWithItems(NSArray<UIBarButtonIte
     // Add all items to left side toolbar. If the keyboard is split, the right-side toolbar will hold the AutoFill button.
     auto items = [NSMutableArray array];
 
-    _previousItem = adoptNS([[UIBarButtonItem alloc] initWithImage:WebKit::upArrow() style:UIBarButtonItemStylePlain target:self action:@selector(_previousTapped)]);
+    _previousItem = adoptNS([[UIBarButtonItem alloc] initWithImage:protect(WebKit::upArrow()).get() style:UIBarButtonItemStylePlain target:self action:@selector(_previousTapped)]);
     [_previousItem setEnabled:NO];
     [items addObject:_previousItem.get()];
 
@@ -171,7 +171,7 @@ inline static RetainPtr<UIToolbar> createToolbarWithItems(NSArray<UIBarButtonIte
         [items addObject:_nextPreviousSpacer.get()];
     }
 
-    _nextItem = adoptNS([[UIBarButtonItem alloc] initWithImage:WebKit::downArrow() style:UIBarButtonItemStylePlain target:self action:@selector(_nextTapped)]);
+    _nextItem = adoptNS([[UIBarButtonItem alloc] initWithImage:protect(WebKit::downArrow()).get() style:UIBarButtonItemStylePlain target:self action:@selector(_nextTapped)]);
     [_nextItem setEnabled:NO];
     [items addObject:_nextItem.get()];
 
@@ -182,7 +182,7 @@ inline static RetainPtr<UIToolbar> createToolbarWithItems(NSArray<UIBarButtonIte
 
     // iPad doesn't show the "Done" button since the keyboard has its own dismiss key.
     if (WebKit::isLiquidGlassEnabled()) {
-        _doneButton = adoptNS([[UIBarButtonItem alloc] initWithImage:WebKit::checkmark() style:UIBarButtonItemStylePlain target:self action:@selector(_done)]);
+        _doneButton = adoptNS([[UIBarButtonItem alloc] initWithImage:protect(WebKit::checkmark()).get() style:UIBarButtonItemStylePlain target:self action:@selector(_done)]);
 #if !PLATFORM(WATCHOS) && !PLATFORM(APPLETV)
         [_flexibleSpaceItem setHidesSharedBackground:NO];
         [_autoFillButtonItemSpacer setHidesSharedBackground:NO];
@@ -235,13 +235,13 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
     if (![newTraitCollection hasDifferentColorAppearanceComparedToTraitCollection:previousTraitCollection])
         return;
 
-    auto doneButtonAttributes = [NSMutableDictionary dictionaryWithObject:WebKit::doneButtonFont() forKey:NSFontAttributeName];
+    RetainPtr doneButtonAttributes = [NSMutableDictionary dictionaryWithObject:protect(WebKit::doneButtonFont()).get() forKey:NSFontAttributeName];
 
     UIColor *tintColor = nil;
 
     if (newTraitCollection.userInterfaceStyle == UIUserInterfaceStyleDark) {
         tintColor = UIColor.whiteColor;
-        doneButtonAttributes[NSForegroundColorAttributeName] = tintColor;
+        doneButtonAttributes.get()[NSForegroundColorAttributeName] = tintColor;
     }
 
     self.tintColor = tintColor;
@@ -274,22 +274,22 @@ ALLOW_DEPRECATED_IMPLEMENTATIONS_END
 
 - (void)_done
 {
-    [_delegate accessoryViewDone:self];
+    [protect(_delegate) accessoryViewDone:self];
 }
 
 - (void)_previousTapped
 {
-    [_delegate accessoryView:self tabInDirection:WebKit::TabDirection::Previous];
+    [protect(_delegate) accessoryView:self tabInDirection:WebKit::TabDirection::Previous];
 }
 
 - (void)_nextTapped
 {
-    [_delegate accessoryView:self tabInDirection:WebKit::TabDirection::Next];
+    [protect(_delegate) accessoryView:self tabInDirection:WebKit::TabDirection::Next];
 }
 
 - (void)_autoFill
 {
-    [_delegate accessoryViewAutoFill:self];
+    [protect(_delegate) accessoryViewAutoFill:self];
 }
 
 - (UIButton *)_autoFillButton
@@ -340,13 +340,13 @@ ALLOW_DEPRECATED_IMPLEMENTATIONS_END
         label = button.titleLabel;
     }];
     auto labelFrame = label.frame;
-    label.font = WebKit::singleLineAutoFillButtonFont();
+    label.font = protect(WebKit::singleLineAutoFillButtonFont());
 
     BOOL compactScreen = self.traitCollection.horizontalSizeClass == UIUserInterfaceSizeClassCompact;
     auto autoFillMaximumButtonWidth = compactScreen ? 180 : 200;
 
     if ([label sizeThatFits:CGSizeMake(CGFLOAT_MAX, labelFrame.size.height)].width > autoFillMaximumButtonWidth)
-        label.font = WebKit::multipleLineAutoFillButtonFont();
+        label.font = protect(WebKit::multipleLineAutoFillButtonFont());
 
     labelFrame.size.width = [label sizeThatFits:CGSizeMake(autoFillMaximumButtonWidth, CGFLOAT_MAX)].width;
     label.frame = labelFrame;

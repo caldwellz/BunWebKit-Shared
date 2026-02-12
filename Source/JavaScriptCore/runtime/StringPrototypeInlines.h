@@ -519,7 +519,7 @@ inline JSString* tryReplaceOneCharUsingString(JSGlobalObject* globalObject, JSSt
     auto scope = DECLARE_THROW_SCOPE(vm);
 
     // FIXME: Substring should be supported. However, substring of substring is not allowed at the moment.
-    if (!string->isNonSubstringRope() || string->length() < 0x128)
+    if (!string->isNonSubstringRope() || string->length() < JSString::minLengthForRopeWalk)
         return nullptr;
 
     RETURN_IF_EXCEPTION(scope, nullptr);

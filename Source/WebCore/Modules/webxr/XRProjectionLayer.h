@@ -55,7 +55,7 @@ public:
     bool ignoreDepthValues() const;
     std::optional<float> fixedFoveation() const;
     void setFixedFoveation(std::optional<float>);
-    WebXRRigidTransform* deltaPose() const;
+    WebXRRigidTransform* NODELETE deltaPose() const;
     void setDeltaPose(WebXRRigidTransform*);
 
     // WebXRLayer

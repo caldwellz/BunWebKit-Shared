@@ -53,7 +53,7 @@ namespace WebKit {
 #if HAVE(SCREEN_CAPTURE_KIT)
 void DisplayCaptureSessionManager::alertForGetDisplayMedia(WebPageProxy& page, const WebCore::SecurityOriginData& origin, CompletionHandler<void(DisplayCaptureSessionManager::CaptureSessionType)>&& completionHandler)
 {
-
+#if HAVE(WINDOW_CAPTURE)
     auto webView = page.cocoaView();
     if (!webView) {
         completionHandler(DisplayCaptureSessionManager::CaptureSessionType::None);
@@ -97,6 +97,11 @@ void DisplayCaptureSessionManager::alertForGetDisplayMedia(WebPageProxy& page, c
 
         completionBlock(result);
     }];
+#else
+    UNUSED_PARAM(page);
+    UNUSED_PARAM(origin);
+    UNUSED_PARAM(completionHandler);
+#endif // HAVE(WINDOW_CAPTURE)
 }
 #endif
 
@@ -230,6 +235,7 @@ void DisplayCaptureSessionManager::promptForGetDisplayMedia(UserMediaPermissionR
         return;
     }
 
+#if HAVE(WINDOW_CAPTURE)
     alertForGetDisplayMedia(page, origin, [this, origin, completionHandler = WTF::move(completionHandler)] (DisplayCaptureSessionManager::CaptureSessionType sessionType) mutable {
         if (sessionType == CaptureSessionType::None) {
             completionHandler(std::nullopt);
@@ -241,7 +247,11 @@ void DisplayCaptureSessionManager::promptForGetDisplayMedia(UserMediaPermissionR
         else
             showWindowPicker(origin, WTF::move(completionHandler));
     });
-#endif
+#else
+    completionHandler(std::nullopt);
+#endif // HAVE(WINDOW_CAPTURE)
+
+#endif // HAVE(SCREEN_CAPTURE_KIT)
 }
 
 void DisplayCaptureSessionManager::cancelGetDisplayMediaPrompt(WebPageProxy& page)

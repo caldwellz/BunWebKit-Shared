@@ -24,17 +24,20 @@
 
 #include "ContextDestructionObserverInlines.h"
 #include "Document.h"
+#include "DocumentPage.h"
 #include "ExceptionOr.h"
 #include "GStreamerCommon.h"
 #include "GStreamerMediaEndpoint.h"
 #include "GStreamerRtpReceiverBackend.h"
 #include "GStreamerRtpSenderBackend.h"
 #include "GStreamerRtpTransceiverBackend.h"
+#include "GStreamerWebRTCProvider.h"
 #include "IceCandidate.h"
 #include "JSRTCStatsReport.h"
 #include "Logging.h"
 #include "MediaEndpointConfiguration.h"
 #include "NotImplemented.h"
+#include "Page.h"
 #include "RTCIceCandidate.h"
 #include "RTCPeerConnection.h"
 #include "RTCRtpCapabilities.h"
@@ -44,6 +47,7 @@
 #include "RealtimeIncomingVideoSourceGStreamer.h"
 #include "RealtimeOutgoingAudioSourceGStreamer.h"
 #include "RealtimeOutgoingVideoSourceGStreamer.h"
+#include "Settings.h"
 #include <wtf/StdLibExtras.h>
 #include <wtf/TZoneMalloc.h>
 
@@ -81,11 +85,22 @@ static const std::unique_ptr<PeerConnectionBackend> createGStreamerPeerConnectio
     std::call_once(debugRegisteredFlag, [] {
         GST_DEBUG_CATEGORY_INIT(webkit_webrtc_pc_backend_debug, "webkitwebrtcpeerconnection", 0, "WebKit WebRTC PeerConnection");
     });
-    if (!isGStreamerPluginAvailable("webrtc"_s)) {
-        WTFLogAlways("GstWebRTC plugin not found. Make sure to install gst-plugins-bad >= 1.20 with the webrtc plugin enabled.");
+
+    if (!GStreamerWebRTCProvider::webRTCAvailable()) {
+        RELEASE_LOG_ERROR(WebRTC, "GStreamerWebRTC is not available to create a backend");
         return nullptr;
     }
-    auto backend = WTF::makeUniqueWithoutRefCountedCheck<GStreamerPeerConnectionBackend, PeerConnectionBackend>(peerConnection);
+
+    Ref document = downcast<Document>(*peerConnection.scriptExecutionContext());
+    ASSERT(document->settings().peerConnectionEnabled());
+    RefPtr page = document->page();
+    if (!page)
+        return nullptr;
+
+    auto& webRTCProvider = downcast<GStreamerWebRTCProvider>(page->webRTCProvider());
+    auto udpPortsRange = webRTCProvider.portAllocatorRange();
+
+    auto backend = WTF::makeUniqueWithoutRefCountedCheck<GStreamerPeerConnectionBackend, PeerConnectionBackend>(peerConnection, WTF::move(udpPortsRange));
     bool status = backend->setConfiguration(WTF::move(configuration));
     ASSERT_UNUSED(status, status);
     return backend;
@@ -93,8 +108,9 @@ static const std::unique_ptr<PeerConnectionBackend> createGStreamerPeerConnectio
 
 CreatePeerConnectionBackend PeerConnectionBackend::create = createGStreamerPeerConnectionBackend;
 
-GStreamerPeerConnectionBackend::GStreamerPeerConnectionBackend(RTCPeerConnection& peerConnection)
+GStreamerPeerConnectionBackend::GStreamerPeerConnectionBackend(RTCPeerConnection& peerConnection, UDPPortsRange&& udpPortsRange)
     : PeerConnectionBackend(peerConnection)
+    , m_udpPortsRange(WTF::move(udpPortsRange))
     , m_endpoint(GStreamerMediaEndpoint::create(*this))
 {
     disableICECandidateFiltering();
@@ -240,8 +256,7 @@ Ref<RTCRtpReceiver> GStreamerPeerConnectionBackend::createReceiver(std::unique_p
     auto source = backend->createSource(trackKind, trackId);
     // Remote source is initially muted and will be unmuted when receiving the first packet.
     source->setMuted(true);
-    auto trackID = source->persistentID();
-    auto remoteTrackPrivate = MediaStreamTrackPrivate::create(document.logger(), WTF::move(source), WTF::move(trackID));
+    auto remoteTrackPrivate = MediaStreamTrackPrivate::create(document.logger(), WTF::move(source), createVersion4UUIDString());
     auto remoteTrack = MediaStreamTrack::create(document, WTF::move(remoteTrackPrivate));
 
     return RTCRtpReceiver::create(*this, WTF::move(remoteTrack), WTF::move(backend));

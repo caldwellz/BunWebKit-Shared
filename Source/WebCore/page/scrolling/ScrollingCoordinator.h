@@ -245,7 +245,7 @@ protected:
 
     virtual void willCommitTree(FrameIdentifier) { }
 
-    WEBCORE_EXPORT Page* page() const;
+    WEBCORE_EXPORT Page* NODELETE page() const;
     WEBCORE_EXPORT RefPtr<Page> protectedPage() const;
 
 private:

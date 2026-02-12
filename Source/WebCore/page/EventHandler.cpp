@@ -1293,13 +1293,19 @@ bool EventHandler::handleMouseReleaseEvent(const MouseEventWithHitTestResults& e
         if (node && node->renderer() && (caretBrowsing || node->hasEditableStyle())) {
             auto pos = node->renderer()->visiblePositionForPoint(event.localPoint(), HitTestSource::User);
             newSelection = VisibleSelection(pos);
+
 #if PLATFORM(IOS_FAMILY)
             // On iOS, selection changes are triggered using platform-specific text interaction gestures rather than
             // default behavior on click or mouseup. As such, the only time we should allow click events to change the
             // selection on iOS is when we focus a different editable element, in which case the text interaction
             // gestures will fail.
-            allowSelectionChanges = frame->selection().selection().rootEditableElement() != newSelection.rootEditableElement();
+            static constexpr auto usePlatformTextInteraction = true;
+#else
+            auto usePlatformTextInteraction = event.event().inputSource() == MouseEventInputSource::Automation;
 #endif
+
+            if (usePlatformTextInteraction)
+                allowSelectionChanges = frame->selection().selection().rootEditableElement() != newSelection.rootEditableElement();
         }
 
         if (allowSelectionChanges)
@@ -1419,7 +1425,7 @@ HitTestResult EventHandler::hitTestResultAtPoint(const LayoutPoint& point, Optio
     HitTestRequest request(hitType);
     document->hitTest(request, result);
     if (!request.readOnly())
-        protect(frame->document())->updateHoverActiveState(request, result.protectedTargetElement().get());
+        protect(frame->document())->updateHoverActiveState(request, protect(result.targetElement()).get());
 
     RefPtr innerNode = result.innerNode();
     if (request.disallowsUserAgentShadowContent()
@@ -2885,7 +2891,7 @@ DragEventTargetData EventHandler::performDragAndDrop(const PlatformMouseEvent& e
     });
 
     Ref frame = m_frame.get();
-    RefPtr subframe = EventHandler::subframeForTargetNode(result.protectedTargetNode().get());
+    RefPtr subframe = EventHandler::subframeForTargetNode(protect(result.targetNode()).get());
     bool preventedDefault = false;
 #if PLATFORM(COCOA) && ENABLE(DRAG_SUPPORT)
     if (RefPtr remoteFrame = dynamicDowncast<RemoteFrame>(subframe)) {
@@ -3210,7 +3216,7 @@ void EventHandler::updateMouseEventTargetAfterLayoutIfNeeded()
         // boundary event processing.
         auto modifiers = PlatformKeyboardEvent::currentStateOfModifierKeys();
         PlatformMouseEvent syntheticEvent(valueOrDefault(m_lastKnownMousePosition), m_lastKnownMouseGlobalPosition,
-            MouseButton::None, PlatformEvent::Type::NoType, 0, modifiers, MonotonicTime::now(), 0, SyntheticClickType::NoTap);
+            MouseButton::None, PlatformEvent::Type::NoType, 0, modifiers, MonotonicTime::now(), 0, SyntheticClickType::NoTap, MouseEventInputSource::Hardware);
 
         // EventHandler updates scrollable areas when the element under the mouse changes as a result of the
         // mouse moving. In this case, the mouse did not move, but the element under the mouse still changed,
@@ -3576,7 +3582,7 @@ HandleUserInputEventResult EventHandler::handleWheelEventInternal(const Platform
 
     if (element) {
         if (isOverWidget) {
-            if (RefPtr remoteSubframe = dynamicDowncast<RemoteFrame>(subframeForTargetNode(result.protectedTargetNode().get()))) {
+            if (RefPtr remoteSubframe = dynamicDowncast<RemoteFrame>(subframeForTargetNode(protect(result.targetNode()).get()))) {
                 if (auto wheelEventDataForRemoteFrame = userInputEventDataForRemoteFrame(remoteSubframe.get(), result.doublePointInInnerNodeFrame()))
                     return *wheelEventDataForRemoteFrame;
             } else if (RefPtr widget = widgetForElement(*element)) {
@@ -3852,7 +3858,7 @@ bool EventHandler::sendContextMenuEvent(const PlatformMouseEvent& event)
     frame->selection().setCaretBlinkingSuspended(false);
     // Clear mouse press state to avoid initiating a drag while context menu is up.
     m_mousePressed = false;
-    bool swallowEvent;
+
     const auto flooredEventPosition = flooredIntPoint(event.position());
     LayoutPoint viewportPos = view->windowToContents(flooredEventPosition);
     constexpr OptionSet<HitTestRequest::Type> hitType { HitTestRequest::Type::Active, HitTestRequest::Type::DisallowUserAgentShadowContent };
@@ -3862,14 +3868,15 @@ bool EventHandler::sendContextMenuEvent(const PlatformMouseEvent& event)
     if (mouseEvent.scrollbar() || view->scrollbarAtPoint(flooredEventPosition))
         return false;
 
-    if (frame->editor().behavior().shouldSelectOnContextualMenuClick()
-        && !frame->selection().contains(viewportPos)) {
+    auto shouldSelectOnContextualMenuClick = frame->editor().behavior().shouldSelectOnContextualMenuClick() && event.inputSource() == MouseEventInputSource::Hardware;
+
+    if (shouldSelectOnContextualMenuClick && !frame->selection().contains(viewportPos)) {
         m_mouseDownMayStartSelect = true; // context menu events are always allowed to perform a selection
         selectClosestContextualWordOrLinkFromHitTestResult(mouseEvent.hitTestResult(), shouldAppendTrailingWhitespace(mouseEvent, m_frame));
     }
 
-    swallowEvent = !dispatchMouseEvent(eventNames().contextmenuEvent, mouseEvent.protectedTargetNode().get(), 0, event, FireMouseOverOut::No);
-    
+    auto swallowEvent = !dispatchMouseEvent(eventNames().contextmenuEvent, mouseEvent.protectedTargetNode().get(), 0, event, FireMouseOverOut::No);
+
     return swallowEvent;
 }
 
@@ -3950,7 +3957,7 @@ bool EventHandler::sendContextMenuEventForKey()
 #else
     PlatformEvent::Type eventType = PlatformEvent::Type::MousePressed;
 #endif
-    PlatformMouseEvent platformMouseEvent(position, globalPosition, MouseButton::Right, eventType, 1, { }, MonotonicTime::now(), ForceAtClick, SyntheticClickType::NoTap);
+    PlatformMouseEvent platformMouseEvent(position, globalPosition, MouseButton::Right, eventType, 1, { }, MonotonicTime::now(), ForceAtClick, SyntheticClickType::NoTap, MouseEventInputSource::Hardware);
 
     return sendContextMenuEvent(platformMouseEvent);
 }
@@ -4036,7 +4043,7 @@ void EventHandler::fakeMouseMoveEventTimerFired()
         return;
 
     auto modifiers = PlatformKeyboardEvent::currentStateOfModifierKeys();
-    PlatformMouseEvent fakeMouseMoveEvent(valueOrDefault(m_lastKnownMousePosition), m_lastKnownMouseGlobalPosition, MouseButton::None, PlatformEvent::Type::MouseMoved, 0, modifiers, MonotonicTime::now(), 0, SyntheticClickType::NoTap);
+    PlatformMouseEvent fakeMouseMoveEvent(valueOrDefault(m_lastKnownMousePosition), m_lastKnownMouseGlobalPosition, MouseButton::None, PlatformEvent::Type::MouseMoved, 0, modifiers, MonotonicTime::now(), 0, SyntheticClickType::NoTap, MouseEventInputSource::Hardware);
     mouseMoved(fakeMouseMoveEvent);
 }
 #endif // !ENABLE(IOS_TOUCH_EVENTS)
@@ -4701,7 +4708,7 @@ bool EventHandler::handleDrag(const MouseEventWithHitTestResults& event, CheckDr
         HitTestResult result(m_mouseDownContentsPosition);
         protect(frame->document())->hitTest(OptionSet<HitTestRequest::Type> { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::DisallowUserAgentShadowContent }, result);
         if (RefPtr page = frame->page())
-            setDragStateSource(page->dragController().draggableElement(frame.ptr(), result.protectedTargetElement().get(), m_mouseDownContentsPosition, dragState()).get());
+            setDragStateSource(page->dragController().draggableElement(frame.ptr(), protect(result.targetElement()).get(), m_mouseDownContentsPosition, dragState()).get());
 
         if (!draggedElement())
             m_mouseDownMayStartDrag = false; // no element is draggable
@@ -5045,9 +5052,9 @@ void EventHandler::defaultBackspaceEventHandler(KeyboardEvent& event)
     bool handledEvent = false;
 
     if (event.shiftKey())
-        handledEvent = page->checkedBackForward()->goForward();
+        handledEvent = protect(page->backForward())->goForward();
     else
-        handledEvent = page->checkedBackForward()->goBack();
+        handledEvent = protect(page->backForward())->goBack();
 
     if (handledEvent)
         event.setDefaultHandled();

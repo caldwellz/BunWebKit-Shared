@@ -67,14 +67,13 @@ struct CSSParserContext {
     bool cssTextDecorationLineErrorValues : 1 { false };
     bool cssWordBreakAutoPhraseEnabled : 1 { false };
     bool popoverAttributeEnabled : 1 { false };
-    bool sidewaysWritingModesEnabled : 1 { false };
     bool cssTextWrapPrettyEnabled : 1 { true };
 #if ENABLE(SERVICE_CONTROLS)
     bool imageControlsEnabled : 1 { false };
 #endif
     bool colorLayersEnabled : 1 { false };
     bool targetTextPseudoElementEnabled : 1 { false };
-    bool htmlEnhancedSelectPseudoElementsEnabled : 1 { false };
+    bool htmlEnhancedSelectEnabled : 1 { false };
     bool cssRandomFunctionEnabled : 1 { false };
     bool cssTreeCountingFunctionsEnabled : 1 { false };
     bool cssURLModifiersEnabled : 1 { false };

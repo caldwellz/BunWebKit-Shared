@@ -7078,5 +7078,8 @@
     ],
     "imported/w3c/web-platform-tests/xhr/xmlhttprequest-timeout-worker-twice.html": [
         "slow"
+    ],
+    "imported/w3c/web-platform-tests/xml/xslt/large-cdata.html": [
+        "slow"
     ]
 }

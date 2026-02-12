@@ -148,7 +148,7 @@ void IDBOpenDBRequest::onSuccess(const IDBResultData& resultData)
 
     ASSERT(canCurrentThreadAccessThreadLocalData(originThread()));
 
-    setResult(IDBDatabase::create(*protectedScriptExecutionContext(), connectionProxy(), resultData));
+    setResult(IDBDatabase::create(*protect(scriptExecutionContext()), connectionProxy(), resultData));
     setReadyState(ReadyState::Done);
 
     enqueueEvent(IDBRequestCompletionEvent::create(eventNames().successEvent, Event::CanBubble::No, Event::IsCancelable::No, *this));
@@ -158,7 +158,7 @@ void IDBOpenDBRequest::onUpgradeNeeded(const IDBResultData& resultData)
 {
     ASSERT(canCurrentThreadAccessThreadLocalData(originThread()));
 
-    Ref database = IDBDatabase::create(*protectedScriptExecutionContext(), connectionProxy(), resultData);
+    Ref database = IDBDatabase::create(*protect(scriptExecutionContext()), connectionProxy(), resultData);
     Ref transaction = database->startVersionChangeTransaction(resultData.transactionInfo(), *this);
 
     ASSERT(transaction->info().mode() == IDBTransactionMode::Versionchange);

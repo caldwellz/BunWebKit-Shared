@@ -251,14 +251,16 @@ WebMouseEvent WebEventFactory::createWebMouseEvent(const GdkEvent* event, const 
         movementDelta.width(),
         movementDelta.height(),
         0 /* deltaZ */,
-        currentClickCount
+        currentClickCount,
+        0 /* force */,
+        WebMouseEventInputSource::Hardware
         );
 }
 
 WebMouseEvent WebEventFactory::createWebMouseEvent(const DoublePoint& position)
 {
     // Mouse events without GdkEvent are crossing events, handled as a mouse move.
-    return WebMouseEvent({ WebEventType::MouseMove, { }, MonotonicTime::now() }, WebMouseEventButton::None, 0, position, position, 0, 0, 0, 0);
+    return WebMouseEvent({ WebEventType::MouseMove, { }, MonotonicTime::now() }, WebMouseEventButton::None, 0, position, position, 0, 0, 0, 0, 0, WebMouseEventInputSource::Hardware);
 }
 
 WebKeyboardEvent WebEventFactory::createWebKeyboardEvent(const GdkEvent* event, const String& text, bool isAutoRepeat, bool handledByInputMethod, std::optional<Vector<CompositionUnderline>>&& preeditUnderlines, std::optional<EditingRange>&& preeditSelectionRange, Vector<String>&& commands)

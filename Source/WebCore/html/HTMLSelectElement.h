@@ -30,6 +30,7 @@
 #include <WebCore/PopupMenuClient.h>
 #include <WebCore/TypeAhead.h>
 #include <wtf/CompletionHandler.h>
+#include <wtf/OptionSet.h>
 
 #if PLATFORM(COCOA)
 #define POPUP_MENU_PULLS_DOWN 0
@@ -78,8 +79,11 @@ public:
 
     bool usesMenuList() const;
 
-    using OptionOrOptGroupElement = Variant<RefPtr<HTMLOptionElement>, RefPtr<HTMLOptGroupElement>>;
-    using HTMLElementOrInt = Variant<RefPtr<HTMLElement>, int>;
+    // This method is deprecated because the return value doesn't match the rendering on iOS for multiple selects.
+    bool usesMenuListDeprecated() const;
+
+    using OptionOrOptGroupElement = Variant<Ref<HTMLOptionElement>, Ref<HTMLOptGroupElement>>;
+    using HTMLElementOrInt = Variant<Ref<HTMLElement>, int>;
     WEBCORE_EXPORT ExceptionOr<void> add(const OptionOrOptGroupElement&, const std::optional<HTMLElementOrInt>& before);
 
     using Node::remove;
@@ -94,7 +98,6 @@ public:
     void optionElementChildrenChanged();
 
     void setRecalcListItems();
-    void invalidateSelectedItems();
     void updateListItemSelectedStates(AllowStyleInvalidation = AllowStyleInvalidation::Yes);
 
     WEBCORE_EXPORT const Vector<WeakPtr<HTMLElement, WeakPtrImplWithEventTargetData>>& listItems() const;
@@ -112,8 +115,12 @@ public:
     void showPopup();
 #if !PLATFORM(IOS_FAMILY)
     void hidePopup();
-    bool popupIsVisible() const { return m_popupIsVisible; }
 #endif
+
+    bool popupIsVisible() const { return m_popupIsVisible; }
+    WEBCORE_EXPORT void setPopupIsVisible(bool);
+
+    bool isOpen() const;
 
     void didUpdateActiveOption(int optionIndex);
 
@@ -171,6 +178,11 @@ public:
 
     bool isDevolvableWidget() const override { return true; }
 
+    void updateSelectedContent(HTMLOptionElement* = nullptr) const;
+
+    void registerSelectedContentElement();
+    void unregisterSelectedContentElement();
+
 protected:
     HTMLSelectElement(const QualifiedName&, Document&, HTMLFormElement*);
 
@@ -180,6 +192,7 @@ private:
     int defaultTabIndex() const final;
     bool isKeyboardFocusable(const FocusEventData&) const final;
     bool isMouseFocusable() const final;
+    bool hasCustomFocusLogic() const final { return true; }
 
     void dispatchFocusEvent(RefPtr<Element>&& oldFocusedElement, const FocusOptions&) final;
     void dispatchBlurEvent(RefPtr<Element>&& newFocusedElement) final;
@@ -211,6 +224,7 @@ private:
 
     void didRecalcStyle(OptionSet<Style::Change>) final;
 
+    void invalidateSelectedItems();
     void recalcListItems(bool updateSelectedStates = true, AllowStyleInvalidation = AllowStyleInvalidation::Yes) const;
 
     void typeAheadFind(KeyboardEvent&);
@@ -221,13 +235,12 @@ private:
 
     bool hasPlaceholderLabelOption() const;
 
-    enum SelectOptionFlag {
+    enum class SelectOptionFlag : uint8_t {
         DeselectOtherOptions = 1 << 0,
         DispatchChangeEvent = 1 << 1,
         UserDriven = 1 << 2,
     };
-    typedef unsigned SelectOptionFlags;
-    void selectOption(int optionIndex, SelectOptionFlags = 0);
+    void selectOption(int optionIndex, OptionSet<SelectOptionFlag> = { });
     void deselectItemsWithoutValidation(HTMLElement* elementToExclude = nullptr);
     void parseMultipleAttribute(const AtomString&);
     int lastSelectedListIndex() const;
@@ -236,10 +249,10 @@ private:
     bool platformHandleKeydownEvent(KeyboardEvent*);
     void listBoxDefaultEventHandler(Event&);
     void setOptionsChangedOnRenderer();
-    void updateButtonText();
+    void updateButtonText(HTMLOptionElement* = nullptr, int optionIndex = -1);
     size_t searchOptionsForValue(const String&, size_t listIndexStart, size_t listIndexEnd) const;
 
-    enum SkipDirection { SkipBackwards = -1, SkipForwards = 1 };
+    enum class SkipDirection : bool { Backwards, Forwards };
     int nextValidIndex(int listIndex, SkipDirection, int skip) const;
     int nextSelectableListIndex(int startIndex) const;
     int previousSelectableListIndex(int startIndex) const;
@@ -258,7 +271,6 @@ private:
     int optionCount() const final;
     String optionAtIndex(int index) const final;
 
-
     // m_listItems contains HTMLOptionElement, HTMLOptGroupElement, and HTMLHRElement objects.
     mutable Vector<WeakPtr<HTMLElement, WeakPtrImplWithEventTargetData>> m_listItems;
     Vector<bool> m_lastOnChangeSelection;
@@ -273,13 +285,16 @@ private:
     bool m_activeSelectionState;
     bool m_allowsNonContiguousSelection;
     mutable bool m_shouldRecalcListItems;
+    unsigned m_selectedContentDescendantCount { 0 };
 
     std::optional<int> m_lastActiveIndex;
 
+    WeakPtr<HTMLSlotElement, WeakPtrImplWithEventTargetData> m_buttonSlot;
+
 #if !PLATFORM(IOS_FAMILY)
     RefPtr<PopupMenu> m_popup;
-    bool m_popupIsVisible { false };
 #endif
+    bool m_popupIsVisible { false };
 };
 
 } // namespace

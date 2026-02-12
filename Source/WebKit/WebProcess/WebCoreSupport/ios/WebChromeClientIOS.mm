@@ -75,12 +75,6 @@ void WebChromeClient::setNeedsScrollNotifications(WebCore::LocalFrame&, bool)
     notImplemented();
 }
 
-void WebChromeClient::didFinishContentChangeObserving(WebCore::LocalFrame& frame, WKContentChange observedContentChange)
-{
-    if (RefPtr page = m_page.get())
-        page->didFinishContentChangeObserving(frame.frameID(), observedContentChange);
-}
-
 void WebChromeClient::notifyRevealedSelectionByScrollingFrame(WebCore::LocalFrame&)
 {
     if (RefPtr page = m_page.get())

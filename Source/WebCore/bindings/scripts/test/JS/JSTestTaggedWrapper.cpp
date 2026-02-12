@@ -189,7 +189,7 @@ void JSTestTaggedWrapperOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* 
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestTaggedWrapper = static_cast<JSTestTaggedWrapper*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestTaggedWrapper->protectedWrapped().ptr(), jsTestTaggedWrapper);
+    uncacheWrapper(world, protect(jsTestTaggedWrapper->wrapped()).ptr(), jsTestTaggedWrapper);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

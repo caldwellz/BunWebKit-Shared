@@ -386,7 +386,7 @@ void HTMLLinkElement::process()
         ResourceLoaderOptions options = CachedResourceLoader::defaultCachedResourceOptions();
         options.nonce = nonce();
         options.sameOriginDataURLFlag = SameOriginDataURLFlag::Set;
-        if (document->checkedContentSecurityPolicy()->allowStyleWithNonce(options.nonce))
+        if (protect(document->contentSecurityPolicy())->allowStyleWithNonce(options.nonce))
             options.contentSecurityPolicyImposition = ContentSecurityPolicyImposition::SkipPolicyCheck;
         options.integrity = m_integrityMetadataForPendingSheetRequest;
         options.referrerPolicy = params.referrerPolicy;

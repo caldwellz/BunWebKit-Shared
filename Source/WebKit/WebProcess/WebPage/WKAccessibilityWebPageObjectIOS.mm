@@ -57,7 +57,7 @@
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    [_remoteTokenDictionary release];
+    SUPPRESS_UNRETAINED_ARG [_remoteTokenDictionary release];
     [super dealloc];
 }
 

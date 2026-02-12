@@ -88,16 +88,20 @@ void PushManager::subscribe(ScriptExecutionContext& context, std::optional<PushS
         }
 
         using KeyDataResult = ExceptionOr<Vector<uint8_t>>;
-        auto keyDataResult = WTF::switchOn(*options->applicationServerKey, [](RefPtr<JSC::ArrayBuffer>& value) -> KeyDataResult {
-            return value ? value->toVector() : Vector<uint8_t>();
-        }, [](RefPtr<JSC::ArrayBufferView>& value) -> KeyDataResult {
-            return value ? value->toVector() : Vector<uint8_t>();
-        }, [](String& value) -> KeyDataResult {
-            auto decoded = base64URLDecode(value);
-            if (!decoded)
-                return Exception { ExceptionCode::InvalidCharacterError, "applicationServerKey is not properly base64url-encoded"_s };
-            return WTF::move(decoded.value());
-        });
+        auto keyDataResult = WTF::switchOn(*options->applicationServerKey,
+            [](RefPtr<JSC::ArrayBuffer>& value) -> KeyDataResult {
+                return value ? value->toVector() : Vector<uint8_t>();
+            },
+            [](RefPtr<JSC::ArrayBufferView>& value) -> KeyDataResult {
+                return value ? value->toVector() : Vector<uint8_t>();
+            },
+            [](String& value) -> KeyDataResult {
+                auto decoded = base64URLDecode(value);
+                if (!decoded)
+                    return Exception { ExceptionCode::InvalidCharacterError, "applicationServerKey is not properly base64url-encoded"_s };
+                return WTF::move(decoded.value());
+            }
+        );
 
         if (keyDataResult.hasException()) {
             promise.reject(keyDataResult.releaseException());

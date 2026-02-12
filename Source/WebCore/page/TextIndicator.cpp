@@ -403,7 +403,7 @@ static bool initializeIndicator(TextIndicatorData& data, LocalFrame& frame, cons
 
     // Store the selection rect in window coordinates, to be used subsequently
     // to determine if the indicator and selection still precisely overlap.
-    data.selectionRectInRootViewCoordinates = protect(frame.view())->contentsToRootView(enclosingIntRect(frame.checkedSelection()->selectionBounds(FrameSelection::ClipToVisibleContent::No)));
+    data.selectionRectInRootViewCoordinates = protect(frame.view())->contentsToRootView(enclosingIntRect(protect(frame.selection())->selectionBounds(FrameSelection::ClipToVisibleContent::No)));
     data.textBoundingRectInRootViewCoordinates = textBoundingRectInRootViewCoordinates;
     data.textRectsInBoundingRectCoordinates = WTF::move(textRectsInBoundingRectCoordinates);
 

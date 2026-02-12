@@ -40,7 +40,7 @@ namespace WebCore {
 
 class HTMLVideoElement;
 #if ENABLE(WEB_CODECS)
-using GPUVideoSource = Variant<RefPtr<HTMLVideoElement>, RefPtr<WebCodecsVideoFrame>>;
+using GPUVideoSource = Variant<Ref<HTMLVideoElement>, Ref<WebCodecsVideoFrame>>;
 #else
 using GPUVideoSource = Ref<HTMLVideoElement>;
 #endif
@@ -52,15 +52,15 @@ struct GPUExternalTextureDescriptor : public GPUObjectDescriptorBase {
     {
 #if ENABLE(WEB_CODECS)
         return WTF::switchOn(videoSource,
-            [&](const RefPtr<HTMLVideoElement> videoElement) -> WebGPU::VideoSourceIdentifier {
+            [&](const Ref<HTMLVideoElement>& videoElement) -> WebGPU::VideoSourceIdentifier {
                 if (auto playerIdentifier = videoElement->playerIdentifier())
                     return playerIdentifier;
                 RefPtr<WebCore::VideoFrame> result;
                 if (videoElement->player())
-                    result = videoElement->protectedPlayer()->videoFrameForCurrentTime();
+                    result = protect(videoElement->player())->videoFrameForCurrentTime();
                 return result;
             },
-            [&](const RefPtr<WebCodecsVideoFrame> videoFrame) -> WebGPU::VideoSourceIdentifier {
+            [&](const Ref<WebCodecsVideoFrame>& videoFrame) -> WebGPU::VideoSourceIdentifier {
                 return videoFrame->internalFrame();
             }
         );
@@ -73,10 +73,10 @@ struct GPUExternalTextureDescriptor : public GPUObjectDescriptorBase {
     {
 #if ENABLE(WEB_CODECS)
         return WTF::switchOn(source,
-            [&](const RefPtr<HTMLVideoElement> videoElement) -> std::optional<WebCore::MediaPlayerIdentifier> {
+            [&](const Ref<HTMLVideoElement>& videoElement) -> std::optional<WebCore::MediaPlayerIdentifier> {
                 return videoElement->playerIdentifier();
             },
-            [&](const RefPtr<WebCodecsVideoFrame>) -> std::optional<WebCore::MediaPlayerIdentifier> {
+            [&](const Ref<WebCodecsVideoFrame>&) -> std::optional<WebCore::MediaPlayerIdentifier> {
                 return std::nullopt;
             }
         );

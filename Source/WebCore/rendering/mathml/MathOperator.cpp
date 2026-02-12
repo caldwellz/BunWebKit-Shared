@@ -240,7 +240,7 @@ void MathOperator::calculateDisplayStyleLargeOperator(const RenderStyle& style)
     if (!getBaseGlyph(style, baseGlyph) || !baseGlyph.font->mathData())
         return;
 
-    float displayOperatorMinHeight = baseGlyph.font->mathData()->getMathConstant(*baseGlyph.font, OpenTypeMathData::DisplayOperatorMinHeight);
+    float displayOperatorMinHeight = baseGlyph.font->mathData()->getMathConstant(*baseGlyph.font, OpenTypeMathData::MathConstant::DisplayOperatorMinHeight);
 
     Vector<Glyph> sizeVariants;
     Vector<OpenTypeMathData::AssemblyPart> assemblyParts;

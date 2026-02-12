@@ -335,7 +335,6 @@ private:
     void decrementActiveVMs(VM&) WTF_REQUIRES_LOCK(m_worldLock);
 
     void dispatchStopHandler(VM&);
-    void handleStopViaDispatch(VM&);
 
     JS_EXPORT_PRIVATE static bool isValidVMSlow(VM*);
     JS_EXPORT_PRIVATE VM* findMatchingVMImpl(const ScopedLambda<TestCallback>&);

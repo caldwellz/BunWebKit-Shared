@@ -125,6 +125,19 @@ TextStream& operator<<(TextStream& ts, ScrollbarMode behavior)
     return ts;
 }
 
+TextStream& operator<<(TextStream& ts, ScrollbarRevealBehavior behavior)
+{
+    switch (behavior) {
+    case ScrollbarRevealBehavior::DontReveal:
+        ts << "dont-reveal"_s;
+        break;
+    case ScrollbarRevealBehavior::Default:
+        ts << "default"_s;
+        break;
+    }
+    return ts;
+}
+
 TextStream& operator<<(TextStream& ts, OverflowAnchor behavior)
 {
     switch (behavior) {

@@ -27,9 +27,9 @@
 
 #if ENABLE(WEBGL)
 
-#include "ContextDestructionObserver.h"
-#include "GraphicsContextGLActiveInfo.h"
-#include "WebGLObject.h"
+#include <WebCore/ContextDestructionObserver.h>
+#include <WebCore/GraphicsContextGLActiveInfo.h>
+#include <WebCore/WebGLObject.h>
 #include <wtf/HashMap.h>
 #include <wtf/HashFunctions.h>
 #include <wtf/Lock.h>

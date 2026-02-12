@@ -210,7 +210,7 @@ NetworkDataTaskCocoa::NetworkDataTaskCocoa(NetworkSession& session, NetworkDataT
         request.removeCredentials();
         url = request.url();
     
-        if (CheckedPtr storageSession = NetworkDataTask::checkedNetworkSession()->networkStorageSession()) {
+        if (CheckedPtr storageSession = protect(NetworkDataTask::networkSession())->networkStorageSession()) {
             if (m_user.isEmpty() && m_password.isEmpty())
                 m_initialCredential = storageSession->credentialStorage().get(m_partition, url);
             else
@@ -336,7 +336,7 @@ NetworkDataTaskCocoa::NetworkDataTaskCocoa(NetworkSession& session, NetworkDataT
     setCookieTransform(request, IsRedirect::No);
     if (WebCore::NetworkStorageSession::shouldBlockCookies(thirdPartyCookieBlockingDecision)) {
 #if !RELEASE_LOG_DISABLED
-        if (NetworkDataTask::checkedNetworkSession()->shouldLogCookieInformation())
+        if (protect(NetworkDataTask::networkSession())->shouldLogCookieInformation())
             RELEASE_LOG_IF(isAlwaysOnLoggingAllowed(), Network, "%p - NetworkDataTaskCocoa::logCookieInformation: pageID=%" PRIu64 ", frameID=%" PRIu64 ", taskID=%lu: Blocking cookies for URL %s", this, pageID() ? pageID()->toUInt64() : 0, frameID() ? frameID()->toUInt64() : 0, (unsigned long)[m_task taskIdentifier], [nsRequest URL].absoluteString.UTF8String);
 #else
         LOG(NetworkSession, "%lu Blocking cookies for URL %s", (unsigned long)[m_task taskIdentifier], [nsRequest URL].absoluteString.UTF8String);
@@ -556,7 +556,7 @@ bool NetworkDataTaskCocoa::tryPasswordBasedAuthentication(const WebCore::Authent
         }
 
         if (!challenge.previousFailureCount()) {
-            auto credential = session->networkStorageSession() ? session->checkedNetworkStorageSession()->credentialStorage().get(m_partition, challenge.protectionSpace()) : WebCore::Credential();
+            auto credential = session->networkStorageSession() ? protect(session->networkStorageSession())->credentialStorage().get(m_partition, challenge.protectionSpace()) : WebCore::Credential();
             if (!credential.isEmpty() && credential != m_initialCredential) {
                 ASSERT(credential.persistence() == WebCore::CredentialPersistence::None);
                 if (challenge.failureResponse().httpStatusCode() == httpStatus401Unauthorized) {

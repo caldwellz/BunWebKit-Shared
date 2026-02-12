@@ -164,10 +164,6 @@ struct WebProcessCreationParameters {
     HashMap<String, bool> notificationPermissions;
 #endif
 
-#if PLATFORM(COCOA)
-    RetainPtr<CFDataRef> networkATSContext;
-#endif
-
 #if PLATFORM(WAYLAND)
     String waylandCompositorDisplayName;
 #endif

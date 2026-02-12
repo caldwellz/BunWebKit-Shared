@@ -163,6 +163,13 @@ template <> struct iterator_traits<HashSet<RefPtr<WebCore::MediaSelectionOptionA
 @property (assign, nonatomic) BOOL preventsAutomaticBackgroundingDuringVideoPlayback;
 @end
 
+#if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
+@interface AVPlayer (Staging_168303606)
+- (void)setParticipatesInAudioSession:(BOOL)participates completionHandler:(nullable void (^)(void))completionHandler;
+- (void)setDisconnectedFromSystemAudio:(BOOL)disconnected completionHandler:(nullable void (^)(void))completionHandler;
+@end
+#endif
+
 #import <pal/cf/CoreMediaSoftLink.h>
 #import <pal/cocoa/AVFoundationSoftLink.h>
 
@@ -1114,7 +1121,7 @@ void MediaPlayerPrivateAVFoundationObjC::createAVPlayer()
         [m_avPlayer _setSuppressesAudioRendering:!m_isAudible];
 
 #if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
-    [m_avPlayer setParticipatesInAudioSession:m_isAudible completionHandler:nil];
+    setParticipatesInAudioSession(m_isAudible);
 #endif
 
 #if HAVE(SPATIAL_TRACKING_LABEL)
@@ -2304,7 +2311,7 @@ void MediaPlayerPrivateAVFoundationObjC::updateIsAudible()
         [m_avPlayer _setSuppressesAudioRendering:!m_isAudible];
 
 #if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
-    [m_avPlayer setParticipatesInAudioSession:m_isAudible completionHandler:nil];
+    setParticipatesInAudioSession(m_isAudible);
 #endif
 }
 
@@ -4259,6 +4266,16 @@ RefPtr<WebCoreAVFResourceLoader> MediaPlayerPrivateAVFoundationObjC::takeResourc
     Locker locker { m_resourceLoaderMapLock };
     return m_resourceLoaderMap.take(key);
 }
+
+#if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
+void MediaPlayerPrivateAVFoundationObjC::setParticipatesInAudioSession(bool participatesInAudioSession)
+{
+    if ([m_avPlayer respondsToSelector:@selector(setDisconnectedFromSystemAudio:completionHandler:)])
+        [m_avPlayer setDisconnectedFromSystemAudio:!participatesInAudioSession completionHandler:nil];
+    else
+        [m_avPlayer setParticipatesInAudioSession:participatesInAudioSession completionHandler:nil];
+}
+#endif
 
 NSArray* assetMetadataKeyNames()
 {

@@ -96,13 +96,14 @@ template<> struct JSConverter<IDLBufferSource> {
     {
         auto* jsDOMGlobalObject = JSC::jsCast<JSDOMGlobalObject*>(&lexicalGlobalObject);
 
-        JSC::JSValue jsValue;
-        WTF::switchOn(bufferSource.variant(), [&](RefPtr<JSC::ArrayBufferView> view) {
-            jsValue = toJS(&lexicalGlobalObject, &lexicalGlobalObject, *view);
-        }, [&](RefPtr<JSC::ArrayBuffer> arrayBuffer) {
-            jsValue = toJS(&lexicalGlobalObject, jsDOMGlobalObject, *arrayBuffer);
-        });
-        return jsValue;
+        return WTF::switchOn(bufferSource.variant(),
+            [&](RefPtr<JSC::ArrayBufferView> view) {
+                return toJS(&lexicalGlobalObject, &lexicalGlobalObject, *view);
+            },
+            [&](RefPtr<JSC::ArrayBuffer> arrayBuffer)  {
+                return toJS(&lexicalGlobalObject, jsDOMGlobalObject, *arrayBuffer);
+            }
+        );
     }
     static JSC::JSValue convert(JSC::JSGlobalObject& lexicalGlobalObject, const std::optional<BufferSource>& bufferSource)
     {
@@ -110,11 +111,14 @@ template<> struct JSConverter<IDLBufferSource> {
 
         JSC::JSValue jsValue;
         if (bufferSource) {
-            WTF::switchOn(bufferSource->variant(), [&](RefPtr<JSC::ArrayBufferView> view) {
-                jsValue = toJS(&lexicalGlobalObject, &lexicalGlobalObject, *view);
-            }, [&](RefPtr<JSC::ArrayBuffer> arrayBuffer) {
-                jsValue = toJS(&lexicalGlobalObject, jsDOMGlobalObject, *arrayBuffer);
-            });
+            jsValue = WTF::switchOn(bufferSource->variant(),
+                [&](RefPtr<JSC::ArrayBufferView> view) {
+                    return toJS(&lexicalGlobalObject, &lexicalGlobalObject, *view);
+                },
+                [&](RefPtr<JSC::ArrayBuffer> arrayBuffer) {
+                    return toJS(&lexicalGlobalObject, jsDOMGlobalObject, *arrayBuffer);
+                }
+            );
         }
         return jsValue;
     }
@@ -122,13 +126,14 @@ template<> struct JSConverter<IDLBufferSource> {
 
 inline JSC::JSValue toJS(JSC::JSGlobalObject* lexicalGlobalObject, JSDOMGlobalObject* globalObject, BufferSource* bufferSource)
 {
-    JSC::JSValue jsValue;
-    WTF::switchOn(bufferSource->variant(), [&](RefPtr<JSC::ArrayBufferView> view) {
-        jsValue = toJS(lexicalGlobalObject, globalObject, *view);
-    }, [&](RefPtr<JSC::ArrayBuffer> arrayBuffer) {
-        jsValue = toJS(lexicalGlobalObject, globalObject, *arrayBuffer);
-    });
-    return jsValue;
+    return WTF::switchOn(bufferSource->variant(),
+        [&](RefPtr<JSC::ArrayBufferView> view) {
+            return toJS(lexicalGlobalObject, globalObject, *view);
+        },
+        [&](RefPtr<JSC::ArrayBuffer> arrayBuffer) {
+            return toJS(lexicalGlobalObject, globalObject, *arrayBuffer);
+        }
+    );
 }
 
 inline RefPtr<JSC::ArrayBufferView> toPossiblySharedArrayBufferView(JSC::VM&, JSC::JSValue value)

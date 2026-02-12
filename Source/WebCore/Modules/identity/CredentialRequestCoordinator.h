@@ -67,6 +67,7 @@ public:
 
 private:
     void dismissPickerAndSettle(ExceptionOr<RefPtr<BasicCredential>>&&);
+    void clearAbortAlgorithm();
 
     class PickerStateGuard final {
     public:
@@ -104,7 +105,9 @@ private:
     explicit CredentialRequestCoordinator(Ref<CredentialRequestCoordinatorClient>&&, Page&);
     const Ref<CredentialRequestCoordinatorClient> m_client;
     PickerState m_state { PickerState::Idle };
+    RefPtr<AbortSignal> m_abortSignal;
     std::optional<CredentialPromise> m_currentPromise;
+    std::optional<uint32_t> m_abortAlgorithmIdentifier;
     WeakPtr<Page> m_page;
 };
 

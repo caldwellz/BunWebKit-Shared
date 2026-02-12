@@ -215,7 +215,7 @@ AudioTimestamp AudioContext::getOutputTimestamp()
     DOMHighResTimeStamp performanceTime = 0.0;
     RefPtr document = this->document();
     if (document && document->window())
-        performanceTime = std::max(document->window()->protectedPerformance()->relativeTimeFromTimeOriginInReducedResolution(position.timestamp), 0.0);
+        performanceTime = std::max(protect(document->window()->performance())->relativeTimeFromTimeOriginInReducedResolution(position.timestamp), 0.0);
 
     return { position.position.seconds(), performanceTime };
 }

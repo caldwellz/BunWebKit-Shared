@@ -46,6 +46,10 @@
 #include <wtf/ThreadSafeRefCounted.h>
 #include <wtf/Variant.h>
 
+#if USE(CG)
+#include <wtf/cf/CFTypeTraits.h>
+#endif
+
 #if USE(SKIA)
 WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_BEGIN
 #include <skia/core/SkColor.h>
@@ -54,6 +58,8 @@ WTF_IGNORE_WARNINGS_IN_THIRD_PARTY_CODE_END
 
 #if USE(CG)
 typedef struct CGColor* CGColorRef;
+extern "C" CFTypeID CGColorGetTypeID();
+WTF_DECLARE_CF_TYPE_TRAIT(CGColor);
 #endif
 
 namespace WebCore {
@@ -262,8 +268,7 @@ private:
     SRGBA<uint8_t> asInline() const;
     PackedColor::RGBA asPackedInline() const;
 
-    const OutOfLineComponents& asOutOfLine() const;
-    Ref<OutOfLineComponents> protectedAsOutOfLine() const;
+    OutOfLineComponents& asOutOfLine() const;
 
 #if CPU(ADDRESS64)
     static constexpr unsigned maxNumberOfBitsInPointer = 48;
@@ -525,13 +530,7 @@ inline bool Color::isInline() const
     return !flags().contains(FlagsIncludingPrivate::OutOfLine);
 }
 
-inline const Color::OutOfLineComponents& Color::asOutOfLine() const
-{
-    ASSERT(isOutOfLine());
-    return decodedOutOfLineComponents(m_colorAndFlags);
-}
-
-inline Ref<Color::OutOfLineComponents> Color::protectedAsOutOfLine() const
+inline Color::OutOfLineComponents& Color::asOutOfLine() const
 {
     ASSERT(isOutOfLine());
     return decodedOutOfLineComponents(m_colorAndFlags);

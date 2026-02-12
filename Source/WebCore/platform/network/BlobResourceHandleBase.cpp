@@ -288,7 +288,7 @@ bool BlobResourceHandleBase::readDataAsync(const BlobDataItem& item)
     if (bytesToRead > m_totalRemainingSize)
         bytesToRead = m_totalRemainingSize;
 
-    auto data = item.protectedData()->span().subspan(item.offset() + m_currentItemReadSize, bytesToRead);
+    auto data = protect(item.data())->span().subspan(item.offset() + m_currentItemReadSize, bytesToRead);
     m_currentItemReadSize = 0;
 
     return consumeData(data);
@@ -306,7 +306,7 @@ void BlobResourceHandleBase::readFileAsync(const BlobDataItem& item)
     uint64_t bytesToRead = lengthOfItemBeingRead() - m_currentItemReadSize;
     if (bytesToRead > m_totalRemainingSize)
         bytesToRead = static_cast<int>(m_totalRemainingSize);
-    asyncStream()->openForRead(item.protectedFile()->path(), item.offset() + m_currentItemReadSize, bytesToRead);
+    asyncStream()->openForRead(protect(item.file())->path(), item.offset() + m_currentItemReadSize, bytesToRead);
     m_isFileOpen = true;
     m_currentItemReadSize = 0;
 }

@@ -427,7 +427,7 @@ ExceptionOr<void> WebSocket::close(std::optional<unsigned short> optionalCode, c
             return Exception { ExceptionCode::InvalidAccessError };
         CString utf8 = reason.utf8(StrictConversionReplacingUnpairedSurrogatesWithFFFD);
         if (utf8.length() > maxReasonSizeInBytes) {
-            protectedScriptExecutionContext()->addConsoleMessage(MessageSource::JS, MessageLevel::Error, "WebSocket close message is too long."_s);
+            protect(scriptExecutionContext())->addConsoleMessage(MessageSource::JS, MessageLevel::Error, "WebSocket close message is too long."_s);
             return Exception { ExceptionCode::SyntaxError };
         }
     }
@@ -581,7 +581,7 @@ void WebSocket::didReceiveBinaryData(Vector<uint8_t>&& binaryData)
         switch (socket.m_binaryType) {
         case BinaryType::Blob:
             // FIXME: We just received the data from NetworkProcess, and are sending it back. This is inefficient.
-            socket.dispatchEvent(MessageEvent::create(Blob::create(socket.protectedScriptExecutionContext().get(), WTF::move(binaryData), emptyString()), socket.m_origin.copyRef()));
+            socket.dispatchEvent(MessageEvent::create(Blob::create(protect(socket.scriptExecutionContext()).get(), WTF::move(binaryData), emptyString()), socket.m_origin.copyRef()));
             break;
         case BinaryType::Arraybuffer:
             socket.dispatchEvent(MessageEvent::create(ArrayBuffer::create(binaryData), socket.m_origin.copyRef()));

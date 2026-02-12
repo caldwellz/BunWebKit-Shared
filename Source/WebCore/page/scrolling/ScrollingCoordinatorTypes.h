@@ -112,6 +112,7 @@ struct RequestedScrollData {
     ScrollType scrollType { ScrollType::User };
     ScrollClamping clamping { ScrollClamping::Clamped };
     ScrollIsAnimated animated { ScrollIsAnimated::No };
+    ScrollbarRevealBehavior scrollbarRevealBehavior { ScrollbarRevealBehavior::Default };
     std::optional<std::tuple<ScrollRequestType, Variant<FloatPoint, FloatSize>, ScrollType, ScrollClamping>> requestedDataBeforeAnimatedScroll { };
 
     void merge(RequestedScrollData&&);
@@ -135,6 +136,7 @@ struct RequestedScrollData {
             && scrollType == other.scrollType
             && clamping == other.clamping
             && animated == other.animated
+            && scrollbarRevealBehavior == other.scrollbarRevealBehavior
             && requestedDataBeforeAnimatedScroll == other.requestedDataBeforeAnimatedScroll;
     }
 };

@@ -248,7 +248,7 @@ void JSTestStringifierReadWriteAttributeOwner::finalize(JSC::Handle<JSC::Unknown
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestStringifierReadWriteAttribute = static_cast<JSTestStringifierReadWriteAttribute*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestStringifierReadWriteAttribute->protectedWrapped().ptr(), jsTestStringifierReadWriteAttribute);
+    uncacheWrapper(world, protect(jsTestStringifierReadWriteAttribute->wrapped()).ptr(), jsTestStringifierReadWriteAttribute);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

@@ -46,7 +46,7 @@ public:
     WEBCORE_EXPORT AtomString uniqueName() const;
     WEBCORE_EXPORT void setSpecifiedName(const AtomString&);
     WEBCORE_EXPORT void clearName();
-    WEBCORE_EXPORT Frame* parent() const;
+    WEBCORE_EXPORT Frame* NODELETE parent() const;
 
     Frame* nextSibling() const { return m_nextSibling.get(); }
     Frame* previousSibling() const { return m_previousSibling.get(); }
@@ -83,7 +83,6 @@ public:
     WEBCORE_EXPORT unsigned childCount() const;
     unsigned descendantCount() const;
     WEBCORE_EXPORT Frame& top() const;
-    Ref<Frame> protectedTop() const;
     unsigned depth() const;
 
     WEBCORE_EXPORT RefPtr<Frame> scopedChild(unsigned index) const;

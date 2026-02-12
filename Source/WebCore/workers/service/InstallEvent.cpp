@@ -68,7 +68,7 @@ static ExceptionOr<ServiceWorkerRouteCondition> toServiceWorkerRouteCondition(Ro
 {
     std::optional<ServiceWorkerRoutePattern> pattern;
     if (condition.urlPattern) {
-        Ref urlPattern = *std::get<RefPtr<URLPattern>>(*condition.urlPattern);
+        Ref urlPattern = std::get<Ref<URLPattern>>(*condition.urlPattern);
         auto patternOrException = toServiceWorkerRoutePattern(urlPattern);
         if (patternOrException.hasException())
             return patternOrException.releaseException();

@@ -84,7 +84,7 @@ static bool get(JSGlobalObject& lexicalGlobalObject, JSValue object, const Strin
     }
     if (obj->inherits<JSBlob>() && (keyPathElement == "size"_s || keyPathElement == "type"_s)) {
         if (keyPathElement == "size"_s) {
-            result = jsNumber(jsCast<JSBlob*>(obj)->protectedWrapped()->size());
+            result = jsNumber(protect(jsCast<JSBlob*>(obj)->wrapped())->size());
             return true;
         }
         if (keyPathElement == "type"_s) {
@@ -98,11 +98,11 @@ static bool get(JSGlobalObject& lexicalGlobalObject, JSValue object, const Strin
             return true;
         }
         if (keyPathElement == "lastModified"_s) {
-            result = jsNumber(jsCast<JSFile*>(obj)->protectedWrapped()->lastModified());
+            result = jsNumber(protect(jsCast<JSFile*>(obj)->wrapped())->lastModified());
             return true;
         }
         if (keyPathElement == "lastModifiedDate"_s) {
-            result = jsDate(lexicalGlobalObject, WallTime::fromRawSeconds(Seconds::fromMilliseconds(jsCast<JSFile*>(obj)->protectedWrapped()->lastModified()).value()));
+            result = jsDate(lexicalGlobalObject, WallTime::fromRawSeconds(Seconds::fromMilliseconds(protect(jsCast<JSFile*>(obj)->wrapped())->lastModified()).value()));
             return true;
         }
     }

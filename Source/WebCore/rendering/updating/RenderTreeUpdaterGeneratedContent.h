@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -48,13 +48,16 @@ public:
     static void removeBeforePseudoElement(Element&, RenderTreeBuilder&);
     static void removeAfterPseudoElement(Element&, RenderTreeBuilder&);
 
+    static void createContentRenderers(RenderTreeBuilder&, RenderElement&, const RenderStyle&, PseudoElementType);
+    static void updateStyleForContentRenderers(RenderElement&, const RenderStyle&);
+
 private:
     void updateQuotesUpTo(RenderQuote*);
-    
+
     bool needsPseudoElement(const RenderStyle*);
 
     RenderTreeUpdater& m_updater;
     SingleThreadWeakPtr<RenderQuote> m_previousUpdatedQuote;
 };
 
-}
+} // namespace WebCore

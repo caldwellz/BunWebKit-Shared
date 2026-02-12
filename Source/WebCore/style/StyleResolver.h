@@ -112,8 +112,8 @@ public:
     std::unique_ptr<RenderStyle> styleForPage(int pageIndex);
     std::unique_ptr<RenderStyle> defaultStyleForElement(const Element*);
 
-    Document& document();
-    const Document& document() const;
+    Document& NODELETE document();
+    const Document& NODELETE document() const;
     const Settings& settings() const;
 
     ScopeType scopeType() const { return m_scopeType; }
@@ -154,7 +154,7 @@ public:
     void addKeyframeStyle(Ref<StyleRuleKeyframes>&&);
     Vector<Ref<StyleRuleKeyframe>> keyframeRulesForName(const AtomString&, const TimingFunction*) const;
 
-    const CustomFunctionRegistry* customFunctionRegistry() const;
+    const CustomFunctionRegistry* NODELETE customFunctionRegistry() const;
     CustomFunctionRegistry& ensureCustomFunctionRegistry();
 
     RefPtr<StyleRuleViewTransition> viewTransitionRule() const;

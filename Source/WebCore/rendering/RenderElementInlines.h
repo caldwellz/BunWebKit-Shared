@@ -32,9 +32,7 @@ namespace WebCore {
 inline Overflow RenderElement::effectiveOverflowBlockDirection() const { return writingMode().isHorizontal() ? effectiveOverflowY() : effectiveOverflowX(); }
 inline Overflow RenderElement::effectiveOverflowInlineDirection() const { return writingMode().isHorizontal() ? effectiveOverflowX() : effectiveOverflowY(); }
 inline Element* RenderElement::element() const { return downcast<Element>(RenderObject::node()); }
-inline RefPtr<Element> RenderElement::protectedElement() const { return element(); }
 inline Element* RenderElement::nonPseudoElement() const { return downcast<Element>(RenderObject::nonPseudoNode()); }
-inline RefPtr<Element> RenderElement::protectedNonPseudoElement() const { return nonPseudoElement(); }
 
 inline bool RenderElement::isFixedPositioned() const
 {

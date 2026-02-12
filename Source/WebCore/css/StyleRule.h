@@ -125,7 +125,6 @@ public:
 
     const CSSSelectorList& selectorList() const { return m_selectorList; }
     const StyleProperties& properties() const { return m_properties.get(); }
-    Ref<const StyleProperties> protectedProperties() const;
     MutableStyleProperties& mutableProperties();
 
     bool isSplitRule() const { return m_isSplitRule; }

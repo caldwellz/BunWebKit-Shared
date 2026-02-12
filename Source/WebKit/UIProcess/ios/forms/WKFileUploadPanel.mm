@@ -429,8 +429,8 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
 - (void)_dispatchDidDismiss
 {
-    if ([_delegate respondsToSelector:@selector(fileUploadPanelDidDismiss:)])
-        [_delegate fileUploadPanelDidDismiss:self];
+    if ([protect(_delegate) respondsToSelector:@selector(fileUploadPanelDidDismiss:)])
+        [protect(_delegate) fileUploadPanelDidDismiss:self];
 }
 
 #pragma mark - Panel Completion (one of these must be called)
@@ -465,7 +465,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (mediaItems.count == 1)
         displayString = mediaItems.firstObject.fileURL.lastPathComponent;
     else
-        displayString = (imageCount || videoCount) ? [NSString localizedStringWithFormat:WEB_UI_NSSTRING(@"%lu photo(s) and %lu video(s)", "label next to file upload control; parameters are the number of photos and the number of videos"), (unsigned long)imageCount, (unsigned long)videoCount] : nil;
+        SUPPRESS_UNRETAINED_ARG displayString = (imageCount || videoCount) ? [NSString localizedStringWithFormat:WEB_UI_NSSTRING(@"%lu photo(s) and %lu video(s)", "label next to file upload control; parameters are the number of photos and the number of videos"), (unsigned long)imageCount, (unsigned long)videoCount] : nil;
 
     [self _dismissDisplayAnimated:YES];
     [self _chooseFiles:fileURLs displayString:displayString iconImage:iconImage.get()];
@@ -497,12 +497,13 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 {
     ASSERT(!_listener);
 
+    RetainPtr view = _view.get();
     _listener = listener;
     _allowDirectories = parameters->allowDirectories();
     _allowMultipleFiles = parameters->allowMultipleFiles();
     _isMenuPreviouslyRepositioned = NO;
-    _interactionPoint = [_view lastInteractionLocation];
-    _interactionPointInWindow = [_view convertPoint:_interactionPoint toView:[_view webView].window];
+    _interactionPoint = [view lastInteractionLocation];
+    _interactionPointInWindow = [view convertPoint:_interactionPoint toView:[view webView].window];
 
     Ref<API::Array> acceptMimeTypes = parameters->acceptMIMETypes();
     NSMutableArray *mimeTypes = [NSMutableArray arrayWithCapacity:acceptMimeTypes->size()];
@@ -683,7 +684,7 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
     // FIXME (270470): `PHPickerConfigurationAssetRepresentationModeCurrent` should always be used
     // and transcoding should be done based on the value of the `accept` attribute
 
-    if (![_delegate respondsToSelector:@selector(fileUploadPanelPhotoPickerPrefersOriginalImageFormat:)] || ![_delegate fileUploadPanelPhotoPickerPrefersOriginalImageFormat:self])
+    if (![protect(_delegate) respondsToSelector:@selector(fileUploadPanelPhotoPickerPrefersOriginalImageFormat:)] || ![protect(_delegate) fileUploadPanelPhotoPickerPrefersOriginalImageFormat:self])
         return PHPickerConfigurationAssetRepresentationModeCompatible;
 
     if (![_acceptedUTIs count])
@@ -728,7 +729,7 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
 
 - (UITargetedPreview *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configuration:(UIContextMenuConfiguration *)configuration highlightPreviewForItemWithIdentifier:(id<NSCopying>)identifier
 {
-    return [_view _createTargetedContextMenuHintPreviewIfPossible];
+    return [_view.get() _createTargetedContextMenuHintPreviewIfPossible];
 }
 
 - (UIContextMenuConfiguration *)contextMenuInteraction:(UIContextMenuInteraction *)interaction configurationForMenuAtLocation:(CGPoint)location {
@@ -771,10 +772,11 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
 - (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willDisplayMenuForConfiguration:(UIContextMenuConfiguration *)configuration animator:(id<UIContextMenuInteractionAnimating>)animator
 {
     [animator addCompletion:^{
-        [[_view webView] _didShowContextMenu];
+        RetainPtr view = _view.get();
+        [[view webView] _didShowContextMenu];
 
-        if ([_view isFirstResponder])
-            [_view resignFirstResponder];
+        if ([view isFirstResponder])
+            [view resignFirstResponder];
     }];
 }
 
@@ -784,7 +786,7 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
         return;
 
     [animator addCompletion:^{
-        [[_view webView] _didDismissContextMenu];
+        [[_view.get() webView] _didDismissContextMenu];
 
         [self resetContextMenuPresenter];
         if (!self->_isPresentingSubMenu)
@@ -798,7 +800,7 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
         return;
 
     _menuPresenter = nullptr;
-    [_view _removeContextMenuHintContainerIfPossible];
+    [_view.get() _removeContextMenuHintContainerIfPossible];
 }
 
 - (WebKit::CompactContextMenuPresenter&)contextMenuPresenter
@@ -813,7 +815,7 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
     if (!_menuPresenter)
         return;
 
-    auto *webView = [_view webView];
+    auto *webView = [_view.get() webView];
     if (!webView)
         return;
 
@@ -858,8 +860,9 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
     [_documentPickerController setAllowsMultipleSelection:_allowMultipleFiles];
     [_documentPickerController setDelegate:self];
     [_documentPickerController presentationController].delegate = self;
-    if ([_delegate respondsToSelector:@selector(fileUploadPanelDestinationIsManaged:)])
-        [_documentPickerController _setIsContentManaged:[_delegate fileUploadPanelDestinationIsManaged:self]];
+    RetainPtr delegate = _delegate;
+    if ([delegate respondsToSelector:@selector(fileUploadPanelDestinationIsManaged:)])
+        [_documentPickerController _setIsContentManaged:[delegate fileUploadPanelDestinationIsManaged:self]];
     [self _presentFullscreenViewController:_documentPickerController.get() animated:YES];
 }
 
@@ -959,13 +962,13 @@ static NSSet<NSString *> *UTIsForMIMETypes(NSArray *mimeTypes)
 {
     [self _dismissDisplayAnimated:animated];
 
-    _presentationViewController = [_view _wk_viewControllerForFullScreenPresentation];
+    _presentationViewController = [_view.get() _wk_viewControllerForFullScreenPresentation];
 #if PLATFORM(VISION)
     [_view page]->dispatchWillPresentModalUI();
 #endif
     [_presentationViewController presentViewController:viewController animated:animated completion:^{
-        if (!_isPresentingSubMenu && [_view isFirstResponder])
-            [_view resignFirstResponder];
+        if (!_isPresentingSubMenu && [_view.get() isFirstResponder])
+            [_view.get() resignFirstResponder];
     }];
 }
 
@@ -1020,7 +1023,7 @@ static RetainPtr<NSString> displayStringForDocumentsAtURLs(NSArray<NSURL *> *url
                 retainedSelf->_temporaryUploadedFileURLs.append(temporaryURL);
         }
 
-        [retainedSelf->_view _removeTemporaryDirectoriesWhenDeallocated:std::exchange(retainedSelf->_temporaryUploadedFileURLs, { })];
+        [retainedSelf->_view.get() _removeTemporaryDirectoriesWhenDeallocated:std::exchange(retainedSelf->_temporaryUploadedFileURLs, { })];
         RunLoop::mainSingleton().dispatch([retainedSelf = WTF::move(retainedSelf), maybeMovedURLs = WTF::move(maybeMovedURLs)] {
             [retainedSelf _chooseFiles:maybeMovedURLs.get() displayString:displayStringForDocumentsAtURLs(maybeMovedURLs.get()).get() iconImage:WebKit::iconForFiles({ maybeMovedURLs.get()[0].absoluteString }).get()];
         });
@@ -1041,7 +1044,7 @@ static RetainPtr<NSString> displayStringForDocumentsAtURLs(NSArray<NSURL *> *url
 {
     [self _processPickerResults:results successBlock:^(NSArray<_WKFileUploadItem *> *items) {
         ensureOnMainRunLoop([self, strongSelf = retainPtr(self), items = retainPtr(items)] {
-            [strongSelf->_view _removeTemporaryDirectoriesWhenDeallocated:std::exchange(strongSelf->_temporaryUploadedFileURLs, { })];
+            [strongSelf->_view.get() _removeTemporaryDirectoriesWhenDeallocated:std::exchange(strongSelf->_temporaryUploadedFileURLs, { })];
 
             if ([self->_photoPicker configuration].preferredAssetRepresentationMode != PHPickerConfigurationAssetRepresentationModeCompatible)
                 [self _uploadMediaItemsTranscodingVideo:items.get()];

@@ -176,6 +176,7 @@ private:
 
 #if ENABLE(QUICKLOOK_FULLSCREEN)
     bool shouldUseQuickLookForFullscreen() const final { return m_descriptor.shouldUseQuickLookForFullscreen(); }
+    bool isPanorama() const final { return m_descriptor.isPanorama(); }
 #endif
 
 #if ENABLE(SPATIAL_IMAGE_DETECTION)

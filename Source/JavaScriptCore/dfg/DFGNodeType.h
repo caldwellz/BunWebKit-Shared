@@ -355,12 +355,14 @@ namespace JSC { namespace DFG {
     macro(RegExpMatchFast, NodeResultJS | NodeMustGenerate) \
     macro(RegExpMatchFastGlobal, NodeResultJS) \
     macro(RegExpSearch, NodeResultInt32 | NodeMustGenerate) \
+    macro(GetRegExpFlag, NodeResultBoolean) \
     macro(StringReplace, NodeResultJS | NodeMustGenerate) \
     macro(StringReplaceAll, NodeResultJS | NodeMustGenerate) \
     macro(StringReplaceRegExp, NodeResultJS | NodeMustGenerate) \
     macro(StringReplaceString, NodeResultJS | NodeMustGenerate) \
     macro(StringIndexOf, NodeResultInt32) \
     macro(StringStartsWith, NodeResultBoolean) \
+    macro(StringEndsWith, NodeResultBoolean) \
     \
     /* Optimizations for string access */ \
     macro(StringAt, NodeResultJS) \

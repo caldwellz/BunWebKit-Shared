@@ -377,7 +377,7 @@ void JSTestNamedDeleterWithIdentifierOwner::finalize(JSC::Handle<JSC::Unknown> h
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestNamedDeleterWithIdentifier = static_cast<JSTestNamedDeleterWithIdentifier*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestNamedDeleterWithIdentifier->protectedWrapped().ptr(), jsTestNamedDeleterWithIdentifier);
+    uncacheWrapper(world, protect(jsTestNamedDeleterWithIdentifier->wrapped()).ptr(), jsTestNamedDeleterWithIdentifier);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

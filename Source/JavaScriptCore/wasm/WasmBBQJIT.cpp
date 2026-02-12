@@ -1101,7 +1101,7 @@ Address BBQJIT::materializePointer(Location pointerLocation, uint32_t uoffset)
 [[nodiscard]] PartialResult BBQJIT::addGrowMemory(Value delta, Value& result)
 {
     Vector<Value, 8> arguments = { instanceValue(), delta };
-    result = topValue(TypeKind::I32);
+    result = topValue(m_info.theOnlyMemory().addressType());
     emitCCall(&operationGrowMemory, arguments, result);
     restoreWebAssemblyGlobalState();
 
@@ -1128,9 +1128,9 @@ Address BBQJIT::materializePointer(Location pointerLocation, uint32_t uoffset)
 
 [[nodiscard]] PartialResult BBQJIT::addMemoryFill(Value dstAddress, Value targetValue, Value count)
 {
-    ASSERT(dstAddress.type() == TypeKind::I32);
+    ASSERT(dstAddress.type() == m_info.theOnlyMemory().addressType());
+    ASSERT(count.type() == m_info.theOnlyMemory().addressType());
     ASSERT(targetValue.type() == TypeKind::I32);
-    ASSERT(count.type() == TypeKind::I32);
 
     Vector<Value, 8> arguments = {
         instanceValue(),
@@ -1151,9 +1151,9 @@ Address BBQJIT::materializePointer(Location pointerLocation, uint32_t uoffset)
 
 [[nodiscard]] PartialResult BBQJIT::addMemoryCopy(Value dstAddress, Value srcAddress, Value count)
 {
-    ASSERT(dstAddress.type() == TypeKind::I32);
-    ASSERT(srcAddress.type() == TypeKind::I32);
-    ASSERT(count.type() == TypeKind::I32);
+    ASSERT(dstAddress.type() == m_info.theOnlyMemory().addressType());
+    ASSERT(srcAddress.type() == m_info.theOnlyMemory().addressType());
+    ASSERT(count.type() == m_info.theOnlyMemory().addressType());
 
     Vector<Value, 8> arguments = {
         instanceValue(),
@@ -1174,7 +1174,7 @@ Address BBQJIT::materializePointer(Location pointerLocation, uint32_t uoffset)
 
 [[nodiscard]] PartialResult BBQJIT::addMemoryInit(unsigned dataSegmentIndex, Value dstAddress, Value srcAddress, Value length)
 {
-    ASSERT(dstAddress.type() == TypeKind::I32);
+    ASSERT(dstAddress.type() == m_info.theOnlyMemory().addressType());
     ASSERT(srcAddress.type() == TypeKind::I32);
     ASSERT(length.type() == TypeKind::I32);
 

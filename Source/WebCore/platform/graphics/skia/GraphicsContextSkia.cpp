@@ -105,7 +105,10 @@ const DestinationColorSpace& GraphicsContextSkia::colorSpace() const
 
 bool GraphicsContextSkia::makeGLContextCurrentIfNeeded() const
 {
-    if (m_renderingMode == RenderingMode::Unaccelerated || m_renderingPurpose != RenderingPurpose::Canvas)
+    if (m_renderingMode == RenderingMode::Unaccelerated)
+        return true;
+
+    if (m_renderingPurpose != RenderingPurpose::Canvas && m_renderingPurpose != RenderingPurpose::DOM)
         return true;
 
     return PlatformDisplay::sharedDisplay().skiaGLContext()->makeContextCurrent();

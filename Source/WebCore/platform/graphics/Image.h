@@ -125,7 +125,6 @@ public:
 
     FragmentedSharedBuffer* data() { return m_encodedImageData.get(); }
     const FragmentedSharedBuffer* data() const { return m_encodedImageData.get(); }
-    WEBCORE_EXPORT RefPtr<FragmentedSharedBuffer> protectedData() const;
 
     virtual DestinationColorSpace colorSpace();
     virtual bool hasHDRContent() const { return false; }
@@ -168,6 +167,7 @@ public:
 #endif
 #if ENABLE(QUICKLOOK_FULLSCREEN)
     virtual bool shouldUseQuickLookForFullscreen() const { return false; }
+    virtual bool isPanorama() const { return false; }
 #endif
 
 #if ENABLE(SPATIAL_IMAGE_DETECTION)

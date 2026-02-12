@@ -92,7 +92,7 @@ String AccessibilityScrollView::ownerDebugDescription() const
     }
 
     CheckedPtr renderer = m_frameOwnerElement->renderer();
-    return makeString("owned by: "_s, renderer ? renderer->debugDescription() : protectedFrameOwnerElement()->debugDescription());
+    return makeString("owned by: "_s, renderer ? renderer->debugDescription() : protect(frameOwnerElement())->debugDescription());
 }
 
 String AccessibilityScrollView::extraDebugInfo() const
@@ -214,14 +214,14 @@ void AccessibilityScrollView::updateScrollbars()
     }
 
     if (scrollView->horizontalScrollbar() && !m_horizontalScrollbar)
-        m_horizontalScrollbar = addChildScrollbar(scrollView->protectedHorizontalScrollbar().get());
+        m_horizontalScrollbar = addChildScrollbar(protect(scrollView->horizontalScrollbar()).get());
     else if (!scrollView->horizontalScrollbar() && m_horizontalScrollbar) {
         removeChildScrollbar(m_horizontalScrollbar.get());
         m_horizontalScrollbar = nullptr;
     }
 
     if (scrollView->verticalScrollbar() && !m_verticalScrollbar)
-        m_verticalScrollbar = addChildScrollbar(scrollView->protectedVerticalScrollbar().get());
+        m_verticalScrollbar = addChildScrollbar(protect(scrollView->verticalScrollbar()).get());
     else if (!scrollView->verticalScrollbar() && m_verticalScrollbar) {
         removeChildScrollbar(m_verticalScrollbar.get());
         m_verticalScrollbar = nullptr;

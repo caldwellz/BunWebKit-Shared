@@ -756,23 +756,14 @@ JSC_DEFINE_CUSTOM_SETTER(testStaticAccessorPutter, (JSGlobalObject* globalObject
     return thisObject->putDirect(vm, PropertyName(Identifier::fromString(vm, "testField"_s)), JSValue::decode(value));
 }
 
-#if ENABLE(WYHASH_STRING_HASHER)
-static const struct CompactHashIndex staticCustomAccessorTableIndex[5] = {
+static const struct CompactHashIndex staticCustomAccessorTableIndex[6] = {
+    { -1, -1 },
+    { -1, -1 },
+    { -1, -1 },
     { 0, 4 },
-    { -1, -1 },
+    { 1, 5 },
     { 2, -1 },
-    { -1, -1 },
-    { 1, -1 },
 };
-#else
-static const struct CompactHashIndex staticCustomAccessorTableIndex[5] = {
-    { 0, 4 },
-    { -1, -1 },
-    { 2, -1 },
-    { -1, -1 },
-    { 1, -1 },
-};
-#endif
 
 static const struct JSC::HashTableValue staticCustomAccessorTableValues[3] = {
     { "testStaticAccessor"_s, static_cast<unsigned>(PropertyAttribute::CustomAccessor), NoIntrinsic, { JSC::HashTableValue::GetterSetterType, testStaticAccessorGetter, testStaticAccessorPutter } },
@@ -862,23 +853,13 @@ JSC_DEFINE_CUSTOM_SETTER(testStaticValuePutterSetFlag, (JSGlobalObject* globalOb
     return thisObject->putDirect(vm, PropertyName(Identifier::fromString(vm, "testStaticValueSetterCalled"_s)), jsBoolean(true));
 }
 
-#if ENABLE(WYHASH_STRING_HASHER)
 static const struct CompactHashIndex staticCustomValueTableIndex[5] = {
-    { 1, 4 },
-    { 2, -1 },
     { 0, -1 },
     { -1, -1 },
+    { 1, -1 },
+    { 2, 4 },
     { 3, -1 },
 };
-#else
-static const struct CompactHashIndex staticCustomValueTableIndex[5] = {
-    { 1, 4 },
-    { 2, -1 },
-    { 0, -1 },
-    { -1, -1 },
-    { 3, -1 },
-};
-#endif
 
 static const struct JSC::HashTableValue staticCustomValueTableValues[4] = {
     { "testStaticValue"_s, static_cast<unsigned>(PropertyAttribute::CustomValue), NoIntrinsic, { JSC::HashTableValue::GetterSetterType, testStaticValueGetter, testStaticValuePutter } },
@@ -966,23 +947,13 @@ JSC_DEFINE_HOST_FUNCTION(staticDontDeleteDontEnumMethod, (JSGlobalObject*, CallF
     return encodedJSUndefined();
 }
 
-#if ENABLE(WYHASH_STRING_HASHER)
 static const struct CompactHashIndex staticDontDeleteDontEnumTableIndex[5] = {
-    { 0, -1 },
-    { 1, 4 },
-    { -1, -1 },
+    { 0, 4 },
     { -1, -1 },
     { 2, -1 },
-};
-#else
-static const struct CompactHashIndex staticDontDeleteDontEnumTableIndex[5] = {
-    { 0, -1 },
-    { 1, 4 },
     { -1, -1 },
-    { -1, -1 },
-    { 2, -1 },
+    { 1, -1 },
 };
-#endif
 
 static const struct JSC::HashTableValue staticDontDeleteDontEnumTableValues[3] = {
     { "dontEnum"_s, static_cast<unsigned>(PropertyAttribute::Function | PropertyAttribute::DontEnum), NoIntrinsic, { JSC::HashTableValue::NativeFunctionType, staticDontDeleteDontEnumMethod, 0 } },

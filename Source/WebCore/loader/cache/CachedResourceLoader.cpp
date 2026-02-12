@@ -327,7 +327,7 @@ CachedResourceHandle<CachedCSSStyleSheet> CachedResourceLoader::requestUserCSSSt
 
     request.removeFragmentIdentifierIfNeeded();
 
-    CachedResourceHandle userSheet = new CachedCSSStyleSheet(WTF::move(request), page.sessionID(), page.protectedCookieJar().ptr());
+    CachedResourceHandle userSheet = new CachedCSSStyleSheet(WTF::move(request), page.sessionID(), protect(page.cookieJar()).ptr());
 
     if (userSheet->allowsCaching())
         memoryCache->add(*userSheet);
@@ -1149,7 +1149,7 @@ ResourceErrorOr<CachedResourceHandle<CachedResource>> CachedResourceLoader::requ
             if (results.shouldBlock()) {
                 CACHEDRESOURCELOADER_RELEASE_LOG_WITH_FRAME("requestResource: Resource blocked by content blocker", frame.get());
                 if (type == CachedResource::Type::MainResource) {
-                    auto resource = createResource(type, WTF::move(request), page->sessionID(), page->protectedCookieJar().ptr(), page->settings(), document.get());
+                    auto resource = createResource(type, WTF::move(request), page->sessionID(), protect(page->cookieJar()).ptr(), page->settings(), document.get());
                     ASSERT(resource);
                     resource->error(CachedResource::Status::LoadError);
                     resource->setResourceError(ResourceError(ContentExtensions::WebKitContentBlockerDomain, 0, resourceRequest.url(), WEB_UI_STRING("The URL was blocked by a content blocker", "WebKitErrorBlockedByContentBlocker description")));

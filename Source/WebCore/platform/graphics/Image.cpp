@@ -141,11 +141,6 @@ void Image::subresourcesAreFinished(Document*, CompletionHandler<void()>&& compl
     completionHandler();
 }
 
-RefPtr<FragmentedSharedBuffer> Image::protectedData() const
-{
-    return m_encodedImageData;
-}
-
 EncodedDataStatus Image::setData(RefPtr<FragmentedSharedBuffer>&& data, bool allDataReceived)
 {
     m_encodedImageData = WTF::move(data);

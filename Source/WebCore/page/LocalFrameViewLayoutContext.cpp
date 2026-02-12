@@ -906,11 +906,6 @@ LocalFrameView& LocalFrameViewLayoutContext::view() const
     return m_frameView.get();
 }
 
-Ref<LocalFrameView> LocalFrameViewLayoutContext::protectedView() const
-{
-    return m_frameView.get();
-}
-
 RenderView* LocalFrameViewLayoutContext::renderView() const
 {
     return protect(view())->renderView();

@@ -173,8 +173,6 @@ private:
     void platformRevealFileExternally(const String& path);
     void platformShowCertificate(const WebCore::CertificateInfo&);
 
-    CheckedPtr<RemoteWebInspectorUIProxyClient> checkedClient() const { return m_client.get(); }
-
     WeakPtr<RemoteWebInspectorUIProxyClient> m_client;
     WeakPtr<WebPageProxy> m_inspectorPage;
 

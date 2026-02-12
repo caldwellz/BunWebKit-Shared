@@ -179,6 +179,7 @@ private:
     HashMap<std::pair<unsigned, unsigned>, unsigned> m_globalsUsingDynamicOffset;
     HashSet<AST::Expression*> m_doNotUnpack;
     CheckedUint32 m_combinedFunctionVariablesSize;
+    bool m_isTopLevelExpression { true };
 };
 
 std::optional<Error> RewriteGlobalVariables::run()
@@ -425,6 +426,17 @@ void RewriteGlobalVariables::visit(AST::Expression& expression)
 
 Packing RewriteGlobalVariables::pack(Packing expectedPacking, AST::Expression& expression)
 {
+    if (m_isTopLevelExpression && expression.maybeEvaluation().value_or(Evaluation::Runtime) == Evaluation::Override) {
+        m_shaderModule.addOverrideValidation([&shaderModule = m_shaderModule, &expression](auto& overrideValues) -> std::optional<Error> {
+            auto maybeValue = shaderModule.ensureOverrideValue(expression, overrideValues);
+            if (!maybeValue)
+                return maybeValue.error();
+            return std::nullopt;
+        });
+    }
+
+    SetForScope topLevelExpression(m_isTopLevelExpression, false);
+
     if (m_doNotUnpack.contains(&expression))
         return expectedPacking;
 

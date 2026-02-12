@@ -41,12 +41,30 @@
 
 namespace WebCore {
 
+static void readableStreamPipeTo(JSDOMGlobalObject&, Ref<ReadableStream>&&, Ref<WritableStream>&&, Ref<ReadableStreamDefaultReader>&&, Ref<InternalWritableStreamWriter>&&, StreamPipeOptions&&, RefPtr<DeferredPromise>&&);
+
+std::optional<Exception> readableStreamPipeTo(JSDOMGlobalObject& globalObject, ReadableStream& source, WritableStream& destination, StreamPipeOptions&& options, RefPtr<DeferredPromise>&& promise)
+{
+    auto readerOrException = ReadableStreamDefaultReader::create(globalObject, source);
+    if (readerOrException.hasException())
+        return readerOrException.releaseException();
+
+    auto writerOrException = acquireWritableStreamDefaultWriter(globalObject, destination);
+    if (writerOrException.hasException())
+        return writerOrException.releaseException();
+
+    source.markAsDisturbed();
+
+    readableStreamPipeTo(globalObject, source, destination, readerOrException.releaseReturnValue(), writerOrException.releaseReturnValue(), WTF::move(options), WTF::move(promise));
+    return { };
+}
+
 class PipeToDefaultReadRequest;
 class StreamPipeToState : public RefCounted<StreamPipeToState>, public ContextDestructionObserver {
 public:
     static Ref<StreamPipeToState> create(JSDOMGlobalObject& globalObject, Ref<ReadableStream>&& source, Ref<WritableStream>&& destination, Ref<ReadableStreamDefaultReader>&& reader, Ref<InternalWritableStreamWriter>&& writer, StreamPipeOptions&& options, RefPtr<DeferredPromise>&& promise)
     {
-        Ref state = adoptRef(*new StreamPipeToState(globalObject.protectedScriptExecutionContext().get(), WTF::move(source), WTF::move(destination), WTF::move(reader), WTF::move(writer), WTF::move(options), WTF::move(promise)));
+        Ref state = adoptRef(*new StreamPipeToState(protect(globalObject.scriptExecutionContext()).get(), WTF::move(source), WTF::move(destination), WTF::move(reader), WTF::move(writer), WTF::move(options), WTF::move(promise)));
 
         state->handleSignal();
 

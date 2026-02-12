@@ -1098,12 +1098,12 @@ static String scrollbarState(Scrollbar* scrollbar)
 
 String ScrollbarsControllerMac::horizontalScrollbarStateForTesting() const
 {
-    return scrollbarState(checkedScrollableArea()->protectedHorizontalScrollbar().get());
+    return scrollbarState(protect(checkedScrollableArea()->horizontalScrollbar()).get());
 }
 
 String ScrollbarsControllerMac::verticalScrollbarStateForTesting() const
 {
-    return scrollbarState(checkedScrollableArea()->protectedVerticalScrollbar().get());
+    return scrollbarState(protect(checkedScrollableArea()->verticalScrollbar()).get());
 }
 
 WheelEventTestMonitor* ScrollbarsControllerMac::wheelEventTestMonitor() const

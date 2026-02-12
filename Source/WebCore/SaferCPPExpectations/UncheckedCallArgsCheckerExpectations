@@ -38,7 +38,6 @@ animation/StyleOriginatedAnimation.cpp
 animation/StyleOriginatedAnimationEvent.cpp
 animation/ViewTimeline.cpp
 animation/WebAnimation.cpp
-animation/WebAnimationUtilities.cpp
 bindings/js/DOMPromiseProxy.h
 bindings/js/JSCanvasRenderingContext2DCustom.cpp
 bindings/js/JSCustomElementInterface.cpp
@@ -350,10 +349,8 @@ page/SettingsBase.cpp
 page/SpatialNavigation.cpp
 page/VisualViewport.cpp
 page/cocoa/PageCocoa.mm
-[ iOS ] page/ios/ContentChangeObserver.cpp
 [ iOS ] page/ios/EventHandlerIOS.mm
 [ iOS ] page/ios/FrameIOS.mm
-[ Mac ] page/mac/EventHandlerMac.mm
 [ Mac ] page/mac/ServicesOverlayController.mm
 page/scrolling/AsyncScrollingCoordinator.cpp
 page/scrolling/ScrollAnchoringController.cpp
@@ -527,7 +524,6 @@ rendering/style/RenderStyle+GettersInlines.h
 rendering/style/RenderStyle+SettersInlines.h
 rendering/style/RenderStyle.cpp
 rendering/style/RenderStyle.h
-rendering/style/RenderStyleBase+GettersInlines.h
 rendering/style/StyleCachedImage.cpp
 rendering/style/StyleCanvasImage.cpp
 rendering/style/StyleGeneratedImage.cpp

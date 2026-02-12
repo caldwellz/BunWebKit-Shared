@@ -184,17 +184,18 @@ String WebBackForwardListFrameItem::loggingStringAtIndent(size_t indent)
 
     StringBuilder builder;
     {
-        uint64_t calculatedFrameID = frameID() ? frameID()->toRawValue() : 0;
-        builder.append(makeString(url(), " ("_s, String::number(calculatedFrameID), ")"_s));
+        String frameIDString = String::number(frameID() ? frameID()->toUInt64() : 0);
+        String frameItemIDString = m_identifier.loggingString();
+        builder.append("FrameItemID:"_s, frameItemIDString, ", URL:"_s, url(), ", FrameID:"_s, frameIDString);
         if (!m_frameState->target.isEmpty())
-            builder.append(makeString(" in "_s, m_frameState->target));
+            builder.append(", FrameUniqueName:"_s, m_frameState->target);
         builder.append('\n');
     }
 
     for (size_t i = 0; i < m_children.size(); ++i) {
         Ref child = m_children[i];
         auto childString = child->loggingStringAtIndent(indent + 1);
-        builder.append(makeString(indentString, String::number(i), " - "_s, childString));
+        builder.append(indentString, String::number(i), " - "_s, childString);
     }
 
     return builder.toString();

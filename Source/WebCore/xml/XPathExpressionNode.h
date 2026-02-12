@@ -38,8 +38,6 @@ struct EvaluationContext {
     unsigned position;
     HashMap<String, String> variableBindings;
     bool hadTypeConversionError;
-
-    RefPtr<Node> protectedNode() const { return node; }
 };
 
 class Expression {

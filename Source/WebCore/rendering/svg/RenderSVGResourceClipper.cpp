@@ -82,7 +82,7 @@ RefPtr<SVGGraphicsElement> RenderSVGResourceClipper::shouldApplyPathClipping() c
 {
     if (currentClippingMode() == ClippingMode::MaskClipping)
         return nullptr;
-    return protectedClipPathElement()->shouldApplyPathClipping();
+    return protect(clipPathElement())->shouldApplyPathClipping();
 }
 
 void RenderSVGResourceClipper::applyPathClipping(GraphicsContext& context, const RenderLayerModelObject& targetRenderer, const FloatRect& objectBoundingBox, SVGGraphicsElement& graphicsElement)
@@ -222,7 +222,7 @@ FloatRect RenderSVGResourceClipper::resourceBoundingBox(const RenderObject& obje
 
     SVGVisitedRendererTracking::Scope recursionScope(recursionTracking, *this);
 
-    auto clipContentRepaintRect = protectedClipPathElement()->calculateClipContentRepaintRect(repaintRectCalculation);
+    auto clipContentRepaintRect = protect(clipPathElement())->calculateClipContentRepaintRect(repaintRectCalculation);
     if (clipPathUnits() == SVGUnitTypes::SVG_UNIT_TYPE_OBJECTBOUNDINGBOX) {
         AffineTransform contentTransform;
         contentTransform.translate(targetBoundingBox.location());
@@ -241,12 +241,12 @@ void RenderSVGResourceClipper::updateFromStyle()
 void RenderSVGResourceClipper::applyTransform(TransformationMatrix& transform, const RenderStyle& style, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption> options) const
 {
     ASSERT(document().settings().layerBasedSVGEngineEnabled());
-    applySVGTransform(transform, protectedClipPathElement(), style, boundingBox, std::nullopt, std::nullopt, options);
+    applySVGTransform(transform, protect(clipPathElement()), style, boundingBox, std::nullopt, std::nullopt, options);
 }
 
 bool RenderSVGResourceClipper::needsHasSVGTransformFlags() const
 {
-    return protectedClipPathElement()->hasTransformRelatedAttributes();
+    return protect(clipPathElement())->hasTransformRelatedAttributes();
 }
 
 void RenderSVGResourceClipper::styleDidChange(Style::Difference diff, const RenderStyle* oldStyle)

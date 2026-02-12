@@ -77,7 +77,7 @@ static const UIMenuIdentifier WKCaptionStyleMenuSystemSettingsIdentifier = @"WKC
     if (!(self = [super init]))
         return nil;
 
-    self.savedActiveProfileID = CaptionUserPreferencesMediaAF::platformActiveProfileID().createNSString().autorelease();
+    self.savedActiveProfileID = protect(CaptionUserPreferencesMediaAF::platformActiveProfileID().createNSString().autorelease()).get();
     [self rebuildMenu];
 
     return self;
@@ -104,7 +104,7 @@ static const UIMenuIdentifier WKCaptionStyleMenuSystemSettingsIdentifier = @"WKC
         RetainPtr profileAction = [UIAction actionWithTitle:title.createNSString().get() image:nil identifier:profileID.createNSString().get() handler:profileSelectedHandler.get()];
         profileAction.get().attributes = UIMenuElementAttributesKeepsMenuPresented;
 
-        if ([profileID.createNSString().autorelease() isEqualToString:self.savedActiveProfileID])
+        if ([protect(profileID.createNSString().autorelease()) isEqualToString:self.savedActiveProfileID])
             profileAction.get().state = UIMenuElementStateOn;
 
         [profileElements addObject:profileAction.get()];
@@ -202,7 +202,7 @@ static bool menuHasMenuAncestor(UIMenu *targetMenu, UIMenu *ancestorMenu)
         childAction.get().state = profileID == childActionIdentifier ? UIMenuElementStateOn : UIMenuElementStateOff;
     }
 
-    self.savedActiveProfileID = profileID.createNSString().autorelease();
+    self.savedActiveProfileID = protect(profileID.createNSString().autorelease()).get();
     CaptionUserPreferencesMediaAF::setActiveProfileID(WTF::String(self.savedActiveProfileID));
 
     // UIMenu does not have the ability to notify clients when a submenu opens or closes.
@@ -220,7 +220,7 @@ static bool menuHasMenuAncestor(UIMenu *targetMenu, UIMenu *ancestorMenu)
 
 - (void)notifyMenuWillOpen
 {
-    self.savedActiveProfileID = CaptionUserPreferencesMediaAF::platformActiveProfileID().createNSString().autorelease();
+    self.savedActiveProfileID = protect(CaptionUserPreferencesMediaAF::platformActiveProfileID().createNSString().autorelease()).get();
 
     if (auto delegate = self.delegate)
         [delegate captionStyleMenuWillOpen:self.menu];

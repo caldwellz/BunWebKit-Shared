@@ -38,9 +38,9 @@ enum class FreeSpaceScenario : uint8_t {
     // Flex tracks distribute available space using findSizeOfFr().
     Definite,
 
-    // Scenario 3: Free space is indefinite (e.g., max-content sizing).
+    // Scenario 3: Free space is infinite or sizing under max-content constraint.
     // Flex tracks compute from max-content contributions.
-    Indefinite
+    MaxContent
 };
 
 } // namespace Layout

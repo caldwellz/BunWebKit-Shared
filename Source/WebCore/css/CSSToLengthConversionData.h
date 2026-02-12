@@ -109,7 +109,6 @@ public:
     void setUsesContainerUnits() const;
 
     Style::BuilderState* styleBuilderState() const { return m_styleBuilderState.get(); }
-    CheckedPtr<Style::BuilderState> protectedStyleBuilderState() const;
 
 private:
     const RenderStyle* m_style { nullptr };

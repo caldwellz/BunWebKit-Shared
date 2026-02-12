@@ -58,7 +58,7 @@ String ScriptBuffer::toString() const
         return String();
 
     StringBuilder builder;
-    m_buffer.protectedBuffer()->forEachSegment([&](auto segment) {
+    protect(m_buffer.buffer())->forEachSegment([&](auto segment) {
         builder.append(byteCast<char8_t>(segment));
     });
     return builder.toString();

@@ -67,6 +67,8 @@ OpenXRHitTestManager::OpenXRHitTestManager(XrInstance instance, XrSystemId syste
             break;
         }
     }
+#else
+    UNUSED_VARIABLE(m_session);
 #endif
 }
 

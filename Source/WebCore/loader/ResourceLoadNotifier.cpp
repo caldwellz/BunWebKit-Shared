@@ -71,7 +71,7 @@ void ResourceLoadNotifier::didReceiveResponse(ResourceLoader& loader, ResourceLo
     loader.documentLoader()->addResponse(r);
 
     if (RefPtr page = m_frame->page())
-        page->checkedProgress()->incrementProgress(identifier, r);
+        protect(page->progress())->incrementProgress(identifier, r);
 
     dispatchDidReceiveResponse(protect(loader.documentLoader()), identifier, r, &loader);
 }
@@ -79,7 +79,7 @@ void ResourceLoadNotifier::didReceiveResponse(ResourceLoader& loader, ResourceLo
 void ResourceLoadNotifier::didReceiveData(ResourceLoader& loader, ResourceLoaderIdentifier identifier, const SharedBuffer& buffer, int encodedDataLength)
 {
     if (RefPtr page = m_frame->page())
-        page->checkedProgress()->incrementProgress(identifier, buffer.size());
+        protect(page->progress())->incrementProgress(identifier, buffer.size());
 
     dispatchDidReceiveData(protect(loader.documentLoader()), identifier, &buffer, buffer.size(), encodedDataLength);
 }
@@ -87,7 +87,7 @@ void ResourceLoadNotifier::didReceiveData(ResourceLoader& loader, ResourceLoader
 void ResourceLoadNotifier::didFinishLoad(ResourceLoader& loader, ResourceLoaderIdentifier identifier, const NetworkLoadMetrics& networkLoadMetrics)
 {    
     if (RefPtr page = m_frame->page())
-        page->checkedProgress()->completeProgress(identifier);
+        protect(page->progress())->completeProgress(identifier);
 
     dispatchDidFinishLoading(protect(loader.documentLoader()), identifier, networkLoadMetrics, &loader);
 }
@@ -98,7 +98,7 @@ void ResourceLoadNotifier::didFailToLoad(ResourceLoader& loader, ResourceLoaderI
     if (!page) // This may be called during the frame's destruction after detaching from parent page.
         return;
 
-    page->checkedProgress()->completeProgress(identifier);
+    protect(page->progress())->completeProgress(identifier);
 
     // Notifying the LocalFrameLoaderClient may cause the frame to be destroyed.
     Ref frame = m_frame.get();

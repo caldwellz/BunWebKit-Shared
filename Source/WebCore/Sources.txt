@@ -21,7 +21,6 @@
 // ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
 // THE POSSIBILITY OF SUCH DAMAGE.
 
-Modules/Model/Implementation/ModelDowncastConvertToBackingContext.cpp
 Modules/ShapeDetection/BarcodeDetector.cpp
 Modules/ShapeDetection/FaceDetector.cpp
 Modules/ShapeDetection/TextDetector.cpp
@@ -2600,6 +2599,7 @@ platform/graphics/PixelBufferFormat.cpp
 platform/graphics/PixelFormat.cpp
 platform/graphics/PlatformDynamicRangeLimit.cpp
 platform/graphics/PlatformTimeRanges.cpp
+platform/graphics/PlatformVideoColorSpace.cpp
 platform/graphics/Region.cpp
 platform/graphics/RenderingMode.cpp
 platform/graphics/RotationDirection.cpp
@@ -2993,7 +2993,6 @@ rendering/style/GridSpan.cpp
 rendering/style/OutlineValue.cpp
 rendering/style/PositionTryOrder.cpp
 rendering/style/RenderStyle.cpp
-rendering/style/RenderStyleBase.cpp
 rendering/style/RenderStyleConstants.cpp
 rendering/style/StyleCachedImage.cpp
 rendering/style/StyleCanvasImage.cpp
@@ -3690,6 +3689,7 @@ JSHTMLElementWrapperFactory.cpp
 JSMathMLElementWrapperFactory.cpp
 JSSVGElementWrapperFactory.cpp
 MathMLElementFactory.cpp
+RenderStyleProperties.cpp
 SVGElementFactory.cpp
 StyleBuilderGenerated.cpp
 StyleChangedAnimatablePropertiesGenerated.cpp

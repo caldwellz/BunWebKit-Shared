@@ -1245,5 +1245,98 @@ TEST(SafeBrowsing, AllModalTypesProperlyDeferred)
     EXPECT_STREQ(modalTypes[2].utf8().data(), "prompt");
 }
 
+TEST(SafeBrowsing, NavigationFromWarningPage)
+{
+    phishingResourceName = @"phishing";
+    ClassMethodSwizzler swizzler(getSSBLookupContextClassSingleton(), @selector(sharedLookupContext), [SimpleLookupContext methodForSelector:@selector(sharedLookupContext)]);
+
+    auto delegate = adoptNS([SafeBrowsingNavigationDelegate new]);
+    auto navigationDelegate = adoptNS([TestNavigationDelegate new]);
+
+    auto handler = adoptNS([[TestURLSchemeHandler alloc] init]);
+    auto configuration = adoptNS([[WKWebViewConfiguration alloc] init]);
+    [configuration setURLSchemeHandler:handler.get() forURLScheme:@"sb"];
+    configuration.get().preferences.fraudulentWebsiteWarningEnabled = YES;
+
+    auto webView = adoptNS([[TestWKWebView alloc] initWithFrame:CGRectMake(0, 0, 800, 600) configuration:configuration.get()]);
+    [webView setNavigationDelegate:navigationDelegate.get()];
+    [webView setUIDelegate:delegate.get()];
+
+    [handler setStartURLSchemeTaskHandler:^(WKWebView *, id<WKURLSchemeTask> task) {
+        NSString *path = task.request.URL.path;
+        NSString *html;
+        if ([path isEqualToString:@"/phishing"])
+            html = @"<html><body>Phishing page</body></html>";
+        else if ([path isEqualToString:@"/safe"])
+            html = @"<html><body>Safe page</body></html>";
+        else
+            html = @"<html><body>Unknown</body></html>";
+        auto response = adoptNS([[NSURLResponse alloc] initWithURL:task.request.URL MIMEType:@"text/html" expectedContentLength:html.length textEncodingName:@"utf-8"]);
+        [task didReceiveResponse:response.get()];
+        [task didReceiveData:[html dataUsingEncoding:NSUTF8StringEncoding]];
+        [task didFinish];
+    }];
+
+    didCloseCalled = false;
+    warningShown = false;
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"sb://host/phishing"]]];
+
+    while (![webView _safeBrowsingWarning])
+        TestWebKitAPI::Util::spinRunLoop();
+
+    EXPECT_TRUE(!![webView _safeBrowsingWarning]);
+    EXPECT_FALSE(didCloseCalled);
+
+    [webView evaluateJavaScript:@"location.href = 'sb://host/safe'" completionHandler:nil];
+    TestWebKitAPI::Util::runFor(0.1_s);
+    EXPECT_FALSE(didCloseCalled);
+}
+
+TEST(SafeBrowsing, SetTimeoutNavigationFromWarningPage)
+{
+    phishingResourceName = @"phishing";
+    ClassMethodSwizzler swizzler(getSSBLookupContextClassSingleton(), @selector(sharedLookupContext), [SimpleLookupContext methodForSelector:@selector(sharedLookupContext)]);
+
+    auto delegate = adoptNS([SafeBrowsingNavigationDelegate new]);
+    auto navigationDelegate = adoptNS([TestNavigationDelegate new]);
+
+    auto handler = adoptNS([[TestURLSchemeHandler alloc] init]);
+    auto configuration = adoptNS([[WKWebViewConfiguration alloc] init]);
+    [configuration setURLSchemeHandler:handler.get() forURLScheme:@"sb"];
+    configuration.get().preferences.fraudulentWebsiteWarningEnabled = YES;
+
+    auto webView = adoptNS([[TestWKWebView alloc] initWithFrame:CGRectMake(0, 0, 800, 600) configuration:configuration.get()]);
+    [webView setNavigationDelegate:navigationDelegate.get()];
+    [webView setUIDelegate:delegate.get()];
+
+    [handler setStartURLSchemeTaskHandler:^(WKWebView *, id<WKURLSchemeTask> task) {
+        NSString *path = task.request.URL.path;
+        NSString *html;
+        if ([path isEqualToString:@"/phishing"])
+            html = @"<html><body><script>setTimeout(function() { location.href = 'sb://host/safe'; }, 50);</script>Phishing page</body></html>";
+        else if ([path isEqualToString:@"/safe"])
+            html = @"<html><body>Safe page</body></html>";
+        else
+            html = @"<html><body>Unknown</body></html>";
+        auto response = adoptNS([[NSURLResponse alloc] initWithURL:task.request.URL MIMEType:@"text/html" expectedContentLength:html.length textEncodingName:@"utf-8"]);
+        [task didReceiveResponse:response.get()];
+        [task didReceiveData:[html dataUsingEncoding:NSUTF8StringEncoding]];
+        [task didFinish];
+    }];
+
+    didCloseCalled = false;
+    warningShown = false;
+
+    [webView loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"sb://host/phishing"]]];
+
+    while (![webView _safeBrowsingWarning])
+        TestWebKitAPI::Util::spinRunLoop();
+
+    TestWebKitAPI::Util::runFor(0.2_s);
+
+    EXPECT_TRUE(!![webView _safeBrowsingWarning]);
+    EXPECT_FALSE(didCloseCalled);
+}
 
 #endif // HAVE(SAFE_BROWSING)

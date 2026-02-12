@@ -773,6 +773,58 @@ CommitDate: {time_c}
                 dict(contains_1_main),
             )
 
+    def test_args_from_content_normal_commit(self):
+        """Test _args_from_content correctly parses standard commit format."""
+        with mocks.local.Git(self.path):
+            repo = local.Git(self.path)
+            content = '''commit abc123def456
+Author:     Jonathan Bedard <jbedard@apple.com>
+AuthorDate: 1600000000
+Commit:     Jonathan Bedard <jbedard@apple.com>
+CommitDate: 1600000001
+
+    Test commit message
+
+    More details here.
+'''
+            result = repo._args_from_content(content)
+            self.assertEqual(result.get('timestamp'), 1600000001)
+            self.assertEqual(result.get('author'), Contributor.from_scm_log('Author:     Jonathan Bedard <jbedard@apple.com>'))
+
+    def test_args_from_content_merge_commit(self):
+        """Test _args_from_content correctly parses merge commits with Merge: line."""
+        with mocks.local.Git(self.path):
+            repo = local.Git(self.path)
+            content = '''commit abc123def456
+Merge: parent1 parent2
+Author:     Jonathan Bedard <jbedard@apple.com>
+AuthorDate: 1600000000
+Commit:     Jonathan Bedard <jbedard@apple.com>
+CommitDate: 1600000001
+
+    Merge branch 'feature' into main
+'''
+            result = repo._args_from_content(content)
+            self.assertEqual(result.get('timestamp'), 1600000001)
+            self.assertEqual(result.get('author'), Contributor.from_scm_log('Author:     Jonathan Bedard <jbedard@apple.com>'))
+
+    def test_args_from_content_with_svn_revision(self):
+        """Test _args_from_content extracts SVN revision from commit message."""
+        with mocks.local.Git(self.path):
+            repo = local.Git(self.path)
+            content = '''commit abc123def456
+Author:     Jonathan Bedard <jbedard@apple.com>
+AuthorDate: 1600000000
+Commit:     Jonathan Bedard <jbedard@apple.com>
+CommitDate: 1600000001
+
+    Test commit message
+    git-svn-id: https://svn.webkit.org/repository/webkit/trunk@12345 268f45cc-cd09-0410-ab3c-d52691b4dbfc
+'''
+            result = repo._args_from_content(content)
+            self.assertEqual(result.get('timestamp'), 1600000001)
+            self.assertEqual(result.get('revision'), 12345)
+
 
 class TestMockGit(testing.PathTestCase):
     basepath = 'mock/repository'

@@ -633,6 +633,29 @@ void WebXRSession::requestFrameIfNeeded()
     m_requestData.reset();
 }
 
+#if ENABLE(WEBXR_HIT_TEST)
+
+void WebXRSession::cleanupInactiveHitTestSources()
+{
+    Vector<PlatformXR::HitTestSource> expiredHitTestSources;
+    for (auto& [sourceId, hitTestSource] : m_activeHitTestSources) {
+        if (hitTestSource.isWeakNullValue())
+            expiredHitTestSources.append(sourceId);
+    }
+    for (auto& sourceId : expiredHitTestSources)
+        cancelHitTestSource(sourceId);
+
+    Vector<PlatformXR::TransientInputHitTestSource> expiredTransientHitTestSources;
+    for (auto& [sourceId, transientInputHitTestSource] : m_activeTransientInputHitTestSources) {
+        if (transientInputHitTestSource.isWeakNullValue())
+            expiredTransientHitTestSources.append(sourceId);
+    }
+    for (auto& sourceId : expiredTransientHitTestSources)
+        cancelTransientInputHitTestSource(sourceId);
+}
+
+#endif
+
 void WebXRSession::onFrame(PlatformXR::FrameData&& frameData)
 {
     ASSERT(isMainThread());
@@ -669,6 +692,11 @@ void WebXRSession::onFrame(PlatformXR::FrameData&& frameData)
         // 7.If session’s pending render state is not null, apply the pending render state.
         if (session.m_pendingRenderState)
             session.applyPendingRenderState();
+
+#if ENABLE(WEBXR_HIT_TEST)
+        // Cancel hit test sources that are not referenced by the application.
+        session.cleanupInactiveHitTestSources();
+#endif
 
         // 6. If the frame should be rendered for session:
         if (session.frameShouldBeRendered() && session.m_frameData.shouldRender) {
@@ -796,11 +824,15 @@ void WebXRSession::requestHitTestSource(const XRHitTestOptionsInit& init, Reques
     if (init.offsetRay)
         ray = PlatformXR::Ray { toFloatPoint3D(init.offsetRay->origin()), toFloatPoint3D(init.offsetRay->direction()) };
     PlatformXR::HitTestOptions options = { *WTF::move(maybeNativeOrigin), entityTypesFromOptions(init), WTF::move(ray) };
-    device->requestHitTestSource(options, [protectedThis = Ref { *this }, promise = WTF::move(promise)](ExceptionOr<PlatformXR::HitTestSource> exceptionOrSource) mutable {
-        if (exceptionOrSource.hasException())
+    device->requestHitTestSource(options, [protectedThis = Ref { *this }, space = init.space, promise = WTF::move(promise)](ExceptionOr<PlatformXR::HitTestSource> exceptionOrSource) mutable {
+        if (exceptionOrSource.hasException()) {
             promise.reject(exceptionOrSource.releaseException());
-        else
-            promise.resolve(WebXRHitTestSource::create(protectedThis, exceptionOrSource.releaseReturnValue()));
+            return;
+        }
+        Ref<WebXRHitTestSource> source =  WebXRHitTestSource::create(protectedThis, exceptionOrSource.releaseReturnValue(), *space);
+        ASSERT(source->handle());
+        protectedThis->m_activeHitTestSources.add(source->handle().value(), source.get());
+        promise.resolve(source);
     });
 }
 
@@ -828,12 +860,42 @@ void WebXRSession::requestHitTestSourceForTransientInput(const XRTransientInputH
         ray = PlatformXR::Ray { toFloatPoint3D(init.offsetRay->origin()), toFloatPoint3D(init.offsetRay->direction()) };
     PlatformXR::TransientInputHitTestOptions options = { init.profile, entityTypesFromOptions(init), WTF::move(ray) };
     device->requestTransientInputHitTestSource(options, [protectedThis = Ref { *this }, promise = WTF::move(promise)](ExceptionOr<PlatformXR::TransientInputHitTestSource> exceptionOrSource) mutable {
-        if (exceptionOrSource.hasException())
+        if (exceptionOrSource.hasException()) {
             promise.reject(exceptionOrSource.releaseException());
-        else
-            promise.resolve(WebXRTransientInputHitTestSource::create(protectedThis, exceptionOrSource.releaseReturnValue()));
+            return;
+        }
+        Ref source = WebXRTransientInputHitTestSource::create(protectedThis, exceptionOrSource.releaseReturnValue());
+        ASSERT(source->handle());
+
+        protectedThis->m_activeTransientInputHitTestSources.add(source->handle().value(), source.get());
+        promise.resolve(source);
     });
 }
+
+ExceptionOr<void> WebXRSession::cancelHitTestSource(PlatformXR::HitTestSource source)
+{
+    auto device = this->device();
+    if (device)
+        device->deleteHitTestSource(source);
+
+    bool wasRemoved = m_activeHitTestSources.remove(source);
+    if (!wasRemoved)
+        return Exception { ExceptionCode::InvalidStateError, "The hit test source is not active"_s };
+    return { };
+}
+
+ExceptionOr<void> WebXRSession::cancelTransientInputHitTestSource(PlatformXR::TransientInputHitTestSource source)
+{
+    auto device = this->device();
+    if (device)
+        device->deleteTransientInputHitTestSource(source);
+
+    bool wasRemoved = m_activeTransientInputHitTestSources.remove(source);
+    if (!wasRemoved)
+        return Exception { ExceptionCode::InvalidStateError, "The transient input hit test source is not active"_s };
+    return { };
+}
+
 #endif
 
 void WebXRSession::initializeTrackingAndRendering(std::optional<XRCanvasConfiguration>&& init)

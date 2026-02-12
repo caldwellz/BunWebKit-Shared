@@ -176,8 +176,6 @@ private:
         BlobLoaderFailed
     };
 
-    RefPtr<WebSocketChannelClient> protectedClient() const;
-
     WeakPtr<Document, WeakPtrImplWithEventTargetData> m_document;
     ThreadSafeWeakPtr<WebSocketChannelClient> m_client;
     std::unique_ptr<WebSocketHandshake> m_handshake;

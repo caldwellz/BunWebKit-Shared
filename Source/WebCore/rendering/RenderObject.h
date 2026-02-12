@@ -741,18 +741,13 @@ public:
     bool isRooted() const;
 
     inline Node* node() const; // Defined in RenderObjectNode.h
-    inline RefPtr<Node> protectedNode() const; // Defined in RenderObjectNode.h
 
     inline Node* nonPseudoNode() const; // Defined in RenderObjectNode.h
 
     inline Document& document() const; // Defined in RenderObjectDocument.h
-    inline Ref<Document> protectedDocument() const; // Defined in RenderObjectDocument.h
     inline TreeScope& treeScopeForSVGReferences() const; // Defined in RenderObjectInlines.h
-    inline Ref<TreeScope> protectedTreeScopeForSVGReferences() const; // Defined in RenderObjectInlines.h
     inline LocalFrame& frame() const; // Defined in RenderObjectInlines.h
-    inline Ref<LocalFrame> protectedFrame() const; // Defined in RenderObjectInlines.h
     inline Page& page() const; // Defined in RenderObjectInlines.h
-    inline Ref<Page> protectedPage() const; // Defined in RenderObjectInlines.h
     inline Settings& settings() const; // Defined in RenderObjectInlines.h
 
     // Returns the object containing this one. Can be different from parent for positioned elements.
@@ -798,7 +793,6 @@ public:
 
     bool hitTest(const HitTestRequest&, HitTestResult&, const HitTestLocation& locationInContainer, const LayoutPoint& accumulatedOffset, HitTestFilter = HitTestAll);
     virtual Node* nodeForHitTest() const;
-    RefPtr<Node> protectedNodeForHitTest() const;
     virtual void updateHitTestResult(HitTestResult&, const LayoutPoint&) const;
 
     virtual bool nodeAtPoint(const HitTestRequest&, HitTestResult&, const HitTestLocation& locationInContainer, const LayoutPoint& accumulatedOffset, HitTestAction);
@@ -1073,7 +1067,6 @@ public:
     virtual void imageContentChanged(CachedImage&) { }
     virtual void scheduleRenderingUpdateForImage(CachedImage&) { }
     CachedImageClient& cachedImageClient() const;
-    Ref<CachedImageClient> protectedCachedImageClient() const { return cachedImageClient(); }
 
     // Map points and quads through elements, potentially via 3d transforms. You should never need to call these directly; use
     // localToAbsolute/absoluteToLocal methods instead.
@@ -1493,6 +1486,7 @@ WTF::TextStream& operator<<(WTF::TextStream&, const RenderObject::RepaintRects&)
 
 #if ENABLE(TREE_DEBUGGING)
 void printAccessibilityTreeForLiveDocuments();
+void printAccessibilityTreeForLiveDocumentsAfterDelay();
 void printPaintOrderTreeForLiveDocuments();
 void printRenderTreeForLiveDocuments();
 void printLayerTreeForLiveDocuments();

@@ -362,7 +362,7 @@ void PlatformCALayerRemote::setNeedsDisplayInRect(const FloatRect& rect)
     ensureBackingStore();
 
     // FIXME: Need to map this through contentsRect/etc.
-    m_properties.backingStoreOrProperties.checkedStore()->setNeedsDisplay(enclosingIntRect(rect));
+    protect(m_properties.backingStoreOrProperties.store)->setNeedsDisplay(enclosingIntRect(rect));
 }
 
 void PlatformCALayerRemote::setNeedsDisplay()
@@ -372,7 +372,7 @@ void PlatformCALayerRemote::setNeedsDisplay()
 
     ensureBackingStore();
 
-    m_properties.backingStoreOrProperties.checkedStore()->setNeedsDisplay();
+    protect(m_properties.backingStoreOrProperties.store)->setNeedsDisplay();
 }
 
 bool PlatformCALayerRemote::needsDisplay() const
@@ -829,7 +829,7 @@ void PlatformCALayerRemote::setRemoteDelegatedContents(const PlatformCALayerRemo
 {
     ASSERT(m_acceleratesDrawing);
     ensureBackingStore();
-    m_properties.backingStoreOrProperties.checkedStore()->setDelegatedContents(contents);
+    protect(m_properties.backingStoreOrProperties.store)->setDelegatedContents(contents);
 }
 
 void PlatformCALayerRemote::setContentsRect(const FloatRect& value)
@@ -1183,7 +1183,7 @@ Ref<PlatformCALayer> PlatformCALayerRemote::createCompatibleLayer(PlatformCALaye
 
 void PlatformCALayerRemote::enumerateRectsBeingDrawn(WebCore::GraphicsContext& context, void (^block)(WebCore::FloatRect))
 {
-    m_properties.backingStoreOrProperties.checkedStore()->enumerateRectsBeingDrawn(context, block);
+    protect(m_properties.backingStoreOrProperties.store)->enumerateRectsBeingDrawn(context, block);
 }
 
 uint32_t PlatformCALayerRemote::hostingContextID()

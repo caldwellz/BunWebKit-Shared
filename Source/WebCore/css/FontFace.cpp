@@ -75,21 +75,21 @@ Ref<FontFace> FontFace::create(ScriptExecutionContext& context, const String& fa
 
     auto fontTrustedTypes = context.settingsValues().downloadableBinaryFontTrustedTypes;
     auto sourceConversionResult = WTF::switchOn(source,
-        [&] (String& string) -> ExceptionOr<void> {
+        [&](String& string) -> ExceptionOr<void> {
             auto value = CSSPropertyParserHelpers::parseFontFaceSrc(string, context);
             if (!value)
                 return Exception { ExceptionCode::SyntaxError };
             CSSFontFace::appendSources(result->backing(), *value, &context, false);
             return { };
         },
-        [&, fontTrustedTypes] (RefPtr<ArrayBufferView>& arrayBufferView) -> ExceptionOr<void> {
+        [&, fontTrustedTypes](RefPtr<ArrayBufferView>& arrayBufferView) -> ExceptionOr<void> {
             if (!arrayBufferView || fontBinaryParsingPolicy(arrayBufferView->span(), fontTrustedTypes) == FontParsingPolicy::Deny)
                 return { };
 
             dataRequiresAsynchronousLoading = populateFontFaceWithArrayBuffer(result->backing(), arrayBufferView.releaseNonNull());
             return { };
         },
-        [&, fontTrustedTypes] (RefPtr<ArrayBuffer>& arrayBuffer) -> ExceptionOr<void> {
+        [&, fontTrustedTypes](RefPtr<ArrayBuffer>& arrayBuffer) -> ExceptionOr<void> {
             if (!arrayBuffer || fontBinaryParsingPolicy(arrayBuffer->span(), fontTrustedTypes) == FontParsingPolicy::Deny)
                 return { };
 

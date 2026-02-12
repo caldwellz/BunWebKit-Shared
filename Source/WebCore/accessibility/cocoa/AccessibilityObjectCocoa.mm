@@ -82,9 +82,7 @@ std::optional<NSRange> AccessibilityObject::visibleCharacterRange() const
 
 // NSAttributedString support.
 
-#ifndef NSAttachmentCharacter
-#define NSAttachmentCharacter 0xfffc
-#endif
+static constexpr UniChar attachmentCharacterValue = 0xfffc;
 
 static void addObjectWrapperToArray(const AccessibilityObject& object, NSMutableArray *array)
 {
@@ -115,7 +113,7 @@ void attributedStringSetNumber(NSMutableAttributedString *attrString, NSString *
 
 static void attributedStringAppendWrapper(NSMutableAttributedString *attrString, WebAccessibilityObjectWrapper *wrapper)
 {
-    const auto attachmentCharacter = static_cast<UniChar>(NSAttachmentCharacter);
+    const auto attachmentCharacter = attachmentCharacterValue;
     [attrString appendAttributedString:adoptNS([[NSMutableAttributedString alloc] initWithString:[NSString stringWithCharacters:&attachmentCharacter length:1]
 #if PLATFORM(MAC)
         attributes:@{ NSAccessibilityAttachmentTextAttribute : (__bridge id)adoptCF(NSAccessibilityCreateAXUIElementRef(wrapper)).get() }

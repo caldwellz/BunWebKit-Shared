@@ -56,20 +56,12 @@ HTMLSelectElement& SelectFallbackButtonElement::selectElement() const
     return downcast<HTMLSelectElement>(*protect(containingShadowRoot())->host());
 }
 
-void SelectFallbackButtonElement::updateText()
+void SelectFallbackButtonElement::updateText(HTMLOptionElement* selectedOption, int optionIndex)
 {
     invalidateStyle();
     if (CheckedPtr buttonTextRenderer = dynamicDowncast<RenderSelectFallbackButton>(renderer()))
-        buttonTextRenderer->updateFromElement();
+        buttonTextRenderer->setTextFromOption(selectedOption, optionIndex);
 }
-
-#if !PLATFORM(COCOA)
-void SelectFallbackButtonElement::setTextFromOption(int optionIndex)
-{
-    if (CheckedPtr buttonTextRenderer = dynamicDowncast<RenderSelectFallbackButton>(renderer()))
-        buttonTextRenderer->setTextFromOption(optionIndex);
-}
-#endif
 
 std::optional<Style::UnadjustedStyle> SelectFallbackButtonElement::resolveCustomStyle(const Style::ResolutionContext& resolutionContext, const RenderStyle* hostStyle)
 {

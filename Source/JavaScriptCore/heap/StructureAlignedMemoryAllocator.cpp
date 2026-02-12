@@ -122,7 +122,7 @@ public:
         RELEASE_ASSERT(g_jscConfig.startOfStructureHeap, g_jscConfig.startOfStructureHeap, preferredStructureHeapSize, mappedHeapSize);
         RELEASE_ASSERT(hasOneBitSet(mappedHeapSize), mappedHeapSize);
         uintptr_t alignmentMask = mappedHeapSize - 1;
-        RELEASE_ASSERT(g_jscConfig.startOfStructureHeap & ~alignmentMask, g_jscConfig.startOfStructureHeap, mappedHeapSize, alignmentMask);
+        RELEASE_ASSERT(!(g_jscConfig.startOfStructureHeap & alignmentMask), g_jscConfig.startOfStructureHeap, mappedHeapSize, alignmentMask);
         g_jscConfig.sizeOfStructureHeap = mappedHeapSize;
         g_jscConfig.structureIDBase = g_jscConfig.startOfStructureHeap & ~StructureID::structureIDMask;
 

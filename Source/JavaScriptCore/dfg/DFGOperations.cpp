@@ -26,6 +26,7 @@
 #include "config.h"
 #include "DFGOperations.h"
 
+
 #include "ArrayPrototypeInlines.h"
 #include "ButterflyInlines.h"
 #include "CacheableIdentifierInlines.h"
@@ -72,6 +73,7 @@
 #include "JSRegExpStringIterator.h"
 #include "JSSet.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "JSWeakMapInlines.h"
 #include "JSWeakSet.h"
 #include "JSWrapForValidIterator.h"
@@ -2416,6 +2418,16 @@ JSC_DEFINE_JIT_OPERATION(operationNewSetIterator, JSCell*, (VM* vmPointer, Struc
     OPERATION_RETURN(scope, JSSetIterator::createWithInitialValues(vm, structure));
 }
 
+JSC_DEFINE_JIT_OPERATION(operationNewStringIterator, JSCell*, (VM* vmPointer, Structure* structure))
+{
+    VM& vm = *vmPointer;
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    OPERATION_RETURN(scope, JSStringIterator::createWithInitialValues(vm, structure));
+}
+
 JSC_DEFINE_JIT_OPERATION(operationNewIteratorHelper, JSCell*, (VM* vmPointer, Structure* structure))
 {
     VM& vm = *vmPointer;
@@ -3308,10 +3320,20 @@ JSC_DEFINE_JIT_OPERATION(operationStringIndexOfWithOneChar, UCPUStrictInt32, (JS
 
     auto scope = DECLARE_THROW_SCOPE(vm);
 
+    unsigned pos = 0;
+    if (base->isRope() && base->length() >= JSString::minLengthForRopeWalk) {
+        if (auto result = base->tryFindOneChar(globalObject, static_cast<char16_t>(character), pos)) {
+            if (*result != notFound)
+                OPERATION_RETURN(scope, toUCPUStrictInt32(static_cast<int32_t>(*result)));
+            OPERATION_RETURN(scope, toUCPUStrictInt32(-1));
+        }
+        // nullopt: bail out, fall through to resolve. pos is advanced past the searched range.
+    }
+
     auto thisView = base->view(globalObject);
     OPERATION_RETURN_IF_EXCEPTION(scope, 0);
 
-    size_t result = thisView->find(static_cast<char16_t>(character));
+    size_t result = thisView->find(static_cast<char16_t>(character), pos);
     if (result == notFound)
         OPERATION_RETURN(scope, toUCPUStrictInt32(-1));
     OPERATION_RETURN(scope, toUCPUStrictInt32(result));
@@ -3353,16 +3375,25 @@ JSC_DEFINE_JIT_OPERATION(operationStringIndexOfWithIndexWithOneChar, UCPUStrictI
 
     auto scope = DECLARE_THROW_SCOPE(vm);
 
-    auto thisView = base->view(globalObject);
-    OPERATION_RETURN_IF_EXCEPTION(scope, 0);
-
-    int32_t length = thisView->length();
+    int32_t length = base->length();
     unsigned pos = 0;
     if (position >= 0)
         pos = std::min<uint32_t>(position, length);
 
     if (static_cast<unsigned>(length) < 1 + pos)
         OPERATION_RETURN(scope, toUCPUStrictInt32(-1));
+
+    if (base->isRope() && base->length() >= JSString::minLengthForRopeWalk) {
+        if (auto result = base->tryFindOneChar(globalObject, static_cast<char16_t>(character), pos)) {
+            if (*result != notFound)
+                OPERATION_RETURN(scope, toUCPUStrictInt32(static_cast<int32_t>(*result)));
+            OPERATION_RETURN(scope, toUCPUStrictInt32(-1));
+        }
+        // nullopt: bail out, fall through to resolve. pos is advanced past the searched range.
+    }
+
+    auto thisView = base->view(globalObject);
+    OPERATION_RETURN_IF_EXCEPTION(scope, 0);
 
     size_t result = thisView->find(static_cast<char16_t>(character), pos);
     if (result == notFound)
@@ -3407,6 +3438,47 @@ JSC_DEFINE_JIT_OPERATION(operationStringStartsWithWithIndex, bool, (JSGlobalObje
         start = std::min<uint32_t>(position, length);
 
     OPERATION_RETURN(scope, baseView->hasInfixStartingAt(prefixView, start));
+}
+
+JSC_DEFINE_JIT_OPERATION(operationStringEndsWith, bool, (JSGlobalObject* globalObject, JSString* base, JSString* suffix))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    auto baseView = base->view(globalObject);
+    OPERATION_RETURN_IF_EXCEPTION(scope, false);
+
+    auto suffixView = suffix->view(globalObject);
+    OPERATION_RETURN_IF_EXCEPTION(scope, false);
+
+    OPERATION_RETURN(scope, baseView->endsWith(suffixView));
+}
+
+JSC_DEFINE_JIT_OPERATION(operationStringEndsWithWithEndPosition, bool, (JSGlobalObject* globalObject, JSString* base, JSString* suffix, int32_t endPosition))
+{
+    VM& vm = globalObject->vm();
+    CallFrame* callFrame = DECLARE_CALL_FRAME(vm);
+    JITOperationPrologueCallFrameTracer tracer(vm, callFrame);
+
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    auto baseView = base->view(globalObject);
+    OPERATION_RETURN_IF_EXCEPTION(scope, false);
+
+    auto suffixView = suffix->view(globalObject);
+    OPERATION_RETURN_IF_EXCEPTION(scope, false);
+
+    int32_t length = baseView->length();
+    unsigned end = length;
+    if (endPosition >= 0)
+        end = std::min<uint32_t>(endPosition, length);
+    else
+        end = 0;
+
+    OPERATION_RETURN(scope, baseView->hasInfixEndingAt(suffixView, end));
 }
 
 JSC_DEFINE_JIT_OPERATION(operationStringProtoFuncReplaceGeneric, JSCell*, (JSGlobalObject* globalObject, EncodedJSValue thisValue, EncodedJSValue searchValue, EncodedJSValue replaceValue))

@@ -49,14 +49,12 @@ selectors = [
     { name = "prepareResourceMonitorRulesForStore:completionHandler:", class = "?" },
     { name = "presentNewPINEntryInterfaceWithMinLength:", class = "?" },
     { name = "quad", class = "VKCTranslatedParagraph" },
-    { name = "rectValue", class = "?" },
     { name = "rtfData", class = "?" },
     { name = "sendResponse:", class = "?" },
     { name = "setDefaultActionBundleIdentifier:", class = "?" },
     { name = "setHasHighLatencyDataProvider:", class = "?" },
     { name = "setRecipe:", class = "?" },
     { name = "shouldUseAlternateKeychainAttribute", class = "?" },
-    { name = "valueWithRect:", class = "?" },
     { name = "willStartScrollingOverflow", class = "?" },
 ]
 symbols = [
@@ -67,6 +65,13 @@ symbols = [
     "kCGDataProviderHasHighLatency",
     "kCGDataProviderIndeterminateSize",
 ]
+
+[[legacy]]
+selectors = [
+    { name = "rectValue", class = "?" },
+    { name = "valueWithRect:", class = "?" },
+]
+requires = [ "!HAVE_WK_SECURE_CODING_PKPAYMENT" ]
 
 [[legacy]]
 classes = [

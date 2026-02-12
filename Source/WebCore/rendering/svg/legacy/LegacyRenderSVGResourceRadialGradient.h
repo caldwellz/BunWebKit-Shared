@@ -35,7 +35,6 @@ public:
     virtual ~LegacyRenderSVGResourceRadialGradient();
 
     inline SVGRadialGradientElement& radialGradientElement() const;
-    inline Ref<SVGRadialGradientElement> protectedRadialGradientElement() const;
 
     FloatPoint centerPoint(const RadialGradientAttributes&) const;
     FloatPoint focalPoint(const RadialGradientAttributes&) const;

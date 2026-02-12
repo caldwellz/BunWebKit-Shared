@@ -193,7 +193,7 @@ void ServiceWorkerThreadProxy::notifyNetworkStateChange(bool isOnline)
     postTaskForModeToWorkerOrWorkletGlobalScope([isOnline] (ScriptExecutionContext& context) {
         auto& globalScope = downcast<WorkerGlobalScope>(context);
         globalScope.setIsOnline(isOnline);
-        globalScope.checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [globalScope = Ref { globalScope }, isOnline] {
+        protect(globalScope.eventLoop())->queueTask(TaskSource::DOMManipulation, [globalScope = Ref { globalScope }, isOnline] {
             globalScope->dispatchEvent(Event::create(isOnline ? eventNames().onlineEvent : eventNames().offlineEvent, Event::CanBubble::No, Event::IsCancelable::No));
         });
     }, WorkerRunLoop::defaultMode());

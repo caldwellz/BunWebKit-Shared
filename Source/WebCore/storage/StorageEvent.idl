@@ -43,15 +43,10 @@
                                optional DOMString? newValue = null,
                                optional USVString url = "",
                                optional Storage? storageArea = null);
-
-    // Needed once we support init<blank>EventNS
-    // undefined initStorageEventNS(DOMString namespaceURI, DOMString typeArg, boolean canBubbleArg, boolean cancelableArg, DOMString keyArg, DOMString oldValueArg, DOMString newValueArg, USVString urlArg, Storage? storageAreaArg);
 };
 
 // https://html.spec.whatwg.org/multipage/webstorage.html#storageeventinit
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary StorageEventInit : EventInit {
+dictionary StorageEventInit : EventInit {
     DOMString? key = null;
     DOMString? oldValue = null;
     DOMString? newValue = null;

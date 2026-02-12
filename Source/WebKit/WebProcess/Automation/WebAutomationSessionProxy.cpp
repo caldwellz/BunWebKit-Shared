@@ -1006,7 +1006,7 @@ static WebCore::IntRect snapshotElementRectForScreenshot(WebPage& page, WebCore:
             return { };
 
         WebCore::LayoutRect topLevelRect;
-        WebCore::IntRect elementRect = WebCore::snappedIntRect(element->checkedRenderer()->paintingRootRect(topLevelRect));
+        WebCore::IntRect elementRect = WebCore::snappedIntRect(protect(element->renderer())->paintingRootRect(topLevelRect));
         if (clipToViewport)
             elementRect.intersect(frameView->visibleContentRect());
 
@@ -1114,7 +1114,7 @@ void WebAutomationSessionProxy::getCookiesForFrame(WebCore::PageIdentifier pageI
     // This returns the same list of cookies as when evaluating `document.cookies` in JavaScript.
     Vector<WebCore::Cookie> foundCookies;
     if (!document->cookieURL().isEmpty())
-        protect(page->corePage())->protectedCookieJar()->getRawCookies(*document, document->cookieURL(), foundCookies);
+        protect(protect(page->corePage())->cookieJar())->getRawCookies(*document, document->cookieURL(), foundCookies);
 
     completionHandler(std::nullopt, foundCookies);
 }
@@ -1137,7 +1137,7 @@ void WebAutomationSessionProxy::deleteCookie(WebCore::PageIdentifier pageID, std
         return;
     }
 
-    protect(page->corePage())->protectedCookieJar()->deleteCookie(*document, document->cookieURL(), cookieName, [completionHandler = WTF::move(completionHandler)] () mutable {
+    protect(protect(page->corePage())->cookieJar())->deleteCookie(*document, document->cookieURL(), cookieName, [completionHandler = WTF::move(completionHandler)] () mutable {
         completionHandler(std::nullopt);
     });
 }

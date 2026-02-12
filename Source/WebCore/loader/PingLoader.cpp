@@ -107,7 +107,7 @@ void PingLoader::loadImage(LocalFrame& frame, URL&& url)
         return;
 #endif
 
-    document->checkedContentSecurityPolicy()->upgradeInsecureRequestIfNeeded(request, ContentSecurityPolicy::InsecureRequestType::Load);
+    protect(document->contentSecurityPolicy())->upgradeInsecureRequestIfNeeded(request, ContentSecurityPolicy::InsecureRequestType::Load);
 
     request.setHTTPHeaderField(HTTPHeaderName::CacheControl, HTTPHeaderValues::maxAge0());
 
@@ -139,9 +139,9 @@ void PingLoader::sendPing(LocalFrame& frame, URL&& sendPingURL, const URL& desti
 #endif
 
     Ref document = *frame.document();
-    if (!document->checkedContentSecurityPolicy()->allowConnectToSource(pingURL))
+    if (!protect(document->contentSecurityPolicy())->allowConnectToSource(pingURL))
         return;
-    document->checkedContentSecurityPolicy()->upgradeInsecureRequestIfNeeded(request, ContentSecurityPolicy::InsecureRequestType::Load);
+    protect(document->contentSecurityPolicy())->upgradeInsecureRequestIfNeeded(request, ContentSecurityPolicy::InsecureRequestType::Load);
 
     request.setHTTPMethod("POST"_s);
     request.setHTTPContentType("text/ping"_s);
@@ -181,7 +181,7 @@ void PingLoader::sendViolationReport(LocalFrame& frame, URL&& violationReportURL
 #endif
 
     Ref document = *frame.document();
-    document->checkedContentSecurityPolicy()->upgradeInsecureRequestIfNeeded(request, ContentSecurityPolicy::InsecureRequestType::Load);
+    protect(document->contentSecurityPolicy())->upgradeInsecureRequestIfNeeded(request, ContentSecurityPolicy::InsecureRequestType::Load);
 
     request.setHTTPMethod("POST"_s);
     request.setHTTPBody(WTF::move(report));

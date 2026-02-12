@@ -411,7 +411,7 @@ bool WebVTTParser::checkAndStoreStyleSheet(StringView line)
         if (styleRule->properties().isEmpty())
             continue;
 
-        sanitizedStyleSheetBuilder.append(selectorText, " { "_s, styleRule->protectedProperties()->asText(CSS::defaultSerializationContext()), "  }\n"_s);
+        sanitizedStyleSheetBuilder.append(selectorText, " { "_s, protect(styleRule->properties())->asText(CSS::defaultSerializationContext()), "  }\n"_s);
     }
 
     // It would be more stylish to parse the stylesheet only once instead of serializing a sanitized version.
@@ -520,7 +520,6 @@ private:
     void constructTreeFromToken(Document&);
 
     WebVTTNodeType currentType() const { return m_typeStack.isEmpty() ? WebVTTNodeTypeNone : m_typeStack.last(); }
-    RefPtr<ContainerNode> protectedCurrentNode() const { return m_currentNode.get(); }
 
     WebVTTToken m_token;
     Vector<WebVTTNodeType> m_typeStack;
@@ -700,7 +699,7 @@ void WebVTTTreeBuilder::constructTreeFromToken(Document& document)
 
     switch (m_token.type()) {
     case WebVTTTokenTypes::Character: {
-        protectedCurrentNode()->parserAppendChild(Text::create(document, String { m_token.characters() }));
+        protect(m_currentNode)->parserAppendChild(Text::create(document, String { m_token.characters() }));
         break;
     }
     case WebVTTTokenTypes::StartTag: {
@@ -723,7 +722,7 @@ void WebVTTTreeBuilder::constructTreeFromToken(Document& document)
             m_languageStack.append(m_token.annotation());
             child->setAttributeWithoutSynchronization(WebVTTElement::langAttributeName(), m_languageStack.last());
         }
-        protectedCurrentNode()->parserAppendChild(child);
+        protect(m_currentNode)->parserAppendChild(child);
         m_currentNode = WTF::move(child);
         m_typeStack.append(nodeType);
         break;
@@ -760,7 +759,7 @@ void WebVTTTreeBuilder::constructTreeFromToken(Document& document)
     case WebVTTTokenTypes::TimestampTag: {
         MediaTime parsedTimeStamp;
         if (WebVTTParser::collectTimeStamp(m_token.characters(), parsedTimeStamp))
-            protectedCurrentNode()->parserAppendChild(ProcessingInstruction::create(document, "timestamp"_s, serializeTimestamp(parsedTimeStamp.toDouble())));
+            protect(m_currentNode)->parserAppendChild(ProcessingInstruction::create(document, "timestamp"_s, serializeTimestamp(parsedTimeStamp.toDouble())));
         break;
     }
     default:

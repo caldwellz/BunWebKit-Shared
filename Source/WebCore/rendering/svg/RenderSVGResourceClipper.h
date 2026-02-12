@@ -36,8 +36,6 @@ public:
     RenderSVGResourceClipper(SVGClipPathElement&, RenderStyle&&);
     virtual ~RenderSVGResourceClipper();
 
-    inline Ref<SVGClipPathElement> protectedClipPathElement() const;
-
     RefPtr<SVGGraphicsElement> shouldApplyPathClipping() const;
     void applyPathClipping(GraphicsContext&, const RenderLayerModelObject& targetRenderer, const FloatRect& objectBoundingBox, SVGGraphicsElement&);
     void applyMaskClipping(PaintInfo&, const RenderLayerModelObject& targetRenderer, const FloatRect& objectBoundingBox);
@@ -47,6 +45,7 @@ public:
     bool hitTestClipContent(const FloatRect&, const LayoutPoint&);
 
     inline SVGUnitTypes::SVGUnitType clipPathUnits() const;
+    inline SVGClipPathElement& clipPathElement() const;
 
     void applyTransform(TransformationMatrix&, const RenderStyle&, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption>) const final;
 

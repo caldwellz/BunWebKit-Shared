@@ -50,7 +50,7 @@ struct ResizeObserverData {
 };
 
 using NativeResizeObserverCallback = void (*)(const Vector<Ref<ResizeObserverEntry>>&, ResizeObserver&);
-using JSOrNativeResizeObserverCallback = Variant<RefPtr<ResizeObserverCallback>, NativeResizeObserverCallback>;
+using JSOrNativeResizeObserverCallback = Variant<Ref<ResizeObserverCallback>, NativeResizeObserverCallback>;
 
 class ResizeObserver : public RefCountedAndCanMakeWeakPtr<ResizeObserver> {
     WTF_MAKE_TZONE_ALLOCATED(ResizeObserver);

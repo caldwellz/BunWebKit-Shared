@@ -7588,6 +7588,11 @@ protected:
     template <int dataSize>
     ALWAYS_INLINE bool tryMoveUsingCacheRegisterContents(intptr_t immediate, CachedTempRegister& dest)
     {
+        // 32-bit moves zero-extend to 64 bits on ARM64, so normalize the immediate
+        // to the zero-extended form to match what the hardware register will contain.
+        if constexpr (dataSize == 32)
+            immediate = static_cast<intptr_t>(static_cast<uint32_t>(immediate));
+
         intptr_t currentRegisterContents;
         if (dest.value(currentRegisterContents)) {
             if (currentRegisterContents == immediate)
@@ -7622,7 +7627,7 @@ protected:
             return;
 
         moveInternal<TrustedImm32, int32_t>(imm, dest.registerIDNoInvalidate());
-        dest.setValue(imm.m_value);
+        dest.setValue(static_cast<intptr_t>(static_cast<uint32_t>(imm.m_value)));
     }
 
     void moveToCachedReg(TrustedImmPtr imm, CachedTempRegister& dest)

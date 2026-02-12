@@ -101,6 +101,18 @@ compositing/repaint/sticky-repaint-on-scroll.html [ Pass ]
 
 # Cocoa-only tests
 http/tests/iframe-monitor/ [ Pass ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/blob-resource.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/cached-resource.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/compressed-resource.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/dark-mode.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/data-url-resource.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/eligibility.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/iframe-unload.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/just-use-eligible-subresource.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/throttler.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/workers/service-worker-not-count-twice.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/workers/service-worker.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/iframe-monitor/workers/shared-worker.html [ Pass Timeout ]
 
 # Some of these have failing results: webkit.org/b/293983
 imported/w3c/web-platform-tests/dom/events/scrolling/iframe-chains.html [ Pass ]
@@ -777,6 +789,15 @@ fast/scrolling/rtl-scrollbars-positioned-intersect-scrollbars.html [ Pass ]
 fast/scrolling/rtl-scrollbars-alternate-body-dir-attr-does-not-update-scrollbar-placement-2.html [ Pass ]
 fast/scrolling/rtl-scrollbars-animation-property.html [ Pass ]
 
+webkit.org/b/307357 [ Debug arm64 ] http/tests/inspector/console/message-from-worker.html [ Pass Timeout ]
+
+webkit.org/b/307569 [ Debug arm64 ] http/tests/inspector/console/message-from-iframe.html [ Pass Timeout ]
+
+webkit.org/b/307300 [ Debug arm64 ] http/tests/inspector/network/eventsource-type.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/inspector/network/fetch-response-body-304.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/inspector/network/har/har-basic.html [ Pass Timeout ]
+webkit.org/b/307300 [ Debug arm64 ] http/tests/inspector/network/har/har-page-aggressive-gc.html [ Pass Timeout ]
+
 webkit.org/b/167607 [ Debug ] http/tests/inspector/worker/blob-script-with-cross-domain-imported-scripts.html [ Pass Timeout ]
 
 webkit.org/b/160042 accessibility/mac/value-change/value-change-user-info-contenteditable.html [ Pass Failure ]
@@ -1098,9 +1119,6 @@ http/tests/inspector/network/contentextensions/blocked-websocket-crash.html [ Pa
 # <rdar://problem/60548192> [ Mac wk2 ] http/tests/contentextensions/service-worker.https.html is flaky failing.
 http/tests/contentextensions/service-worker.https.html [ Pass Failure ]
 
-# <rdar://problem/60590009> [ macOS ] REGRESSION(~r258238) http/tests/inspector/network/har/har-basic.html is flaky crashing
-http/tests/inspector/network/har/har-basic.html [ Pass Crash ]
-
 # <rdar://problem/61062687> [ macos wk2 ] REGRESSION: media/modern-media-controls/scrubber-support/scrubber-support-media-api.html is flaky crashing
 media/modern-media-controls/scrubber-support/scrubber-support-media-api.html [ Pass Crash ]
 
@@ -1187,6 +1205,8 @@ webkit.org/b/222209 inspector/debugger/async-stack-trace-basic.html [ Pass Timeo
 webkit.org/b/222183 imported/w3c/web-platform-tests/media-source/mediasource-seek-during-pending-seek.html [ Pass Failure ]
 
 webkit.org/b/222365 inspector/dom/attributeModified.html [ Pass Timeout ]
+
+webkit.org/b/307572 [ Debug arm64 ] http/tests/inspector/dom/didFireEvent.html [ Pass Timeout ]
 
 webkit.org/b/222677 inspector/model/auditTestCase.html [ Pass Timeout ]
 
@@ -1297,8 +1317,6 @@ webkit.org/b/229237 inspector/canvas/recording-offscreen-canvas-2d-memoryLimit.h
 webkit.org/b/228210 [ Debug ] inspector/model/remote-object/iterator-large.html [ Pass Timeout ]
 
 webkit.org/b/228591 fast/scrolling/mac/programmatic-scroll-overrides-rubberband.html [ Pass Failure ]
-
-webkit.org/b/229163 webrtc/video-addTransceiver.html [ Pass Failure ]
 
 #rdar://82043074 ([Star wk2 Debug arm64,Sky/AzulE wk2 Guard-Malloc] imported/w3c/web-platform-tests/xhr/xhr-timeout-longtask.any.html is a flaky failure)
 imported/w3c/web-platform-tests/xhr/xhr-timeout-longtask.any.html [ Pass Failure ]
@@ -2446,6 +2464,16 @@ webkit.org/b/306379 [ Tahoe Debug ] webrtc/addICECandidate-closed.html [ Skip ]
 
 webkit.org/b/307084 [ Tahoe Release ] webgl/smell-test.html [ ImageOnlyFailure Pass ]
 
-
 webkit.org/b/307088 [ Tahoe Release ] webgl/webgl-and-dom-in-gpup.html [ ImageOnlyFailure Pass ]
 
+webkit.org/b/307196 http/tests/geolocation/geolocation-get-current-position-does-not-leak.https.html [ Pass Failure ]
+
+webkit.org/b/307351 imported/w3c/web-platform-tests/html/browsers/browsing-the-web/navigating-across-documents/replace-before-load/form-requestsubmit.html [ Pass Failure ]
+
+webkit.org/b/307385 fast/events/onunload-not-on-body.html [ Pass Failure ]
+
+webkit.org/b/307377 [ Tahoe Release arm64 ] compositing/webgl/update-composited-canvas-layer.html [ ImageOnlyFailure Pass ]
+
+webkit.org/b/307571 imported/w3c/web-platform-tests/workers/SharedWorkerPerformanceNow.html [ Pass Failure ]
+
+webkit.org/b/307598 webanimations/accelerated-animation-slot-invalidation.html [ ImageOnlyFailure Pass ]

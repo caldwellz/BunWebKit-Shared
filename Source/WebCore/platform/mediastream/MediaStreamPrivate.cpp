@@ -314,7 +314,7 @@ void MediaStreamPrivate::monitorOrientation(OrientationNotifier& notifier)
 {
     for (Ref track : m_trackSet.values()) {
         if (track->isCaptureTrack() && track->deviceType() == CaptureDevice::DeviceType::Camera)
-            track->protectedSource()->monitorOrientation(notifier);
+            protect(track->source())->monitorOrientation(notifier);
     }
 }
 

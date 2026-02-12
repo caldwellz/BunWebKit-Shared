@@ -555,7 +555,7 @@ class TestExpectedBuildSteps(unittest.TestCase):
             'clean-derived-sources',
             'compile-webkit'
         ],
-        'WPE-LibWebRTC-Build-EWS': [
+        'GTK-GTK3-LibWebRTC-Build-EWS': [
             'configure-build',
             'validate-change',
             'configuration',

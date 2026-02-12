@@ -53,12 +53,9 @@ public:
     const String& oldValue() const { return m_oldValue; }
     const String& newValue() const { return m_newValue; }
     const String& url() const { return m_url; }
-    Storage* storageArea() const { return m_storageArea.get(); }
+    Storage* storageArea() const { return m_storageArea; }
 
     void initStorageEvent(const AtomString& type, bool canBubble, bool cancelable, const String& key, const String& oldValue, const String& newValue, const String& url, Storage* storageArea);
-
-    // Needed once we support init<blank>EventNS
-    // void initStorageEventNS(in DOMString namespaceURI, in DOMString typeArg, in boolean canBubbleArg, in boolean cancelableArg, in DOMString keyArg, in DOMString oldValueArg, in DOMString newValueArg, in DOMString urlArg, Storage storageAreaArg);
 
 private:
     StorageEvent();

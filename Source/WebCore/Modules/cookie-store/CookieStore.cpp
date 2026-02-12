@@ -596,7 +596,7 @@ void CookieStore::stop()
     if (host.isEmpty())
         return;
 
-    page->protectedCookieJar()->removeChangeListener(host, *this);
+    protect(page->cookieJar())->removeChangeListener(host, *this);
 #endif
     m_hasChangeEventListener = false;
 }

@@ -53,7 +53,7 @@ LegacyRenderSVGResourceFilter::~LegacyRenderSVGResourceFilter() = default;
 
 bool LegacyRenderSVGResourceFilter::isIdentity() const
 {
-    return SVGFilterRenderer::isIdentity(protectedFilterElement());
+    return SVGFilterRenderer::isIdentity(protect(filterElement()));
 }
 
 void LegacyRenderSVGResourceFilter::removeAllClientsFromCache()

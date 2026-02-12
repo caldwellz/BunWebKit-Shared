@@ -997,11 +997,11 @@ WebPage::WebPage(PageIdentifier pageID, WebPageCreationParameters&& parameters)
     // in modern WebKit.
     page->settings().setBackForwardCacheExpirationInterval(Seconds::infinity());
 
-    m_mainFrame->initWithCoreMainFrame(*this, page->protectedMainFrame());
+    m_mainFrame->initWithCoreMainFrame(*this, protect(page->mainFrame()));
 
     if (auto& remotePageParameters = parameters.remotePageParameters) {
         Ref frameTreeSyncData = remotePageParameters->frameTreeParameters.frameTreeSyncData;
-        page->protectedMainFrame()->updateFrameTreeSyncData(WTF::move(frameTreeSyncData));
+        protect(page->mainFrame())->updateFrameTreeSyncData(WTF::move(frameTreeSyncData));
         for (auto& childParameters : remotePageParameters->frameTreeParameters.children)
             constructFrameTree(m_mainFrame.get(), childParameters);
         page->setMainFrameURLAndOrigin(remotePageParameters->initialMainDocumentURL, nullptr);
@@ -1700,7 +1700,7 @@ void WebPage::changeFontAttributes(WebCore::FontAttributeChanges&& changes)
         return;
 
     if (frame->selection().selection().isContentEditable())
-        frame->protectedEditor()->applyStyleToSelection(changes.createEditingStyle(), changes.editAction(), Editor::ColorFilterMode::InvertColor);
+        protect(frame->editor())->applyStyleToSelection(changes.createEditingStyle(), changes.editAction(), Editor::ColorFilterMode::InvertColor);
 }
 
 void WebPage::changeFont(WebCore::FontChanges&& changes)
@@ -1710,7 +1710,7 @@ void WebPage::changeFont(WebCore::FontChanges&& changes)
         return;
 
     if (frame->selection().selection().isContentEditable())
-        frame->protectedEditor()->applyStyleToSelection(changes.createEditingStyle(), EditAction::SetFont, Editor::ColorFilterMode::InvertColor);
+        protect(frame->editor())->applyStyleToSelection(changes.createEditingStyle(), EditAction::SetFont, Editor::ColorFilterMode::InvertColor);
 }
 
 void WebPage::executeEditCommandWithCallback(const String& commandName, const String& argument, CompletionHandler<void()>&& completionHandler)
@@ -1919,7 +1919,7 @@ void WebPage::executeEditingCommand(const String& commandName, const String& arg
     }
 #endif
 
-    frame->protectedEditor()->command(commandName).execute(argument);
+    protect(frame->editor())->command(commandName).execute(argument);
 }
 
 void WebPage::setEditable(bool editable)
@@ -1931,10 +1931,10 @@ void WebPage::setEditable(bool editable)
         return;
 
     if (editable) {
-        frame->protectedEditor()->applyEditingStyleToBodyElement();
+        protect(frame->editor())->applyEditingStyleToBodyElement();
         // If the page is made editable and the selection is empty, set it to something.
         if (frame->selection().isNone())
-            frame->checkedSelection()->setSelectionFromNone();
+            protect(frame->selection())->setSelectionFromNone();
     }
 }
 
@@ -1944,7 +1944,7 @@ void WebPage::increaseListLevel()
     if (!frame)
         return;
 
-    frame->protectedEditor()->increaseSelectionListLevel();
+    protect(frame->editor())->increaseSelectionListLevel();
 }
 
 void WebPage::decreaseListLevel()
@@ -1953,7 +1953,7 @@ void WebPage::decreaseListLevel()
     if (!frame)
         return;
 
-    frame->protectedEditor()->decreaseSelectionListLevel();
+    protect(frame->editor())->decreaseSelectionListLevel();
 }
 
 void WebPage::changeListType()
@@ -1962,7 +1962,7 @@ void WebPage::changeListType()
     if (!frame)
         return;
 
-    frame->protectedEditor()->changeSelectionListType();
+    protect(frame->editor())->changeSelectionListType();
 }
 
 void WebPage::setBaseWritingDirection(WritingDirection direction)
@@ -1971,7 +1971,7 @@ void WebPage::setBaseWritingDirection(WritingDirection direction)
     if (!frame)
         return;
 
-    frame->protectedEditor()->setBaseWritingDirection(direction);
+    protect(frame->editor())->setBaseWritingDirection(direction);
 }
 
 void WebPage::enterAcceleratedCompositingMode(WebCore::Frame& frame, GraphicsLayer* layer)
@@ -2444,7 +2444,7 @@ void WebPage::goToBackForwardItem(GoToBackForwardItemParameters&& parameters)
         targetFrame = historyItemFrame.releaseNonNull();
 
     if (RefPtr targetLocalFrame = targetFrame->provisionalFrame() ? targetFrame->provisionalFrame() : targetFrame->coreLocalFrame())
-        protect(corePage())->goToItem(*targetLocalFrame, *item, parameters.backForwardType, parameters.shouldTreatAsContinuingLoad, parameters.processSwapDisposition);
+        protect(corePage())->goToItem(*targetLocalFrame, *item, parameters.backForwardType, parameters.shouldTreatAsContinuingLoad);
 }
 
 // GoToBackForwardItemWaitingForProcessLaunch should never be sent to the WebProcess. It must always be converted to a GoToBackForwardItem message.
@@ -2471,7 +2471,7 @@ void WebPage::setSize(const WebCore::IntSize& viewSize)
         return;
 
     m_viewSize = viewSize;
-    RefPtr view = protect(corePage())->protectedMainFrame()->virtualView();
+    RefPtr view = protect(protect(corePage())->mainFrame())->virtualView();
     if (!view) {
         ASSERT_NOT_REACHED();
         return;
@@ -2741,7 +2741,7 @@ void WebPage::didScaleView(double scale)
 
     RefPtr page = m_page;
     IntPoint scrollPositionAtNewScale;
-    if (RefPtr mainFrameView = page->protectedMainFrame()->virtualView()) {
+    if (RefPtr mainFrameView = protect(page->mainFrame())->virtualView()) {
         double scaleRatio = scale / viewScaleFactor();
         scrollPositionAtNewScale = mainFrameView->scrollPosition();
         scrollPositionAtNewScale.scale(scaleRatio);
@@ -3254,7 +3254,7 @@ void WebPage::paintSnapshotAtSize(const IntRect& rect, const IntSize& bitmapSize
     frameView.paintContentsForSnapshot(graphicsContext, snapshotRect, shouldPaintSelection, coordinateSpace);
 
     if (options.contains(SnapshotOption::PaintSelectionRectangle)) {
-        FloatRect selectionRectangle = frame.checkedSelection()->selectionBounds();
+        FloatRect selectionRectangle = protect(frame.selection())->selectionBounds();
         graphicsContext.setStrokeColor(Color::red);
         graphicsContext.strokeRect(selectionRectangle, 1);
     }
@@ -3267,7 +3267,7 @@ static DestinationColorSpace snapshotColorSpace(SnapshotOptions options, WebPage
 {
 #if USE(CG)
     if (options.contains(SnapshotOption::UseScreenColorSpace)) {
-        auto screenColorSpace = WebCore::screenColorSpace(protect(page.corePage())->protectedMainFrame()->protectedVirtualView().get());
+        auto screenColorSpace = WebCore::screenColorSpace(protect(protect(page.corePage())->mainFrame())->protectedVirtualView().get());
 #if HAVE(SUPPORT_HDR_DISPLAY)
         if (options.contains(SnapshotOption::AllowHDR) && protect(page.corePage())->drawsHDRContent()) {
             if (auto extendedScreenColorSpace = screenColorSpace.asExtended())
@@ -3326,7 +3326,7 @@ RefPtr<WebImage> WebPage::snapshotNode(WebCore::Node& node, SnapshotOptions opti
         return nullptr;
 
     LayoutRect topLevelRect;
-    IntRect snapshotRect = snappedIntRect(node.checkedRenderer()->paintingRootRect(topLevelRect));
+    IntRect snapshotRect = snappedIntRect(protect(node.renderer())->paintingRootRect(topLevelRect));
     if (snapshotRect.isEmpty())
         return nullptr;
 
@@ -3373,7 +3373,7 @@ void WebPage::pageDidScroll()
 #endif
     m_pageScrolledHysteresis.impulse();
 
-    if (RefPtr view = protect(corePage())->protectedMainFrame()->virtualView())
+    if (RefPtr view = protect(protect(corePage())->mainFrame())->virtualView())
         send(Messages::WebPageProxy::PageDidScroll(view->scrollPosition()));
 }
 
@@ -3410,11 +3410,11 @@ RefPtr<WebContextMenu> WebPage::contextMenuAtPointInWindow(FrameIdentifier frame
     corePage()->contextMenuController().clearContextMenu();
 
     // Simulate a mouse click to generate the correct menu.
-    PlatformMouseEvent mousePressEvent(point, point, MouseButton::Right, PlatformEvent::Type::MousePressed, 1, { }, MonotonicTime::now(), WebCore::ForceAtClick, WebCore::SyntheticClickType::NoTap);
+    PlatformMouseEvent mousePressEvent(point, point, MouseButton::Right, PlatformEvent::Type::MousePressed, 1, { }, MonotonicTime::now(), WebCore::ForceAtClick, WebCore::SyntheticClickType::NoTap, MouseEventInputSource::Hardware);
     coreFrame->eventHandler().handleMousePressEvent(mousePressEvent);
     bool handled = coreFrame->eventHandler().sendContextMenuEvent(mousePressEvent);
     RefPtr menu = handled ? &contextMenu() : nullptr;
-    PlatformMouseEvent mouseReleaseEvent(point, point, MouseButton::Right, PlatformEvent::Type::MouseReleased, 1, { }, MonotonicTime::now(), WebCore::ForceAtClick, WebCore::SyntheticClickType::NoTap);
+    PlatformMouseEvent mouseReleaseEvent(point, point, MouseButton::Right, PlatformEvent::Type::MouseReleased, 1, { }, MonotonicTime::now(), WebCore::ForceAtClick, WebCore::SyntheticClickType::NoTap, MouseEventInputSource::Hardware);
     coreFrame->eventHandler().handleMouseReleaseEvent(mouseReleaseEvent);
 
     return menu;
@@ -3878,7 +3878,7 @@ void WebPage::validateCommand(const String& commandName, CompletionHandler<void(
     else
 #endif
     {
-        auto command = frame->protectedEditor()->command(commandName);
+        auto command = protect(frame->editor())->command(commandName);
         state = (command.state() != TriState::False);
         isEnabled = command.isSupported() && command.isEnabled();
     }
@@ -3913,7 +3913,7 @@ void WebPage::requestFontAttributesAtSelectionStart(CompletionHandler<void(const
     RefPtr focusedOrMainFrame = corePage()->focusController().focusedOrMainFrame();
     if (!focusedOrMainFrame)
         return completionHandler({ });
-    completionHandler(focusedOrMainFrame->protectedEditor()->fontAttributesAtSelectionStart());
+    completionHandler(protect(focusedOrMainFrame->editor())->fontAttributesAtSelectionStart());
 }
 
 void WebPage::cancelCurrentInteractionInformationRequest()
@@ -4082,7 +4082,7 @@ void WebPage::centerSelectionInVisibleArea()
     RefPtr frame = corePage()->focusController().focusedOrMainFrame();
     if (!frame)
         return;
-    frame->checkedSelection()->revealSelection({ SelectionRevealMode::Reveal, ScrollAlignment::alignCenterAlways });
+    protect(frame->selection())->revealSelection({ SelectionRevealMode::Reveal, ScrollAlignment::alignCenterAlways });
     findController().showFindIndicatorInSelection();
 }
 
@@ -4125,7 +4125,7 @@ void WebPage::insertNewlineInQuotedContent()
         return;
     if (frame->selection().isNone())
         return;
-    frame->protectedEditor()->insertParagraphSeparatorInQuotedContent();
+    protect(frame->editor())->insertParagraphSeparatorInQuotedContent();
 }
 
 #if ENABLE(REMOTE_INSPECTOR)
@@ -4536,7 +4536,7 @@ void WebPage::runJavaScript(WebFrame* frame, RunJavaScriptParameters&& parameter
             return completionHandler(makeUnexpected(std::nullopt));
 
         JSGlobalContextRef context = frame->jsContextForWorld(world.ptr());
-        JSValueRef jsValue = toRef(coreFrame->checkedScript()->globalObject(Ref { world->coreWorld() }), result.value());
+        JSValueRef jsValue = toRef(protect(coreFrame->script())->globalObject(Ref { world->coreWorld() }), result.value());
         if (auto result = JavaScriptEvaluationResult::extract(context, jsValue))
             return completionHandler(WTF::move(*result));
         return completionHandler(makeUnexpected(std::nullopt));
@@ -4565,7 +4565,7 @@ void WebPage::runJavaScript(WebFrame* frame, RunJavaScriptParameters&& parameter
     };
 
     JSLockHolder lock(commonVM());
-    protect(frame->coreLocalFrame())->checkedScript()->executeAsynchronousUserAgentScriptInWorld(protect(world->coreWorld()), WTF::move(coreParameters), WTF::move(resolveFunction));
+    protect(protect(frame->coreLocalFrame())->script())->executeAsynchronousUserAgentScriptInWorld(protect(world->coreWorld()), WTF::move(coreParameters), WTF::move(resolveFunction));
 }
 
 void WebPage::runJavaScriptInFrameInScriptWorld(RunJavaScriptParameters&& parameters, std::optional<WebCore::FrameIdentifier> frameID, const ContentWorldData& worldData, bool wantsResult, CompletionHandler<void(Expected<JavaScriptEvaluationResult, std::optional<WebCore::ExceptionDetails>>)>&& completionHandler)
@@ -4637,7 +4637,7 @@ void WebPage::copyLinkWithHighlight()
         return;
 
     if (url.isValid())
-        frame->protectedEditor()->copyURL(url, { });
+        protect(frame->editor())->copyURL(url, { });
 }
 
 void WebPage::getSelectionOrContentsAsString(CompletionHandler<void(const String&)>&& callback)
@@ -5024,7 +5024,7 @@ static void detectDataInFrame(const Ref<Frame>& frame, OptionSet<WebCore::DataDe
 void WebPage::detectDataInAllFrames(OptionSet<WebCore::DataDetectorType> dataDetectorTypes, CompletionHandler<void(DataDetectionResult&&)>&& completionHandler)
 {
     auto mainFrameResult = makeUniqueRef<DataDetectionResult>();
-    detectDataInFrame(protect(corePage())->protectedMainFrame().get(), dataDetectorTypes, m_dataDetectionReferenceDate, WTF::move(mainFrameResult), WTF::move(completionHandler));
+    detectDataInFrame(protect(protect(corePage())->mainFrame()).get(), dataDetectorTypes, m_dataDetectionReferenceDate, WTF::move(mainFrameResult), WTF::move(completionHandler));
 }
 
 #endif // ENABLE(DATA_DETECTION)
@@ -5539,7 +5539,7 @@ void WebPage::dragEnded(std::optional<FrameIdentifier> frameID, IntPoint clientP
         return completionHandler(std::nullopt);
 
     // FIXME: These are fake modifier keys here, but they should be real ones instead.
-    PlatformMouseEvent event(adjustedClientPosition, adjustedGlobalPosition, MouseButton::Left, PlatformEvent::Type::MouseMoved, 0, { }, MonotonicTime::now(), 0, WebCore::SyntheticClickType::NoTap);
+    PlatformMouseEvent event(adjustedClientPosition, adjustedGlobalPosition, MouseButton::Left, PlatformEvent::Type::MouseMoved, 0, { }, MonotonicTime::now(), 0, WebCore::SyntheticClickType::NoTap, MouseEventInputSource::Hardware);
     auto remoteUserInputEventData = localFrame->eventHandler().dragSourceEndedAt(event, dragOperationMask);
 
     completionHandler(remoteUserInputEventData);
@@ -5990,7 +5990,7 @@ void WebPage::advanceToNextMisspelling(bool startBeforeSelection)
     if (!frame)
         return;
 
-    frame->protectedEditor()->advanceToNextMisspelling(startBeforeSelection);
+    protect(frame->editor())->advanceToNextMisspelling(startBeforeSelection);
 }
 #endif
 
@@ -6018,7 +6018,7 @@ void WebPage::unmarkAllMisspellings()
         if (!localFrame)
             continue;
         if (RefPtr document = localFrame->document())
-            document->checkedMarkers()->removeMarkers(DocumentMarkerType::Spelling);
+            protect(document->markers())->removeMarkers(DocumentMarkerType::Spelling);
     }
 }
 
@@ -6029,7 +6029,7 @@ void WebPage::unmarkAllBadGrammar()
         if (!localFrame)
             continue;
         if (RefPtr document = localFrame->document())
-            document->checkedMarkers()->removeMarkers(DocumentMarkerType::Grammar);
+            protect(document->markers())->removeMarkers(DocumentMarkerType::Grammar);
     }
 }
 
@@ -6044,7 +6044,7 @@ void WebPage::uppercaseWord(FrameIdentifier frameID)
     if (!coreFrame)
         return;
 
-    coreFrame->protectedEditor()->uppercaseWord();
+    protect(coreFrame->editor())->uppercaseWord();
 }
 
 void WebPage::lowercaseWord(FrameIdentifier frameID)
@@ -6057,7 +6057,7 @@ void WebPage::lowercaseWord(FrameIdentifier frameID)
     if (!coreFrame)
         return;
 
-    coreFrame->protectedEditor()->lowercaseWord();
+    protect(coreFrame->editor())->lowercaseWord();
 }
 
 void WebPage::capitalizeWord(FrameIdentifier frameID)
@@ -6071,7 +6071,7 @@ void WebPage::capitalizeWord(FrameIdentifier frameID)
         return;
 
 
-    coreFrame->protectedEditor()->capitalizeWord();
+    protect(coreFrame->editor())->capitalizeWord();
 }
 
 void WebPage::convertToTraditionalChinese(FrameIdentifier frameID)
@@ -6084,7 +6084,7 @@ void WebPage::convertToTraditionalChinese(FrameIdentifier frameID)
     if (!coreFrame)
         return;
 
-    coreFrame->protectedEditor()->convertToTraditionalChinese();
+    protect(coreFrame->editor())->convertToTraditionalChinese();
 }
 
 void WebPage::convertToSimplifiedChinese(FrameIdentifier frameID)
@@ -6097,7 +6097,7 @@ void WebPage::convertToSimplifiedChinese(FrameIdentifier frameID)
     if (!coreFrame)
         return;
 
-    coreFrame->protectedEditor()->convertToSimplifiedChinese();
+    protect(coreFrame->editor())->convertToSimplifiedChinese();
 }
 #endif
 
@@ -6129,7 +6129,7 @@ void WebPage::didSelectItemFromActiveContextMenu(const WebContextMenuItemData& i
 
 void WebPage::replaceSelectionWithText(LocalFrame* frame, const String& text)
 {
-    return frame->protectedEditor()->replaceSelectionWithText(text, WebCore::Editor::SelectReplacement::Yes, WebCore::Editor::SmartReplace::No);
+    return protect(frame->editor())->replaceSelectionWithText(text, WebCore::Editor::SelectReplacement::Yes, WebCore::Editor::SmartReplace::No);
 }
 
 #if !PLATFORM(IOS_FAMILY)
@@ -6139,7 +6139,7 @@ void WebPage::clearSelection()
     if (!frame)
         return;
 
-    frame->checkedSelection()->clear();
+    protect(frame->selection())->clear();
 }
 #endif
 
@@ -6447,7 +6447,7 @@ void WebPage::setCaretAnimatorType(WebCore::CaretAnimatorType caretType)
     if (!frame)
         return;
 
-    frame->checkedSelection()->caretAnimatorInvalidated(caretType);
+    protect(frame->selection())->caretAnimatorInvalidated(caretType);
 }
 
 void WebPage::setCaretBlinkingSuspended(bool suspended)
@@ -6456,7 +6456,7 @@ void WebPage::setCaretBlinkingSuspended(bool suspended)
     if (!frame)
         return;
 
-    frame->checkedSelection()->setCaretBlinkingSuspended(suspended);
+    protect(frame->selection())->setCaretBlinkingSuspended(suspended);
 }
 
 #endif
@@ -7028,11 +7028,6 @@ LocalFrameView* WebPage::localMainFrameView() const
     return dynamicDowncast<LocalFrameView>(mainFrameView());
 }
 
-CheckedPtr<WebCore::LocalFrameView> WebPage::checkedLocalMainFrameView() const
-{
-    return localMainFrameView();
-}
-
 bool WebPage::shouldUseCustomContentProviderForResponse(const ResourceResponse& response)
 {
     auto& mimeType = response.mimeType();
@@ -7070,7 +7065,7 @@ static RefPtr<LocalFrame> targetFrameForEditing(WebPage& page)
 void WebPage::cancelComposition(const String& compositionString)
 {
     if (RefPtr targetFrame = targetFrameForEditing(*this))
-        targetFrame->protectedEditor()->confirmComposition(compositionString);
+        protect(targetFrame->editor())->confirmComposition(compositionString);
 }
 
 void WebPage::deleteSurrounding(int64_t offset, unsigned characterCount)
@@ -7093,7 +7088,7 @@ void WebPage::deleteSurrounding(int64_t offset, unsigned characterCount)
     auto selectionRange = resolveCharacterRange(makeRangeSelectingNodeContents(rootNode), characterRange);
 
     targetFrame->editor().setIgnoreSelectionChanges(true);
-    targetFrame->checkedSelection()->setSelection(VisibleSelection(selectionRange));
+    protect(targetFrame->selection())->setSelection(VisibleSelection(selectionRange));
     targetFrame->editor().deleteSelectionWithSmartDelete(false);
     targetFrame->editor().setIgnoreSelectionChanges(false);
     sendEditorStateUpdate();
@@ -7244,7 +7239,7 @@ static bool isTextFormControlOrEditableContent(const WebCore::Element& element)
 #if PLATFORM(IOS_FAMILY) && ENABLE(FULLSCREEN_API)
 static bool shouldExitFullscreenAfterFocusingElement(const WebCore::Element& element)
 {
-    if (!protect(element.document().fullscreen())->isFullscreen())
+    if (!protect(protect(element.document())->fullscreen())->isFullscreen())
         return false;
 
     if (RefPtr input = dynamicDowncast<const HTMLInputElement>(element))
@@ -7278,7 +7273,7 @@ void WebPage::elementDidFocus(Element& element, const FocusOptions& options)
 
 #if ENABLE(FULLSCREEN_API)
     if (shouldExitFullscreenAfterFocusingElement(element))
-        protect(element.document().fullscreen())->fullyExitFullscreen();
+        protect(protect(element.document())->fullscreen())->fullyExitFullscreen();
 #endif
         if (isChangingFocusedElement && (m_userIsInteracting || m_keyboardIsAttached))
             m_sendAutocorrectionContextAfterFocusingElement = true;
@@ -7289,7 +7284,7 @@ void WebPage::elementDidFocus(Element& element, const FocusOptions& options)
 
         RefPtr<API::Object> userData;
 
-        m_formClient->willBeginInputSession(this, &element, protect(WebFrame::fromCoreFrame(*element.document().frame())).get(), m_userIsInteracting, userData);
+        m_formClient->willBeginInputSession(this, &element, protect(WebFrame::fromCoreFrame(*protect(element.document().frame()))).get(), m_userIsInteracting, userData);
 
         if (!userData) {
             auto userInfo = element.userInfo();
@@ -7408,7 +7403,7 @@ void WebPage::setAlwaysShowsHorizontalScroller(bool alwaysShowsHorizontalScrolle
 
     m_alwaysShowsHorizontalScroller = alwaysShowsHorizontalScroller;
 
-    RefPtr view = protect(corePage())->protectedMainFrame()->virtualView();
+    RefPtr view = protect(protect(corePage())->mainFrame())->virtualView();
     if (!alwaysShowsHorizontalScroller)
         view->setHorizontalScrollbarLock(false);
     view->setHorizontalScrollbarMode(alwaysShowsHorizontalScroller ? ScrollbarMode::AlwaysOn : m_mainFrameIsScrollable ? ScrollbarMode::Auto : ScrollbarMode::AlwaysOff, alwaysShowsHorizontalScroller || !m_mainFrameIsScrollable);
@@ -7421,7 +7416,7 @@ void WebPage::setAlwaysShowsVerticalScroller(bool alwaysShowsVerticalScroller)
 
     m_alwaysShowsVerticalScroller = alwaysShowsVerticalScroller;
 
-    RefPtr view = protect(corePage())->protectedMainFrame()->virtualView();
+    RefPtr view = protect(protect(corePage())->mainFrame())->virtualView();
     if (!alwaysShowsVerticalScroller)
         view->setVerticalScrollbarLock(false);
     view->setVerticalScrollbarMode(alwaysShowsVerticalScroller ? ScrollbarMode::AlwaysOn : m_mainFrameIsScrollable ? ScrollbarMode::Auto : ScrollbarMode::AlwaysOff, alwaysShowsVerticalScroller || !m_mainFrameIsScrollable);
@@ -7506,11 +7501,6 @@ void WebPage::setSmartInsertDeleteEnabled(bool enabled)
         m_page->settings().setSmartInsertDeleteEnabled(enabled);
         setSelectTrailingWhitespaceEnabled(!enabled);
     }
-}
-
-bool WebPage::isWebTransportEnabled() const
-{
-    return m_page->settings().webTransportEnabled();
 }
 
 bool WebPage::isSelectTrailingWhitespaceEnabled() const
@@ -7973,18 +7963,17 @@ void WebPage::spatialBackdropSourceChanged()
 #endif
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-void WebPage::allowImmersiveElement(const Element& element, CompletionHandler<void(bool)>&& completion)
+void WebPage::allowImmersiveElement(CompletionHandler<void(bool)>&& completion)
 {
-    auto url = element.document().url();
-    sendWithAsyncReply(Messages::WebPageProxy::AllowImmersiveElementFromURL(url), WTF::move(completion));
+    sendWithAsyncReply(Messages::WebPageProxy::AllowImmersiveElement(), WTF::move(completion));
 }
 
-void WebPage::presentImmersiveElement(const Element&, const LayerHostingContextIdentifier contextID, CompletionHandler<void(bool)>&& completion)
+void WebPage::presentImmersiveElement(const LayerHostingContextIdentifier contextID, CompletionHandler<void(bool)>&& completion)
 {
     sendWithAsyncReply(Messages::WebPageProxy::PresentImmersiveElement(contextID), WTF::move(completion));
 }
 
-void WebPage::dismissImmersiveElement(const Element&, CompletionHandler<void()>&& completion)
+void WebPage::dismissImmersiveElement(CompletionHandler<void()>&& completion)
 {
     sendWithAsyncReply(Messages::WebPageProxy::DismissImmersiveElement(), WTF::move(completion));
 }
@@ -8629,7 +8618,7 @@ void WebPage::insertAttachment(const String& identifier, std::optional<uint64_t>
     if (!frame)
         return callback();
 
-    frame->protectedEditor()->insertAttachment(identifier, WTF::move(fileSize), AtomString { fileName }, AtomString { contentType });
+    protect(frame->editor())->insertAttachment(identifier, WTF::move(fileSize), AtomString { fileName }, AtomString { contentType });
     callback();
 }
 
@@ -8814,7 +8803,7 @@ void WebPage::startTextManipulationForFrame(WebCore::Frame& frame)
         return;
 
     auto exclusionRules = *m_internals->textManipulationExclusionRules;
-    document->checkedTextManipulationController()->startObservingParagraphs([webPage = WeakPtr { *this }] (Document& document, const Vector<WebCore::TextManipulationItem>& items) {
+    protect(document->textManipulationController())->startObservingParagraphs([webPage = WeakPtr { *this }] (Document& document, const Vector<WebCore::TextManipulationItem>& items) {
         RefPtr frame = document.frame();
         if (!webPage || !frame)
             return;
@@ -9813,7 +9802,7 @@ void WebPage::layerTreeAsTextForTesting(WebCore::FrameIdentifier frameID, uint64
     }
 
     auto ts = WebCore::createTextStream(*renderer);
-    ts << coreLocalFrame->checkedContentRenderer()->checkedCompositor()->layerTreeAsText(options, baseIndent);
+    ts << protect(protect(coreLocalFrame->contentRenderer())->compositor())->layerTreeAsText(options, baseIndent);
     completionHandler(ts.release());
 }
 
@@ -9843,7 +9832,7 @@ void WebPage::requestTargetedElement(TargetedElementRequest&& request, Completio
     if (!page)
         return completion({ });
 
-    completion(page->checkedElementTargetingController()->findTargets(WTF::move(request)));
+    completion(protect(page->elementTargetingController())->findTargets(WTF::move(request)));
 }
 
 void WebPage::requestAllTargetableElements(float hitTestInterval, CompletionHandler<void(Vector<Vector<WebCore::TargetedElementInfo>>&&)>&& completion)
@@ -9852,7 +9841,7 @@ void WebPage::requestAllTargetableElements(float hitTestInterval, CompletionHand
     if (!page)
         return completion({ });
 
-    completion(page->checkedElementTargetingController()->findAllTargets(hitTestInterval));
+    completion(protect(page->elementTargetingController())->findAllTargets(hitTestInterval));
 }
 
 void WebPage::hasTextExtractionFilterRules(CompletionHandler<void(bool)>&& completion)
@@ -9984,13 +9973,13 @@ void WebPage::hitTestAtPoint(WebCore::FrameIdentifier frameID, WebCore::FloatPoi
 void WebPage::adjustVisibilityForTargetedElements(Vector<TargetedElementAdjustment>&& adjustments, CompletionHandler<void(bool)>&& completion)
 {
     RefPtr page = corePage();
-    completion(page && page->checkedElementTargetingController()->adjustVisibility(WTF::move(adjustments)));
+    completion(page && protect(page->elementTargetingController())->adjustVisibility(WTF::move(adjustments)));
 }
 
 void WebPage::resetVisibilityAdjustmentsForTargetedElements(const Vector<TargetedElementIdentifiers>& identifiers, CompletionHandler<void(bool)>&& completion)
 {
     RefPtr page = corePage();
-    completion(page && page->checkedElementTargetingController()->resetVisibilityAdjustments(identifiers));
+    completion(page && protect(page->elementTargetingController())->resetVisibilityAdjustments(identifiers));
 }
 
 void WebPage::takeSnapshotForTargetedElement(NodeIdentifier nodeID, ScriptExecutionContextIdentifier documentID, CompletionHandler<void(std::optional<ShareableBitmapHandle>&&)>&& completion)
@@ -9999,7 +9988,7 @@ void WebPage::takeSnapshotForTargetedElement(NodeIdentifier nodeID, ScriptExecut
     if (!page)
         return completion({ });
 
-    RefPtr image = page->checkedElementTargetingController()->snapshotIgnoringVisibilityAdjustment(nodeID, documentID);
+    RefPtr image = protect(page->elementTargetingController())->snapshotIgnoringVisibilityAdjustment(nodeID, documentID);
     if (!image)
         return completion({ });
 
@@ -10018,7 +10007,7 @@ void WebPage::takeSnapshotForTargetedElement(NodeIdentifier nodeID, ScriptExecut
 void WebPage::numberOfVisibilityAdjustmentRects(CompletionHandler<void(uint64_t)>&& completion)
 {
     RefPtr page = corePage();
-    completion(page ? page->checkedElementTargetingController()->numberOfVisibilityAdjustmentRects() : 0);
+    completion(page ? protect(page->elementTargetingController())->numberOfVisibilityAdjustmentRects() : 0);
 }
 
 #if HAVE(SPATIAL_TRACKING_LABEL)
@@ -10077,7 +10066,7 @@ void WebPage::updateLastNodeBeforeWritingSuggestions(const KeyboardEvent& event)
         return;
 
     if (RefPtr frame = corePage()->focusController().focusedOrMainFrame())
-        m_lastNodeBeforeWritingSuggestions = frame->protectedEditor()->nodeBeforeWritingSuggestions();
+        m_lastNodeBeforeWritingSuggestions = protect(frame->editor())->nodeBeforeWritingSuggestions();
 }
 
 void WebPage::didAddOrRemoveViewportConstrainedObjects()
@@ -10259,7 +10248,7 @@ void WebPage::simulateClickOverFirstMatchingTextInViewportWithUserInteraction(co
 
     auto locationInWindow = view->contentsToWindow(location);
     auto makeSyntheticEvent = [&](PlatformEvent::Type type) -> PlatformMouseEvent {
-        return { locationInWindow, locationInWindow, MouseButton::Left, type, 1, { }, MonotonicTime::now(), ForceAtClick, SyntheticClickType::OneFingerTap, mousePointerID };
+        return { locationInWindow, locationInWindow, MouseButton::Left, type, 1, { }, MonotonicTime::now(), ForceAtClick, SyntheticClickType::OneFingerTap, MouseEventInputSource::Hardware, mousePointerID };
     };
 
     WEBPAGE_RELEASE_LOG(MouseHandling, "Simulating click - dispatching events");

@@ -31,6 +31,7 @@
 #include "GeolocationPermissionRequestManagerProxy.h"
 #include "HiddenPageThrottlingAutoIncreasesCounter.h"
 #include "LayerTreeContext.h"
+#include "PDFDisplayMode.h"
 #include "PageLoadState.h"
 #include "ProcessThrottler.h"
 #include "ScrollingAccelerationCurve.h"
@@ -444,6 +445,10 @@ public:
     std::optional<TextManipulationParameters> textManipulationParameters;
 
     EnhancedSecurityTracking enhancedSecurityTracker;
+
+#if PLATFORM(IOS_FAMILY) && ENABLE(UNIFIED_PDF)
+    PDFDisplayMode pdfDisplayMode { PDFDisplayMode::SinglePageContinuous };
+#endif
 
 #if HAVE(NSVIEW_CORNER_CONFIGURATION)
     WebCore::CornerRadii scrollbarAvoidanceCornerRadii;

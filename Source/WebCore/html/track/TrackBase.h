@@ -71,13 +71,13 @@ public:
     virtual int uniqueId() const { return m_uniqueId; }
 
 #if ENABLE(MEDIA_SOURCE)
-    SourceBuffer* sourceBuffer() const;
+    SourceBuffer* NODELETE sourceBuffer() const;
     void setSourceBuffer(SourceBuffer*);
 #endif
 
     void setTrackList(TrackListBase&);
     void clearTrackList();
-    TrackListBase* trackList() const;
+    TrackListBase* NODELETE trackList() const;
     WebCoreOpaqueRoot opaqueRoot();
 
     virtual bool enabled() const = 0;
@@ -85,7 +85,6 @@ public:
 #if !RELEASE_LOG_DISABLED
     virtual void setLogger(const Logger&, uint64_t);
     const Logger& logger() const final { ASSERT(m_logger); return *m_logger.get(); }
-    Ref<const Logger> protectedLogger() const { return logger(); }
     uint64_t logIdentifier() const final { return m_logIdentifier; }
     WTFLogChannel& logChannel() const final;
 #endif

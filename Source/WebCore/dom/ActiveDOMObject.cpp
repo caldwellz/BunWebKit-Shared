@@ -146,7 +146,7 @@ void ActiveDOMObject::queueTaskInEventLoop(TaskSource source, Function<void ()>&
     RefPtr context = scriptExecutionContext();
     if (!context)
         return;
-    context->checkedEventLoop()->queueTask(source, WTF::move(function));
+    protect(context->eventLoop())->queueTask(source, WTF::move(function));
 }
 
 class ActiveDOMObjectEventDispatchTask : public EventLoopTask {

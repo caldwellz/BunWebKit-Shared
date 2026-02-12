@@ -139,17 +139,18 @@ class RemotePlayback;
 using CueInterval = PODInterval<MediaTime, TextTrackCue*>;
 using CueList = Vector<CueInterval>;
 
-using MediaProvider = std::optional < Variant <
+using MediaProvider = Variant<
 #if ENABLE(MEDIA_STREAM)
-    RefPtr<MediaStream>,
+    Ref<MediaStream>,
 #endif
 #if ENABLE(MEDIA_SOURCE)
-    RefPtr<MediaSource>,
+    Ref<MediaSource>,
 #endif
 #if ENABLE(MEDIA_SOURCE_IN_WORKERS)
-    RefPtr<MediaSourceHandle>,
+    Ref<MediaSourceHandle>,
 #endif
-    RefPtr<Blob>>>;
+    Ref<Blob>
+>;
 
 class HTMLMediaElementClient
     : public AbstractRefCountedAndCanMakeWeakPtr<HTMLMediaElementClient> {
@@ -193,10 +194,8 @@ public:
     // ActiveDOMObject, AudioSessionConfigurationChangeObserver.
     void ref() const final { HTMLElement::ref(); }
     void deref() const final { HTMLElement::deref(); }
-    using HTMLElement::protectedScriptExecutionContext;
 
     MediaPlayer* player() const { return m_player.get(); }
-    RefPtr<MediaPlayer> protectedPlayer() const { return m_player; }
     WEBCORE_EXPORT std::optional<MediaPlayerIdentifier> playerIdentifier() const;
 
     virtual bool isVideo() const { return false; }
@@ -252,12 +251,12 @@ public:
 
 // DOM API
 // error state
-    WEBCORE_EXPORT MediaError* error() const;
+    WEBCORE_EXPORT MediaError* NODELETE error() const;
 
     const URL& currentSrc() const { return m_currentSrc; }
 
-    const MediaProvider& srcObject() const { return m_mediaProvider; }
-    void setSrcObject(MediaProvider&&);
+    const std::optional<MediaProvider>& srcObject() const { return m_mediaProvider; }
+    void setSrcObject(std::optional<MediaProvider>&&);
 
     WEBCORE_EXPORT String crossOrigin() const;
 
@@ -354,7 +353,7 @@ public:
 #endif
 
 #if ENABLE(ENCRYPTED_MEDIA)
-    MediaKeys* mediaKeys() const;
+    MediaKeys* NODELETE mediaKeys() const;
 
     void setMediaKeys(MediaKeys*, Ref<DeferredPromise>&&);
 #endif
@@ -511,7 +510,7 @@ public:
     // of one of them here.
     using HTMLElement::scriptExecutionContext;
 
-    bool didPassCORSAccessCheck() const { return m_player && protectedPlayer()->didPassCORSAccessCheck(); }
+    bool didPassCORSAccessCheck() const { return m_player && protect(player())->didPassCORSAccessCheck(); }
     bool taintsOrigin(const SecurityOrigin&) const;
     
     WEBCORE_EXPORT bool isFullscreen() const override;
@@ -549,7 +548,7 @@ public:
     bool isPlaying() const final { return m_playing; }
 
 #if ENABLE(WEB_AUDIO)
-    MediaElementAudioSourceNode* audioSourceNode();
+    MediaElementAudioSourceNode* NODELETE audioSourceNode();
     void setAudioSourceNode(MediaElementAudioSourceNode*);
 
     AudioSourceProvider* audioSourceProvider();
@@ -561,7 +560,7 @@ public:
     const String& mediaGroup() const;
     void setMediaGroup(const String&);
 
-    MediaController* controller() const;
+    MediaController* NODELETE controller() const;
     void setController(RefPtr<MediaController>&&);
 
     MediaController* controllerForBindings() const { return controller(); }
@@ -580,7 +579,6 @@ public:
     MediaPlayer::Preload effectivePreloadValue() const;
     MediaElementSession* mediaSessionIfExists() const { return m_mediaSession.get(); }
     WEBCORE_EXPORT MediaElementSession& mediaSession() const;
-    Ref<MediaElementSession> protectedMediaSession() const { return mediaSession(); }
 
     void pageScaleFactorChanged();
     void userInterfaceLayoutDirectionChanged();
@@ -618,11 +616,11 @@ public:
     void isVisibleInViewportChanged();
     void updateRateChangeRestrictions();
 
-    WEBCORE_EXPORT const MediaResourceLoader* lastMediaResourceLoaderForTesting() const;
+    WEBCORE_EXPORT const MediaResourceLoader* NODELETE lastMediaResourceLoaderForTesting() const;
 
 #if ENABLE(MEDIA_STREAM)
     void mediaStreamCaptureStarted();
-    bool hasMediaStreamSrcObject() const { return m_mediaProvider && std::holds_alternative<RefPtr<MediaStream>>(*m_mediaProvider); }
+    bool hasMediaStreamSrcObject() const { return m_mediaProvider && std::holds_alternative<Ref<MediaStream>>(*m_mediaProvider); }
 #endif
 
     bool supportsSeeking() const override;
@@ -1399,7 +1397,7 @@ private:
 
     RefPtr<Blob> m_blob;
     URLKeepingBlobAlive m_blobURLForReading;
-    MediaProvider m_mediaProvider;
+    std::optional<MediaProvider> m_mediaProvider;
     const Ref<WTF::Observer<WebCoreOpaqueRoot()>> m_opaqueRootProvider;
 
 #if ENABLE(LEGACY_ENCRYPTED_MEDIA)
@@ -1503,6 +1501,11 @@ private:
 
 String convertEnumerationToString(HTMLMediaElement::AutoplayEventPlaybackState);
 String convertEnumerationToString(HTMLMediaElement::SpeechSynthesisState);
+
+inline HTMLMediaElement* MediaElementSession::element() const
+{
+    return m_element.get();
+}
 
 } // namespace WebCore
 

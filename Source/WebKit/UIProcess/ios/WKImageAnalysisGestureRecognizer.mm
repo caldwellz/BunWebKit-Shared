@@ -103,9 +103,9 @@
         return;
 
     if (newState == UIGestureRecognizerStateBegan)
-        [_imageAnalysisGestureRecognizerDelegate imageAnalysisGestureDidBegin:self];
+        [protect(_imageAnalysisGestureRecognizerDelegate) imageAnalysisGestureDidBegin:self];
     else if (newState == UIGestureRecognizerStateFailed)
-        [_imageAnalysisGestureRecognizerDelegate imageAnalysisGestureDidFail:self];
+        [protect(_imageAnalysisGestureRecognizerDelegate) imageAnalysisGestureDidFail:self];
 }
 
 @end

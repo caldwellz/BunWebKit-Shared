@@ -184,9 +184,14 @@ static RetainPtr<TestWKWebView> setUpWebViewForFingerprintingTests(NSString *pag
             type = @"text/javascript";
         else if ([pathExtension isEqualToString:@"html"])
             type = @"text/html";
+        else if ([pathExtension isEqualToString:@"jpg"])
+            type = @"image/jpg";
         RetainPtr response = adoptNS([[NSURLResponse alloc] initWithURL:requestedURL MIMEType:type expectedContentLength:[result length] textEncodingName:nil]);
         [task didReceiveResponse:response.get()];
-        [task didReceiveData:[result dataUsingEncoding:NSUTF8StringEncoding]];
+        if ([pathExtension isEqualToString:@"jpg"])
+            [task didReceiveData:adoptNS([[NSData alloc] initWithBase64EncodedString:result options:0]).get()];
+        else
+            [task didReceiveData:[result dataUsingEncoding:NSUTF8StringEncoding]];
         [task didFinish];
     }];
 
@@ -219,6 +224,12 @@ static NSString *getBundleResourceAsText(NSString *filename, NSString *extension
 {
     NSURL *url = [NSBundle.test_resourcesBundle URLForResource:filename withExtension:extension];
     return [NSString stringWithContentsOfURL:url encoding:NSUTF8StringEncoding error:nil];
+}
+
+static NSString *getBundleResourceAsEncodedString(NSString *filename, NSString *extension)
+{
+    NSURL *url = [NSBundle.test_resourcesBundle URLForResource:filename withExtension:extension];
+    return [[NSData dataWithContentsOfURL:url] base64EncodedStringWithOptions:0];
 }
 
 static constexpr auto simpleIndexHTML = R"markup(
@@ -918,6 +929,73 @@ TEST(ScriptTrackingPrivacyTests, SyncXHRBlocked)
 
     RetainPtr taintedSyncXHRResult = [webView stringByEvaluatingJavaScript:@"window.taintedSyncXHRResult"];
     EXPECT_WK_STREQ(taintedSyncXHRResult.get(), @"exception: NetworkError");
+}
+
+TEST(ScriptTrackingPrivacyTests, ImgElementLoadBlocked)
+{
+    if (!supportsFingerprintingScriptRequests())
+        return;
+
+    FingerprintingScriptsRequestSwizzler swizzler { @[ @"tainted.net" ] };
+
+    auto makeImgElement = ^(NSString *pureOrTainted) {
+        return [NSString stringWithFormat:@"(function() {"
+            "  var img = document.createElement(\"img\");"
+            "  img.onload = () => { window.%@ImgLoadResult = 'success'; };"
+            "  img.onerror = () => { window.%@ImgLoadResult = 'error'; };"
+            "  img.src = 'test://top-domain.org/test.jpg';"
+            "})()", pureOrTainted, pureOrTainted];
+    };
+
+    NSLog(@"makeImgElement: pure: %@", makeImgElement(@"pure"));
+
+    RetainPtr webView = setUpWebViewForFingerprintingTests(@"test://top-domain.org/index.html", @{
+        @"test://top-domain.org/index.html" : simpleIndexHTML.createNSString().autorelease(),
+        @"test://top-domain.org/test.jpg" : getBundleResourceAsEncodedString(@"test", @"jpg"),
+        @"test://pure.com/script.js" : makeImgElement(@"pure"),
+        @"test://tainted.net/script.js" : makeImgElement(@"tainted"),
+    });
+
+    TestWebKitAPI::Util::spinRunLoop(100);
+
+    RetainPtr pureImgLoadResult = [webView stringByEvaluatingJavaScript:@"window.pureImgLoadResult"];
+    EXPECT_WK_STREQ(pureImgLoadResult.get(), @"success");
+
+    RetainPtr taintedImgLoadResult = [webView stringByEvaluatingJavaScript:@"window.taintedImgLoadResult"];
+    EXPECT_WK_STREQ(taintedImgLoadResult.get(), @"error");
+}
+
+TEST(ScriptTrackingPrivacyTests, ScriptElementLoadBlocked)
+{
+    if (!supportsFingerprintingScriptRequests())
+        return;
+
+    FingerprintingScriptsRequestSwizzler swizzler { @[ @"tainted.net" ] };
+
+    auto makeScriptElement = ^(NSString *pureOrTainted) {
+        return [NSString stringWithFormat:@"(function() {"
+            "  var script = document.createElement(\"script\");"
+            "  script.onload = () => { window.%@ScriptLoadResult = 'success'; };"
+            "  script.onerror = () => { window.%@ScriptLoadResult = 'error'; };"
+            "  script.src = 'test://top-domain.org/script2.js';"
+            "  document.body.appendChild(script);"
+            "})()", pureOrTainted, pureOrTainted];
+    };
+
+    RetainPtr webView = setUpWebViewForFingerprintingTests(@"test://top-domain.org/index.html", @{
+        @"test://top-domain.org/index.html" : simpleIndexHTML.createNSString().autorelease(),
+        @"test://top-domain.org/script2.js" : @"",
+        @"test://pure.com/script.js" : makeScriptElement(@"pure"),
+        @"test://tainted.net/script.js" : makeScriptElement(@"tainted"),
+    });
+
+    TestWebKitAPI::Util::spinRunLoop(100);
+
+    RetainPtr pureScriptLoadResult = [webView stringByEvaluatingJavaScript:@"window.pureScriptLoadResult"];
+    EXPECT_WK_STREQ(pureScriptLoadResult.get(), @"success");
+
+    RetainPtr taintedScriptLoadResult = [webView stringByEvaluatingJavaScript:@"window.taintedScriptLoadResult"];
+    EXPECT_WK_STREQ(taintedScriptLoadResult.get(), @"error");
 }
 
 } // namespace TestWebKitAPI

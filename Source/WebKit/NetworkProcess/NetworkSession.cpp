@@ -105,11 +105,6 @@ NetworkStorageSession* NetworkSession::networkStorageSession() const
     return m_networkProcess->storageSession(m_sessionID);
 }
 
-CheckedPtr<NetworkStorageSession> NetworkSession::checkedNetworkStorageSession() const
-{
-    return networkStorageSession();
-}
-
 static Ref<PCM::ManagerInterface> managerOrProxy(NetworkSession& networkSession, NetworkProcess& networkProcess, const NetworkSessionCreationParameters& parameters)
 {
     if (!parameters.pcmMachServiceName.isEmpty() && !networkSession.sessionID().isEphemeral())
@@ -941,7 +936,7 @@ void NetworkSession::setPersistedDomains(HashSet<WebCore::RegistrableDomain>&& d
         resourceLoadStatistics->setPersistedDomains(m_persistedDomains);
 }
 
-CheckedRef<PrefetchCache> NetworkSession::checkedPrefetchCache()
+PrefetchCache& NetworkSession::prefetchCache()
 {
     return m_prefetchCache.get();
 }

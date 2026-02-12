@@ -205,6 +205,8 @@ constexpr bool typeExposedByDefault = true;
     macro(WebAssemblyMemory,       webAssemblyMemory,       webAssemblyMemory,       JSWebAssemblyMemory,       Memory,       object, typeExposedByDefault) \
     macro(WebAssemblyModule,       webAssemblyModule,       webAssemblyModule,       JSWebAssemblyModule,       Module,       object, typeExposedByDefault) \
     macro(WebAssemblyRuntimeError, webAssemblyRuntimeError, webAssemblyRuntimeError, ErrorInstance,             RuntimeError, error,  typeExposedByDefault) \
+    macro(WebAssemblySuspendError, webAssemblySuspendError, webAssemblySuspendError, ErrorInstance,             SuspendError, error,  typeExposedByDefault) \
+    macro(WebAssemblySuspending,   webAssemblySuspending,   webAssemblySuspending,   JSFunctionWithFields,   Suspending, object, typeExposedByDefault) \
     macro(WebAssemblyTable,        webAssemblyTable,        webAssemblyTable,        JSWebAssemblyTable,        Table,        object, typeExposedByDefault) \
     macro(WebAssemblyTag,          webAssemblyTag,          webAssemblyTag,          JSWebAssemblyTag,          Tag,          object, typeExposedByDefault) 
 #else
@@ -277,6 +279,10 @@ public:
     LazyProperty<JSGlobalObject, Structure> m_segmentsStructure;
     LazyProperty<JSGlobalObject, Structure> m_segmentDataObjectStructure;
     LazyProperty<JSGlobalObject, Structure> m_segmentDataObjectWithIsWordLikeStructure;
+    LazyProperty<JSGlobalObject, Structure> m_intlPartObjectStructure;
+    LazyProperty<JSGlobalObject, Structure> m_intlPartObjectWithSourceStructure;
+    LazyProperty<JSGlobalObject, Structure> m_intlPartObjectWithUnitStructure;
+    LazyProperty<JSGlobalObject, Structure> m_intlPartObjectWithUnitAndSourceStructure;
     LazyClassStructure m_dateTimeFormatStructure;
     LazyClassStructure m_numberFormatStructure;
 
@@ -1001,6 +1007,10 @@ public:
     Structure* segmentsStructure() { return m_segmentsStructure.get(this); }
     Structure* segmentDataObjectStructure() { return m_segmentDataObjectStructure.get(this); }
     Structure* segmentDataObjectWithIsWordLikeStructure() { return m_segmentDataObjectWithIsWordLikeStructure.get(this); }
+    Structure* intlPartObjectStructure() { return m_intlPartObjectStructure.get(this); }
+    Structure* intlPartObjectWithSourceStructure() { return m_intlPartObjectWithSourceStructure.get(this); }
+    Structure* intlPartObjectWithUnitStructure() { return m_intlPartObjectWithUnitStructure.get(this); }
+    Structure* intlPartObjectWithUnitAndSourceStructure() { return m_intlPartObjectWithUnitAndSourceStructure.get(this); }
     Structure* trustedScriptStructure() { return m_trustedScriptStructure.get(); }
 
     JSObject* dateTimeFormatConstructor() { return m_dateTimeFormatStructure.constructor(this); }
@@ -1175,9 +1185,6 @@ public:
     static RuntimeFlags javaScriptRuntimeFlags(const JSGlobalObject*) { return RuntimeFlags(); }
 
     JS_EXPORT_PRIVATE void queueMicrotask(InternalMicrotask, JSValue, JSValue, JSValue, JSValue);
-#if USE(BUN_JSC_ADDITIONS)
-    JS_EXPORT_PRIVATE void queueMicrotask(InternalMicrotask, JSValue, JSValue, JSValue, JSValue, JSValue);
-#endif
 
     JS_EXPORT_PRIVATE static void queueMicrotaskToEventLoop(JSGlobalObject&, QueuedTask&&);
     JS_EXPORT_PRIVATE static void promiseRejectionTracker(JSGlobalObject*, JSPromise*, JSPromiseRejectionOperation);

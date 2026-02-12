@@ -1519,13 +1519,13 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationPopcount64, uint64_t, (int64_t value)
     return std::popcount(static_cast<uint64_t>(value));
 }
 
-JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationGrowMemory, UCPUStrictInt32, (JSWebAssemblyInstance* instance, int32_t delta))
+JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationGrowMemory, int64_t, (JSWebAssemblyInstance* instance, int64_t delta))
 {
     CallFrame* callFrame = DECLARE_WASM_CALL_FRAME(instance);
     assertCalleeIsReferenced(callFrame, instance);
     VM& vm = instance->vm();
     WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
-    return toUCPUStrictInt32(growMemory(instance, delta));
+    return growMemory(instance, delta);
 }
 
 JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmMemoryFill, UCPUStrictInt32, (JSWebAssemblyInstance* instance, uint32_t dstAddress, uint32_t targetValue, uint32_t count))
@@ -1550,6 +1550,10 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationSetWasmTableElement, UCPUStrictInt32,
 
 JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationWasmTableInit, UCPUStrictInt32, (JSWebAssemblyInstance* instance, unsigned elementIndex, unsigned tableIndex, uint32_t dstOffset, uint32_t srcOffset, uint32_t length))
 {
+    CallFrame* callFrame = DECLARE_WASM_CALL_FRAME(instance);
+    assertCalleeIsReferenced(callFrame, instance);
+    VM& vm = instance->vm();
+    WasmOperationPrologueCallFrameTracer tracer(vm, callFrame, OUR_RETURN_ADDRESS);
     return toUCPUStrictInt32(tableInit(instance, elementIndex, tableIndex, dstOffset, srcOffset, length));
 }
 

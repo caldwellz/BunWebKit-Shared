@@ -68,7 +68,6 @@ protected:
     LiveNodeList(ContainerNode& ownerNode, LiveNodeListType, NodeListInvalidationType);
 
     inline Document& document() const;
-    inline Ref<Document> protectedDocument() const;
 
 private:
     bool isLiveNodeList() const final { return true; }

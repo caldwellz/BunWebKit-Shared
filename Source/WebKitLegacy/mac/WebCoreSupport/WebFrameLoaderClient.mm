@@ -1105,7 +1105,7 @@ void WebFrameLoaderClient::updateGlobalHistoryRedirectLinks()
     }
 }
 
-WebCore::ShouldGoToHistoryItem WebFrameLoaderClient::shouldGoToHistoryItem(WebCore::HistoryItem& item, WebCore::IsSameDocumentNavigation, WebCore::ProcessSwapDisposition) const
+WebCore::ShouldGoToHistoryItem WebFrameLoaderClient::shouldGoToHistoryItem(WebCore::HistoryItem& item, WebCore::IsSameDocumentNavigation) const
 {
     RetainPtr view = getWebView(m_webFrame.get());
     return [[view.get() _policyDelegateForwarder] webView:view.get() shouldGoToHistoryItem:kit(&item)] ? WebCore::ShouldGoToHistoryItem::Yes : WebCore::ShouldGoToHistoryItem::No;

@@ -561,10 +561,16 @@ static const String& macOSFullscreenMediaControlsStyleSheet()
         ".media-controls.mac.fullscreen .buttons-container {"
         "    height: 44px;"
         "}"
+        ".media-controls.mac.fullscreen .buttons-container.left .mute.bar{"
+        "    position: relative !important;"
+        "    left: auto !important;"
+        "}"
         ".media-controls.mac.fullscreen .buttons-container.left {"
         "    top: 22.4px;"
         "    height: 16px;"
         "    width: 100px !important;"
+        "    display: flex;"
+        "    gap: 0.5em;"
         "    left: 15.5px"
         "}"
         ".media-controls.mac.fullscreen .buttons-container.center {"
@@ -602,6 +608,8 @@ static const String& macOSFullscreenMediaControlsStyleSheet()
         "}"
         ".media-controls.mac.fullscreen .buttons-container.left .slider {"
         "    width: 78px;"
+        "    position: relative;"
+        "    left: auto !important;"
         "}"
         ".media-controls.mac.fullscreen .slider.default > .appearance {"
         "    height: 6px;"
@@ -3693,7 +3701,7 @@ bool RenderThemeCocoa::paintSearchFieldCancelButtonForVectorBasedControls(const 
     glyphPath.transform(transform);
 
     auto isEnabled = true;
-    if (RefPtr input = dynamicDowncast<HTMLInputElement>(box.protectedNode().get()->shadowHost()))
+    if (RefPtr input = dynamicDowncast<HTMLInputElement>(protect(box.element())->shadowHost()))
         isEnabled = !input->isDisabledFormControl();
 
     const auto styleColorOptions = box.styleColorOptions();

@@ -42,7 +42,7 @@ ALWAYS_INLINE bool BBQJIT::typeNeedsGPR2(TypeKind)
 }
 
 template<typename Functor>
-auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint32_t uoffset, uint32_t sizeOfOperation, Functor&& functor) -> decltype(auto)
+auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint64_t uoffset, uint32_t sizeOfOperation, Functor&& functor) -> decltype(auto)
 {
     uint64_t boundary = static_cast<uint64_t>(sizeOfOperation) + uoffset - 1;
 
@@ -50,7 +50,7 @@ auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint32
     Location pointerLocation;
 
     if (pointer.isConst()) {
-        uint64_t constantPointer = static_cast<uint64_t>(static_cast<uint32_t>(pointer.asI32()));
+        uint64_t constantPointer = m_info.theOnlyMemory().isMemory64() ? pointer.asI64() : static_cast<uint32_t>(pointer.asI32());
         uint64_t finalOffset = constantPointer + uoffset;
         if (!(finalOffset > static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) || !B3::Air::Arg::isValidAddrForm(B3::Air::Move, static_cast<int32_t>(finalOffset), Width::Width128))) {
             switch (m_mode) {
@@ -61,7 +61,7 @@ auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint32
             }
             case MemoryMode::Signaling: {
                 if (uoffset >= Memory::fastMappedRedzoneBytes()) {
-                    uint64_t maximum = m_info.memory.maximum() ? m_info.memory.maximum().bytes() : std::numeric_limits<uint32_t>::max();
+                    uint64_t maximum = m_info.theOnlyMemory().maximum() ? m_info.theOnlyMemory().maximum().bytes() : std::numeric_limits<uint32_t>::max();
                     if ((constantPointer + boundary) >= maximum)
                         recordJumpToThrowException(ExceptionType::OutOfBoundsMemoryAccess, m_jit.jump());
                 }
@@ -99,7 +99,8 @@ auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint32
         // than the declared 'maximum' will trap, so we can compare against that number. If there was no declared 'maximum' then we still know that
         // any access equal to or greater than 4GiB will trap, no need to add the redzone.
         if (uoffset >= Memory::fastMappedRedzoneBytes()) {
-            uint64_t maximum = m_info.memory.maximum() ? m_info.memory.maximum().bytes() : std::numeric_limits<uint32_t>::max();
+            RELEASE_ASSERT(!m_info.theOnlyMemory().isMemory64());
+            uint64_t maximum = m_info.theOnlyMemory().maximum() ? m_info.theOnlyMemory().maximum().bytes() : std::numeric_limits<uint32_t>::max();
             m_jit.zeroExtend32ToWord(pointerLocation.asGPR(), wasmScratchGPR);
             if (boundary)
                 m_jit.addPtr(TrustedImmPtr(boundary), wasmScratchGPR);
@@ -109,7 +110,7 @@ auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint32
     }
     }
 
-    bool canUseOffsetForm = static_cast<uint64_t>(uoffset) <= static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) && B3::Air::Arg::isValidAddrForm(B3::Air::Move, static_cast<int32_t>(uoffset), Width::Width128);
+    bool canUseOffsetForm = uoffset <= static_cast<uint64_t>(std::numeric_limits<int32_t>::max()) && B3::Air::Arg::isValidAddrForm(B3::Air::Move, static_cast<int32_t>(uoffset), Width::Width128);
 #if CPU(ARM64)
     if (canUseOffsetForm)
         return functor(CCallHelpers::BaseIndex(wasmBaseMemoryPointer, pointerLocation.asGPR(), CCallHelpers::TimesOne, static_cast<int32_t>(uoffset), CCallHelpers::Extend::ZExt32));
@@ -123,7 +124,7 @@ auto BBQJIT::emitCheckAndPrepareAndMaterializePointerApply(Value pointer, uint32
     if (canUseOffsetForm)
         return functor(Address(wasmScratchGPR, static_cast<int32_t>(uoffset)));
 
-    m_jit.addPtr(TrustedImmPtr(static_cast<int64_t>(uoffset)), wasmScratchGPR);
+    m_jit.addPtr(TrustedImmPtr(uoffset), wasmScratchGPR);
     return functor(Address(wasmScratchGPR));
 }
 

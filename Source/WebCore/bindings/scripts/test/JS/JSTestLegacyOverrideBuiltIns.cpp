@@ -386,7 +386,7 @@ void JSTestLegacyOverrideBuiltInsOwner::finalize(JSC::Handle<JSC::Unknown> handl
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestLegacyOverrideBuiltIns = static_cast<JSTestLegacyOverrideBuiltIns*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestLegacyOverrideBuiltIns->protectedWrapped().ptr(), jsTestLegacyOverrideBuiltIns);
+    uncacheWrapper(world, protect(jsTestLegacyOverrideBuiltIns->wrapped()).ptr(), jsTestLegacyOverrideBuiltIns);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

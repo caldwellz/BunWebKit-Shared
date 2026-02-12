@@ -525,15 +525,15 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
         if (data == item)
             return true;
 
-        auto stackTraceA = std::get_if<RefPtr<ScriptCallStack>>(&data);
-        auto stackTraceB = std::get_if<RefPtr<ScriptCallStack>>(&item);
-        if (stackTraceA && *stackTraceA && stackTraceB && *stackTraceB)
-            return (*stackTraceA)->isEqual((*stackTraceB).get());
+        auto stackTraceA = std::get_if<Ref<ScriptCallStack>>(&data);
+        auto stackTraceB = std::get_if<Ref<ScriptCallStack>>(&item);
+        if (stackTraceA && stackTraceB)
+            return (*stackTraceA)->isEqual(stackTraceB->ptr());
 
-        auto parentStackTraceA = std::get_if<RefPtr<AsyncStackTrace>>(&data);
-        auto parentStackTraceB = std::get_if<RefPtr<AsyncStackTrace>>(&item);
-        if (parentStackTraceA && *parentStackTraceA && parentStackTraceB && *parentStackTraceB)
-            return *parentStackTraceA == *parentStackTraceB;
+        auto parentStackTraceA = std::get_if<Ref<AsyncStackTrace>>(&data);
+        auto parentStackTraceB = std::get_if<Ref<AsyncStackTrace>>(&item);
+        if (parentStackTraceA && parentStackTraceB)
+            return parentStackTraceA->ptr() == parentStackTraceB->ptr();
 
         return false;
     });
@@ -547,7 +547,7 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
 
     RefPtr<JSON::Value> item;
     WTF::switchOn(data,
-        [&] (const RefPtr<HTMLImageElement>& imageElement) {
+        [&](const Ref<HTMLImageElement>& imageElement) {
             String dataURL = "data:,"_s;
 
             if (CachedImage* cachedImage = imageElement->cachedImage()) {
@@ -562,7 +562,7 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
             index = indexForData(dataURL);
         },
 #if ENABLE(VIDEO)
-        [&] (RefPtr<HTMLVideoElement>& videoElement) {
+        [&](Ref<HTMLVideoElement>& videoElement) {
             String dataURL = "data:,"_s;
 
             unsigned videoWidth = videoElement->videoWidth();
@@ -576,7 +576,7 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
             index = indexForData(dataURL);
         },
 #endif
-        [&] (RefPtr<HTMLCanvasElement>& canvasElement) {
+        [&](Ref<HTMLCanvasElement>& canvasElement) {
             String dataURL = "data:,"_s;
 
             ExceptionOr<UncachedString> result = canvasElement->toDataURL("image/png"_s);
@@ -585,13 +585,13 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
 
             index = indexForData(dataURL);
         },
-        [&] (const RefPtr<CanvasGradient>& canvasGradient) { item = buildArrayForCanvasGradient(*canvasGradient); },
-        [&] (const RefPtr<CanvasPattern>& canvasPattern) { item = buildArrayForCanvasPattern(*canvasPattern); },
-        [&] (const RefPtr<ImageData>& imageData) { item = buildArrayForImageData(*imageData); },
-        [&] (RefPtr<ImageBitmap>& imageBitmap) {
+        [&](Ref<CanvasGradient>& canvasGradient) { item = buildArrayForCanvasGradient(canvasGradient); },
+        [&](Ref<CanvasPattern>& canvasPattern) { item = buildArrayForCanvasPattern(canvasPattern); },
+        [&](Ref<ImageData>& imageData) { item = buildArrayForImageData(imageData); },
+        [&](Ref<ImageBitmap>& imageBitmap) {
             index = indexForData(imageBitmap->buffer()->toDataURL("image/png"_s));
         },
-        [&] (const RefPtr<ScriptCallStack>& scriptCallStack) {
+        [&](Ref<ScriptCallStack>& scriptCallStack) {
             auto stackTrace = JSON::ArrayOf<JSON::Value>::create();
 
             auto callFrames = JSON::ArrayOf<double>::create();
@@ -603,12 +603,12 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
 
             stackTrace->addItem(scriptCallStack->truncated());
 
-            if (const auto& parentStackTrace = scriptCallStack->parentStackTrace())
-                stackTrace->addItem(indexForData(parentStackTrace));
+            if (RefPtr parentStackTrace = scriptCallStack->parentStackTrace())
+                stackTrace->addItem(indexForData(parentStackTrace.releaseNonNull()));
 
             item = WTF::move(stackTrace);
         },
-        [&] (const RefPtr<AsyncStackTrace>& parentStackTrace) {
+        [&](const Ref<AsyncStackTrace>& parentStackTrace) {
             auto stackTrace = JSON::ArrayOf<JSON::Value>::create();
 
             auto callFrames = JSON::ArrayOf<double>::create();
@@ -620,12 +620,12 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
 
             stackTrace->addItem(parentStackTrace->truncated());
 
-            if (const auto& grandparentStackTrace = parentStackTrace->parentStackTrace())
-                stackTrace->addItem(indexForData(grandparentStackTrace));
+            if (RefPtr grandparentStackTrace = parentStackTrace->parentStackTrace())
+                stackTrace->addItem(indexForData(grandparentStackTrace.releaseNonNull()));
 
             item = WTF::move(stackTrace);
         },
-        [&] (const RefPtr<CSSStyleImageValue>& cssImageValue) {
+        [&](const Ref<CSSStyleImageValue>& cssImageValue) {
             String dataURL = "data:,"_s;
 
             if (auto* cachedImage = cssImageValue->image()) {
@@ -639,7 +639,7 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
 
             index = indexForData(dataURL);
         },
-        [&] (const ScriptCallFrame& scriptCallFrame) {
+        [&](const ScriptCallFrame& scriptCallFrame) {
             auto array = JSON::ArrayOf<double>::create();
             array->addItem(indexForData(scriptCallFrame.functionName()));
             array->addItem(indexForData(scriptCallFrame.sourceURL()));
@@ -648,7 +648,7 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
             item = WTF::move(array);
         },
 #if ENABLE(OFFSCREEN_CANVAS)
-        [&] (const RefPtr<OffscreenCanvas> offscreenCanvas) {
+        [&](const Ref<OffscreenCanvas> offscreenCanvas) {
             String dataURL = "data:,"_s;
 
             if (offscreenCanvas->originClean()) {
@@ -659,7 +659,7 @@ int InspectorCanvas::indexForData(DuplicateDataVariant data)
             index = indexForData(dataURL);
         },
 #endif
-        [&] (const String& value) { item = JSON::Value::create(value); }
+        [&](const String& value) { item = JSON::Value::create(value); }
     );
 
     if (item) {
@@ -739,19 +739,19 @@ Ref<Inspector::Protocol::Recording::InitialState> InspectorCanvas::buildInitialS
             statePayload->setInteger(stringIndexForKey("direction"_s), indexForData(convertEnumerationToString(state.direction)));
 
             int strokeStyleIndex;
-            if (auto canvasGradient = state.strokeStyle.canvasGradient())
-                strokeStyleIndex = indexForData(canvasGradient);
-            else if (auto canvasPattern = state.strokeStyle.canvasPattern())
-                strokeStyleIndex = indexForData(canvasPattern);
+            if (RefPtr canvasGradient = state.strokeStyle.canvasGradient())
+                strokeStyleIndex = indexForData(canvasGradient.releaseNonNull());
+            else if (RefPtr canvasPattern = state.strokeStyle.canvasPattern())
+                strokeStyleIndex = indexForData(canvasPattern.releaseNonNull());
             else
                 strokeStyleIndex = indexForData(state.strokeStyle.colorString());
             statePayload->setInteger(stringIndexForKey("strokeStyle"_s), strokeStyleIndex);
 
             int fillStyleIndex;
-            if (auto canvasGradient = state.fillStyle.canvasGradient())
-                fillStyleIndex = indexForData(canvasGradient);
-            else if (auto canvasPattern = state.fillStyle.canvasPattern())
-                fillStyleIndex = indexForData(canvasPattern);
+            if (RefPtr canvasGradient = state.fillStyle.canvasGradient())
+                fillStyleIndex = indexForData(canvasGradient.releaseNonNull());
+            else if (RefPtr canvasPattern = state.fillStyle.canvasPattern())
+                fillStyleIndex = indexForData(canvasPattern.releaseNonNull());
             else
                 fillStyleIndex = indexForData(state.fillStyle.colorString());
             statePayload->setInteger(stringIndexForKey("fillStyle"_s), fillStyleIndex);
@@ -803,7 +803,7 @@ Ref<JSON::ArrayOf<JSON::Value>> InspectorCanvas::buildAction(String&& name, Insp
     action->addItem(WTF::move(swizzleTypes));
 
     auto stackTrace = Inspector::createScriptCallStack(JSExecState::currentState());
-    action->addItem(indexForData(stackTrace.ptr()));
+    action->addItem(indexForData(WTF::move(stackTrace)));
 
     return action;
 }

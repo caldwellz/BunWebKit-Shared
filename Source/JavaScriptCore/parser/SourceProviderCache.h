@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "ImplementationVisibility.h"
 #include "SourceProviderCacheItem.h"
 #include <wtf/HashMap.h>
 #include <wtf/RefCounted.h>

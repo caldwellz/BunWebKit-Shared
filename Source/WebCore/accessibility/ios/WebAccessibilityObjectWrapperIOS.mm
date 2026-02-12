@@ -55,6 +55,7 @@
 #import "SVGElementInlines.h"
 #import "SVGNames.h"
 #import "SelectionGeometry.h"
+#import "Settings.h"
 #import "SimpleRange.h"
 #import "TextIterator.h"
 #import "VisiblePosition.h"
@@ -65,11 +66,14 @@
 #import <CoreText/CoreText.h>
 #import <wtf/HashFunctions.h>
 #import <wtf/RuntimeApplicationChecks.h>
+#import <wtf/SoftLinking.h>
 #import <wtf/cocoa/VectorCocoa.h>
 
 #if ENABLE(MODEL_ELEMENT_ACCESSIBILITY)
 #import "ModelPlayerAccessibilityChildren.h"
 #endif
+
+#import <pal/ios/UIKitSoftLink.h>
 
 @interface NSObject (AccessibilityPrivate)
 - (void)_accessibilityUnregister;
@@ -101,15 +105,6 @@
 
 using namespace WebCore;
 using namespace HTMLNames;
-
-typedef NS_ENUM(NSInteger, UIAccessibilityScrollDirection) {
-    UIAccessibilityScrollDirectionRight = 1,
-    UIAccessibilityScrollDirectionLeft,
-    UIAccessibilityScrollDirectionUp,
-    UIAccessibilityScrollDirectionDown,
-    UIAccessibilityScrollDirectionNext,
-    UIAccessibilityScrollDirectionPrevious
-};
 
 static AccessibilityObjectWrapper* AccessibilityUnignoredAncestor(AccessibilityObjectWrapper *wrapper)
 {
@@ -1886,8 +1881,8 @@ static void appendStringToResult(NSMutableString *result, NSString *string)
     if (![self _prepareAccessibilityCall])
         return nil;
 
-    auto* focus = self.axBackingObject->focusedUIElementInAnyLocalFrame();
-    return focus ? focus->wrapper() : nil;
+    RefPtr focus = self.axBackingObject->focusedUIElementInAnyLocalFrame();
+    return focus ? focus->platformElement().autorelease() : nil;
 }
 
 - (id)_accessibilityWebDocumentView
@@ -2073,7 +2068,7 @@ static NSArray *accessibleElementsForObjects(const AXCoreObject::AccessibilityCh
         return nil;
 
     if (self.axBackingObject->isCode())
-        return UIAccessibilityTextualContextSourceCode;
+        return PAL::get_UIKit_UIAccessibilityTextualContextSourceCodeSingleton();
 
     return nil;
 }
@@ -3314,6 +3309,34 @@ static RenderObject* rendererForView(WAKView* view)
         return nil;
 
     return self.axBackingObject->keyShortcuts().createNSString().autorelease();
+}
+
+- (NSArray *)_associatedActionElements
+{
+    if (![self _prepareAccessibilityCall])
+        return nil;
+
+    return makeNSArray(self.axBackingObject->associatedActionElements());
+}
+
+- (NSArray<UIAccessibilityCustomAction *> *)accessibilityCustomActions
+{
+    if (![self _prepareAccessibilityCall])
+        return nil;
+
+    auto actionsData = [self baseAccessibilityCustomActionsData];
+    if (actionsData.isEmpty())
+        return nil;
+
+    RetainPtr<NSMutableArray<UIAccessibilityCustomAction *>> actions = adoptNS([[NSMutableArray alloc] init]);
+    for (auto& actionData : actionsData) {
+        auto action = adoptNS([PAL::allocUIAccessibilityCustomActionInstance() initWithName:actionData.name.createNSString().autorelease() actionHandler:^BOOL(UIAccessibilityCustomAction *) {
+            return Accessibility::performCustomActionPress(actionData.treeID, actionData.targetID);
+        }]);
+        [actions addObject:action.get()];
+    }
+
+    return actions.autorelease();
 }
 
 @end

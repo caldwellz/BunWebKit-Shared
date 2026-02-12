@@ -676,7 +676,7 @@ void Database::runTransaction(RefPtr<SQLTransactionCallback>&& callback, RefPtr<
     Locker locker { m_transactionInProgressLock };
     if (!m_isTransactionQueueEnabled) {
         if (errorCallback) {
-            m_document->checkedEventLoop()->queueTask(TaskSource::Networking, [errorCallback = Ref { *errorCallback }] {
+            protect(m_document->eventLoop())->queueTask(TaskSource::Networking, [errorCallback = Ref { *errorCallback }] {
                 errorCallback->invoke(SQLError::create(SQLError::UNKNOWN_ERR, "database has been closed"_s));
             });
         }
@@ -691,7 +691,7 @@ void Database::runTransaction(RefPtr<SQLTransactionCallback>&& callback, RefPtr<
 void Database::scheduleTransactionCallback(SQLTransaction* transaction)
 {
     callOnMainThread([this, protectedThis = Ref { *this }, transaction = RefPtr { transaction }] mutable {
-        m_document->checkedEventLoop()->queueTask(TaskSource::Networking, [transaction = WTF::move(transaction)] {
+        protect(m_document->eventLoop())->queueTask(TaskSource::Networking, [transaction = WTF::move(transaction)] {
             transaction->performPendingCallback();
         });
     });

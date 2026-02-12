@@ -40,7 +40,7 @@ class RTCRtpSender;
 class RTCRtpTransform  {
     WTF_MAKE_TZONE_ALLOCATED(RTCRtpTransform);
 public:
-    using Internal = Variant<RefPtr<RTCRtpSFrameTransform>, RefPtr<RTCRtpScriptTransform>>;
+    using Internal = Variant<Ref<RTCRtpSFrameTransform>, Ref<RTCRtpScriptTransform>>;
     static std::unique_ptr<RTCRtpTransform> from(std::optional<Internal>&&);
 
     explicit RTCRtpTransform(Internal&&);

@@ -67,7 +67,7 @@ namespace WebKit {
 class NativeWebMouseEvent : public WebMouseEvent {
 public:
 #if USE(APPKIT)
-    NativeWebMouseEvent(NSEvent *, NSEvent *lastPressureEvent, NSView *);
+    NativeWebMouseEvent(NSEvent *, NSEvent *lastPressureEvent, NSView *, WebMouseEventInputSource);
 #elif PLATFORM(GTK)
     NativeWebMouseEvent(const NativeWebMouseEvent&);
     NativeWebMouseEvent(GdkEvent*, int, std::optional<WebCore::FloatSize>);

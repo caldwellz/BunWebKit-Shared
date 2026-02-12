@@ -377,19 +377,39 @@ bool AbstractInterpreter<AbstractStateType>::handleConstantDivOp(Node* node)
                 return true;
             }
         } else if (left.isNumber() && right.isNumber()) {
-            if (isClobbering)
-                didFoldClobberWorld();
-
             if (isDivOperation) {
+                double doubleResult = left.asNumber() / right.asNumber();
+
+                if (isClobbering)
+                    didFoldClobberWorld();
                 if (op == ValueDiv)
-                    setConstant(node, jsNumber(left.asNumber() / right.asNumber()));
+                    setConstant(node, jsNumber(doubleResult));
                 else
-                    setConstant(node, jsDoubleNumber(left.asNumber() / right.asNumber()));
+                    setConstant(node, jsDoubleNumber(doubleResult));
             } else {
-                if (op == ValueMod)
-                    setConstant(node, jsNumber(fmod(left.asNumber(), right.asNumber())));
-                else
-                    setConstant(node, jsDoubleNumber(fmod(left.asNumber(), right.asNumber())));
+                double doubleResult = fmod(left.asNumber(), right.asNumber());
+
+                if (node->child1().useKind() == Int52RepUse) {
+                    if (node->hasArithMode()) {
+                        if (!shouldCheckOverflow(node->arithMode())) {
+                            if (std::isnan(doubleResult))
+                                doubleResult = 0;
+                        } else if (!shouldCheckNegativeZero(node->arithMode()))
+                            doubleResult += 0; // Sanitizes zero.
+                    }
+                    if (tryConvertToInt52(doubleResult) != JSValue::notInt52) {
+                        if (isClobbering)
+                            didFoldClobberWorld();
+                        setConstant(node, jsNumber(doubleResult));
+                    }
+                } else {
+                    if (isClobbering)
+                        didFoldClobberWorld();
+                    if (op == ValueMod)
+                        setConstant(node, jsNumber(doubleResult));
+                    else
+                        setConstant(node, jsDoubleNumber(doubleResult));
+                }
             }
 
             return true;
@@ -1304,17 +1324,21 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         case Int32Use:
             setNonCellTypeForNode(node, SpecInt32Only);
             break;
+        case Int52RepUse:
+            ASSERT(node->op() == ArithMod);
+            setNonCellTypeForNode(node, SpecInt52Any);
+            break;
         case DoubleRepUse:
             if (node->op() == ArithDiv) {
-                setNonCellTypeForNode(node, 
+                setNonCellTypeForNode(node,
                     typeOfDoubleQuotient(
                         forNode(node->child1()).m_type, forNode(node->child2()).m_type));
             } else {
-                setNonCellTypeForNode(node, 
+                setNonCellTypeForNode(node,
                     typeOfDoubleBinaryOp(
                         forNode(node->child1()).m_type, forNode(node->child2()).m_type));
             }
-            
+
             break;
         default:
             RELEASE_ASSERT_NOT_REACHED();
@@ -1658,6 +1682,10 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
 
     case MapOrSetSize:
         setTypeForNode(node, SpecInt32Only);
+        break;
+
+    case GetRegExpFlag:
+        setTypeForNode(node, SpecBoolean);
         break;
 
     case MapGet:
@@ -2608,6 +2636,7 @@ bool AbstractInterpreter<AbstractStateType>::executeEffects(unsigned clobberLimi
         break;
 
     case StringStartsWith:
+    case StringEndsWith:
         setNonCellTypeForNode(node, SpecBoolean);
         break;
 

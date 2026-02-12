@@ -139,15 +139,20 @@ static size_t computeMemoryCost(const std::optional<Vector<BlobPartVariant>>& bl
     size_t memoryCost = 0;
     if (blobPartVariants) {
         for (auto& blobPartVariant : *blobPartVariants) {
-            WTF::switchOn(blobPartVariant, [&](const RefPtr<Blob>& blob) {
-                memoryCost += blob->memoryCost();
-            }, [&](const RefPtr<JSC::ArrayBufferView>& view) {
-                memoryCost += view->byteLength();
-            }, [&](const RefPtr<JSC::ArrayBuffer>& array) {
-                memoryCost += array->byteLength();
-            }, [&](const String& string) {
-                memoryCost += string.sizeInBytes();
-            });
+            WTF::switchOn(blobPartVariant,
+                [&](const Ref<Blob>& blob) {
+                    memoryCost += blob->memoryCost();
+                },
+                [&](const RefPtr<JSC::ArrayBufferView>& view) {
+                    memoryCost += view->byteLength();
+                },
+                [&](const RefPtr<JSC::ArrayBuffer>& array) {
+                    memoryCost += array->byteLength();
+                },
+                [&](const String& string) {
+                    memoryCost += string.sizeInBytes();
+                }
+            );
         }
     }
     return memoryCost;
@@ -158,8 +163,8 @@ static Vector<BlobPart> buildBlobData(std::optional<Vector<BlobPartVariant>>&& b
     BlobBuilder builder(propertyBag.endings);
     if (blobPartVariants) {
         for (auto& blobPartVariant : *blobPartVariants) {
-            WTF::switchOn(blobPartVariant,
-                [&](auto& part) {
+            WTF::switchOn(WTF::move(blobPartVariant),
+                [&](auto&& part) {
                     builder.append(WTF::move(part));
                 }
             );
@@ -291,7 +296,7 @@ void Blob::loadBlob(FileReaderLoader::ReadType readType, Function<void(BlobLoade
         pendingActivity->object().m_blobLoaders.take(&blobLoader);
     });
 
-    blobLoader->start(*this, protectedScriptExecutionContext().get(), readType);
+    blobLoader->start(*this, protect(scriptExecutionContext()).get(), readType);
 
     if (blobLoader->isLoading())
         m_blobLoaders.add(WTF::move(blobLoader));

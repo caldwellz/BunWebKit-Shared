@@ -147,7 +147,7 @@ void InlineStyleSheetOwner::createSheet(Element& element, const String& text)
         return;
 
     ASSERT(document->contentSecurityPolicy());
-    if (!document->checkedContentSecurityPolicy()->allowInlineStyle(document->url().string(), m_startTextPosition.m_line, text, CheckUnsafeHashes::No, element, element.nonce(), element.isInUserAgentShadowTree() || is<PluginDocument>(document))) {
+    if (!protect(document->contentSecurityPolicy())->allowInlineStyle(document->url().string(), m_startTextPosition.m_line, text, CheckUnsafeHashes::No, element, element.nonce(), element.isInUserAgentShadowTree() || is<PluginDocument>(document))) {
         element.notifyLoadedSheetAndAllCriticalSubresources(true);
         return;
     }

@@ -42,11 +42,13 @@
 #include "XRSessionMode.h"
 #include "XRVisibilityState.h"
 #include <numbers>
+#include <wtf/HashMap.h>
 #include <wtf/MonotonicTime.h>
 #include <wtf/Ref.h>
 #include <wtf/RefCounted.h>
 #include <wtf/RefPtr.h>
 #include <wtf/Vector.h>
+#include <wtf/WeakPtr.h>
 
 namespace WebCore {
 
@@ -81,7 +83,7 @@ public:
     XREnvironmentBlendMode environmentBlendMode() const;
     XRInteractionMode interactionMode() const;
     XRVisibilityState visibilityState() const;
-    const WebXRRenderState& renderState() const;
+    const WebXRRenderState& NODELETE renderState() const;
     const WebXRInputSourceArray& inputSources() const { return m_inputSources; }
     RefPtr<PlatformXR::Device> device() const { return m_device; }
 
@@ -126,6 +128,8 @@ public:
     void requestHitTestSource(const XRHitTestOptionsInit&, RequestHitTestSourcePromise&&);
     using RequestHitTestSourceForTransientInputPromise = DOMPromiseDeferred<IDLInterface<WebXRTransientInputHitTestSource>>;
     void requestHitTestSourceForTransientInput(const XRTransientInputHitTestOptionsInit&, RequestHitTestSourceForTransientInputPromise&&);
+    ExceptionOr<void> cancelHitTestSource(PlatformXR::HitTestSource);
+    ExceptionOr<void> cancelTransientInputHitTestSource(PlatformXR::TransientInputHitTestSource);
 #endif
 
     void initializeTrackingAndRendering(std::optional<XRCanvasConfiguration>&&);
@@ -161,6 +165,10 @@ private:
     void applyPendingRenderState();
     void minimalUpdateRendering();
 
+#if ENABLE(WEBXR_HIT_TEST)
+    void cleanupInactiveHitTestSources();
+#endif
+
     XRInteractionMode m_interactionMode { XRInteractionMode::WorldSpace };
     XRVisibilityState m_visibilityState { XRVisibilityState::Visible };
     const UniqueRef<WebXRInputSourceArray> m_inputSources;
@@ -194,6 +202,11 @@ private:
 
     // https://immersive-web.github.io/webxr/#xrsession-promise-resolved
     bool m_inputInitialized { false };
+
+#if ENABLE(WEBXR_HIT_TEST)
+    HashMap<PlatformXR::HitTestSource, WeakPtr<WebXRHitTestSource>> m_activeHitTestSources;
+    HashMap<PlatformXR::HitTestSource, WeakPtr<WebXRTransientInputHitTestSource>> m_activeTransientInputHitTestSources;
+#endif
 };
 
 WebCoreOpaqueRoot root(WebXRSession*);

@@ -51,9 +51,8 @@ public:
     size_t length() const;
 
     JSC::ArrayBufferView& arrayBufferView() const { return m_arrayBufferView.get(); }
-    Ref<JSC::ArrayBufferView> protectedArrayBufferView() const { return m_arrayBufferView; }
-    auto byteLength() const { return protectedArrayBufferView()->byteLength(); }
-    auto isDetached() const { return protectedArrayBufferView()->isDetached(); }
+    auto byteLength() const { return protect(arrayBufferView())->byteLength(); }
+    auto isDetached() const { return protect(arrayBufferView())->isDetached(); }
 
     Ref<JSC::Uint8ClampedArray> asUint8ClampedArray() const;
     Ref<JSC::Float16Array> asFloat16Array() const;

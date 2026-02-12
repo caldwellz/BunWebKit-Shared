@@ -833,7 +833,7 @@ String CSSPrimitiveValue::stringValue() const
     case CSSUnitType::CSS_PROPERTY_ID:
         return nameString(m_value.propertyID);
     case CSSUnitType::CSS_ATTR:
-        return protectedCssAttrValue()->cssText(CSS::defaultSerializationContext());
+        return protect(cssAttrValue())->cssText(CSS::defaultSerializationContext());
     default:
         return String();
     }
@@ -1009,9 +1009,9 @@ ALWAYS_INLINE String CSSPrimitiveValue::serializeInternal(const CSS::Serializati
     case CSSUnitType::CSS_X:
         return formatNumberValue(unitTypeString(type));
     case CSSUnitType::CSS_ATTR:
-        return protectedCssAttrValue()->cssText(context);
+        return protect(cssAttrValue())->cssText(context);
     case CSSUnitType::CSS_CALC:
-        return protectedCssCalcValue()->cssText(context);
+        return protect(cssCalcValue())->cssText(context);
     case CSSUnitType::CSS_DIMENSION:
         // FIXME: This isn't correct.
         return formatNumberValue(""_s);
@@ -1147,9 +1147,9 @@ bool CSSPrimitiveValue::equals(const CSSPrimitiveValue& other) const
     case CSSUnitType::CSS_FONT_FAMILY:
         return equal(m_value.string, other.m_value.string);
     case CSSUnitType::CSS_ATTR:
-        return protectedCssAttrValue()->equals(*other.protectedCssAttrValue());
+        return protect(cssAttrValue())->equals(*protect(other.cssAttrValue()));
     case CSSUnitType::CSS_CALC:
-        return protectedCssCalcValue()->equals(*other.protectedCssCalcValue());
+        return protect(cssCalcValue())->equals(*protect(other.cssCalcValue()));
     case CSSUnitType::CSS_IDENT:
     case CSSUnitType::CSS_CALC_PERCENTAGE_WITH_ANGLE:
     case CSSUnitType::CSS_CALC_PERCENTAGE_WITH_LENGTH:

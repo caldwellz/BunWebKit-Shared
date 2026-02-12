@@ -89,7 +89,7 @@
     WebCore::JSMainThreadNullState state;
     if (!option)
         raiseTypeErrorException();
-    raiseOnDOMError(IMPL->add(core(option), std::optional<WebCore::HTMLOptionsCollection::HTMLElementOrInt> { static_cast<int>(index) }));
+    raiseOnDOMError(IMPL->add(*core(option), std::optional<WebCore::HTMLOptionsCollection::HTMLElementOrInt> { static_cast<int>(index) }));
 }
 
 - (void)remove:(unsigned)index

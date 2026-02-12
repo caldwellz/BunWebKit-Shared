@@ -117,6 +117,12 @@
 #include <WebKit/WKPagePrivateMac.h>
 #endif
 
+#if PLATFORM(MAC)
+#import <ApplicationServices/ApplicationServices.h>
+#import <wtf/RetainPtr.h>
+#import <wtf/RuntimeApplicationChecks.h>
+#endif
+
 #if PLATFORM(GTK) || PLATFORM(WPE)
 #include <WebKit/WKContextConfigurationGlib.h>
 #endif
@@ -1544,6 +1550,7 @@ bool TestController::resetStateToConsistentValues(const TestOptions& options, Re
     setNavigationGesturesEnabled(false);
     
     setIgnoresViewportScaleLimits(options.ignoresViewportScaleLimits());
+    m_mainWebView->setEditable(options.editable());
 
     m_openPanelFileURLs = nullptr;
 #if PLATFORM(IOS_FAMILY)
@@ -3394,6 +3401,26 @@ void TestController::didReceiveSynchronousMessageFromInjectedBundle(WKStringRef 
             : kWKHTTPCookieAcceptPolicyOnlyFromMainDocumentDomain;
         return setHTTPCookieAcceptPolicy(policy, WTF::move(completionHandler));
     }
+
+#if PLATFORM(MAC)
+    if (WKStringIsEqualToUTF8CString(messageName, "AXGetRoot"))
+        return completionHandler(handleAXGetRoot().get());
+
+    if (WKStringIsEqualToUTF8CString(messageName, "AXCopyAttributeValueAsString"))
+        return completionHandler(handleAXCopyAttributeValueAsString(dictionaryValue(messageBody)).get());
+
+    if (WKStringIsEqualToUTF8CString(messageName, "AXCopyAttributeValueAsElement"))
+        return completionHandler(handleAXCopyAttributeValueAsElement(dictionaryValue(messageBody)).get());
+
+    if (WKStringIsEqualToUTF8CString(messageName, "AXCopyAttributeValueAsElementArray"))
+        return completionHandler(handleAXCopyAttributeValueAsElementArray(dictionaryValue(messageBody)).get());
+
+    if (WKStringIsEqualToUTF8CString(messageName, "AXCopyAttributeValueAsNumber"))
+        return completionHandler(handleAXCopyAttributeValueAsNumber(dictionaryValue(messageBody)).get());
+
+    if (WKStringIsEqualToUTF8CString(messageName, "AXCopyAttributeValueAsBoolean"))
+        return completionHandler(handleAXCopyAttributeValueAsBoolean(dictionaryValue(messageBody)).get());
+#endif
 
     completionHandler(protectedCurrentInvocation()->didReceiveSynchronousMessageFromInjectedBundle(messageName, messageBody).get());
 }
@@ -5377,5 +5404,170 @@ void TestController::setHasMouseDeviceForTesting(bool)
 {
 }
 #endif
+
+#if PLATFORM(MAC)
+// Client accessibility IPC implementation
+
+// Private API for creating an AXUIElement from a remote token
+extern "C" AXUIElementRef _AXUIElementCreateWithRemoteToken(CFDataRef remoteToken);
+
+uint64_t TestController::storeAXElement(CFTypeRef element)
+{
+    if (!element)
+        return 0;
+
+    uint64_t token = m_nextAXElementToken++;
+    m_axElementTokens.set(token, element);
+    return token;
+}
+
+CFTypeRef TestController::getAXElement(uint64_t token)
+{
+    if (!token)
+        return nullptr;
+
+    auto tokenIterator = m_axElementTokens.find(token);
+    if (tokenIterator == m_axElementTokens.end())
+        return nullptr;
+
+    return tokenIterator->value.get();
+}
+
+WKRetainPtr<WKTypeRef> TestController::handleAXGetRoot()
+{
+    CFDataRef remoteToken = getRemoteAccessibilityToken();
+    if (!remoteToken)
+        return nullptr;
+
+    AXUIElementRef webContentElement = _AXUIElementCreateWithRemoteToken(remoteToken);
+    if (!webContentElement)
+        return nullptr;
+
+    // Try to get children
+    CFTypeRef childrenValue = nullptr;
+    AXError error = AXUIElementCopyAttributeValue(webContentElement, kAXChildrenAttribute, &childrenValue);
+    RetainPtr adoptedChildren = adoptCF(childrenValue);
+
+    if (error != kAXErrorSuccess || !childrenValue)
+        return nullptr;
+
+    CFArrayRef children = static_cast<CFArrayRef>(childrenValue);
+    CFIndex childCount = CFArrayGetCount(children);
+    if (!childCount)
+        return nullptr;
+
+    AXUIElementRef child = static_cast<AXUIElementRef>(const_cast<void*>(CFArrayGetValueAtIndex(children, 0)));
+
+    uint64_t token = storeAXElement(child);
+    return adoptWK(WKUInt64Create(token));
+}
+
+RetainPtr<CFTypeRef> TestController::axCopyAttributeValue(WKDictionaryRef messageBody)
+{
+    uint64_t elementToken = uint64Value(messageBody, "elementToken");
+    WKStringRef attributeName = stringValue(messageBody, "attributeName");
+
+    AXUIElementRef element = static_cast<AXUIElementRef>(getAXElement(elementToken));
+    if (!element)
+        return nullptr;
+
+    RetainPtr attributeNameCF = adoptCF(CFStringCreateWithCString(kCFAllocatorDefault, toSTD(attributeName).c_str(), kCFStringEncodingUTF8));
+    CFTypeRef value = nullptr;
+    AXError error = AXUIElementCopyAttributeValue(element, attributeNameCF.get(), &value);
+
+    if (error != kAXErrorSuccess || !value)
+        return nullptr;
+
+    return adoptCF(value);
+}
+
+WKRetainPtr<WKTypeRef> TestController::handleAXCopyAttributeValueAsString(WKDictionaryRef messageBody)
+{
+    RetainPtr value = axCopyAttributeValue(messageBody);
+    if (!value)
+        return nullptr;
+
+    if (CFGetTypeID(value.get()) != CFStringGetTypeID())
+        return nullptr;
+
+    return toWK(String(static_cast<CFStringRef>(value.get())));
+}
+
+WKRetainPtr<WKTypeRef> TestController::handleAXCopyAttributeValueAsElement(WKDictionaryRef messageBody)
+{
+    RetainPtr value = axCopyAttributeValue(messageBody);
+    if (!value)
+        return nullptr;
+
+    if (CFGetTypeID(value.get()) != AXUIElementGetTypeID())
+        return nullptr;
+
+    uint64_t token = storeAXElement(value.get());
+    return adoptWK(WKUInt64Create(token));
+}
+
+WKRetainPtr<WKTypeRef> TestController::handleAXCopyAttributeValueAsElementArray(WKDictionaryRef messageBody)
+{
+    RetainPtr value = axCopyAttributeValue(messageBody);
+    if (!value)
+        return nullptr;
+
+    if (CFGetTypeID(value.get()) != CFArrayGetTypeID())
+        return nullptr;
+
+    CFArrayRef elementArray = static_cast<CFArrayRef>(value.get());
+    CFIndex count = CFArrayGetCount(elementArray);
+
+    Vector<WKTypeRef> tokens;
+    tokens.reserveInitialCapacity(count);
+
+    for (CFIndex i = 0; i < count; i++) {
+        CFTypeRef childElement = CFArrayGetValueAtIndex(elementArray, i);
+        if (CFGetTypeID(childElement) == AXUIElementGetTypeID()) {
+            uint64_t token = storeAXElement(childElement);
+            tokens.append(WKUInt64Create(token));
+        }
+    }
+
+    // Build array from individual elements since Vector::data() is private
+    WKRetainPtr result = adoptWK(WKMutableArrayCreate());
+    for (WKTypeRef token : tokens) {
+        WKArrayAppendItem(result.get(), token);
+        WKRelease(token);
+    }
+
+    return result;
+}
+
+WKRetainPtr<WKTypeRef> TestController::handleAXCopyAttributeValueAsNumber(WKDictionaryRef messageBody)
+{
+    RetainPtr value = axCopyAttributeValue(messageBody);
+    if (!value)
+        return nullptr;
+
+    if (CFGetTypeID(value.get()) != CFNumberGetTypeID())
+        return nullptr;
+
+    double doubleValue;
+    CFNumberGetValue(static_cast<CFNumberRef>(value.get()), kCFNumberDoubleType, &doubleValue);
+
+    return adoptWK(WKDoubleCreate(doubleValue));
+}
+
+WKRetainPtr<WKTypeRef> TestController::handleAXCopyAttributeValueAsBoolean(WKDictionaryRef messageBody)
+{
+    RetainPtr value = axCopyAttributeValue(messageBody);
+    if (!value)
+        return nullptr;
+
+    if (CFGetTypeID(value.get()) != CFBooleanGetTypeID())
+        return nullptr;
+
+    bool boolValue = CFBooleanGetValue(static_cast<CFBooleanRef>(value.get()));
+
+    return adoptWK(WKBooleanCreate(boolValue));
+}
+
+#endif // PLATFORM(MAC)
 
 } // namespace WTR

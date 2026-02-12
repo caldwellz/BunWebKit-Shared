@@ -195,8 +195,6 @@ list(APPEND PAL_SOURCES
     cocoa/WebPrivacySoftLink.mm
     cocoa/WritingToolsUISoftLink.mm
 
-    crypto/commoncrypto/CryptoDigestCommonCrypto.mm
-
     mac/DataDetectorsSoftLink.mm
     mac/LookupSoftLink.mm
     mac/QuickLookUISoftLink.mm

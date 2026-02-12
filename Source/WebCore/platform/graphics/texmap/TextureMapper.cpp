@@ -936,8 +936,8 @@ void TextureMapper::drawTexturedQuadWithProgram(TextureMapperShaderProgram& prog
         glUniform1i(textureAndSampler.second, i);
 
         if (repeatWrap) {
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_REPEAT);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_REPEAT);
         }
     }
 
@@ -956,8 +956,8 @@ void TextureMapper::drawTexturedQuadWithProgram(TextureMapperShaderProgram& prog
     if (repeatWrap) {
         for (auto& textureAndSampler : texturesAndSamplers) {
             glBindTexture(target, textureAndSampler.first);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+            glTexParameteri(target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+            glTexParameteri(target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         }
     }
 }
@@ -1582,6 +1582,13 @@ void TextureMapper::drawTextureExternalOES(GLuint texture, OptionSet<TextureMapp
     flags.add(TextureMapperFlags::ShouldUseExternalOESTextureRect);
     Ref<TextureMapperShaderProgram> program = data().getShaderProgram(TextureMapperShaderProgram::Option::TextureExternalOES);
     drawTexturedQuadWithProgram(program.get(), { { texture, program->externalOESTextureLocation() } }, flags, targetRect, modelViewMatrix, opacity);
+}
+
+void TextureMapper::drawTextureExternalOESYUV(GLuint texture, OptionSet<TextureMapperFlags> flags, const FloatRect& targetRect, const TransformationMatrix& modelViewMatrix, float opacity)
+{
+    flags.add(TextureMapperFlags::ShouldUseExternalOESTextureRect);
+    Ref<TextureMapperShaderProgram> program = data().getShaderProgram(TextureMapperShaderProgram::Option::TextureExternalOESYUV);
+    drawTexturedQuadWithProgram(program.get(), { { texture, program->externalOESYUVTextureLocation() } }, flags, targetRect, modelViewMatrix, opacity);
 }
 
 Ref<TextureMapperGPUBuffer> TextureMapper::acquireBufferFromPool(size_t size, TextureMapperGPUBuffer::Type type)

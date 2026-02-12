@@ -82,7 +82,7 @@ public:
     void setError(GeolocationError&);
     bool shouldBlockGeolocationRequests();
 
-    Navigator* navigator();
+    Navigator* NODELETE navigator();
     WEBCORE_EXPORT LocalFrame* frame() const;
 
 private:

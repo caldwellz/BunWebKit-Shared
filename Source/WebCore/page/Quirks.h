@@ -251,6 +251,7 @@ public:
 
     bool needsLaxSameSiteCookieQuirk(const URL&) const;
     WEBCORE_EXPORT bool needsConsistentQueryParameterFilteringQuirk(const URL&) const;
+    bool mayBenefitFromFingerprintingProtectionQuirk(const URL&) const;
     static String standardUserAgentWithApplicationNameIncludingCompatOverrides(const String&, const String&, UserAgentType);
 
     String scriptToEvaluateBeforeRunningScriptFromURL(const URL&);
@@ -266,11 +267,14 @@ public:
     WEBCORE_EXPORT bool shouldIgnoreContentObservationForClick(const Node&) const;
     WEBCORE_EXPORT bool shouldSynthesizeTouchEventsAfterNonSyntheticClick(const Element&) const;
     WEBCORE_EXPORT bool needsPointerTouchCompatibility(const Element&) const;
-    bool shouldTreatAddingMouseOutEventListenerAsContentChange() const;
     WEBCORE_EXPORT bool shouldHideSoftTopScrollEdgeEffectDuringFocus(const Element&) const;
 
     bool needsClaudeSidebarViewportUnitQuirk(Element&, const RenderStyle&) const;
     bool needsChromeOSNavigatorUserAgentQuirk(const Document&) const;
+#endif
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+    bool shouldTreatAddingMouseOutEventListenerAsContentChange() const;
 #endif
 
     bool needsMozillaFileTypeForDataTransfer() const;
@@ -299,6 +303,8 @@ public:
 
     bool shouldRewriteMediaRangeRequestForURL(const URL&) const;
     bool shouldDelayReloadWhenRegisteringServiceWorker() const;
+
+    bool ensureCaptionVisibilityInFullscreenAndPictureInPicture() const;
 
     bool shouldPreventKeyframeEffectAcceleration(const KeyframeEffect&) const;
 

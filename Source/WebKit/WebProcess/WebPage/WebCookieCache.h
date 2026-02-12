@@ -77,7 +77,6 @@ private:
     WebCookieCache() = default;
 
     WebCore::NetworkStorageSession& inMemoryStorageSession();
-    CheckedRef<WebCore::NetworkStorageSession> checkedInMemoryStorageSession() { return inMemoryStorageSession(); }
 
     void pruneCacheIfNecessary();
     bool cacheMayBeOutOfSync() const;

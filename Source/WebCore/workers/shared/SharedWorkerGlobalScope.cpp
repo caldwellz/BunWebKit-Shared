@@ -74,7 +74,7 @@ void SharedWorkerGlobalScope::postConnectEvent(TransferredMessagePort&& transfer
     SCOPE_RELEASE_LOG("postConnectEvent:");
     auto ports = MessagePort::entanglePorts(*this, { WTF::move(transferredPort) });
     ASSERT(ports.size() == 1);
-    RefPtr port = ports[0].ptr();
+    Ref port = ports[0];
     auto event = MessageEvent::create(emptyString(), sourceOriginData.securityOrigin(), { }, port, WTF::move(ports));
     event->initEvent(eventNames().connectEvent, false, false);
 

@@ -45,11 +45,6 @@ Calculation::Value& LengthWrapperData::calculationValue() const
     return Calculation::ValueMap::calculationValues().get(m_calculationValueHandle);
 }
 
-Ref<Calculation::Value> LengthWrapperData::protectedCalculationValue() const
-{
-    return calculationValue();
-}
-
 void LengthWrapperData::ref() const
 {
     ASSERT(m_kind == LengthWrapperDataKind::Calculation);
@@ -84,7 +79,7 @@ auto LengthWrapperData::ipcData() const -> IPCData
 float LengthWrapperData::nonNanCalculatedValue(float maxValue, const ZoomFactor& usedZoom) const
 {
     ASSERT(m_kind == LengthWrapperDataKind::Calculation);
-    float result = protectedCalculationValue()->evaluate(maxValue, usedZoom);
+    float result = protect(calculationValue())->evaluate(maxValue, usedZoom);
     if (std::isnan(result))
         return 0;
     return result;
@@ -93,7 +88,7 @@ float LengthWrapperData::nonNanCalculatedValue(float maxValue, const ZoomFactor&
 float LengthWrapperData::nonNanCalculatedValue(float maxValue, const ZoomNeeded& token) const
 {
     ASSERT(m_kind == LengthWrapperDataKind::Calculation);
-    float result = protectedCalculationValue()->evaluate(maxValue, token);
+    float result = protect(calculationValue())->evaluate(maxValue, token);
     if (std::isnan(result))
         return 0;
     return result;

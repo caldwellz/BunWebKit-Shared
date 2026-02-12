@@ -100,13 +100,13 @@ bool TextFieldInputType::isKeyboardFocusable(const FocusEventData&) const
     if (element()->isReadOnly())
         return false;
 #endif
-    return protectedElement()->isTextFormControlFocusable();
+    return protect(element())->isTextFormControlFocusable();
 }
 
 bool TextFieldInputType::isMouseFocusable() const
 {
     ASSERT(element());
-    return protectedElement()->isTextFormControlFocusable();
+    return protect(element())->isTextFormControlFocusable();
 }
 
 bool TextFieldInputType::isEmptyValue() const
@@ -197,7 +197,7 @@ void TextFieldInputType::handleClickEvent(MouseEvent&)
 void TextFieldInputType::showPicker()
 {
 #if !PLATFORM(IOS_FAMILY)
-    if (protectedElement()->hasDataList())
+    if (protect(element())->hasDataList())
         displaySuggestions(DataListSuggestionActivationType::ControlClicked);
 #endif
 }
@@ -222,7 +222,7 @@ auto TextFieldInputType::handleKeydownEvent(KeyboardEvent& event) -> ShouldCallB
 void TextFieldInputType::handleKeydownEventForSpinButton(KeyboardEvent& event)
 {
     ASSERT(element());
-    if (!protectedElement()->isMutable())
+    if (!protect(element())->isMutable())
         return;
     if (m_suggestionPicker)
         return;
@@ -246,7 +246,7 @@ void TextFieldInputType::forwardEvent(Event& event)
     if (isFocusEvent || isBlurEvent)
         capsLockStateMayHaveChanged();
     if (event.isMouseEvent() || isFocusEvent || isBlurEvent)
-        protectedElement()->forwardEvent(event);
+        protect(element())->forwardEvent(event);
 }
 
 void TextFieldInputType::elementDidBlur()
@@ -286,7 +286,7 @@ void TextFieldInputType::handleBlurEvent()
 {
     InputType::handleBlurEvent();
     ASSERT(element());
-    protectedElement()->endEditing();
+    protect(element())->endEditing();
 }
 
 bool TextFieldInputType::shouldSubmitImplicitly(Event& event)
@@ -300,7 +300,7 @@ RenderPtr<RenderElement> TextFieldInputType::createInputRenderer(RenderStyle&& s
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderTextControlSingleLine>(RenderObject::Type::TextControlSingleLine, *protectedElement(), WTF::move(style));
+    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderTextControlSingleLine>(RenderObject::Type::TextControlSingleLine, *protect(element()), WTF::move(style));
 }
 
 bool TextFieldInputType::needsContainer() const
@@ -311,13 +311,13 @@ bool TextFieldInputType::needsContainer() const
 bool TextFieldInputType::shouldHaveSpinButton() const
 {
     ASSERT(element());
-    return RenderTheme::singleton().shouldHaveSpinButton(*protectedElement());
+    return RenderTheme::singleton().shouldHaveSpinButton(*protect(element()));
 }
 
 bool TextFieldInputType::shouldHaveCapsLockIndicator() const
 {
     ASSERT(element());
-    return RenderTheme::singleton().shouldHaveCapsLockIndicator(*protectedElement());
+    return RenderTheme::singleton().shouldHaveCapsLockIndicator(*protect(element()));
 }
 
 void TextFieldInputType::createShadowSubtree()
@@ -745,7 +745,7 @@ void TextFieldInputType::focusAndSelectSpinButtonOwner()
 bool TextFieldInputType::shouldSpinButtonRespondToMouseEvents() const
 {
     ASSERT(element());
-    return protectedElement()->isMutable();
+    return protect(element())->isMutable();
 }
 
 bool TextFieldInputType::shouldDrawCapsLockIndicator() const
@@ -765,7 +765,7 @@ bool TextFieldInputType::shouldDrawCapsLockIndicator() const
     if (!frame)
         return false;
 
-    if (!frame->checkedSelection()->isFocusedAndActive())
+    if (!protect(frame->selection())->isFocusedAndActive())
         return false;
 
     return PlatformKeyboardEvent::currentCapsLockState();
@@ -829,7 +829,7 @@ void TextFieldInputType::createContainer(PreserveSelectionRange preserveSelectio
     innerBlock->appendChild(Ref { *m_innerText });
 
     if (selectionState) {
-        document->checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [selectionState = *selectionState, element = WeakPtr { element }] {
+        protect(document->eventLoop())->queueTask(TaskSource::DOMManipulation, [selectionState = *selectionState, element = WeakPtr { element }] {
             if (!element || !element->focused())
                 return;
 
@@ -934,7 +934,7 @@ IntRect TextFieldInputType::elementRectInRootViewCoordinates() const
     if (!element()->renderer())
         return IntRect();
     Ref element = *this->element();
-    return protect(protect(element->document())->view())->contentsToRootView(element->checkedRenderer()->absoluteBoundingBoxRect());
+    return protect(protect(element->document())->view())->contentsToRootView(protect(element->renderer())->absoluteBoundingBoxRect());
 }
 
 Vector<DataListSuggestion> TextFieldInputType::suggestions()
@@ -978,7 +978,7 @@ Vector<DataListSuggestion> TextFieldInputType::suggestions()
 
 void TextFieldInputType::didSelectDataListOption(const String& selectedOption)
 {
-    protectedElement()->setValue(selectedOption, DispatchInputAndChangeEvent);
+    protect(element())->setValue(selectedOption, DispatchInputAndChangeEvent);
 }
 
 void TextFieldInputType::didCloseSuggestions()

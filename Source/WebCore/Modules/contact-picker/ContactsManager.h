@@ -48,7 +48,7 @@ public:
     ~ContactsManager();
 
     LocalFrame* frame() const;
-    Navigator* navigator();
+    Navigator* NODELETE navigator();
 
     void getProperties(Ref<DeferredPromise>&&);
     void select(const Vector<ContactProperty>&, const ContactsSelectOptions&, Ref<DeferredPromise>&&);

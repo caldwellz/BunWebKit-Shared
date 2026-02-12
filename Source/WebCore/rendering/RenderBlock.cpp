@@ -571,16 +571,12 @@ void RenderBlock::computeOverflow(LayoutRect contentArea, OptionSet<ComputeOverf
     addOverflowFromInFlowChildren(options);
     addOverflowFromOutOfFlowBoxes();
 
-    if (hasPotentiallyScrollableOverflow()) {
+    if (hasPotentiallyScrollableOverflow() || isRenderView()) {
         if (!flippedContentBoxRect().contains(contentArea))
             ensureOverflow();
         if (hasRenderOverflow()) {
             m_overflow->addContentOverflow(contentArea);
-            auto contentOverflow = m_overflow->contentArea();
-            flipForWritingMode(contentOverflow);
-            contentOverflow.expand(padding());
-            flipForWritingMode(contentOverflow);
-            addLayoutOverflow(contentOverflow);
+            addLayoutOverflow(scrollablePaddingAreaOverflowRect());
         }
     }
 
@@ -1096,7 +1092,7 @@ void RenderBlock::paintCaret(PaintInfo& paintInfo, const LayoutPoint& paintOffse
 
         bool isContentEditable = page().dragCaretController().isContentEditable();
         if (shouldPaintCaret(caretPainter, isContentEditable))
-            page().dragCaretController().paintDragCaret(protectedFrame().ptr(), paintInfo.context(), paintOffset);
+            page().dragCaretController().paintDragCaret(protect(frame()).ptr(), paintInfo.context(), paintOffset);
 
         break;
     }
@@ -1165,7 +1161,7 @@ void RenderBlock::paintObject(PaintInfo& paintInfo, const LayoutPoint& paintOffs
         if (paintInfo.paintBehavior.contains(PaintBehavior::EventRegionIncludeBackground) && visibleToHitTesting()) {
             auto borderShape = BorderShape::shapeForBorderRect(style(), borderRect);
             LOG_WITH_STREAM(EventRegions, stream << "RenderBlock " << *this << " uniting region " << borderShape.deprecatedRoundedRect() << " event listener types " << style().eventListenerRegionTypes());
-            bool overrideUserModifyIsEditable = isRenderTextControl() && downcast<RenderTextControl>(*this).protectedTextFormControlElement()->isInnerTextElementEditable();
+            bool overrideUserModifyIsEditable = isRenderTextControl() && protect(downcast<RenderTextControl>(*this).textFormControlElement())->isInnerTextElementEditable();
             paintInfo.eventRegionContext()->unite(borderShape.deprecatedPixelSnappedRoundedRect(document->deviceScaleFactor()), *this, style(), overrideUserModifyIsEditable);
         }
 
@@ -1323,7 +1319,7 @@ bool RenderBlock::establishesIndependentFormattingContextIgnoringDisplayType(con
         || isBlockBoxWithPotentiallyScrollableOverflow()
         || style.usedContain().contains(Style::ContainValue::Layout)
         || style.containerType() != ContainerType::Normal
-        || WebCore::shouldApplyPaintContainment(style, *protectedElement())
+        || WebCore::shouldApplyPaintContainment(style, *protect(element()))
         || (style.isDisplayBlockLevel() && !style.blockStepSize().isNone());
 }
 
@@ -2059,7 +2055,7 @@ bool RenderBlock::nodeAtPoint(const HitTestRequest& request, HitTestResult& resu
         && visibleToHitTesting(request) && isPointInOverflowControl(result, locationInContainer.point(), adjustedLocation)) {
         updateHitTestResult(result, locationInContainer.point() - localOffset);
         // FIXME: isPointInOverflowControl() doesn't handle rect-based tests yet.
-        if (result.addNodeToListBasedTestResult(protectedNodeForHitTest().get(), request, locationInContainer) == HitTestProgress::Stop)
+        if (result.addNodeToListBasedTestResult(protect(nodeForHitTest()).get(), request, locationInContainer) == HitTestProgress::Stop)
            return true;
     }
 
@@ -2086,7 +2082,7 @@ bool RenderBlock::nodeAtPoint(const HitTestRequest& request, HitTestResult& resu
         LayoutRect boundsRect(adjustedLocation, size());
         if (visibleToHitTesting(request) && locationInContainer.intersects(boundsRect)) {
             updateHitTestResult(result, flipForWritingMode(locationInContainer.point() - localOffset));
-            if (result.addNodeToListBasedTestResult(protectedNodeForHitTest().get(), request, locationInContainer, boundsRect) == HitTestProgress::Stop)
+            if (result.addNodeToListBasedTestResult(protect(nodeForHitTest()).get(), request, locationInContainer, boundsRect) == HitTestProgress::Stop)
                 return true;
         }
     }
@@ -2120,7 +2116,7 @@ static inline bool isEditingBoundary(RenderElement* ancestor, RenderBox& child)
     ASSERT(!ancestor || ancestor->nonPseudoElement());
     ASSERT(child.nonPseudoElement());
     return !ancestor || !ancestor->parent() || (ancestor->hasLayer() && ancestor->parent()->isRenderView())
-        || ancestor->protectedNonPseudoElement()->hasEditableStyle() == child.protectedNonPseudoElement()->hasEditableStyle();
+        || protect(ancestor->nonPseudoElement())->hasEditableStyle() == protect(child.nonPseudoElement())->hasEditableStyle();
 }
 
 // FIXME: This function should go on RenderObject as an instance method. Then

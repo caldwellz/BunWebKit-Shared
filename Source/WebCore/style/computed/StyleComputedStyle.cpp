@@ -285,58 +285,6 @@ float ComputedStyle::computeLineHeight(const LineHeight& lineHeight) const
     );
 }
 
-void ComputedStyle::setPageScaleTransform(float scale)
-{
-    if (scale == 1)
-        return;
-
-    setTransform(Style::Transform { Style::TransformFunction { Style::ScaleTransformFunction::create(scale, scale, Style::TransformFunctionType::Scale) } });
-    setTransformOriginX(0_css_px);
-    setTransformOriginY(0_css_px);
-}
-
-void ComputedStyle::setColumnStylesFromPaginationMode(PaginationMode paginationMode)
-{
-    if (paginationMode == Pagination::Mode::Unpaginated)
-        return;
-    
-    setColumnFill(ColumnFill::Auto);
-    
-    switch (paginationMode) {
-    case Pagination::Mode::LeftToRightPaginated:
-        setColumnAxis(ColumnAxis::Horizontal);
-        if (writingMode().isHorizontal())
-            setColumnProgression(writingMode().isBidiLTR() ? ColumnProgression::Normal : ColumnProgression::Reverse);
-        else
-            setColumnProgression(writingMode().isBlockFlipped() ? ColumnProgression::Reverse : ColumnProgression::Normal);
-        break;
-    case Pagination::Mode::RightToLeftPaginated:
-        setColumnAxis(ColumnAxis::Horizontal);
-        if (writingMode().isHorizontal())
-            setColumnProgression(writingMode().isBidiLTR() ? ColumnProgression::Reverse : ColumnProgression::Normal);
-        else
-            setColumnProgression(writingMode().isBlockFlipped() ? ColumnProgression::Normal : ColumnProgression::Reverse);
-        break;
-    case Pagination::Mode::TopToBottomPaginated:
-        setColumnAxis(ColumnAxis::Vertical);
-        if (writingMode().isHorizontal())
-            setColumnProgression(writingMode().isBlockFlipped() ? ColumnProgression::Reverse : ColumnProgression::Normal);
-        else
-            setColumnProgression(writingMode().isBidiLTR() ? ColumnProgression::Normal : ColumnProgression::Reverse);
-        break;
-    case Pagination::Mode::BottomToTopPaginated:
-        setColumnAxis(ColumnAxis::Vertical);
-        if (writingMode().isHorizontal())
-            setColumnProgression(writingMode().isBlockFlipped() ? ColumnProgression::Normal : ColumnProgression::Reverse);
-        else
-            setColumnProgression(writingMode().isBidiLTR() ? ColumnProgression::Reverse : ColumnProgression::Normal);
-        break;
-    case Pagination::Mode::Unpaginated:
-        ASSERT_NOT_REACHED();
-        break;
-    }
-}
-
 bool ComputedStyle::scrollSnapDataEquivalent(const ComputedStyle& other) const
 {
     if (m_nonInheritedData.ptr() == other.m_nonInheritedData.ptr()
@@ -347,74 +295,6 @@ bool ComputedStyle::scrollSnapDataEquivalent(const ComputedStyle& other) const
         && m_nonInheritedData->rareData->scrollSnapAlign == other.m_nonInheritedData->rareData->scrollSnapAlign
         && m_nonInheritedData->rareData->scrollSnapStop == other.m_nonInheritedData->rareData->scrollSnapStop
         && m_nonInheritedData->rareData->scrollSnapAlign == other.m_nonInheritedData->rareData->scrollSnapAlign;
-}
-
-// MARK: - Style adjustment utilities
-
-void ComputedStyle::adjustAnimations()
-{
-    if (animations().isInitial())
-        return;
-
-    ensureAnimations().prepareForUse();
-}
-
-void ComputedStyle::adjustTransitions()
-{
-    if (transitions().isInitial())
-        return;
-
-    ensureTransitions().prepareForUse();
-}
-
-void ComputedStyle::adjustBackgroundLayers()
-{
-    if (backgroundLayers().isInitial())
-        return;
-
-    ensureBackgroundLayers().prepareForUse();
-}
-
-void ComputedStyle::adjustMaskLayers()
-{
-    if (maskLayers().isInitial())
-        return;
-
-    ensureMaskLayers().prepareForUse();
-}
-
-void ComputedStyle::adjustScrollTimelines()
-{
-    auto& names = scrollTimelineNames();
-    if (names.isNone() && scrollTimelines().isEmpty())
-        return;
-
-    auto& axes = scrollTimelineAxes();
-    auto numberOfAxes = axes.size();
-    ASSERT(numberOfAxes > 0);
-
-    m_nonInheritedData.access().rareData.access().scrollTimelines = { FixedVector<Ref<ScrollTimeline>>::createWithSizeFromGenerator(names.size(), [&](auto i) {
-        return ScrollTimeline::create(names[i].value.value, axes[i % numberOfAxes]);
-    }) };
-}
-
-void ComputedStyle::adjustViewTimelines()
-{
-    auto& names = viewTimelineNames();
-    if (names.isNone() && viewTimelines().isEmpty())
-        return;
-
-    auto& axes = viewTimelineAxes();
-    auto numberOfAxes = axes.size();
-    ASSERT(numberOfAxes > 0);
-
-    auto& insets = viewTimelineInsets();
-    auto numberOfInsets = insets.size();
-    ASSERT(numberOfInsets > 0);
-
-    m_nonInheritedData.access().rareData.access().viewTimelines = { FixedVector<Ref<ViewTimeline>>::createWithSizeFromGenerator(names.size(), [&](auto i) {
-        return ViewTimeline::create(names[i].value.value, axes[i % numberOfAxes], insets[i % numberOfInsets]);
-    }) };
 }
 
 } // namespace Style

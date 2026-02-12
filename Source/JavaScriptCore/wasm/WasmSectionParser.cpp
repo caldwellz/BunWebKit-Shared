@@ -180,6 +180,7 @@ auto SectionParser::parseImport() -> PartialResult
         }
         case ExternalKind::Memory: {
             bool isImport = true;
+            kindIndex = m_info->memories.size();
             PartialResult result = parseMemoryHelper(isImport);
             if (!result) [[unlikely]]
                 return makeUnexpected(WTF::move(result.error()));
@@ -382,7 +383,10 @@ auto SectionParser::parseTable() -> PartialResult
 
 auto SectionParser::parseMemoryHelper(bool isImport) -> PartialResult
 {
-    WASM_PARSER_FAIL_IF(m_info->memoryCount(), "there can at most be one Memory section for now"_s);
+    // This test is here in order to handle the case of a single imported memory and a single specified memory
+    // in its own section, which is legal iff multimemory is enabled
+    if (!Options::useWasmMultiMemory())
+        WASM_PARSER_FAIL_IF(m_info->memoryCount(), "there can at most be one Memory section for now"_s);
 
     PageCount initialPageCount;
     PageCount maximumPageCount;
@@ -407,7 +411,8 @@ auto SectionParser::parseMemoryHelper(bool isImport) -> PartialResult
     ASSERT(initialPageCount);
     ASSERT(!maximumPageCount || maximumPageCount >= initialPageCount);
 
-    m_info->memory = MemoryInformation(initialPageCount, maximumPageCount, isShared, isImport, isMemory64);
+    m_info->memories.append(MemoryInformation(initialPageCount, maximumPageCount, isShared, isImport, isMemory64));
+
     return { };
 }
 
@@ -419,10 +424,17 @@ auto SectionParser::parseMemory() -> PartialResult
     if (!count)
         return { };
 
-    WASM_PARSER_FAIL_IF(count != 1, "Memory section has more than one memory, WebAssembly currently only allows zero or one"_s);
+    if (!Options::useWasmMultiMemory())
+        WASM_PARSER_FAIL_IF(count != 1, "Memory section has more than one memory, WebAssembly currently only allows zero or one"_s);
 
-    bool isImport = false;
-    return parseMemoryHelper(isImport);
+    for (unsigned i = 0; i < count; ++i) {
+        bool isImport = false;
+        PartialResult result = parseMemoryHelper(isImport);
+        if (!result) [[unlikely]]
+            return makeUnexpected(WTF::move(result.error()));
+    }
+
+    return { };
 }
 
 auto SectionParser::parseGlobal() -> PartialResult
@@ -505,8 +517,7 @@ auto SectionParser::parseExport() -> PartialResult
             break;
         }
         case ExternalKind::Memory: {
-            WASM_PARSER_FAIL_IF(!m_info->memory, "can't export a non-existent Memory"_s);
-            WASM_PARSER_FAIL_IF(kindIndex, "can't export Memory "_s, kindIndex, " only one Table is currently supported"_s);
+            WASM_PARSER_FAIL_IF(kindIndex >= m_info->memoryCount(), "can't export Memory "_s, kindIndex, " there are "_s, m_info->memoryCount(), " Memories"_s);
             break;
         }
         case ExternalKind::Global: {

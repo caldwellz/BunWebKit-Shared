@@ -261,9 +261,23 @@ void ScrollableArea::scrollPositionChanged(const ScrollPosition& position)
     if (scrollPosition() != oldPosition) {
         scrollbarsController().notifyContentAreaScrolled(scrollPosition() - oldPosition);
 
-        updateScrollAnchoringElement();
+        if (CheckedPtr controller = scrollAnchoringController())
+            controller->scrollPositionDidChange();
+
         updateAnchorPositionedAfterScroll();
     }
+}
+
+void ScrollableArea::willDispatchScrollEvent()
+{
+    if (CheckedPtr controller = scrollAnchoringController())
+        controller->willDispatchScrollEvent();
+}
+
+void ScrollableArea::didDispatchScrollEvent()
+{
+    if (CheckedPtr controller = scrollAnchoringController())
+        controller->didDispatchScrollEvent();
 }
 
 bool ScrollableArea::handleWheelEventForScrolling(const PlatformWheelEvent& wheelEvent, std::optional<WheelScrollGestureState>)
@@ -282,16 +296,10 @@ void ScrollableArea::stopKeyboardScrollAnimation()
     scrollAnimator().stopKeyboardScrollAnimation();
 }
 
-void ScrollableArea::updateScrollAnchoringElement(ComputeNewScrollAnchor computeNewScrollAnchor)
+void ScrollableArea::clearScrollAnchor(IncludeAncestors includeAncestors)
 {
-    CheckedPtr controller = scrollAnchoringController();
-    if (!controller)
-        return;
-
-    if (computeNewScrollAnchor == ComputeNewScrollAnchor::Yes)
-        controller->invalidateAnchorElement();
-
-    controller->updateAnchorElement();
+    if (CheckedPtr controller = scrollAnchoringController())
+        controller->clearAnchor(includeAncestors == IncludeAncestors::Yes);
 }
 
 void ScrollableArea::adjustScrollAnchoringPosition()
@@ -1056,5 +1064,21 @@ void ScrollableArea::scrollbarColorDidChange(std::optional<ScrollbarColor> scrol
 {
     scrollbarsController().scrollbarColorChanged(scrollbarColor);
 }
+
+// MARK: -
+
+ScrollbarRevealBehaviorScope::ScrollbarRevealBehaviorScope(ScrollableArea& scrollableArea, ScrollbarRevealBehavior reveal)
+    : m_scrollableArea(scrollableArea)
+    , m_oldBehavior(scrollableArea.scrollbarRevealBehavior())
+{
+    scrollableArea.setScrollbarRevealBehavior(reveal);
+}
+
+ScrollbarRevealBehaviorScope::~ScrollbarRevealBehaviorScope()
+{
+    CheckedRef scrollableArea = m_scrollableArea.get();
+    scrollableArea->setScrollbarRevealBehavior(m_oldBehavior);
+}
+
 
 } // namespace WebCore

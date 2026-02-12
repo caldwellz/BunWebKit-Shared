@@ -956,7 +956,7 @@ WebPageProxy::WebPageProxy(PageClient& pageClient, WebProcessProxy& process, Ref
 #if PLATFORM(IOS_FAMILY)
     DeprecatedGlobalSettings::setDisableScreenSizeOverride(protect(m_preferences)->disableScreenSizeOverride());
 
-    if (protect(m_configuration)->preferences().serviceWorkerEntitlementDisabledForTesting())
+    if (protect(protect(m_configuration)->preferences())->serviceWorkerEntitlementDisabledForTesting())
         disableServiceWorkerEntitlementInNetworkProcess();
 #endif
 
@@ -1625,7 +1625,7 @@ void WebPageProxy::didAttachToRunningProcess()
 
 #if ENABLE(FULLSCREEN_API)
     ASSERT(!m_fullScreenManager);
-    m_fullScreenManager = WebFullScreenManagerProxy::create(*this, protect(pageClient())->checkedFullScreenManagerProxyClient().get());
+    m_fullScreenManager = WebFullScreenManagerProxy::create(*this, protect(protect(pageClient())->fullScreenManagerProxyClient()).get());
 #endif
 #if ENABLE(VIDEO_PRESENTATION_MODE)
     ASSERT(!m_playbackSessionManager);
@@ -2795,18 +2795,6 @@ RefPtr<WebAutomationSession> WebPageProxy::activeAutomationSession() const
     return m_configuration->processPool().automationSession();
 }
 
-void WebPageProxy::createInspectorTarget(IPC::Connection& connection, const String& targetId, Inspector::InspectorTargetType type)
-{
-    MESSAGE_CHECK_BASE(!targetId.isEmpty(), connection);
-    m_inspectorController->createWebPageInspectorTarget(targetId, type);
-}
-
-void WebPageProxy::destroyInspectorTarget(IPC::Connection& connection, const String& targetId)
-{
-    MESSAGE_CHECK_BASE(!targetId.isEmpty(), connection);
-    m_inspectorController->destroyInspectorTarget(targetId);
-}
-
 void WebPageProxy::sendMessageToInspectorFrontend(const String& targetId, const String& message)
 {
     m_inspectorController->sendMessageToInspectorFrontend(targetId, message);
@@ -3021,10 +3009,10 @@ void WebPageProxy::setViewNeedsDisplay(const Region& region)
         pageClient->setViewNeedsDisplay(region);
 }
 
-void WebPageProxy::requestScroll(const FloatPoint& scrollPosition, const IntPoint& scrollOrigin, ScrollIsAnimated animated)
+void WebPageProxy::requestScroll(const FloatPoint& scrollPosition, const IntPoint& scrollOrigin, ScrollIsAnimated animated, WebCore::InterruptScrollAnimation interruptAnimation)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->requestScroll(scrollPosition, scrollOrigin, animated);
+        pageClient->requestScroll(scrollPosition, scrollOrigin, animated, interruptAnimation);
 }
 
 WebCore::FloatPoint WebPageProxy::viewScrollPosition() const
@@ -7923,12 +7911,8 @@ void WebPageProxy::broadcastFrameTreeSyncData(IPC::Connection& connection, Frame
 
     // FIXME: This could instead be an option in FrameTreeSyncData.in to allow
     // certain properties to be mutable from non-frame-owning processes.
-    if (frameTreePropertyIsRestrictedToFrameOwningProcess(data.type)) {
-        if (&webFrameProxy->process() != &process.get()) {
-            // FIXME: make this a MESSAGE_CHECK.
-            return;
-        }
-    }
+    if (frameTreePropertyIsRestrictedToFrameOwningProcess(data.type))
+        MESSAGE_CHECK(process, &webFrameProxy->process() == &process.get());
 
     if (data.type == WebCore::FrameTreeSyncDataType::FrameRect)
         webFrameProxy->setRemoteFrameRect(std::get<IntRect>(data.value));
@@ -8433,6 +8417,11 @@ void WebPageProxy::decidePolicyForNavigationAction(Ref<WebProcessProxy>&& proces
     auto transaction = std::optional(protectedPageLoadState->transaction());
 
     bool fromAPI = request.url() == protectedPageLoadState->pendingAPIRequestURL();
+    if (frame.isMainFrame() && protectedPageClient->hasBrowsingWarning() && !(fromAPI || (navigationID && navigationID == protectedPageLoadState->pendingAPIRequest().navigationID))) {
+        WEBPAGEPROXY_RELEASE_LOG(Loading, "decidePolicyForNavigationAction: Ignoring navigation because a safe browsing warning is currently shown");
+        return completionHandler(PolicyDecision { isNavigatingToAppBoundDomain() });
+    }
+
     if (navigationID && !fromAPI)
         protectedPageLoadState->clearPendingAPIRequest(*transaction);
 
@@ -9006,7 +8995,7 @@ void WebPageProxy::decidePolicyForResponseShared(Ref<WebProcessProxy>&& process,
 
 #if USE(QUICK_LOOK) && ENABLE(QUICKLOOK_SANDBOX_RESTRICTIONS)
         if (policyAction == PolicyAction::Use && supportsMIMEType) {
-            auto auditToken = protect(process)->connection().getAuditToken();
+            auto auditToken = protect(protect(process)->connection())->getAuditToken();
             bool status = sandbox_enable_state_flag("EnableQuickLookSandboxResources", *auditToken);
             WEBPAGEPROXY_RELEASE_LOG(Sandbox, "Enabling EnableQuickLookSandboxResources state flag, status = %d", status);
         }
@@ -9415,13 +9404,6 @@ void WebPageProxy::addOpenedPage(WebPageProxy& page)
 {
     internals().m_openedPages.add(page);
 }
-
-#if PLATFORM(COCOA)
-CheckedPtr<RemoteScrollingCoordinatorProxy> WebPageProxy::checkedScrollingCoordinatorProxy() const
-{
-    return m_scrollingCoordinatorProxy.get();
-}
-#endif
 
 void WebPageProxy::exitFullscreenImmediately()
 {
@@ -10252,11 +10234,6 @@ WebColorPickerClient& WebPageProxy::colorPickerClient()
     return internals();
 }
 
-CheckedRef<WebColorPickerClient> WebPageProxy::checkedColorPickerClient()
-{
-    return internals();
-}
-
 void WebPageProxy::hasVideoInPictureInPictureDidChange(bool value)
 {
     uiClient().hasVideoInPictureInPictureDidChange(this, value);
@@ -10459,7 +10436,7 @@ void WebPageProxy::setFullScreenClientForTesting(std::unique_ptr<WebFullScreenMa
     pageClient->setFullScreenClientForTesting(WTF::move(client));
 
     if (RefPtr fullScreenManager = m_fullScreenManager)
-        fullScreenManager->attachToNewClient(pageClient->checkedFullScreenManagerProxyClient().get());
+        fullScreenManager->attachToNewClient(protect(pageClient->fullScreenManagerProxyClient()).get());
 }
 #endif
 
@@ -12097,6 +12074,10 @@ void WebPageProxy::resetState(ResetStateReason resetStateReason)
     m_suspendedPageKeptToPreventFlashing = nullptr;
     m_lastSuspendedPage = nullptr;
 
+#if ENABLE(MODEL_ELEMENT_IMMERSIVE)
+    m_allowedImmersiveElementFrameURL = std::nullopt;
+#endif
+
 #if PLATFORM(COCOA)
     m_scrollingPerformanceData = nullptr;
 #if PLATFORM(MAC)
@@ -12189,7 +12170,7 @@ void WebPageProxy::resetState(ResetStateReason resetStateReason)
 
 #if ENABLE(WIRELESS_PLAYBACK_TARGET) && !PLATFORM(IOS_FAMILY)
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->removeAllPlaybackTargetPickerClients(internals());
+        protect(pageClient->mediaSessionManager())->removeAllPlaybackTargetPickerClients(internals());
 #endif
 
 #if ENABLE(APPLE_PAY)
@@ -12557,7 +12538,7 @@ WebPageCreationParameters WebPageProxy::creationParameters(WebProcessProxy& proc
     parameters.textAutosizingWidth = textAutosizingWidth();
     parameters.mimeTypesWithCustomContentProviders = pageClient ? pageClient->mimeTypesWithCustomContentProviders() : Vector<String> { };
     parameters.deviceOrientation = m_deviceOrientation;
-    parameters.hardwareKeyboardState = protect(m_configuration)->processPool().cachedHardwareKeyboardState();
+    parameters.hardwareKeyboardState = protect(protect(m_configuration)->processPool())->cachedHardwareKeyboardState();
     parameters.canShowWhileLocked = m_configuration->canShowWhileLocked();
     parameters.insertionPointColor = pageClient ? pageClient->insertionPointColor() : WebCore::Color { };
 #endif
@@ -13768,16 +13749,35 @@ void WebPageProxy::spatialBackdropSourceChanged(std::optional<WebCore::SpatialBa
 #endif
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-void WebPageProxy::allowImmersiveElementFromURL(const URL& url, CompletionHandler<void(bool)>&& completion) const
+void WebPageProxy::allowImmersiveElement(CompletionHandler<void(bool)>&& completion)
 {
-    if (RefPtr pageClient = this->pageClient())
-        pageClient->allowImmersiveElementFromURL(url, WTF::move(completion));
-    else
+    if (!m_mainFrame)
+        return completion(false);
+    auto url = m_mainFrame->url();
+
+    if (RefPtr pageClient = this->pageClient()) {
+        pageClient->allowImmersiveElementFromURL(url, [weakThis = WeakPtr { *this }, url, completion = WTF::move(completion)](bool allow) mutable {
+            if (weakThis && allow)
+                weakThis.get()->m_allowedImmersiveElementFrameURL = url;
+            completion(allow);
+        });
+    } else
         completion(false);
 }
 
 void WebPageProxy::presentImmersiveElement(const WebCore::LayerHostingContextIdentifier contextID, CompletionHandler<void(bool)>&& completion)
 {
+    if (!m_mainFrame)
+        return completion(false);
+    auto currentURL = m_mainFrame->url();
+
+    if (!m_allowedImmersiveElementFrameURL || m_allowedImmersiveElementFrameURL.value() != currentURL) {
+        WEBPAGEPROXY_RELEASE_LOG_ERROR(ModelElement, "presentImmersiveElement: Rejecting request - URL mismatch or no prior permission.");
+        completion(false);
+        return;
+    }
+    m_allowedImmersiveElementFrameURL = std::nullopt;
+
     if (RefPtr pageClient = this->pageClient()) {
         pageClient->presentImmersiveElement(contextID, [weakThis = WeakPtr { *this }, completion = WTF::move(completion)](bool success) mutable {
             if (success && weakThis)
@@ -15061,43 +15061,43 @@ void WebPageProxy::performSwitchHapticFeedback()
 void WebPageProxy::addPlaybackTargetPickerClient(PlaybackTargetClientContextIdentifier contextId)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->addPlaybackTargetPickerClient(internals(), contextId);
+        protect(pageClient->mediaSessionManager())->addPlaybackTargetPickerClient(internals(), contextId);
 }
 
 void WebPageProxy::removePlaybackTargetPickerClient(PlaybackTargetClientContextIdentifier contextId)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->removePlaybackTargetPickerClient(internals(), contextId);
+        protect(pageClient->mediaSessionManager())->removePlaybackTargetPickerClient(internals(), contextId);
 }
 
 void WebPageProxy::showPlaybackTargetPicker(PlaybackTargetClientContextIdentifier contextId, const WebCore::FloatRect& rect, bool hasVideo)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->showPlaybackTargetPicker(internals(), contextId, pageClient->rootViewToScreen(IntRect(rect)), hasVideo, useDarkAppearance());
+        protect(pageClient->mediaSessionManager())->showPlaybackTargetPicker(internals(), contextId, pageClient->rootViewToScreen(IntRect(rect)), hasVideo, useDarkAppearance());
 }
 
 void WebPageProxy::playbackTargetPickerClientStateDidChange(PlaybackTargetClientContextIdentifier contextId, WebCore::MediaProducerMediaStateFlags state)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->clientStateDidChange(internals(), contextId, state);
+        protect(pageClient->mediaSessionManager())->clientStateDidChange(internals(), contextId, state);
 }
 
 void WebPageProxy::setMockMediaPlaybackTargetPickerEnabled(bool enabled)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->setMockMediaPlaybackTargetPickerEnabled(enabled);
+        protect(pageClient->mediaSessionManager())->setMockMediaPlaybackTargetPickerEnabled(enabled);
 }
 
 void WebPageProxy::setMockMediaPlaybackTargetPickerState(const String& name, WebCore::MediaPlaybackTargetMockState state)
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->setMockMediaPlaybackTargetPickerState(name, state);
+        protect(pageClient->mediaSessionManager())->setMockMediaPlaybackTargetPickerState(name, state);
 }
 
 void WebPageProxy::mockMediaPlaybackTargetPickerDismissPopup()
 {
     if (RefPtr pageClient = this->pageClient())
-        pageClient->checkedMediaSessionManager()->mockMediaPlaybackTargetPickerDismissPopup();
+        protect(pageClient->mediaSessionManager())->mockMediaPlaybackTargetPickerDismissPopup();
 }
 
 void WebPageProxy::Internals::setPlaybackTarget(PlaybackTargetClientContextIdentifier contextId, Ref<MediaPlaybackTarget>&& target)
@@ -16868,11 +16868,6 @@ WebCore::PageIdentifier WebPageProxy::webPageIDInProcess(const WebProcessProxy& 
 }
 
 WebPopupMenuProxyClient& WebPageProxy::popupMenuClient()
-{
-    return internals();
-}
-
-CheckedRef<WebPopupMenuProxyClient> WebPageProxy::checkedPopupMenuClient()
 {
     return internals();
 }

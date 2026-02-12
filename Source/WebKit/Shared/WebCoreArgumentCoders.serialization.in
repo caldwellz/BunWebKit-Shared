@@ -356,6 +356,7 @@ header: <WebCore/ScrollbarTrackCornerSystemImageMac.h>
 
 header: <WebCore/ScrollTypes.h>
 enum class WebCore::ScrollIsAnimated : bool;
+enum class WebCore::ScrollbarRevealBehavior : bool;
 
 enum class WebCore::ScrollGranularity : uint8_t {
     Line,
@@ -2190,11 +2191,6 @@ header: <WebCore/TextChecking.h>
 class WebCore::LayoutRect {
     WebCore::LayoutPoint m_location;
     WebCore::LayoutSize m_size;
-};
-
-struct WebCore::RemoteFrameLayoutInfo {
-    std::optional<WebCore::LayoutRect> visibleRectInParent;
-    float usedZoom;
 };
 
 header: <WebCore/VP9Utilities.h>
@@ -4313,6 +4309,7 @@ enum class WebCore::ScrollType : bool;
     WebCore::ScrollType scrollType;
     WebCore::ScrollClamping clamping;
     WebCore::ScrollIsAnimated animated;
+    WebCore::ScrollbarRevealBehavior scrollbarRevealBehavior;
     std::optional<std::tuple<WebCore::ScrollRequestType, Variant<WebCore::FloatPoint, WebCore::FloatSize>, WebCore::ScrollType, WebCore::ScrollClamping>> requestedDataBeforeAnimatedScroll;
 }
 
@@ -6894,6 +6891,7 @@ header: <WebCore/TextExtractionTypes.h>
     bool includeEventListeners;
     bool includeAccessibilityAttributes;
     bool includeTextInAutoFilledControls;
+    bool includeOffscreenPasswordFields;
 #if ENABLE(DATA_DETECTION)
     OptionSet<WebCore::DataDetectorType> dataDetectorTypes;
 #endif
@@ -7068,6 +7066,9 @@ header: <WebCore/WritingToolsTypes.h>
     Other
 };
 
+header: <WebCore/WritingToolsTypes.h>
+enum class WebCore::WritingTools::IsForProofreadingReview : bool;
+
 using WebCore::WritingTools::SessionID = WTF::UUID;
 
 header: <WebCore/WritingToolsTypes.h>
@@ -7075,6 +7076,7 @@ header: <WebCore/WritingToolsTypes.h>
     WebCore::WritingTools::SessionID identifier;
     WebCore::WritingTools::SessionType type;
     WebCore::WritingTools::SessionCompositionType compositionType;
+    WebCore::WritingTools::IsForProofreadingReview isForProofreadingReview;
 };
 
 using WebCore::WritingTools::ContextID = WTF::UUID;
@@ -7091,7 +7093,8 @@ header: <WebCore/WritingToolsTypes.h>
     Pending,
     Reviewing,
     Rejected,
-    Invalid
+    Invalid,
+    Accepted
 };
 
 using WebCore::WritingTools::TextSuggestionID = WTF::UUID;

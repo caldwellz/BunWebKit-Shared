@@ -467,7 +467,7 @@ void JSTestCEReactionsOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* co
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestCEReactions = static_cast<JSTestCEReactions*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestCEReactions->protectedWrapped().ptr(), jsTestCEReactions);
+    uncacheWrapper(world, protect(jsTestCEReactions->wrapped()).ptr(), jsTestCEReactions);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

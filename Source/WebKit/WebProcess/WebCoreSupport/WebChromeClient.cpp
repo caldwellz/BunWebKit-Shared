@@ -80,6 +80,9 @@
 #include <WebCore/BarcodeDetectorInterface.h>
 #include <WebCore/ColorChooser.h>
 #include <WebCore/ColorChooserClient.h>
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+#include <WebCore/ContentChangeObserver.h>
+#endif
 #include <WebCore/ContentRuleListMatchedRule.h>
 #include <WebCore/ContentRuleListResults.h>
 #include <WebCore/DataListSuggestionPicker.h>
@@ -1664,26 +1667,26 @@ void WebChromeClient::spatialBackdropSourceChanged() const
 #endif
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-void WebChromeClient::allowImmersiveElement(const Element& element, CompletionHandler<void(bool)>&& completion) const
+void WebChromeClient::allowImmersiveElement(CompletionHandler<void(bool)>&& completion) const
 {
     if (RefPtr page = m_page.get())
-        page->allowImmersiveElement(element, WTF::move(completion));
+        page->allowImmersiveElement(WTF::move(completion));
     else
         completion(false);
 }
 
-void WebChromeClient::presentImmersiveElement(const Element& element, const LayerHostingContextIdentifier contextID, CompletionHandler<void(bool)>&& completion) const
+void WebChromeClient::presentImmersiveElement(const LayerHostingContextIdentifier contextID, CompletionHandler<void(bool)>&& completion) const
 {
     if (RefPtr page = m_page.get())
-        page->presentImmersiveElement(element, contextID, WTF::move(completion));
+        page->presentImmersiveElement(contextID, WTF::move(completion));
     else
         completion(false);
 }
 
-void WebChromeClient::dismissImmersiveElement(const Element& element, CompletionHandler<void()>&& completion) const
+void WebChromeClient::dismissImmersiveElement(CompletionHandler<void()>&& completion) const
 {
     if (RefPtr page = m_page.get())
-        page->dismissImmersiveElement(element, WTF::move(completion));
+        page->dismissImmersiveElement(WTF::move(completion));
     else
         completion();
 }
@@ -2422,6 +2425,14 @@ void WebChromeClient::showCaptionDisplaySettings(HTMLMediaElement& element, cons
         else
             completionHandler(expected.error().toException());
     });
+}
+#endif
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+void WebChromeClient::didFinishContentChangeObserving(WebCore::LocalFrame& frame, WebCore::ContentChange observedContentChange)
+{
+    if (RefPtr page = m_page.get())
+        page->didFinishContentChangeObserving(frame.frameID(), observedContentChange);
 }
 #endif
 

@@ -25,7 +25,7 @@
 
 #pragma once
 
-#include "ContextDestructionObserver.h"
+#include "ActiveDOMObject.h"
 #include "ExceptionOr.h"
 #include "InternalReadableStream.h"
 #include "JSValueInWrappedObject.h"
@@ -56,13 +56,13 @@ class WritableStream;
 struct StreamPipeOptions;
 struct UnderlyingSource;
 
-using ReadableStreamReader = Variant<RefPtr<ReadableStreamDefaultReader>, RefPtr<ReadableStreamBYOBReader>>;
+using ReadableStreamReader = Variant<Ref<ReadableStreamDefaultReader>, Ref<ReadableStreamBYOBReader>>;
 
 struct DetachedReadableStream {
     Ref<MessagePort> readableStreamPort;
 };
 
-class ReadableStream : public RefCounted<ReadableStream>, public ContextDestructionObserver {
+class ReadableStream : public RefCounted<ReadableStream>, public ActiveDOMObject {
 public:
     enum class ReaderMode { Byob };
     struct GetReaderOptions {
@@ -88,9 +88,10 @@ public:
     ExceptionOr<DetachedReadableStream> runTransferSteps(JSDOMGlobalObject&);
     static ExceptionOr<Ref<ReadableStream>> runTransferReceivingSteps(JSDOMGlobalObject&, DetachedReadableStream&&);
 
-    // ContextDestructionObserver.
+    // ActiveDOMObject.
     void ref() const final { RefCounted::ref(); }
     void deref() const final { RefCounted::deref(); }
+    void stop() final;
 
     Ref<DOMPromise> cancelForBindings(JSDOMGlobalObject&, JSC::JSValue);
     ExceptionOr<ReadableStreamReader> getReader(JSDOMGlobalObject&, const GetReaderOptions&);
@@ -110,14 +111,14 @@ public:
     InternalReadableStream* internalReadableStream() { return m_internalReadableStream.get(); }
 
     void setDefaultReader(ReadableStreamDefaultReader*);
-    ReadableStreamDefaultReader* defaultReader();
+    ReadableStreamDefaultReader* NODELETE defaultReader();
 
     bool hasByteStreamController() { return !!m_controller; }
     ReadableByteStreamController* controller() { return m_controller.get(); }
     RefPtr<ReadableByteStreamController> protectedController() { return m_controller.get(); }
 
     void setByobReader(ReadableStreamBYOBReader*);
-    ReadableStreamBYOBReader* byobReader();
+    ReadableStreamBYOBReader* NODELETE byobReader();
     void fulfillReadIntoRequest(JSDOMGlobalObject&, RefPtr<JSC::ArrayBufferView>&&, bool done);
 
     void fulfillReadRequest(JSDOMGlobalObject&, RefPtr<JSC::ArrayBufferView>&&, bool done);

@@ -402,7 +402,7 @@ void NetworkTransportSession::setupDatagramConnection(CompletionHandler<void(std
     RetainPtr webtransportOptions = adoptNS(nw_webtransport_create_options());
     if (!webtransportOptions) {
         ASSERT_NOT_REACHED();
-        return;
+        return completionHandler(std::nullopt);
     }
     nw_webtransport_options_set_is_unidirectional(webtransportOptions.get(), false);
     nw_webtransport_options_set_is_datagram(webtransportOptions.get(), true);
@@ -412,7 +412,7 @@ void NetworkTransportSession::setupDatagramConnection(CompletionHandler<void(std
     m_datagramConnection = adoptNS(nw_connection_group_extract_connection(m_connectionGroup.get(), nil, webtransportOptions.get()));
     if (!m_datagramConnection) {
         ASSERT_NOT_REACHED();
-        return;
+        return completionHandler(std::nullopt);
     }
 
     auto creationCompletionHandler = [completionHandler = WTF::move(completionHandler)] (bool success) mutable {

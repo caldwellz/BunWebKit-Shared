@@ -960,7 +960,7 @@ private:
     [[nodiscard]] Value* fixupPointerPlusOffsetForAtomicOps(ExtAtomicOpType, Value*, uint32_t);
 
     void restoreWasmContextInstance(BasicBlock*, Value*);
-    void restoreWebAssemblyGlobalState(const MemoryInformation&, Value* instance, BasicBlock*);
+    void restoreWebAssemblyGlobalState(const Vector<MemoryInformation>&, Value* instance, BasicBlock*);
     void reloadMemoryRegistersFromInstance(const MemoryInformation&, Value* instance, BasicBlock*);
 
     void materializeExpressionStackIntoVariables();
@@ -1252,7 +1252,7 @@ OMGIRGenerator::OMGIRGenerator(AbstractHeapRepository& heaps, CompilationContext
     if (mode == MemoryMode::BoundsChecking)
         m_proc.pinRegister(GPRInfo::wasmBoundsCheckingSizeRegister);
 
-    if (info.memory) {
+    if (info.memoryCount()) {
         m_proc.setWasmBoundsCheckGenerator([=, this](CCallHelpers& jit, WasmBoundsCheckValue* originValue, GPRReg pinnedGPR) {
             AllowMacroScratchRegisterUsage allowScratch(jit);
             switch (m_mode) {
@@ -1282,8 +1282,8 @@ OMGIRGenerator::OMGIRGenerator(AbstractHeapRepository& heaps, CompilationContext
         m_vmValue->setControlDependent(false);
         m_vmValue->setReadsMutability(B3::Mutability::Immutable);
 
-        if (!!m_info.memory) {
-            if (useSignalingMemory() || m_info.memory.isShared()) {
+        if (m_info.memoryCount()) {
+            if (useSignalingMemory() || m_info.theOnlyMemory().isShared()) {
                 // Capacity and basePointer will not be changed in this case.
                 if (m_mode == MemoryMode::BoundsChecking) {
                     B3::PatchpointValue* getBoundsCheckingSize = m_topLevelBlock->appendNew<B3::PatchpointValue>(m_proc, pointerType(), Origin());
@@ -1361,12 +1361,12 @@ OMGIRGenerator::OMGIRGenerator(AbstractHeapRepository& heaps, CompilationContext
         m_currentBlock = m_proc.addBlock();
 }
 
-void OMGIRGenerator::restoreWebAssemblyGlobalState(const MemoryInformation& memory, Value* instance, BasicBlock* block)
+void OMGIRGenerator::restoreWebAssemblyGlobalState(const Vector<MemoryInformation>& memories, Value* instance, BasicBlock* block)
 {
     restoreWasmContextInstance(block, instance);
 
-    if (!!memory) {
-        if (useSignalingMemory() || memory.isShared()) {
+    if (memories.size()) {
+        if (useSignalingMemory() || memories[0].isShared()) {
             RegisterSet clobbers;
             clobbers.add(GPRInfo::wasmBaseMemoryPointer, IgnoreVectors);
             if (m_mode == MemoryMode::BoundsChecking)
@@ -1390,7 +1390,7 @@ void OMGIRGenerator::restoreWebAssemblyGlobalState(const MemoryInformation& memo
             return;
         }
 
-        reloadMemoryRegistersFromInstance(memory, instance, block);
+        reloadMemoryRegistersFromInstance(memories[0], instance, block);
     }
 }
 
@@ -1926,7 +1926,7 @@ auto OMGIRGenerator::emitIndirectCall(Value* calleeInstance, Value* calleeCode, 
     fillCallResults(patchpoint, signature, results);
 
     // The call could have been to another WebAssembly instance, and / or could have modified our Memory.
-    restoreWebAssemblyGlobalState(m_info.memory, instanceValue(), m_currentBlock);
+    restoreWebAssemblyGlobalState(m_info.memories, instanceValue(), m_currentBlock);
     return { };
 }
 
@@ -1935,7 +1935,7 @@ auto OMGIRGenerator::addGrowMemory(ExpressionType delta, ExpressionType& result)
     result = push(callWasmOperation(m_currentBlock, Int32, operationGrowMemory,
         instanceValue(), get(delta)));
 
-    restoreWebAssemblyGlobalState(m_info.memory, instanceValue(), m_currentBlock);
+    restoreWebAssemblyGlobalState(m_info.memories, instanceValue(), m_currentBlock);
 
     return { };
 }
@@ -2379,7 +2379,7 @@ inline Value* OMGIRGenerator::emitCheckAndPreparePointer(Value* pointer, uint32_
         // than the declared 'maximum' will trap, so we can compare against that number. If there was no declared 'maximum' then we still know that
         // any access equal to or greater than 4GiB will trap, no need to add the redzone.
         if (offset >= Memory::fastMappedRedzoneBytes()) {
-            size_t maximum = m_info.memory.maximum() ? m_info.memory.maximum().bytes() : std::numeric_limits<uint32_t>::max();
+            size_t maximum = m_info.theOnlyMemory().maximum() ? m_info.theOnlyMemory().maximum().bytes() : std::numeric_limits<uint32_t>::max();
             uint64_t lastLoadedOffset = static_cast<uint64_t>(offset);
             lastLoadedOffset += static_cast<uint64_t>(sizeOfOperation - 1);
             m_currentBlock->appendNew<WasmBoundsCheckValue>(m_proc, origin(), pointer, lastLoadedOffset, maximum);
@@ -2419,7 +2419,7 @@ inline uint32_t sizeOfLoadOp(LoadOpType op)
 
 inline B3::Kind OMGIRGenerator::memoryKind(B3::Opcode memoryOp)
 {
-    if (useSignalingMemory() || m_info.memory.isShared())
+    if (useSignalingMemory() || m_info.theOnlyMemory().isShared())
         return trapping(memoryOp);
     return memoryOp;
 }
@@ -5939,7 +5939,7 @@ auto OMGIRGenerator::emitDirectCall(unsigned callProfileIndex, FunctionSpaceInde
             fillCallResults(patchpoint, signature, results);
 
         // The call could have been to another WebAssembly instance, and / or could have modified our Memory.
-        restoreWebAssemblyGlobalState(m_info.memory, instanceValue(), m_currentBlock);
+        restoreWebAssemblyGlobalState(m_info.memories, instanceValue(), m_currentBlock);
         return { };
     } // isImportedFunctionFromFunctionIndexSpace
 
@@ -5992,14 +5992,15 @@ auto OMGIRGenerator::emitDirectCall(unsigned callProfileIndex, FunctionSpaceInde
     auto [patchpoint, handle, prepareForCall] = createCallPatchpoint(m_currentBlock, signature, wasmCalleeInfo, args);
     emitUnlinkedWasmToWasmCall(patchpoint, handle, prepareForCall);
     // We need to clobber the size register since the IPInt always bounds checks
-    if (useSignalingMemory() || m_info.memory.isShared())
+    // FIXME(wasm-multimemory): is this the right way to handle a memoryCount of 0?
+    if (useSignalingMemory() || (m_info.memoryCount() && m_info.theOnlyMemory().isShared()))
         patchpoint->clobberLate(RegisterSetBuilder { GPRInfo::wasmBoundsCheckingSizeRegister });
 
     fillCallResults(patchpoint, signature, results);
 
     if (m_info.callCanClobberInstance(functionIndexSpace)) {
         patchpoint->clobberLate(RegisterSetBuilder::wasmPinnedRegisters());
-        restoreWebAssemblyGlobalState(m_info.memory, instanceValue(), m_currentBlock);
+        restoreWebAssemblyGlobalState(m_info.memories, instanceValue(), m_currentBlock);
     }
 
     return { };

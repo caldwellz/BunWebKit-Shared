@@ -85,6 +85,10 @@ public:
     void scrollingTreeNodeDidEndScrollSnapping(WebCore::ScrollingNodeID) override;
 
     void stickyScrollingTreeNodeBeganSticking(WebCore::ScrollingNodeID) final;
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    void stickyScrollingTreeNodeEndedSticking(WebCore::ScrollingNodeID) final;
+    void scrollingTreeNodeWillBeRemoved(WebCore::ScrollingNodeID) final;
+#endif
 
     void currentSnapPointIndicesDidChange(WebCore::ScrollingNodeID, std::optional<unsigned> horizontal, std::optional<unsigned> vertical) override;
     void reportExposedUnfilledArea(MonotonicTime, unsigned unfilledArea) override;

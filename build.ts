@@ -108,6 +108,9 @@ const getCommonFlags = (config: BuildConfig) => {
     "-DUSE_BUN_JSC_ADDITIONS=ON",
     "-DUSE_BUN_EVENT_LOOP=ON",
     "-DENABLE_FTL_JIT=ON",
+    "-DENABLE_MEDIA_SOURCE=OFF",
+    "-DENABLE_MEDIA_STREAM=OFF",
+    "-DENABLE_WEB_RTC=OFF",
     "-G",
     "Ninja",
   ];

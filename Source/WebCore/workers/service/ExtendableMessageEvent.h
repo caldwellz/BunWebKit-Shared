@@ -44,7 +44,7 @@ class SecurityOrigin;
 class ServiceWorker;
 class ServiceWorkerClient;
 
-using ExtendableMessageEventSource = Variant<RefPtr<ServiceWorkerClient>, RefPtr<ServiceWorker>, RefPtr<MessagePort>>;
+using ExtendableMessageEventSource = Variant<Ref<ServiceWorkerClient>, Ref<ServiceWorker>, Ref<MessagePort>>;
 
 class ExtendableMessageEvent final : public ExtendableEvent {
     WTF_MAKE_TZONE_ALLOCATED(ExtendableMessageEvent);

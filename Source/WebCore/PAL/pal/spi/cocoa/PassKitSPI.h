@@ -362,6 +362,9 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, strong, readwrite) PKShippingMethod *shippingMethod;
 @end
 
+@interface PKShippingMethod () <NSSecureCoding>
+@end
+
 @interface PKPaymentMerchantSession () <NSSecureCoding>
 @end
 

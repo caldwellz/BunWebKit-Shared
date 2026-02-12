@@ -56,8 +56,7 @@ public:
 
     Vector<String> supportedPropertyNames() const;
 
-    Element& element();
-    Ref<Element> protectedElement() const;
+    Element& element() const;
 
 private:
     WeakRef<Element, WeakPtrImplWithEventTargetData> m_element;

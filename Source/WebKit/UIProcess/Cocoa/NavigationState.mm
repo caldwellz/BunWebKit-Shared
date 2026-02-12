@@ -1602,7 +1602,7 @@ void NavigationState::didChangeIsLoading()
         return;
 
 #if USE(RUNNINGBOARD)
-    if (protect(*webView->_page)->pageLoadState().isLoading()) {
+    if (protect(protect(*webView->_page)->pageLoadState())->isLoading()) {
 #if PLATFORM(IOS_FAMILY)
         // We do not start a network activity if a load starts after the screen has been locked.
         if (UIApplication.sharedApplication.isSuspendedUnderLock)
@@ -1747,7 +1747,7 @@ void NavigationState::didSwapWebProcesses()
 #if USE(RUNNINGBOARD)
     // Transfer our background assertion from the old process to the new one.
     auto webView = this->webView();
-    if (webView && protect(*webView->_page)->pageLoadState().isLoading())
+    if (webView && protect(protect(*webView->_page)->pageLoadState())->isLoading())
         webView->_page->takeNetworkActivity();
 #endif
 }

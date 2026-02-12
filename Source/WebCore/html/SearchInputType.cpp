@@ -118,7 +118,7 @@ PopupMenuStyle SearchInputType::itemStyle(unsigned) const
 PopupMenuStyle SearchInputType::menuStyle() const
 {
     auto defaultStyle = RenderStyle::create();
-    CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protectedElement()->renderer());
+    CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protect(element())->renderer());
     CheckedRef style = renderer ? renderer->style() : defaultStyle;
     return PopupMenuStyle(
         style->visitedDependentColorApplyingColorFilter(),
@@ -152,24 +152,24 @@ int SearchInputType::clientInsetRight() const
 
 LayoutUnit SearchInputType::clientPaddingLeft() const
 {
-    CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protectedElement()->renderer());
+    CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protect(element())->renderer());
     return renderer ? renderer->clientPaddingLeft() : 0_lu;
 }
 
 LayoutUnit SearchInputType::clientPaddingRight() const
 {
-    CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protectedElement()->renderer());
+    CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protect(element())->renderer());
     return renderer ? renderer->clientPaddingRight() : 0_lu;
 }
 
 FontSelector* SearchInputType::fontSelector() const
 {
-    return &protect(protectedElement()->document())->fontSelector();
+    return &protect(protect(element())->document())->fontSelector();
 }
 
 HostWindow* SearchInputType::hostWindow() const
 {
-    if (CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protectedElement()->renderer()))
+    if (CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protect(element())->renderer()))
         return renderer->hostWindow();
     return nullptr;
 }
@@ -186,7 +186,7 @@ int SearchInputType::listSize() const
 
 void SearchInputType::popupDidHide()
 {
-    if (CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protectedElement()->renderer()))
+    if (CheckedPtr renderer = dynamicDowncast<RenderSearchField>(protect(element())->renderer()))
         renderer->popupDidHide();
 }
 
@@ -209,7 +209,7 @@ bool SearchInputType::itemIsSelected(unsigned) const
 #if !PLATFORM(COCOA)
 void SearchInputType::setTextFromItem(unsigned listIndex)
 {
-    protectedElement()->setValue(itemText(listIndex));
+    protect(element())->setValue(itemText(listIndex));
 }
 #endif
 
@@ -268,7 +268,7 @@ RenderPtr<RenderElement> SearchInputType::createInputRenderer(RenderStyle&& styl
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderSearchField>(*protectedElement(), WTF::move(style));
+    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderSearchField>(*protect(element()), WTF::move(style));
 }
 
 const AtomString& SearchInputType::formControlType() const
@@ -385,7 +385,7 @@ float SearchInputType::decorationWidth(float) const
 
 void SearchInputType::setValue(const String& sanitizedValue, bool valueChanged, TextFieldEventBehavior eventBehavior, TextControlSetValueSelection selection)
 {
-    bool emptinessChanged = valueChanged && sanitizedValue.isEmpty() != protectedElement()->value()->isEmpty();
+    bool emptinessChanged = valueChanged && sanitizedValue.isEmpty() != protect(element())->value()->isEmpty();
 
     BaseTextInputType::setValue(sanitizedValue, valueChanged, eventBehavior, selection);
 

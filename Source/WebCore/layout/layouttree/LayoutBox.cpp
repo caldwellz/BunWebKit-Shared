@@ -253,7 +253,7 @@ bool Box::isInlineLevelBox() const
 {
     // Inline level elements generate inline level boxes.
     auto display = m_style.display();
-    return display == DisplayType::Inline
+    return is<ElementBox>(*this) && (display == DisplayType::Inline
         || display == DisplayType::InlineBox
         || display == DisplayType::InlineFlex
         || display == DisplayType::InlineGrid
@@ -262,7 +262,7 @@ bool Box::isInlineLevelBox() const
         || display == DisplayType::RubyBase
         || display == DisplayType::RubyAnnotation
         || isInlineBlockBox()
-        || isInlineTableBox();
+        || isInlineTableBox());
 }
 
 bool Box::isInlineBox() const
@@ -270,7 +270,7 @@ bool Box::isInlineBox() const
     // An inline box is one that is both inline-level and whose contents participate in its containing inline formatting context.
     // A non-replaced element with a 'display' value of 'inline' generates an inline box.
     auto display = m_style.display();
-    return (display == DisplayType::Inline || display == DisplayType::Ruby || display == DisplayType::RubyBase) && !isReplacedBox();
+    return is<ElementBox>(*this) && (display == DisplayType::Inline || display == DisplayType::Ruby || display == DisplayType::RubyBase) && !isReplacedBox();
 }
 
 bool Box::isAtomicInlineBox() const

@@ -155,11 +155,14 @@ ExceptionOr<void> RTCEncodedStreamProducer::writeFrame(ScriptExecutionContext& c
         return Exception { ExceptionCode::ExistingExceptionError };
 
     auto frame = frameConversionResult.releaseReturnValue();
-    auto rtcFrame = WTF::switchOn(frame, [&](RefPtr<RTCEncodedAudioFrame>& value) {
-        return value->rtcFrame(vm);
-    }, [&](RefPtr<RTCEncodedVideoFrame>& value) {
-        return value->rtcFrame(vm);
-    });
+    auto rtcFrame = WTF::switchOn(frame,
+        [&](Ref<RTCEncodedAudioFrame>& value) {
+            return value->rtcFrame(vm);
+        },
+        [&](Ref<RTCEncodedVideoFrame>& value) {
+            return value->rtcFrame(vm);
+        }
+    );
 
     // If no data, skip the frame since there is nothing to packetize or decode.
     if (rtcFrame->data().data())
@@ -177,7 +180,7 @@ void RTCEncodedStreamProducer::generateKeyFrame(ScriptExecutionContext& context,
         return;
 
     if (!backend->requestKeyFrame(rid)) {
-        context.checkedEventLoop()->queueTask(TaskSource::Networking, [promise = WTF::move(promise)]() mutable {
+        protect(context.eventLoop())->queueTask(TaskSource::Networking, [promise = WTF::move(promise)]() mutable {
             promise->reject(Exception { ExceptionCode::NotFoundError, "rid was not found or is empty"_s });
         });
         return;

@@ -52,7 +52,9 @@ public:
     bool hasDefiniteRowPosition() const;
     bool hasDefiniteColumnPosition() const;
     bool hasAutoColumnPosition() const;
+    bool hasAutoRowPosition() const;
     size_t columnSpanSize() const;
+    size_t rowSpanSize() const;
 
     std::pair<size_t, size_t> normalizedRowStartEnd() const;
     std::pair<size_t, size_t> normalizedColumnStartEnd() const;

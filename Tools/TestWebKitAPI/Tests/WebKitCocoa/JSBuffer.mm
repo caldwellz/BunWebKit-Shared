@@ -27,7 +27,9 @@
 
 #import "PlatformUtilities.h"
 #import "TestWKWebView.h"
+#import <WebKit/WKContentWorldPrivate.h>
 #import <WebKit/WKUserContentControllerPrivate.h>
+#import <WebKit/_WKContentWorldConfiguration.h>
 #import <WebKit/_WKJSBuffer.h>
 
 TEST(JSBuffer, Data)
@@ -64,4 +66,24 @@ TEST(JSBuffer, IDLExposed)
     RetainPtr webView = adoptNS([TestWKWebView new]);
     EXPECT_FALSE([[webView objectByEvaluatingJavaScript:@"!!window.WebKitBuffer"] boolValue]);
     EXPECT_FALSE([[webView objectByEvaluatingJavaScript:@"!!window.WebKitBufferNamespace"] boolValue]);
+}
+
+TEST(JSBuffer, EvaluateScript)
+{
+    const uint8_t script[] = "didPass = true; 'PAS' + 'S'";
+    RetainPtr sourceBuffer = adoptNS([[_WKJSBuffer alloc] initWithData:[NSData dataWithBytes:script length:std::size(script) - 1]]);
+    RetainPtr configuration = adoptNS([WKWebViewConfiguration new]);
+
+    RetainPtr contentWorldConfiguration = adoptNS([_WKContentWorldConfiguration new]);
+    contentWorldConfiguration.get().name = @"nonMainWorld";
+    RetainPtr world = [WKContentWorld _worldWithConfiguration:contentWorldConfiguration.get()];
+
+    [configuration.get().userContentController _addBuffer:sourceBuffer.get() contentWorld:world.get() name:@"sourceCode"];
+    RetainPtr webView = adoptNS([[TestWKWebView alloc] initWithFrame:CGRectZero configuration:configuration.get()]);
+
+    EXPECT_FALSE([[webView objectByEvaluatingJavaScript:@"window.didPass"] boolValue]);
+    EXPECT_FALSE([[webView objectByEvaluatingJavaScript:@"window.didPass" inFrame:nil inContentWorld:world.get()] boolValue]);
+    EXPECT_WK_STREQ([webView objectByEvaluatingJavaScript:@"window.webkit.evaluateScript(window.webkit.buffers.sourceCode.asLatin1String())" inFrame:nil inContentWorld:world.get()], "PASS");
+    EXPECT_FALSE([[webView objectByEvaluatingJavaScript:@"window.didPass"] boolValue]);
+    EXPECT_TRUE([[webView objectByEvaluatingJavaScript:@"window.didPass" inFrame:nil inContentWorld:world.get()] boolValue]);
 }

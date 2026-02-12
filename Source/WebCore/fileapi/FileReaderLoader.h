@@ -110,8 +110,6 @@ private:
     static ExceptionCode httpStatusCodeToErrorCode(int);
     static ExceptionCode toErrorCode(BlobResourceHandle::Error);
 
-    RefPtr<JSC::ArrayBuffer> protectedRawData() const { return m_rawData; }
-
     ReadType m_readType;
     WeakPtr<FileReaderLoaderClient> m_client;
     PAL::TextEncoding m_encoding;

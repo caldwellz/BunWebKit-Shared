@@ -49,11 +49,12 @@
 namespace WebCore {
 namespace Layout {
 
-static inline InlineLayoutUnit spaceWidth(const FontCascade& fontCascade, bool canUseSimplifiedContentMeasuring)
+InlineLayoutUnit TextUtil::singleSpaceWidth(const FontCascade& fontCascade, bool canUseSimplifiedContentMeasuring)
 {
-    if (canUseSimplifiedContentMeasuring)
-        return fontCascade.primaryFont()->spaceWidth();
-    return fontCascade.widthOfSpaceString();
+    auto width = canUseSimplifiedContentMeasuring ? fontCascade.primaryFont()->spaceWidth() : fontCascade.widthOfSpaceString();
+    if (std::isnan(width) || std::isinf(width)) [[unlikely]]
+        return std::isnan(width) ? 0.0f : maxInlineLayoutUnit();
+    return width;
 }
 
 InlineLayoutUnit TextUtil::width(const InlineTextBox& inlineTextBox, const FontCascade& fontCascade, unsigned from, unsigned to, InlineLayoutUnit contentLogicalLeft, UseTrailingWhitespaceMeasuringOptimization useTrailingWhitespaceMeasuringOptimization, TextSpacing::SpacingState spacingState, GlyphOverflow* glyphOverflow)
@@ -93,7 +94,7 @@ InlineLayoutUnit TextUtil::width(const InlineTextBox& inlineTextBox, const FontC
     }
 
     if (extendedMeasuring)
-        width -= (spaceWidth(fontCascade, useSimplifiedContentMeasuring) + fontCascade.wordSpacing());
+        width -= (singleSpaceWidth(fontCascade, useSimplifiedContentMeasuring) + fontCascade.wordSpacing());
 
     if (std::isnan(width) || std::isinf(width)) [[unlikely]]
         return std::isnan(width) ? 0.0f : maxInlineLayoutUnit();
@@ -112,16 +113,9 @@ InlineLayoutUnit TextUtil::width(const InlineTextItem& inlineTextItem, const Fon
 
     if (inlineTextItem.isWhitespace()) {
         auto& inlineTextBox = inlineTextItem.inlineTextBox();
-        auto useSimplifiedContentMeasuring = inlineTextBox.canUseSimplifiedContentMeasuring();
-        auto length = from - to;
-        auto singleWhiteSpace = length == 1 || !TextUtil::shouldPreserveSpacesAndTabs(inlineTextBox);
-
-        if (singleWhiteSpace) {
-            auto width = spaceWidth(fontCascade, useSimplifiedContentMeasuring);
-            if (std::isnan(width) || std::isinf(width)) [[unlikely]]
-                return std::isnan(width) ? 0.0f : maxInlineLayoutUnit();
-            return std::max(0.f, width);
-        }
+        auto singleWhiteSpace = from - to == 1 || !TextUtil::shouldPreserveSpacesAndTabs(inlineTextBox);
+        if (singleWhiteSpace)
+            return std::max(0.f, singleSpaceWidth(fontCascade, inlineTextBox.canUseSimplifiedContentMeasuring()));
     }
     return width(inlineTextItem.inlineTextBox(), fontCascade, from, to, contentLogicalLeft, useTrailingWhitespaceMeasuringOptimization, spacingState, glyphOverflow);
 }

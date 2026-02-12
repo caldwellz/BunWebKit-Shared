@@ -18,6 +18,7 @@
 
 #pragma once
 
+#include <WebCore/AbortSignal.h>
 #include <WebCore/AddEventListenerOptions.h>
 #include <WebCore/EventListener.h>
 #include <WebCore/EventTarget.h>
@@ -36,7 +37,7 @@ public:
     {
         Ref<GObjectEventListener> listener(adoptRef(*new GObjectEventListener(target, coreTarget, domEventName, handler, useCapture)));
         auto type = listener->m_eventType;
-        return coreTarget->addEventListener(type, WTF::move(listener), useCapture);
+        return coreTarget->addEventListener(type, WTF::move(listener), { { useCapture }, std::nullopt, false, nullptr, false });
     }
 
     static bool removeEventListener(GObject* target, WebCore::EventTarget* coreTarget, const char* domEventName, GClosure* handler, bool useCapture)

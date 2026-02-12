@@ -64,7 +64,6 @@
 #include <WebCore/Image.h>
 #include <WebCore/MIMETypeRegistry.h>
 #include <WebCore/NavigationScheduler.h>
-#include <WebCore/RemoteFrameLayoutInfo.h>
 #include <WebCore/ShareableBitmapHandle.h>
 #include <WebCore/WebKitJSHandle.h>
 #include <stdio.h>
@@ -128,7 +127,7 @@ WebFrameProxy::WebFrameProxy(WebPageProxy& page, FrameProcess& process, FrameIde
     allFrames().set(frameID, *this);
     WebProcessPool::statistics().wkFrameCount++;
 
-    page.inspectorController().createWebFrameInspectorTarget(*this, WebFrameInspectorTarget::toTargetID(frameID));
+    page.inspectorController().didCreateFrame(*this);
 
     protect(m_frameProcess)->incrementFrameCount();
 }
@@ -136,7 +135,7 @@ WebFrameProxy::WebFrameProxy(WebPageProxy& page, FrameProcess& process, FrameIde
 WebFrameProxy::~WebFrameProxy()
 {
     if (RefPtr page = m_page.get())
-        page->inspectorController().destroyInspectorTarget(WebFrameInspectorTarget::toTargetID(frameID()));
+        page->inspectorController().willDestroyFrame(*this);
 
     WebProcessPool::statistics().wkFrameCount--;
 #if PLATFORM(GTK)
@@ -191,7 +190,7 @@ void WebFrameProxy::webProcessWillShutDown()
         childFrame->webProcessWillShutDown();
 
     if (RefPtr page = m_page.get())
-        page->inspectorController().destroyInspectorTarget(WebFrameInspectorTarget::toTargetID(frameID()));
+        page->inspectorController().willDestroyFrame(*this);
 
     m_page = nullptr;
 
@@ -671,7 +670,7 @@ Ref<FrameTreeSyncData> WebFrameProxy::calculateFrameTreeSyncData() const
     bool isSecureForPaymentSession = false;
 #endif
 
-    return FrameTreeSyncData::create(isSecureForPaymentSession, securityOrigin(), m_documentSecurityPolicy, url().protocol().toString(), IntRect { }, LayoutRect { }, HashMap<FrameIdentifier, RemoteFrameLayoutInfo> { });
+    return FrameTreeSyncData::create(isSecureForPaymentSession, securityOrigin(), m_documentSecurityPolicy, url().protocol().toString(), IntRect { });
 }
 
 Ref<SecurityOrigin> WebFrameProxy::securityOrigin() const

@@ -98,11 +98,12 @@ using JSTestNamedSetterWithLegacyUnforgeablePropertiesDOMConstructor = JSDOMCons
 
 /* Hash table */
 
-static const struct CompactHashIndex JSTestNamedSetterWithLegacyUnforgeablePropertiesTableIndex[4] = {
+static const struct CompactHashIndex JSTestNamedSetterWithLegacyUnforgeablePropertiesTableIndex[5] = {
+    { -1, -1 },
+    { 0, 4 },
+    { -1, -1 },
     { -1, -1 },
     { 1, -1 },
-    { -1, -1 },
-    { 0, -1 },
 };
 
 
@@ -441,7 +442,7 @@ void JSTestNamedSetterWithLegacyUnforgeablePropertiesOwner::finalize(JSC::Handle
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestNamedSetterWithLegacyUnforgeableProperties = static_cast<JSTestNamedSetterWithLegacyUnforgeableProperties*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestNamedSetterWithLegacyUnforgeableProperties->protectedWrapped().ptr(), jsTestNamedSetterWithLegacyUnforgeableProperties);
+    uncacheWrapper(world, protect(jsTestNamedSetterWithLegacyUnforgeableProperties->wrapped()).ptr(), jsTestNamedSetterWithLegacyUnforgeableProperties);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

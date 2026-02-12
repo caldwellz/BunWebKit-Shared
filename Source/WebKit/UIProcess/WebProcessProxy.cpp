@@ -817,8 +817,9 @@ bool WebProcessProxy::shouldTakeNearSuspendedAssertion() const
     }
 
     for (auto& page : m_pageMap.values()) {
-        bool processSuppressionEnabled = protect(page)->preferences().pageVisibilityBasedProcessSuppressionEnabled();
-        bool nearSuspendedAssertionsEnabled = protect(page)->preferences().shouldTakeNearSuspendedAssertions();
+        Ref preferences = page->preferences();
+        bool processSuppressionEnabled = preferences->pageVisibilityBasedProcessSuppressionEnabled();
+        bool nearSuspendedAssertionsEnabled = preferences->shouldTakeNearSuspendedAssertions();
         if (nearSuspendedAssertionsEnabled || !processSuppressionEnabled)
             return true;
     }

@@ -98,6 +98,7 @@ public:
 #if ENABLE(QUICKLOOK_FULLSCREEN)
     bool isImageElement() const { return m_imageBuffer; }
     void prepareQuickLookImageURL(CompletionHandler<void(URL&&)>&&) const;
+    bool launchInImmersive() const { return m_launchInImmersive; }
 #endif // QUICKLOOK_FULLSCREEN
     void close();
     void detachFromClient();
@@ -155,6 +156,7 @@ private:
 #if ENABLE(QUICKLOOK_FULLSCREEN)
     String m_imageMIMEType;
     RefPtr<WebCore::SharedBuffer> m_imageBuffer;
+    bool m_launchInImmersive { false };
 #endif // QUICKLOOK_FULLSCREEN
     Vector<CompletionHandler<void()>> m_closeCompletionHandlers;
     WeakPtr<WebProcessProxy> m_fullScreenProcess;

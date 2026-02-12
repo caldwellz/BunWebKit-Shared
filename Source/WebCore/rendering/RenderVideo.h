@@ -41,7 +41,6 @@ public:
     virtual ~RenderVideo();
 
     WEBCORE_EXPORT HTMLVideoElement& videoElement() const;
-    WEBCORE_EXPORT Ref<HTMLVideoElement> protectedVideoElement() const;
 
     IntRect videoBox() const;
     WEBCORE_EXPORT IntRect videoBoxInRootView() const;

@@ -446,8 +446,6 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
         parameters.bundleParameterData = API::Data::createWithoutCopying(data.get());
     }
-    parameters.networkATSContext = adoptCF(_CFNetworkCopyATSContext());
-
 #if !RELEASE_LOG_DISABLED
     parameters.shouldLogUserInteraction = [defaults boolForKey:WebKitLogCookieInformationDefaultsKey];
 #endif
@@ -484,7 +482,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
     parameters.mobileGestaltExtensionHandle = process.createMobileGestaltSandboxExtensionIfNeeded();
 
-#if PLATFORM(MAC) || PLATFORM(MACCATALYST)
+#if (PLATFORM(MAC) || PLATFORM(MACCATALYST)) && !ENABLE(LAUNCHSERVICES_SANDBOX_EXTENSION_BLOCKING)
     if (auto launchServicesExtensionHandle = SandboxExtension::createHandleForMachLookup("com.apple.coreservices.launchservicesd"_s, std::nullopt))
         parameters.launchServicesExtensionHandle = WTF::move(*launchServicesExtensionHandle);
 #endif

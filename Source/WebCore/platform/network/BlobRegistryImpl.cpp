@@ -115,7 +115,7 @@ void BlobRegistryImpl::appendStorageItems(BlobData* blobData, const BlobDataItem
             blobData->appendData(item.data(), item.offset() + offset, newLength);
             break;
         case BlobDataItem::Type::File:
-            blobData->appendFile(item.protectedFile(), item.offset() + offset, newLength);
+            blobData->appendFile(protect(item.file()), item.offset() + offset, newLength);
             break;
         }
         length -= newLength;
@@ -350,10 +350,10 @@ bool BlobRegistryImpl::populateBlobsForFileWriting(const Vector<String>& blobURL
         for (auto& item : blobData->items()) {
             switch (item.type()) {
             case BlobDataItem::Type::Data:
-                blobsForWriting.last().filePathsOrDataBuffers.append(item.protectedData());
+                blobsForWriting.last().filePathsOrDataBuffers.append(protect(item.data()));
                 break;
             case BlobDataItem::Type::File:
-                blobsForWriting.last().filePathsOrDataBuffers.append(item.protectedFile()->path().isolatedCopy());
+                blobsForWriting.last().filePathsOrDataBuffers.append(protect(item.file())->path().isolatedCopy());
                 break;
             }
         }
@@ -426,7 +426,7 @@ Vector<Ref<BlobDataFileReference>> BlobRegistryImpl::filesInBlob(const URL& url,
     Vector<Ref<BlobDataFileReference>> result;
     for (const BlobDataItem& item : blobData->items()) {
         if (item.type() == BlobDataItem::Type::File)
-            result.append(item.protectedFile());
+            result.append(protect(item.file()));
     }
 
     return result;

@@ -30,6 +30,13 @@
 #include "JSDOMGlobalObject.h"
 #include "JSWritableStream.h"
 #include "JSWritableStreamSink.h"
+#include "MessageChannel.h"
+#include "MessagePort.h"
+#include "ReadableStream.h"
+#include "Settings.h"
+#include "StreamPipeOptions.h"
+#include "StreamPipeToUtilities.h"
+#include "StreamTransferUtilities.h"
 
 namespace WebCore {
 
@@ -119,6 +126,43 @@ WritableStream::State WritableStream::state() const
     if (state == "closed"_s)
         return State::Closed;
     return State::Errored;
+}
+
+// https://streams.spec.whatwg.org/#ws-transfer
+bool WritableStream::canTransfer() const
+{
+    auto* globalObject = m_internalWritableStream->globalObject();
+    RefPtr context = globalObject ? globalObject->scriptExecutionContext() : nullptr;
+    return context && context->settingsValues().readableStreamTransferEnabled && !locked();
+}
+
+ExceptionOr<DetachedWritableStream> WritableStream::runTransferSteps(JSDOMGlobalObject& globalObject)
+{
+    ASSERT(canTransfer());
+
+    RefPtr context = globalObject.scriptExecutionContext();
+    Ref channel = MessageChannel::create(*context);
+    Ref port1 = channel->port1();
+    Ref port2 = channel->port2();
+
+    auto result = setupCrossRealmTransformReadable(globalObject, port1.get());
+    if (result.hasException()) {
+        port2->close();
+        return result.releaseException();
+    }
+    Ref readable = result.releaseReturnValue();
+
+    if (auto exception = readableStreamPipeTo(globalObject, readable, *this, { }, nullptr)) {
+        port2->close();
+        return WTF::move(*exception);
+    }
+
+    return DetachedWritableStream { WTF::move(port2) };
+}
+
+ExceptionOr<Ref<WritableStream>> WritableStream::runTransferReceivingSteps(JSDOMGlobalObject& globalObject, DetachedWritableStream&& detachedWritableStream)
+{
+    return setupCrossRealmTransformWritable(globalObject, detachedWritableStream.writableStreamPort.get());
 }
 
 JSC::JSValue JSWritableStream::abort(JSC::JSGlobalObject& globalObject, JSC::CallFrame& callFrame)

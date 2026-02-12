@@ -31,6 +31,7 @@
 #include "JSReadableStream.h"
 #include "JSTransformStream.h"
 #include "JSWritableStream.h"
+#include "MessagePort.h"
 #include "WebCoreJSClientData.h"
 #include <JavaScriptCore/JSObjectInlines.h>
 
@@ -66,6 +67,11 @@ ExceptionOr<Ref<TransformStream>> TransformStream::create(JSC::JSGlobalObject& g
     return adoptRef(*new TransformStream(transformResult.transform, WTF::move(transformResult.readable), WTF::move(transformResult.writable)));
 }
 
+Ref<TransformStream> TransformStream::create(Ref<ReadableStream>&& readable, Ref<WritableStream>&& writable)
+{
+    return adoptRef(*new TransformStream(JSC::jsUndefined(), WTF::move(readable), WTF::move(writable)));
+}
+
 TransformStream::TransformStream(JSC::JSValue internalTransformStream, Ref<ReadableStream>&& readable, Ref<WritableStream>&& writable)
     : m_internalTransformStream(internalTransformStream)
     , m_readable(WTF::move(readable))
@@ -74,6 +80,40 @@ TransformStream::TransformStream(JSC::JSValue internalTransformStream, Ref<Reada
 }
 
 TransformStream::~TransformStream() = default;
+
+// https://streams.spec.whatwg.org/#ts-transfer
+bool TransformStream::canTransfer() const
+{
+    return m_readable->canTransfer() && m_writable->canTransfer();
+}
+
+ExceptionOr<DetachedTransformStream> TransformStream::runTransferSteps(JSDOMGlobalObject& globalObject)
+{
+    ASSERT(canTransfer());
+
+    auto detachedReadableStreamOrException = m_readable->runTransferSteps(globalObject);
+    if (detachedReadableStreamOrException.hasException())
+        return detachedReadableStreamOrException.releaseException();
+
+    auto detachedWritableStreamOrException = m_writable->runTransferSteps(globalObject);
+    if (detachedWritableStreamOrException.hasException())
+        return detachedWritableStreamOrException.releaseException();
+
+    return DetachedTransformStream { detachedReadableStreamOrException.releaseReturnValue().readableStreamPort, detachedWritableStreamOrException.releaseReturnValue().writableStreamPort };
+}
+
+ExceptionOr<Ref<TransformStream>> TransformStream::runTransferReceivingSteps(JSDOMGlobalObject& globalObject, DetachedTransformStream&& detachedTransformStream)
+{
+    auto readableOrException = setupCrossRealmTransformReadable(globalObject, detachedTransformStream.readablePort.get());
+    if (readableOrException.hasException())
+        return readableOrException.releaseException();
+
+    auto writableOrException = setupCrossRealmTransformWritable(globalObject, detachedTransformStream.writablePort.get());
+    if (writableOrException.hasException())
+        return writableOrException.releaseException();
+
+    return create(readableOrException.releaseReturnValue(), writableOrException.releaseReturnValue());
+}
 
 static ExceptionOr<JSC::JSValue> invokeTransformStreamFunction(JSC::JSGlobalObject& globalObject, const JSC::Identifier& identifier, const JSC::MarkedArgumentBuffer& arguments)
 {

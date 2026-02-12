@@ -73,21 +73,22 @@ class WebCodecsVideoFrame;
 
 struct DOMMatrix2DInit;
 
-using CanvasImageSource = Variant<RefPtr<HTMLImageElement>
-    , RefPtr<SVGImageElement>
-    , RefPtr<HTMLCanvasElement>
-    , RefPtr<ImageBitmap>
-    , RefPtr<CSSStyleImageValue>
+using CanvasImageSource = Variant<
+      Ref<HTMLImageElement>
+    , Ref<SVGImageElement>
+    , Ref<HTMLCanvasElement>
+    , Ref<ImageBitmap>
+    , Ref<CSSStyleImageValue>
 #if ENABLE(OFFSCREEN_CANVAS)
-    , RefPtr<OffscreenCanvas>
+    , Ref<OffscreenCanvas>
 #endif
 #if ENABLE(VIDEO)
-    , RefPtr<HTMLVideoElement>
+    , Ref<HTMLVideoElement>
 #endif
 #if ENABLE(WEB_CODECS)
-    , RefPtr<WebCodecsVideoFrame>
+    , Ref<WebCodecsVideoFrame>
 #endif
-    >;
+>;
 
 class CanvasRenderingContext2DBase : public CanvasRenderingContext, public CanvasPath {
     WTF_MAKE_TZONE_ALLOCATED(CanvasRenderingContext2DBase);
@@ -212,7 +213,7 @@ public:
 
     void clearCanvas();
 
-    using StyleVariant = Variant<String, RefPtr<CanvasGradient>, RefPtr<CanvasPattern>>;
+    using StyleVariant = Variant<String, Ref<CanvasGradient>, Ref<CanvasPattern>>;
     StyleVariant strokeStyle() const;
     void setStrokeStyle(String&&);
     void setStrokeStyle(RefPtr<CanvasGradient>&&);

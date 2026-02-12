@@ -50,7 +50,7 @@ public:
     
     virtual ~IDBCursor();
 
-    using Source = Variant<RefPtr<IDBObjectStore>, RefPtr<IDBIndex>>;
+    using Source = Variant<Ref<IDBObjectStore>, Ref<IDBIndex>>;
 
     const Source& source() const;
     IDBCursorDirection direction() const;

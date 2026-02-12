@@ -66,7 +66,6 @@ public:
     static bool checkEnclosure(RenderElement*, const FloatRect&);
 
     SVGElement& element() const { return downcast<SVGElement>(nodeForNonAnonymous()); }
-    Ref<SVGElement> protectedElement() const;
 
     virtual void addFocusRingRects(Vector<LayoutRect>&, const LayoutPoint& additionalOffset, const RenderLayerModelObject* paintContainer = nullptr) const;
 
@@ -74,6 +73,7 @@ protected:
     LegacyRenderSVGModelObject(Type, SVGElement&, RenderStyle&&, OptionSet<SVGModelObjectFlag> = { });
 
     void willBeDestroyed() override;
+    void insertedIntoTree() override;
 
 private:
     // This method should never be called, SVG uses a different nodeAtPoint method

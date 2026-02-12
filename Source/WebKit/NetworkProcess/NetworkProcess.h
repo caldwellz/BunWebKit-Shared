@@ -196,11 +196,9 @@ public:
 
     AuthenticationManager& authenticationManager();
     DownloadManager& downloadManager();
-    CheckedRef<DownloadManager> checkedDownloadManager();
 
     void setSession(PAL::SessionID, std::unique_ptr<NetworkSession>&&);
     NetworkSession* networkSession(PAL::SessionID) const final;
-    CheckedPtr<NetworkSession> checkedNetworkSession(PAL::SessionID) const;
     void destroySession(PAL::SessionID, CompletionHandler<void()>&& = [] { });
     void ensureSessionWithDataStoreIdentifierRemoved(WTF::UUID, CompletionHandler<void()>&&);
 
@@ -208,7 +206,6 @@ public:
 
     void forEachNetworkStorageSession(NOESCAPE const Function<void(WebCore::NetworkStorageSession&)>&);
     WebCore::NetworkStorageSession* storageSession(PAL::SessionID) const;
-    CheckedPtr<WebCore::NetworkStorageSession> checkedStorageSession(PAL::SessionID) const;
     std::unique_ptr<WebCore::NetworkStorageSession> newTestingSession(PAL::SessionID);
     void addStorageSession(PAL::SessionID, const WebsiteDataStoreParameters&);
 
@@ -398,7 +395,6 @@ public:
     RefPtr<NetworkConnectionToWebProcess> protectedWebProcessConnection(WebCore::ProcessIdentifier) const;
     RefPtr<NetworkConnectionToWebProcess> protectedWebProcessConnection(const IPC::Connection&) const;
     WebCore::MessagePortChannelRegistry& messagePortChannelRegistry() { return m_messagePortChannelRegistry; }
-    CheckedRef<WebCore::MessagePortChannelRegistry> checkedMessagePortChannelRegistry() { return m_messagePortChannelRegistry; }
 
     void setServiceWorkerFetchTimeoutForTesting(Seconds, CompletionHandler<void()>&&);
     void resetServiceWorkerFetchTimeoutForTesting(CompletionHandler<void()>&&);

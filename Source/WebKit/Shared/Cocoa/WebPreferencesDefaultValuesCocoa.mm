@@ -73,6 +73,17 @@ bool defaultTextInputClientSelectionUpdatesEnabled()
 
 #endif // PLATFORM(MAC)
 
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+bool defaultContentChangeObserverEnabled()
+{
+#if PLATFORM(IOS_FAMILY) && !PLATFORM(MACCATALYST)
+    return true;
+#else
+    return false;
+#endif
+}
+#endif
+
 }
 
 #endif // namespace WebKit

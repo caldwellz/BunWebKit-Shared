@@ -62,7 +62,6 @@ public:
         ASSERT(type() == Type::Data);
         return std::get<Ref<DataSegment>>(m_data).get();
     }
-    Ref<DataSegment> protectedData() const { return data(); }
 
     // For File type.
     BlobDataFileReference& file() const
@@ -70,7 +69,6 @@ public:
         ASSERT(type() == Type::File);
         return std::get<Ref<BlobDataFileReference>>(m_data).get();
     }
-    Ref<BlobDataFileReference> protectedFile() const { return file(); }
 
     long long offset() const { return m_offset; }
     WEBCORE_EXPORT long long length() const; // Computes file length if it's not known yet.

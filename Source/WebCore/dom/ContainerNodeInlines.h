@@ -42,9 +42,4 @@ inline RenderElement* ContainerNode::renderer() const
     return downcast<RenderElement>(Node::renderer());
 }
 
-inline CheckedPtr<RenderElement> ContainerNode::checkedRenderer() const
-{
-    return renderer();
-}
-
 } // namespace WebCore

@@ -62,7 +62,10 @@ RenderStyle resolveForDocument(const Document& document)
     documentStyle.setDisplay(DisplayType::Block);
     documentStyle.setRTLOrdering(document.visuallyOrdered() ? WebCore::Order::Visual : WebCore::Order::Logical);
     documentStyle.setZoom(!document.printing() ? renderView.frame().pageZoomFactor() : 1);
-    documentStyle.setPageScaleTransform(renderView.frame().frameScaleFactor());
+    if (auto frameScaleFactor = renderView.frame().frameScaleFactor(); frameScaleFactor != 1) {
+        documentStyle.setTransform(Style::Transform { Style::TransformFunction { Style::ScaleTransformFunction::create(frameScaleFactor, frameScaleFactor, Style::TransformFunctionType::Scale) } });
+        documentStyle.setTransformOrigin(Style::TransformOrigin { 0_css_px, 0_css_px, 0_css_px });
+    }
 
     // This overrides any -webkit-user-modify inherited from the parent iframe.
     documentStyle.setUserModify(document.inDesignMode() ? UserModify::ReadWrite : UserModify::ReadOnly);
@@ -75,7 +78,7 @@ RenderStyle resolveForDocument(const Document& document)
     
     auto& pagination = renderView.frameView().pagination();
     if (pagination.mode != Pagination::Mode::Unpaginated) {
-        documentStyle.setColumnStylesFromPaginationMode(pagination.mode);
+        Adjuster::adjustColumnStylesForPaginationMode(documentStyle, pagination.mode);
         documentStyle.setColumnGap(GapGutter::Fixed { static_cast<float>(pagination.gap) });
         if (renderView.multiColumnFlow())
             renderView.updateColumnProgressionFromStyle(documentStyle);

@@ -27,8 +27,8 @@
 
 #if ENABLE(WEBGL)
 
-#include "GraphicsContextGL.h"
-#include "WebGLObject.h"
+#include <WebCore/GraphicsContextGL.h>
+#include <WebCore/WebGLObject.h>
 
 namespace WebCore {
 

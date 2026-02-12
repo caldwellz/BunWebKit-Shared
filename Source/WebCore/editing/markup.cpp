@@ -1055,7 +1055,7 @@ static RefPtr<Node> highestAncestorToWrapMarkup(const Position& start, const Pos
 
     RefPtr checkAncestor = specialCommonAncestor ? specialCommonAncestor : RefPtr { &commonAncestor };
     if (checkAncestor->renderer() && checkAncestor->renderer()->containingBlock()) {
-        RefPtr newSpecialCommonAncestor = highestEnclosingNodeOfType(firstPositionInNode(checkAncestor.get()), &isElementPresentational, CanCrossEditingBoundary, checkAncestor->renderer()->containingBlock()->protectedElement().get());
+        RefPtr newSpecialCommonAncestor = highestEnclosingNodeOfType(firstPositionInNode(checkAncestor.get()), &isElementPresentational, CanCrossEditingBoundary, protect(checkAncestor->renderer()->containingBlock()->element()).get());
         if (newSpecialCommonAncestor)
             specialCommonAncestor = WTF::move(newSpecialCommonAncestor);
     }

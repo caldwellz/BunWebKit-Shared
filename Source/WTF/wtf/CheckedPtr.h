@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include <memory>
 #include <wtf/CheckedRef.h>
 #include <wtf/RawPtrTraits.h>
 #include <wtf/TypeTraits.h>
@@ -216,6 +217,13 @@ template<typename T, typename PtrTraits>
 ALWAYS_INLINE CLANG_POINTER_CONVERSION CheckedPtr<T, PtrTraits> protect(const CheckedPtr<T, PtrTraits>& ptr)
 {
     return ptr;
+}
+
+template<typename T, typename Deleter, typename PtrTraits = RawPtrTraits<T>>
+    requires (HasCheckedPtrMemberFunctions<T>::value && !HasRefPtrMemberFunctions<T>::value)
+ALWAYS_INLINE CLANG_POINTER_CONVERSION CheckedPtr<T, PtrTraits> protect(const std::unique_ptr<T, Deleter>& ptr)
+{
+    return CheckedPtr<T, PtrTraits>(ptr.get());
 }
 
 template<typename ExpectedType, typename ArgType, typename ArgPtrTraits>

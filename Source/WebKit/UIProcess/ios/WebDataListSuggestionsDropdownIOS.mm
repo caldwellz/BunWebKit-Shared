@@ -169,7 +169,7 @@ void WebDataListSuggestionsDropdownIOS::didSelectOption(const String& selectedOp
     _view = view;
     _suggestions = WTF::move(information.suggestions);
 
-    [_view _setDataListSuggestionsControl:self];
+    [protect(_view) _setDataListSuggestionsControl:self];
 
     return self;
 }
@@ -223,7 +223,7 @@ void WebDataListSuggestionsDropdownIOS::didSelectOption(const String& selectedOp
 
 - (NSTextAlignment)textAlignment
 {
-    return _view.focusedElementInformation.isRTL ? NSTextAlignmentRight : NSTextAlignmentLeft;
+    return [protect(_view) focusedElementInformation].isRTL ? NSTextAlignmentRight : NSTextAlignmentLeft;
 }
 
 @end

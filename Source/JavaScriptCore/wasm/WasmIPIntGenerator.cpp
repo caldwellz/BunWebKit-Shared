@@ -1073,7 +1073,7 @@ IPIntGenerator::ExpressionType IPIntGenerator::addConstant(v128_t)
 
 [[nodiscard]] PartialResult IPIntGenerator::load(LoadOpType, ExpressionType, ExpressionType&, uint64_t offset)
 {
-    if (m_info.memory.isMemory64())
+    if (m_info.theOnlyMemory().isMemory64())
         m_metadata->addLEB128ConstantInt64AndLength(offset, getCurrentInstructionLength());
     else
         m_metadata->addLEB128ConstantInt32AndLength(static_cast<uint32_t>(offset), getCurrentInstructionLength());
@@ -1083,7 +1083,7 @@ IPIntGenerator::ExpressionType IPIntGenerator::addConstant(v128_t)
 [[nodiscard]] PartialResult IPIntGenerator::store(StoreOpType, ExpressionType, ExpressionType, uint64_t offset)
 {
     changeStackSize(-2);
-    if (m_info.memory.isMemory64())
+    if (m_info.theOnlyMemory().isMemory64())
         m_metadata->addLEB128ConstantInt64AndLength(offset, getCurrentInstructionLength());
     else
         m_metadata->addLEB128ConstantInt32AndLength(static_cast<uint32_t>(offset), getCurrentInstructionLength());

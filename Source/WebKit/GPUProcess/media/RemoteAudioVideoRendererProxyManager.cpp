@@ -153,7 +153,7 @@ void RemoteAudioVideoRendererProxyManager::create(RemoteAudioVideoRendererIdenti
             protectedThis->m_gpuConnectionToWebProcess.get()->connection().send(Messages::AudioVideoRendererRemoteMessageReceiver::EffectiveRateChanged(protectedThis->stateFor(identifier)), identifier);
     });
 
-    context.renderer->setTimeObserver(200_ms, [weakThis = WeakPtr { *this }, identifier](const MediaTime&) {
+    context.renderer->setTimeObserver(100_ms, [weakThis = WeakPtr { *this }, identifier](const MediaTime&) {
         if (RefPtr protectedThis = weakThis.get(); protectedThis && protectedThis->m_renderers.contains(identifier))
             protectedThis->m_gpuConnectionToWebProcess.get()->connection().send(Messages::AudioVideoRendererRemoteMessageReceiver::StateUpdate(protectedThis->stateFor(identifier)), identifier);
     });

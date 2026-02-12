@@ -27,6 +27,7 @@
 #include "IntlListFormat.h"
 
 #include "IntlObjectInlines.h"
+#include "IntlPartObject.h"
 #include "IteratorOperations.h"
 #include "JSCInlines.h"
 #include "ObjectConstructor.h"
@@ -226,10 +227,7 @@ JSValue IntlListFormat::formatToParts(JSGlobalObject* globalObject, JSValue list
     auto elementString = jsNontrivialString(vm, "element"_s);
 
     auto createPart = [&] (JSString* type, JSString* value) {
-        JSObject* part = constructEmptyObject(globalObject);
-        part->putDirect(vm, vm.propertyNames->type, type);
-        part->putDirect(vm, vm.propertyNames->value, value);
-        return part;
+        return createIntlPartObject(globalObject, type, value);
     };
 
     int32_t resultLength = resultStringView.length();

@@ -152,6 +152,9 @@ public:
     virtual OverscrollBehavior horizontalOverscrollBehavior() const { return OverscrollBehavior::Auto; }
     virtual OverscrollBehavior verticalOverscrollBehavior() const { return OverscrollBehavior::Auto; }
 
+    void setScrollbarRevealBehavior(ScrollbarRevealBehavior behavior) { m_scrollbarRevealBehavior = behavior; }
+    ScrollbarRevealBehavior scrollbarRevealBehavior() const { return m_scrollbarRevealBehavior; }
+
     WEBCORE_EXPORT virtual Color scrollbarThumbColorStyle() const;
     WEBCORE_EXPORT virtual Color scrollbarTrackColorStyle() const;
     WEBCORE_EXPORT virtual Style::ScrollbarGutter scrollbarGutterStyle() const;
@@ -250,9 +253,7 @@ public:
     WEBCORE_EXPORT IntSize scrollbarIntrusion() const;
 
     virtual Scrollbar* horizontalScrollbar() const { return nullptr; }
-    RefPtr<Scrollbar> protectedHorizontalScrollbar() const { return horizontalScrollbar(); }
     virtual Scrollbar* verticalScrollbar() const { return nullptr; }
-    RefPtr<Scrollbar> protectedVerticalScrollbar() const { return verticalScrollbar(); }
     virtual void scrollbarFrameRectChanged(const Scrollbar&) const { };
 
     Scrollbar* scrollbarForDirection(ScrollDirection direction) const
@@ -340,6 +341,9 @@ public:
     virtual IntSize overhangAmount() const { return IntSize(); }
     virtual IntPoint lastKnownMousePositionInView() const { return IntPoint(); }
     virtual bool isHandlingWheelEvent() const { return false; }
+
+    void willDispatchScrollEvent();
+    void didDispatchScrollEvent();
 
     virtual int headerHeight() const { return 0; }
     virtual int footerHeight() const { return 0; }
@@ -441,7 +445,12 @@ public:
         No,
         Yes
     };
-    void updateScrollAnchoringElement(ComputeNewScrollAnchor = ComputeNewScrollAnchor::Yes);
+
+    enum class IncludeAncestors : bool {
+        No,
+        Yes
+    };
+    void clearScrollAnchor(IncludeAncestors = IncludeAncestors::No);
     void adjustScrollAnchoringPosition();
     virtual ScrollAnchoringController* scrollAnchoringController() const { return nullptr; }
 
@@ -524,8 +533,19 @@ private:
     bool m_scrollOriginChanged { false };
     bool m_scrollShouldClearLatchedState { false };
     bool m_isAwaitingScrollend { false };
+    ScrollbarRevealBehavior m_scrollbarRevealBehavior { ScrollbarRevealBehavior::Default };
 
     Markable<ScrollingNodeID> m_scrollingNodeIDForTesting;
+};
+
+class ScrollbarRevealBehaviorScope {
+public:
+    ScrollbarRevealBehaviorScope(ScrollableArea&, ScrollbarRevealBehavior);
+    ~ScrollbarRevealBehaviorScope();
+
+private:
+    WeakRef<ScrollableArea> m_scrollableArea;
+    ScrollbarRevealBehavior m_oldBehavior;
 };
 
 WEBCORE_EXPORT WTF::TextStream& operator<<(WTF::TextStream&, const ScrollableArea&);

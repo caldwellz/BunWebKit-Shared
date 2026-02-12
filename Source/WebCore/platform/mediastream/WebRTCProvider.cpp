@@ -29,6 +29,7 @@
 #include "AV1Utilities.h"
 #include "ContentType.h"
 #include "HEVCUtilities.h"
+#include "Logging.h"
 #include "PlatformMediaCapabilitiesDecodingInfo.h"
 #include "PlatformMediaCapabilitiesEncodingInfo.h"
 #include "PlatformMediaDecodingConfiguration.h"
@@ -460,7 +461,7 @@ void WebRTCProvider::setPortAllocatorRange(StringView range)
 
     auto components = range.toStringWithoutCopying().split(':');
     if (components.size() != 2) [[unlikely]] {
-        WTFLogAlways("Invalid format for UDP port range. Should be \"min-port:max-port\"");
+        RELEASE_LOG_ERROR(WebRTC, "Invalid format for UDP port range. Should be \"min-port:max-port\"");
         ASSERT_NOT_REACHED();
         return;
     }
@@ -468,18 +469,23 @@ void WebRTCProvider::setPortAllocatorRange(StringView range)
     auto minPort = WTF::parseInteger<int>(components[0]);
     auto maxPort = WTF::parseInteger<int>(components[1]);
     if (!minPort || !maxPort) {
-        WTFLogAlways("Invalid format for UDP port range. Should be \"min-port:max-port\"");
+        RELEASE_LOG_ERROR(WebRTC, "Invalid format for UDP port range. Should be \"min-port:max-port\"");
         ASSERT_NOT_REACHED();
         return;
     }
 
     if (*minPort < 0) {
-        WTFLogAlways("Invalid value for UDP minimum port value: %d", *minPort);
+        RELEASE_LOG_ERROR(WebRTC, "Invalid value for UDP minimum port value: %d", *minPort);
         return;
     }
 
     if (*maxPort < 0) {
-        WTFLogAlways("Invalid value for UDP maximum port value: %d", *maxPort);
+        RELEASE_LOG_ERROR(WebRTC, "Invalid value for UDP maximum port value: %d", *maxPort);
+        return;
+    }
+
+    if (*minPort >= *maxPort) {
+        RELEASE_LOG_ERROR(WebRTC, "UDP maximum port should greater than minimum port.");
         return;
     }
 
@@ -489,6 +495,11 @@ void WebRTCProvider::setPortAllocatorRange(StringView range)
 std::optional<std::pair<int, int>> WebRTCProvider::portAllocatorRange() const
 {
     return m_portAllocatorRange;
+}
+
+bool WebRTCProvider::isWebCoreGStreamerWebRTCProvider() const
+{
+    return false;
 }
 
 } // namespace WebCore

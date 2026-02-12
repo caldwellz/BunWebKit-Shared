@@ -34,11 +34,6 @@ namespace WebCore {
 class VisiblePosition;
 }
 
-// NSAttributedStrings support.
-
-static NSString * const UIAccessibilityTextAttributeContext = @"UIAccessibilityTextAttributeContext";
-static NSString * const UIAccessibilityTextualContextSourceCode = @"UIAccessibilityTextualContextSourceCode";
-
 @interface WAKView (iOSAccessibility)
 - (BOOL)accessibilityIsIgnored;
 @end

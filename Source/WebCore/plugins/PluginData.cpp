@@ -55,7 +55,7 @@ void PluginData::initPlugins()
 {
     ASSERT(m_plugins.isEmpty());
     Ref page = m_page.get();
-    m_plugins = page->protectedPluginInfoProvider()->pluginInfo(page.get(), m_supportedPluginIdentifiers);
+    m_plugins = protect(page->pluginInfoProvider())->pluginInfo(page.get(), m_supportedPluginIdentifiers);
 
     for (auto& plugin : m_plugins) {
         if (isBuiltInPDFPlugIn(plugin)) {
@@ -76,7 +76,7 @@ const Vector<PluginInfo>& PluginData::webVisiblePlugins() const
     }
 
     if (!m_cachedVisiblePlugins.pluginList)
-        m_cachedVisiblePlugins.pluginList = page->protectedPluginInfoProvider()->webVisiblePluginInfo(page.get(), m_cachedVisiblePlugins.pageURL);
+        m_cachedVisiblePlugins.pluginList = protect(page->pluginInfoProvider())->webVisiblePluginInfo(page.get(), m_cachedVisiblePlugins.pageURL);
 
     return *m_cachedVisiblePlugins.pluginList;
 }
@@ -114,7 +114,7 @@ bool PluginData::supportsWebVisibleMimeTypeForURL(const String& mimeType, const 
 {
     if (!protocolHostAndPortAreEqual(m_cachedVisiblePlugins.pageURL, url)) {
         Ref page = m_page.get();
-        m_cachedVisiblePlugins = { url, page->protectedPluginInfoProvider()->webVisiblePluginInfo(page.get(), url) };
+        m_cachedVisiblePlugins = { url, protect(page->pluginInfoProvider())->webVisiblePluginInfo(page.get(), url) };
     }
     if (!m_cachedVisiblePlugins.pluginList)
         return false;

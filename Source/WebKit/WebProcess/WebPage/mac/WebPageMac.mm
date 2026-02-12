@@ -182,7 +182,7 @@ void WebPage::getPlatformEditorState(LocalFrame& frame, EditorState& result) con
 {
     getPlatformEditorStateCommon(frame, result);
 
-    result.canEnableAutomaticSpellingCorrection = result.isContentEditable && frame.protectedEditor()->canEnableAutomaticSpellingCorrection();
+    result.canEnableAutomaticSpellingCorrection = result.isContentEditable && protect(frame.editor())->canEnableAutomaticSpellingCorrection();
     RefPtr document = frame.document();
     result.inputMethodUsesCorrectKeyEventOrder = frame.settings().inputMethodUsesCorrectKeyEventOrder() || (document && document->quirks().inputMethodUsesCorrectKeyEventOrder());
 
@@ -203,26 +203,26 @@ void WebPage::getPlatformEditorState(LocalFrame& frame, EditorState& result) con
     if (!selectionStartBoundary || !selectionEnd || !paragraphStart)
         return;
 
-    auto contextRangeForCandidateRequest = frame.protectedEditor()->contextRangeForCandidateRequest();
+    auto contextRangeForCandidateRequest = protect(frame.editor())->contextRangeForCandidateRequest();
 
     postLayoutData.candidateRequestStartPosition = characterCount({ *paragraphStart, *selectionStartBoundary });
     postLayoutData.selectedTextLength = characterCount({ *selectionStartBoundary, *selectionEnd });
     postLayoutData.paragraphContextForCandidateRequest = contextRangeForCandidateRequest ? plainText(*contextRangeForCandidateRequest) : String();
-    postLayoutData.stringForCandidateRequest = frame.protectedEditor()->stringForCandidateRequest();
+    postLayoutData.stringForCandidateRequest = protect(frame.editor())->stringForCandidateRequest();
 
     auto quads = RenderObject::absoluteTextQuads(*selectedRange);
     if (!quads.isEmpty())
         postLayoutData.selectionBoundingRect = frame.protectedView()->contentsToWindow(enclosingIntRect(unitedBoundingBoxes(quads)));
     else if (selection.isCaret()) {
         // Quads will be empty at the start of a paragraph.
-        postLayoutData.selectionBoundingRect = frame.protectedView()->contentsToWindow(frame.checkedSelection()->absoluteCaretBounds());
+        postLayoutData.selectionBoundingRect = frame.protectedView()->contentsToWindow(protect(frame.selection())->absoluteCaretBounds());
     }
 }
 
 void WebPage::handleAcceptedCandidate(WebCore::TextCheckingResult acceptedCandidate)
 {
     if (RefPtr frame = m_page->focusController().focusedLocalFrame())
-        frame->protectedEditor()->handleAcceptedCandidate(acceptedCandidate);
+        protect(frame->editor())->handleAcceptedCandidate(acceptedCandidate);
 }
 
 static String commandNameForSelectorName(const String& selectorName)
@@ -426,9 +426,9 @@ bool WebPage::performNonEditingBehaviorForSelector(const String& selector, Keybo
     }
 
     if (selector == "moveToLeftEndOfLine:"_s)
-        didPerformAction = m_userInterfaceLayoutDirection == WebCore::UserInterfaceLayoutDirection::LTR ? page->checkedBackForward()->goBack() : page->checkedBackForward()->goForward();
+        didPerformAction = m_userInterfaceLayoutDirection == WebCore::UserInterfaceLayoutDirection::LTR ? protect(page->backForward())->goBack() : protect(page->backForward())->goForward();
     else if (selector == "moveToRightEndOfLine:"_s)
-        didPerformAction = m_userInterfaceLayoutDirection == WebCore::UserInterfaceLayoutDirection::LTR ? page->checkedBackForward()->goForward() : page->checkedBackForward()->goBack();
+        didPerformAction = m_userInterfaceLayoutDirection == WebCore::UserInterfaceLayoutDirection::LTR ? protect(page->backForward())->goForward() : protect(page->backForward())->goBack();
 
     return didPerformAction;
 }
@@ -480,7 +480,7 @@ void WebPage::getStringSelectionForPasteboard(CompletionHandler<void(String&&)>&
     if (frame->selection().isNone())
         return completionHandler({ });
 
-    completionHandler(frame->protectedEditor()->stringSelectionForPasteboard());
+    completionHandler(protect(frame->editor())->stringSelectionForPasteboard());
 }
 
 void WebPage::getDataSelectionForPasteboard(const String pasteboardType, CompletionHandler<void(RefPtr<SharedBuffer>&&)>&& completionHandler)
@@ -491,7 +491,7 @@ void WebPage::getDataSelectionForPasteboard(const String pasteboardType, Complet
     if (frame->selection().isNone())
         return completionHandler({ });
 
-    auto buffer = frame->protectedEditor()->dataSelectionForPasteboard(pasteboardType);
+    auto buffer = protect(frame->editor())->dataSelectionForPasteboard(pasteboardType);
     if (!buffer)
         return completionHandler({ });
     completionHandler(buffer.releaseNonNull());
@@ -677,7 +677,7 @@ void WebPage::handleImageServiceClick(WebCore::FrameIdentifier frameID, const In
         point,
         image,
         element.isContentEditable(),
-        element.checkedRenderBox()->absoluteContentQuad().enclosingBoundingBox(),
+        protect(element.renderBox())->absoluteContentQuad().enclosingBoundingBox(),
         HTMLAttachmentElement::getAttachmentIdentifier(element),
         contextForElement(element),
         image.mimeType()
@@ -693,7 +693,7 @@ void WebPage::handlePDFServiceClick(WebCore::FrameIdentifier frameID, const IntP
     send(Messages::WebPageProxy::ShowContextMenuFromFrame(webFrame->info(), ContextMenuContextData {
         point,
         element.isContentEditable(),
-        element.checkedRenderBox()->absoluteContentQuad().enclosingBoundingBox(),
+        protect(element.renderBox())->absoluteContentQuad().enclosingBoundingBox(),
         element.uniqueIdentifier(),
         "application/pdf"_s
     }, { }));
@@ -761,7 +761,7 @@ void WebPage::performImmediateActionHitTestAtLocation(WebCore::FrameIdentifier f
 
     WebHitTestResultData immediateActionResult(hitTestResult, { });
 
-    auto subframe = EventHandler::subframeForTargetNode(hitTestResult.protectedTargetNode().get());
+    auto subframe = EventHandler::subframeForTargetNode(protect(hitTestResult.targetNode()).get());
     if (RefPtr remoteFrame = dynamicDowncast<RemoteFrame>(subframe).get()) {
         if (RefPtr remoteFrameView = remoteFrame->view()) {
             immediateActionResult.remoteUserInputEventData = RemoteUserInputEventData {

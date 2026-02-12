@@ -59,6 +59,7 @@
     [Reflect="aria-colindex"] attribute DOMString? ariaColIndex;
     [Reflect="aria-colspan"] attribute DOMString? ariaColSpan;
     [CustomGetter, Reflect="aria-controls"] attribute FrozenArray<Element>? ariaControlsElements;
+    [CustomGetter, Reflect="aria-actions", EnabledBySetting=ARIAActionsSupportEnabled] attribute FrozenArray<Element>? ariaActionsElements;
     [Reflect="aria-current"] attribute DOMString? ariaCurrent;
     [CustomGetter, Reflect="aria-describedby"] attribute FrozenArray<Element>? ariaDescribedByElements;
     [CustomGetter, Reflect="aria-details"] attribute FrozenArray<Element>? ariaDetailsElements;

@@ -91,11 +91,7 @@ private:
 
     // IPC message handlers.
     void updateGeometry(const WebCore::IntSize&, CompletionHandler<void()>&&) override;
-    void displayDidRefresh(MonotonicTime) override;
     void setDeviceScaleFactor(float, CompletionHandler<void()>&&) override;
-    void forceUpdate() override;
-    void didDiscardBackingStore() override;
-
     void dispatchAfterEnsuringDrawing(IPC::AsyncReplyID) override;
     void dispatchPendingCallbacksAfterEnsuringDrawing() override;
 
@@ -115,7 +111,6 @@ private:
     void scheduleDisplay();
     void displayTimerFired();
     void display();
-    void display(UpdateInfo&);
 
     // Whether we're currently processing an UpdateGeometry message.
     bool m_inUpdateGeometry { false };
@@ -136,15 +131,6 @@ private:
 
     // Frame renderer used in non-composited mode.
     std::unique_ptr<NonCompositedFrameRenderer> m_nonCompositedFrameRenderer;
-
-    WebCore::Region m_dirtyRegion;
-    WebCore::IntRect m_scrollRect;
-    WebCore::IntSize m_scrollOffset;
-
-    // Whether we're waiting for a DidUpdate message. Used for throttling paints so that the
-    // web process won't paint more frequent than the UI process can handle.
-    bool m_isWaitingForDidUpdate { false };
-    bool m_scheduledWhileWaitingForDidUpdate { false };
 
     bool m_supportsAsyncScrolling { true };
 

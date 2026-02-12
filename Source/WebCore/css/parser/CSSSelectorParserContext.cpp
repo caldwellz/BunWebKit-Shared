@@ -39,7 +39,7 @@ CSSSelectorParserContext::CSSSelectorParserContext(const CSSParserContext& conte
     , imageControlsEnabled(context.imageControlsEnabled)
 #endif
     , popoverAttributeEnabled(context.popoverAttributeEnabled)
-    , htmlEnhancedSelectPseudoElementsEnabled(context.htmlEnhancedSelectPseudoElementsEnabled)
+    , htmlEnhancedSelectEnabled(context.htmlEnhancedSelectEnabled)
     , targetTextPseudoElementEnabled(context.targetTextPseudoElementEnabled)
     , cssAppearanceBaseEnabled(context.cssAppearanceBaseEnabled)
     , viewTransitionsEnabled(context.propertySettings.viewTransitionsEnabled)
@@ -54,7 +54,7 @@ CSSSelectorParserContext::CSSSelectorParserContext(const Document& document)
     , imageControlsEnabled(document.settings().imageControlsEnabled())
 #endif
     , popoverAttributeEnabled(document.settings().popoverAttributeEnabled())
-    , htmlEnhancedSelectPseudoElementsEnabled(document.settings().htmlEnhancedSelectPseudoElementsEnabled())
+    , htmlEnhancedSelectEnabled(document.settings().htmlEnhancedSelectEnabled())
     , targetTextPseudoElementEnabled(document.settings().targetTextPseudoElementEnabled())
     , cssAppearanceBaseEnabled(document.settings().cssAppearanceBaseEnabled())
     , viewTransitionsEnabled(document.settings().viewTransitionsEnabled())
@@ -70,7 +70,7 @@ void add(Hasher& hasher, const CSSSelectorParserContext& context)
         context.imageControlsEnabled,
 #endif
         context.popoverAttributeEnabled,
-        context.htmlEnhancedSelectPseudoElementsEnabled,
+        context.htmlEnhancedSelectEnabled,
         context.targetTextPseudoElementEnabled,
         context.cssAppearanceBaseEnabled,
         context.viewTransitionsEnabled,

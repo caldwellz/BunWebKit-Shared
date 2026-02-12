@@ -56,7 +56,7 @@ public:
 
     const String& inputType() const { return m_inputType; }
     const String& data() const { return m_data; }
-    DataTransfer* dataTransfer() const;
+    DataTransfer* NODELETE dataTransfer() const;
     const Vector<Ref<StaticRange>>& getTargetRanges() { return m_targetRanges; }
     bool isInputMethodComposing() const { return m_isInputMethodComposing; }
 

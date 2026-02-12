@@ -370,14 +370,12 @@ inline ElementRareData* Element::elementRareData() const
 
 inline ShadowRoot* Node::shadowRoot() const
 {
-    if (auto* element = dynamicDowncast<Element>(*this))
-        return element->shadowRoot();
-    return nullptr;
+    return hasShadowRoot() ? downcast<Element>(*this).shadowRoot() : nullptr;
 }
 
 inline ShadowRoot* Element::shadowRoot() const
 {
-    return hasRareData() ? elementRareData()->shadowRoot() : nullptr;
+    return hasShadowRoot() ? elementRareData()->shadowRoot() : nullptr;
 }
 
 inline void Element::removeShadowRoot()

@@ -33,6 +33,7 @@
 #import "WKContentViewInteraction.h"
 #import "WebPageProxy.h"
 #import <wtf/RetainPtr.h>
+#import <wtf/WeakObjCPtr.h>
 
 using namespace WebKit;
 
@@ -72,13 +73,18 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 @end
 
 @implementation WKRotatingPopover {
-    WKContentView *_view;
+    WeakObjCPtr<WKContentView> _view;
 
     BOOL _isRotating;
     BOOL _isPreservingFocus;
     CGPoint _presentationPoint;
     RetainPtr<UIPopoverController> _popoverController;
     id <WKRotatingPopoverDelegate> _dismissionDelegate;
+}
+
+- (WKContentView *)view
+{
+    return _view.getAutoreleased();
 }
 
 - (id)initWithView:(WKContentView *)view
@@ -98,8 +104,6 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 
 - (void)dealloc
 {
-    _view = nil;
-
     [_popoverController dismissPopoverAnimated:YES];
     [_popoverController setDelegate:nil];
     self.popoverController = nil;
@@ -135,11 +139,11 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 {
     auto directions = [self popoverArrowDirections];
     CGRect presentationRect;
-    RetainPtr view = retainPtr(_view);
+    RetainPtr view = _view.get();
     if (CGPointEqualToPoint(self.presentationPoint, CGPointZero))
         presentationRect = view.get().focusedElementInformation.interactionRect;
     else {
-        auto scale = view.get().page->pageScaleFactor();
+        auto scale = protect(view.get().page)->pageScaleFactor();
         presentationRect = CGRectMake(self.presentationPoint.x * scale, self.presentationPoint.y * scale, 1, 1);
     }
 
@@ -147,7 +151,7 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
         return;
 
 #if PLATFORM(MACCATALYST)
-    [_view startRelinquishingFirstResponderToFocusedElement];
+    [view startRelinquishingFirstResponderToFocusedElement];
 #endif
     [_popoverController presentPopoverFromRect:CGRectIntegral(presentationRect) inView:view.get() permittedArrowDirections:directions animated:animated];
 }
@@ -155,7 +159,7 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 - (void)dismissPopoverAnimated:(BOOL)animated
 {
 #if PLATFORM(MACCATALYST)
-    [_view stopRelinquishingFirstResponderToFocusedElement];
+    [_view.get() stopRelinquishingFirstResponderToFocusedElement];
 #endif
 
     [_popoverController dismissPopoverAnimated:animated];

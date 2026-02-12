@@ -2,7 +2,7 @@
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2000 Dirk Mueller (mueller@kde.org)
- * Copyright (C) 2004-2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2004-2026 Apple Inc. All rights reserved.
  * Copyright (C) 2010 Google Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
@@ -40,6 +40,8 @@ public:
     static Ref<HTMLOptionElement> create(const QualifiedName&, Document&);
     static ExceptionOr<Ref<HTMLOptionElement>> createForLegacyFactoryFunction(Document&, String&& text, const AtomString& value, bool defaultSelected, bool selected);
 
+    void finishParsingChildren() final;
+
     WEBCORE_EXPORT String text() const;
     void setText(String&&);
 
@@ -66,6 +68,8 @@ public:
 
     void setSelectedState(bool, AllowStyleInvalidation = AllowStyleInvalidation::Yes);
     bool selectedWithoutUpdate() const { return m_isSelected; }
+
+    void cloneIntoSelectedContent(HTMLSelectedContentElement&);
 
 private:
     HTMLOptionElement(const QualifiedName&, Document&);

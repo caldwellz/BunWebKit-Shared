@@ -114,6 +114,8 @@ inline UniqueRef<LibWebRTCProvider> createLibWebRTCProvider(WebPage&)
 
 } // namespace WebKit
 
+#if USE(LIBWEBRTC)
 SPECIALIZE_TYPE_TRAITS_BEGIN(WebKit::LibWebRTCProvider) \
 static bool isType(const WebCore::WebRTCProvider& provider) { return provider.isLibWebRTCProvider(); } \
 SPECIALIZE_TYPE_TRAITS_END()
+#endif

@@ -133,6 +133,7 @@ enum class DOMPasteAccessCategory : uint8_t;
 enum class DOMPasteAccessResponse : uint8_t;
 enum class DOMPasteRequiresInteraction : bool;
 enum class ScrollIsAnimated : bool;
+enum class InterruptScrollAnimation : bool;
 
 struct AppHighlight;
 struct AriaNotifyData;
@@ -256,7 +257,7 @@ public:
     virtual void setViewNeedsDisplay(const WebCore::Region&) = 0;
 
     // Tell the view to scroll to the given position, and whether this was a programmatic scroll.
-    virtual void requestScroll(const WebCore::FloatPoint& scrollPosition, const WebCore::IntPoint& scrollOrigin, WebCore::ScrollIsAnimated) = 0;
+    virtual void requestScroll(const WebCore::FloatPoint& scrollPosition, const WebCore::IntPoint& scrollOrigin, WebCore::ScrollIsAnimated, WebCore::InterruptScrollAnimation) = 0;
 
     // Return the current scroll position (not necessarily the same as the WebCore scroll position, because of scaling, insets etc.)
     virtual WebCore::FloatPoint viewScrollPosition() = 0;
@@ -579,7 +580,6 @@ public:
     virtual void didUpdateEditorState() = 0;
     virtual bool isFocusingElement() = 0;
     virtual bool interpretKeyEvent(const NativeWebKeyboardEvent&, KeyEventInterpretationContext&&) = 0;
-    virtual void positionInformationDidChange(const InteractionInformationAtPosition&) = 0;
     virtual void saveImageToLibrary(Ref<WebCore::SharedBuffer>&&) = 0;
     virtual void showPlaybackTargetPicker(bool hasVideo, const WebCore::IntRect& elementRect, WebCore::RouteSharingPolicy, const String&) = 0;
     virtual void showDataDetectorsUIForPositionInformation(const InteractionInformationAtPosition&) = 0;
@@ -625,6 +625,10 @@ public:
 #endif
     virtual bool isTextRecognitionInFullscreenVideoEnabled() const { return false; }
 
+#if PLATFORM(COCOA)
+    virtual void positionInformationDidChange(const InteractionInformationAtPosition&) = 0;
+#endif
+
 #if ENABLE(VIDEO)
     virtual void beginTextRecognitionForVideoInElementFullscreen(WebCore::ShareableBitmap::Handle&&, WebCore::FloatRect) { }
     virtual void cancelTextRecognitionForVideoInElementFullscreen() { }
@@ -633,7 +637,6 @@ public:
     // Auxiliary Client Creation
 #if ENABLE(FULLSCREEN_API)
     virtual WebFullScreenManagerProxyClient& fullScreenManagerProxyClient() = 0;
-    CheckedRef<WebFullScreenManagerProxyClient> checkedFullScreenManagerProxyClient();
     virtual void setFullScreenClientForTesting(std::unique_ptr<WebFullScreenManagerProxyClient>&&) = 0;
 #endif
 
@@ -714,7 +717,6 @@ public:
 
 #if ENABLE(WIRELESS_PLAYBACK_TARGET) && !PLATFORM(IOS_FAMILY)
     virtual WebCore::WebMediaSessionManager& mediaSessionManager() = 0;
-    CheckedRef<WebCore::WebMediaSessionManager> checkedMediaSessionManager();
 #endif
 
     virtual void refView() = 0;

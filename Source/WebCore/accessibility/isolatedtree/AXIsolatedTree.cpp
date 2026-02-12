@@ -178,12 +178,7 @@ RefPtr<AXIsolatedTree> AXIsolatedTree::create(AXObjectCache& axObjectCache)
     if (axRoot)
         tree->generateSubtree(*axRoot);
 
-#if ENABLE_ACCESSIBILITY_LOCAL_FRAME
-    RefPtr axFocus = axObjectCache.focusedObjectForLocalFrame();
-#else
-    RefPtr axFocus = axObjectCache.focusedObjectForPage(document->page());
-#endif
-    if (axFocus)
+    if (RefPtr axFocus = axObjectCache.focusedObjectForPage(document->page()))
         tree->setFocusedNodeID(axFocus->objectID());
     tree->setSelectedTextMarkerRange(document->selection().selection());
     tree->setInitialSortedLiveRegions(axIDs(axObjectCache.sortedLiveRegions()));
@@ -295,6 +290,8 @@ RefPtr<AXIsolatedTree> AXIsolatedTree::treeForFrameID(FrameIdentifier frameID)
 
 RefPtr<AXIsolatedTree> AXIsolatedTree::treeForFrameIDAlreadyLocked(FrameIdentifier frameID)
 {
+    AX_BROKEN_ASSERT(s_storeLock.isHeld());
+
     return treeFrameCache().get(frameID);
 }
 
@@ -683,6 +680,10 @@ void AXIsolatedTree::updateNodeProperties(AccessibilityObject& axObject, const A
             break;
         case AXProperty::ColumnIndexRange:
             properties.append({ AXProperty::ColumnIndexRange, axObject.columnIndexRange() });
+            break;
+        case AXProperty::IsFocusedWebArea:
+            AX_ASSERT(axObject.isWebArea());
+            properties.append({ AXProperty::IsFocusedWebArea, axObject.isFocused() });
             break;
         case AXProperty::CurrentState:
             properties.append({ AXProperty::CurrentState, static_cast<int>(axObject.currentState()) });
@@ -1137,7 +1138,11 @@ std::optional<AXID> AXIsolatedTree::focusedNodeID()
     // applyPendingChanges can destroy `this` tree, so protect it until the end of this method.
     Ref protectedThis { *this };
     // Apply pending changes in case focus has changed and hasn't been updated.
-    applyPendingChanges();
+    // Use applyPendingChangesUnlessQueuedForDestruction() because this method may be called
+    // while s_storeLock is held (e.g., from findAXTree() callback). If we used applyPendingChanges()
+    // on a tree queued for destruction, it would try to call AXTreeStore::remove() which requires
+    // s_storeLock, causing a deadlock.
+    applyPendingChangesUnlessQueuedForDestruction();
     return m_focusedNodeID;
 }
 
@@ -2016,8 +2021,10 @@ IsolatedObjectData createIsolatedObjectData(const Ref<AccessibilityObject>& axOb
         } else
             setProperty(AXProperty::InitialLocalRect, object.localRect());
 
-        if (isWebArea)
+        if (isWebArea) {
             setProperty(AXProperty::IsEditableWebArea, object.isEditableWebArea());
+            setProperty(AXProperty::IsFocusedWebArea, object.isFocused());
+        }
 
         if (object.supportsPath()) {
             setProperty(AXProperty::SupportsPath, true);

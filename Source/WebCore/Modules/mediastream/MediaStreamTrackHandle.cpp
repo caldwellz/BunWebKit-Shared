@@ -40,23 +40,24 @@ ExceptionOr<Ref<MediaStreamTrackHandle>> MediaStreamTrackHandle::create(MediaStr
     if (!context)
         return Exception { ExceptionCode::InvalidStateError, "Track context is gone"_s };
 
-    return create(context->identifier(), track, track.keeper());
+    return create(context->identifier(), track, track.keeper(), track.privateTrack().sourceObserver());
 }
 
 Ref<MediaStreamTrackHandle> MediaStreamTrackHandle::create(DataHolder&& holder)
 {
-    return create(holder.contextIdentifier, WTF::move(holder.track), WTF::move(holder.trackKeeper));
+    return create(holder.contextIdentifier, WTF::move(holder.track), WTF::move(holder.trackKeeper), WTF::move(holder.trackSourceObserver));
 }
 
-Ref<MediaStreamTrackHandle> MediaStreamTrackHandle::create(ScriptExecutionContextIdentifier contextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&& track, Ref<MediaStreamTrack::Keeper>&& trackKeeper)
+Ref<MediaStreamTrackHandle> MediaStreamTrackHandle::create(ScriptExecutionContextIdentifier contextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&& track, Ref<MediaStreamTrack::Keeper>&& trackKeeper, Ref<MediaStreamTrackPrivateSourceObserver>&& trackSourceObserver)
 {
-    return adoptRef(*new MediaStreamTrackHandle(contextIdentifier, WTF::move(track), WTF::move(trackKeeper)));
+    return adoptRef(*new MediaStreamTrackHandle(contextIdentifier, WTF::move(track), WTF::move(trackKeeper), WTF::move(trackSourceObserver)));
 }
 
-MediaStreamTrackHandle::MediaStreamTrackHandle(ScriptExecutionContextIdentifier contextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&& track, Ref<MediaStreamTrack::Keeper>&& trackKeeper)
+MediaStreamTrackHandle::MediaStreamTrackHandle(ScriptExecutionContextIdentifier contextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&& track, Ref<MediaStreamTrack::Keeper>&& trackKeeper, Ref<MediaStreamTrackPrivateSourceObserver>&& trackSourceObserver)
     : m_contextIdentifier(contextIdentifier)
     , m_track(WTF::move(track))
     , m_trackKeeper(WTF::move(trackKeeper))
+    , m_trackSourceObserver(WTF::move(trackSourceObserver))
 {
 }
 
@@ -66,7 +67,7 @@ UniqueRef<MediaStreamTrackHandle::DataHolder> MediaStreamTrackHandle::detach()
 {
     ASSERT(!isDetached());
     m_isDetached = true;
-    return makeUniqueRef<DataHolder>(DataHolder { m_contextIdentifier, m_track, m_trackKeeper });
+    return makeUniqueRef<DataHolder>(DataHolder { m_contextIdentifier, m_track, m_trackKeeper, m_trackSourceObserver });
 }
 
 } // namespace WebCore

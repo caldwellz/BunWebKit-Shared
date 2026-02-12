@@ -269,14 +269,14 @@ void AXObjectCache::frameLoadingEventPlatformNotification(RenderView* renderView
     }
 }
 
-void AXObjectCache::platformHandleFocusedUIElementChanged(Element* oldFocus, Element* newFocus)
+void AXObjectCache::platformHandleFocusedUIElementChanged(AccessibilityObject* oldFocus, AccessibilityObject* newFocus)
 {
-    if (auto* axObject = get(oldFocus)) {
-        if (auto* wrapper = axObject->wrapper())
+    if (oldFocus) {
+        if (auto* wrapper = oldFocus->wrapper())
             wrapper->stateChanged("focused", false);
     }
-    if (auto* axObject = getOrCreate(newFocus)) {
-        if (auto* wrapper = axObject->wrapper())
+    if (newFocus) {
+        if (auto* wrapper = newFocus->wrapper())
             wrapper->stateChanged("focused", true);
     }
 }

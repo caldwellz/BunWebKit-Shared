@@ -86,21 +86,265 @@ public:
     bool fontCascadeEqual(const RenderStyle&) const;
     bool scrollSnapDataEquivalent(const RenderStyle&) const;
 
-    // MARK: - Style adjustment utilities
+    // MARK: - Non-property values
 
-    inline void setPageScaleTransform(float);
-    inline void setColumnStylesFromPaginationMode(PaginationMode);
-    inline void addToTextDecorationLineInEffect(Style::TextDecorationLine);
-    inline void containIntrinsicWidthAddAuto();
-    inline void containIntrinsicHeightAddAuto();
-    inline void setGridAutoFlowDirection(Style::GridAutoFlow::Direction);
+    inline bool usesViewportUnits() const;
+    inline void setUsesViewportUnits();
 
-    void adjustAnimations();
-    void adjustTransitions();
-    void adjustBackgroundLayers();
-    void adjustMaskLayers();
-    void adjustScrollTimelines();
-    void adjustViewTimelines();
+    inline bool usesContainerUnits() const;
+    inline void setUsesContainerUnits();
+
+    inline bool useTreeCountingFunctions() const;
+    inline void setUsesTreeCountingFunctions();
+
+    inline InsideLink insideLink() const;
+    inline void setInsideLink(InsideLink);
+
+    inline bool isLink() const;
+    inline void setIsLink(bool);
+
+    inline bool emptyState() const;
+    inline void setEmptyState(bool);
+
+    inline bool firstChildState() const;
+    inline void setFirstChildState();
+
+    inline bool lastChildState() const;
+    inline void setLastChildState();
+
+    inline bool hasExplicitlyInheritedProperties() const;
+    inline void setHasExplicitlyInheritedProperties();
+
+    inline bool disallowsFastPathInheritance() const;
+    inline void setDisallowsFastPathInheritance();
+
+    inline bool hasDisplayAffectedByAnimations() const;
+    inline void setHasDisplayAffectedByAnimations();
+
+    inline bool transformStyleForcedToFlat() const;
+    inline void setTransformStyleForcedToFlat(bool);
+
+    inline void setUsesAnchorFunctions();
+    inline bool usesAnchorFunctions() const;
+
+    inline void setAnchorFunctionScrollCompensatedAxes(EnumSet<BoxAxis>);
+    inline EnumSet<BoxAxis> anchorFunctionScrollCompensatedAxes() const;
+
+    inline void setIsPopoverInvoker();
+    inline bool isPopoverInvoker() const;
+
+    inline bool nativeAppearanceDisabled() const;
+    inline void setNativeAppearanceDisabled(bool);
+
+    inline bool insideDefaultButton() const;
+    inline void setInsideDefaultButton(bool);
+
+    inline bool insideSubmitButton() const;
+    inline void setInsideSubmitButton(bool);
+
+    inline OptionSet<EventListenerRegionType> eventListenerRegionTypes() const;
+    inline void setEventListenerRegionTypes(OptionSet<EventListenerRegionType>);
+
+    inline bool isForceHidden() const;
+    inline void setIsForceHidden();
+
+    inline bool autoRevealsWhenFound() const;
+    inline void setAutoRevealsWhenFound();
+
+    inline bool hasAttrContent() const;
+    inline void setHasAttrContent();
+
+    inline std::optional<size_t> usedPositionOptionIndex() const;
+    inline void setUsedPositionOptionIndex(std::optional<size_t>);
+
+    inline bool effectiveInert() const;
+    inline void setEffectiveInert(bool);
+
+    inline bool isEffectivelyTransparent() const; // This or any ancestor has opacity 0.
+    inline void setIsEffectivelyTransparent(bool);
+
+    // No setter. Set via `RenderStyleProperties::setDisplay()`.
+    inline constexpr DisplayType originalDisplay() const;
+
+    // `effectiveDisplay()` getter is an alias of `RenderStyleProperties::display()`.
+    inline DisplayType effectiveDisplay() const;
+    inline void setEffectiveDisplay(DisplayType);
+
+    inline StyleAppearance usedAppearance() const;
+    inline void setUsedAppearance(StyleAppearance);
+
+    // usedContentVisibility will return ContentVisibility::Hidden in a content-visibility: hidden subtree (overriding
+    // content-visibility: auto at all times), ContentVisibility::Auto in a content-visibility: auto subtree (when the
+    // content is not user relevant and thus skipped), and ContentVisibility::Visible otherwise.
+    inline ContentVisibility usedContentVisibility() const;
+    inline void setUsedContentVisibility(ContentVisibility);
+
+    // 'touch-action' behavior depends on values in ancestors. We use an additional inherited property to implement that.
+    inline Style::TouchAction usedTouchAction() const;
+    inline void setUsedTouchAction(Style::TouchAction);
+
+    inline Style::ZIndex usedZIndex() const;
+    inline void setUsedZIndex(Style::ZIndex);
+
+#if HAVE(CORE_MATERIAL)
+    inline AppleVisualEffect usedAppleVisualEffectForSubtree() const;
+    inline void setUsedAppleVisualEffectForSubtree(AppleVisualEffect);
+#endif
+
+#if ENABLE(TEXT_AUTOSIZING)
+    // MARK: - Text Autosizing
+
+    inline AutosizeStatus autosizeStatus() const;
+    inline void setAutosizeStatus(AutosizeStatus);
+#endif
+
+    // MARK: - Pseudo element/style
+
+    std::optional<PseudoElementType> pseudoElementType() const;
+    const AtomString& pseudoElementNameArgument() const;
+
+    std::optional<Style::PseudoElementIdentifier> pseudoElementIdentifier() const;
+    inline void setPseudoElementIdentifier(std::optional<Style::PseudoElementIdentifier>&&);
+
+    inline bool hasAnyPublicPseudoStyles() const;
+    inline bool hasPseudoStyle(PseudoElementType) const;
+    inline void setHasPseudoStyles(EnumSet<PseudoElementType>);
+
+    RenderStyle* getCachedPseudoStyle(const Style::PseudoElementIdentifier&) const;
+    RenderStyle* addCachedPseudoStyle(std::unique_ptr<RenderStyle>);
+
+    bool hasCachedPseudoStyles() const { return m_computedStyle.hasCachedPseudoStyles(); }
+    const Style::PseudoStyleCache& cachedPseudoStyles() const { return m_computedStyle.cachedPseudoStyles(); }
+
+    // MARK: - Custom properties
+
+    inline const Style::CustomPropertyData& inheritedCustomProperties() const;
+    inline const Style::CustomPropertyData& nonInheritedCustomProperties() const;
+    const Style::CustomProperty* customPropertyValue(const AtomString&) const;
+    void setCustomPropertyValue(Ref<const Style::CustomProperty>&&, bool isInherited);
+    bool customPropertyValueEqual(const RenderStyle&, const AtomString&) const;
+    bool customPropertiesEqual(const RenderStyle&) const;
+    void deduplicateCustomProperties(const RenderStyle&);
+
+    // MARK: - Custom paint
+
+    void addCustomPaintWatchProperty(const AtomString&);
+
+    // MARK: - Zoom
+
+    inline bool evaluationTimeZoomEnabled() const;
+    inline void setEvaluationTimeZoomEnabled(bool);
+
+    inline float deviceScaleFactor() const;
+    inline void setDeviceScaleFactor(float);
+
+    inline bool useSVGZoomRulesForLength() const;
+    inline void setUseSVGZoomRulesForLength(bool);
+
+    inline float usedZoom() const;
+    inline bool setUsedZoom(float);
+
+    inline Style::ZoomFactor usedZoomForLength() const;
+
+    // MARK: - Fonts
+
+    inline const FontCascade& fontCascade() const;
+    inline CheckedRef<const FontCascade> checkedFontCascade() const;
+    inline FontCascade& mutableFontCascadeWithoutUpdate();
+    inline void setFontCascade(FontCascade&&);
+
+    inline const FontCascadeDescription& fontDescription() const;
+    inline FontCascadeDescription& mutableFontDescriptionWithoutUpdate();
+    inline void setFontDescription(FontCascadeDescription&&);
+    inline bool setFontDescriptionWithoutUpdate(FontCascadeDescription&&);
+
+    inline const FontMetrics& metricsOfPrimaryFont() const;
+    inline std::pair<FontOrientation, NonCJKGlyphOrientation> fontAndGlyphOrientation();
+    inline float computedFontSize() const;
+    inline Style::WebkitLocale computedLocale() const;
+    inline const Style::LineHeight& specifiedLineHeight() const;
+#if ENABLE(TEXT_AUTOSIZING)
+    inline void setSpecifiedLineHeight(Style::LineHeight&&);
+#endif
+
+    inline void setLetterSpacingFromAnimation(Style::LetterSpacing&&);
+    inline void setWordSpacingFromAnimation(Style::WordSpacing&&);
+
+    inline void synchronizeLetterSpacingWithFontCascade();
+    inline void synchronizeLetterSpacingWithFontCascadeWithoutUpdate();
+    inline void synchronizeWordSpacingWithFontCascade();
+    inline void synchronizeWordSpacingWithFontCascadeWithoutUpdate();
+
+    inline float usedLetterSpacing() const;
+    inline float usedWordSpacing() const;
+
+    // MARK: - Used Counter Directives
+
+    inline const CounterDirectiveMap& usedCounterDirectives() const;
+
+    // MARK: - Writing Modes
+
+    // FIXME: Rename to something that doesn't conflict with a property name.
+    // Aggregates `writing-mode`, `direction` and `text-orientation`.
+    WritingMode writingMode() const { return m_computedStyle.writingMode(); }
+
+    // FIXME: *Deprecated* Deprecated due to confusion between physical inline directions and bidi / line-relative directions.
+    bool isLeftToRightDirection() const { return writingMode().isBidiLTR(); }
+
+    // MARK: - Aggregates
+
+    inline Style::Animations& ensureAnimations();
+    inline Style::BackgroundLayers& ensureBackgroundLayers();
+    inline Style::MaskLayers& ensureMaskLayers();
+    inline Style::Transitions& ensureTransitions();
+
+    inline const BorderData& border() const;
+    inline const BorderValue& borderBottom() const;
+    inline const BorderValue& borderLeft() const;
+    inline const BorderValue& borderRight() const;
+    inline const BorderValue& borderTop() const;
+    inline const Style::Animations& animations() const;
+    inline const Style::BackgroundLayers& backgroundLayers() const;
+    inline const Style::BorderImage& borderImage() const;
+    inline const Style::BorderRadius& borderRadii() const;
+    inline const Style::InsetBox& insetBox() const;
+    inline const Style::MarginBox& marginBox() const;
+    inline const Style::MaskBorder& maskBorder() const;
+    inline const Style::MaskLayers& maskLayers() const;
+    inline const Style::PaddingBox& paddingBox() const;
+    inline const Style::PerspectiveOrigin& perspectiveOrigin() const;
+    inline const Style::ScrollMarginBox& scrollMarginBox() const;
+    inline const Style::ScrollPaddingBox& scrollPaddingBox() const;
+    inline const Style::ScrollTimelines& scrollTimelines() const;
+    inline const Style::TransformOrigin& transformOrigin() const;
+    inline const Style::Transitions& transitions() const;
+    inline const Style::ViewTimelines& viewTimelines() const;
+
+    inline void setBackgroundLayers(Style::BackgroundLayers&&);
+    inline void setBorderImage(Style::BorderImage&&);
+    inline void setBorderRadius(Style::BorderRadiusValue&&);
+    inline void setBorderTop(BorderValue&&);
+    inline void setBorderRight(BorderValue&&);
+    inline void setBorderBottom(BorderValue&&);
+    inline void setBorderLeft(BorderValue&&);
+    inline void setInsetBox(Style::InsetBox&&);
+    inline void setMarginBox(Style::MarginBox&&);
+    inline void setMaskBorder(Style::MaskBorder&&);
+    inline void setMaskLayers(Style::MaskLayers&&);
+    inline void setPaddingBox(Style::PaddingBox&&);
+    inline void setPerspectiveOrigin(Style::PerspectiveOrigin&&);
+    inline void setTransformOrigin(Style::TransformOrigin&&);
+
+    // MARK: - Properties/descriptors that are not yet generated
+
+    // `cursor`
+    inline CursorType cursorType() const;
+
+    // `@page size`
+    inline const Style::PageSize& pageSize() const;
+    inline void setPageSize(Style::PageSize&&);
+
+    // MARK: - Style reset utilities
 
     inline void resetBorder();
     inline void resetBorderExceptRadius();
@@ -211,7 +455,6 @@ public:
 
     inline bool hasAnimations() const;
     inline bool hasAnimationsOrTransitions() const;
-    inline bool hasAppearance() const;
     inline bool hasAspectRatio() const;
     inline bool hasAutoLengthContainIntrinsicSize() const;
     inline bool hasBackdropFilter() const;
@@ -314,7 +557,14 @@ public:
     inline bool preserves3D() const;
     inline bool affectsTransform() const;
 
+    // MARK: - Underlying ComputedStyle
+
+    Style::ComputedStyle& computedStyle() { return m_computedStyle; }
+    const Style::ComputedStyle& computedStyle() const { return m_computedStyle; }
+
 private:
+    friend class Style::DifferenceFunctions;
+
     // This constructor is used to implement the replace operation.
     RenderStyle(RenderStyle&, RenderStyle&&);
 
@@ -333,6 +583,13 @@ private:
     static constexpr bool isDisplayTableOrTablePart(DisplayType);
     static constexpr bool isInternalTableBox(DisplayType);
     static constexpr bool isRubyContainerOrInternalRubyBox(DisplayType);
+
+    const Style::NonInheritedData& nonInheritedData() const { return computedStyle().nonInheritedData(); }
+    const Style::ComputedStyle::NonInheritedFlags& nonInheritedFlags() const { return computedStyle().nonInheritedFlags(); }
+    const Style::InheritedRareData& inheritedRareData() const { return computedStyle().inheritedRareData(); }
+    const Style::InheritedData& inheritedData() const { return computedStyle().inheritedData(); }
+    const Style::ComputedStyle::InheritedFlags& inheritedFlags() const { return computedStyle().inheritedFlags(); }
+    const Style::SVGData& svgData() const { return computedStyle().svgData(); }
 };
 
 // Map from computed style values (which take zoom into account) to web-exposed values, which are zoom-independent.

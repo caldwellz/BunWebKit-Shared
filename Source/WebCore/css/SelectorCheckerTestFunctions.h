@@ -37,6 +37,7 @@
 #include "HTMLImageElement.h"
 #include "HTMLInputElement.h"
 #include "HTMLOptionElement.h"
+#include "HTMLSelectElement.h"
 #include "InspectorInstrumentation.h"
 #include "LocalFrameInlines.h"
 #include "Page.h"
@@ -596,6 +597,8 @@ ALWAYS_INLINE bool matchesOpenPseudoClass(const Element& element)
         return dialog->isOpen();
     if (auto* details = dynamicDowncast<HTMLDetailsElement>(element))
         return details->isOpen();
+    if (auto* select = dynamicDowncast<HTMLSelectElement>(element))
+        return select->isOpen();
 
     return false;
 }
@@ -615,6 +618,13 @@ ALWAYS_INLINE bool matchesActiveViewTransitionPseudoClass(const Element& element
     if (&element != element.document().documentElement())
         return false;
     return !!element.document().activeViewTransition();
+}
+
+ALWAYS_INLINE bool matchesUsesMenulistPseudoClass(const Element& element)
+{
+    if (auto* select = dynamicDowncast<HTMLSelectElement>(element))
+        return select->usesMenuList();
+    return false;
 }
 
 } // namespace WebCore

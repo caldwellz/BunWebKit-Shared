@@ -96,9 +96,9 @@ ScriptTrackingPrivacyFlag scriptCategoryAsFlag(ScriptTrackingPrivacyCategory cat
     return ScriptTrackingPrivacyFlag::FormControls;
 }
 
-bool shouldEnableScriptTrackingPrivacy(ScriptTrackingPrivacyCategory category, OptionSet<AdvancedPrivacyProtections> protections)
+bool shouldEnableScriptTrackingPrivacy(ScriptTrackingPrivacyCategory category, OptionSet<AdvancedPrivacyProtections> protections, bool needsConsistentPrivacy)
 {
-    if (protections.contains(AdvancedPrivacyProtections::BaselineProtections))
+    if (protections.contains(AdvancedPrivacyProtections::BaselineProtections) || needsConsistentPrivacy)
         return true;
 
     switch (category) {
@@ -125,6 +125,8 @@ String makeLogMessage(const URL& url, ScriptTrackingPrivacyCategory category)
 {
     if (category == ScriptTrackingPrivacyCategory::Cookies)
         return makeString("Prevented "_s, url.string(), " from setting long-lived cookies"_s);
+    if (category == ScriptTrackingPrivacyCategory::NetworkRequests)
+        return makeString("Prevented "_s, url.string(), " from making network request"_s);
     return makeString("Prevented "_s, url.string(), " from accessing "_s, description(category));
 }
 

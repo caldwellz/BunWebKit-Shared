@@ -76,7 +76,7 @@ std::optional<Exception> AbstractWorker::validateURL(ScriptExecutionContext& con
         return Exception { ExceptionCode::SecurityError };
 
     ASSERT(context.contentSecurityPolicy());
-    if (!context.checkedContentSecurityPolicy()->allowWorkerFromSource(scriptURL))
+    if (!protect(context.contentSecurityPolicy())->allowWorkerFromSource(scriptURL))
         return Exception { ExceptionCode::SecurityError };
 
     return { };

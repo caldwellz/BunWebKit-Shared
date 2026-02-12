@@ -401,7 +401,7 @@ bool WebProcessProxy::WebProcessXPCEventHandler::handleXPCEvent(xpc_object_t eve
         auto category = xpcDictionaryGetString(event, categoryKey);
         auto messageString = xpcDictionaryGetString(event, messageStringKey);
         auto logType = xpc_dictionary_get_uint64(event, logTypeKey);
-        auto pid = xpc_connection_get_pid(xpc_dictionary_get_remote_connection(event));
+        auto pid = xpc_connection_get_pid(protect(xpc_dictionary_get_remote_connection(event)));
 
         OSObjectPtr<os_log_t> osLog;
         if (!subsystem.isEmpty() && !category.isEmpty())

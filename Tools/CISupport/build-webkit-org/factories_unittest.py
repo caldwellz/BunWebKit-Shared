@@ -392,6 +392,7 @@ class TestExpectedBuildSteps(unittest.TestCase):
             'print-clang-version',
             'checkout-llvm-project',
             'update-clang',
+            'install-metal-toolchain',
             'scan-build'
         ],
         'Apple-Sequoia-Release-Build': [
@@ -767,10 +768,6 @@ class TestExpectedBuildSteps(unittest.TestCase):
             'delete-stale-build-files',
             'install-cmake',
             'install-ninja',
-            'get-llvm-version',
-            'print-clang-version',
-            'checkout-llvm-project',
-            'update-clang',
             'get-swift-tag-name',
             'print-swift-version',
             'checkout-swift-project',

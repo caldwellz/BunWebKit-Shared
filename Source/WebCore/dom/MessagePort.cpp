@@ -145,7 +145,7 @@ MessagePort::~MessagePort()
 
 void MessagePort::entangle()
 {
-    MessagePortChannelProvider::protectedFromContext(*protectedScriptExecutionContext())->entangleLocalPortInThisProcessToRemote(m_identifier, m_remoteIdentifier);
+    MessagePortChannelProvider::protectedFromContext(*protect(scriptExecutionContext()))->entangleLocalPortInThisProcessToRemote(m_identifier, m_remoteIdentifier);
 }
 
 ExceptionOr<void> MessagePort::postMessage(JSC::JSGlobalObject& globalObject, JSC::JSValue messageValue, StructuredSerializeOptions&& options)
@@ -179,7 +179,7 @@ ExceptionOr<void> MessagePort::postMessage(JSC::JSGlobalObject& globalObject, JS
 
     LOG(MessagePorts, "Actually posting message to port %s (to be received by port %s)", m_identifier.logString().utf8().data(), m_remoteIdentifier.logString().utf8().data());
 
-    MessagePortChannelProvider::protectedFromContext(*protectedScriptExecutionContext())->postMessageToRemote(WTF::move(message), m_remoteIdentifier);
+    MessagePortChannelProvider::protectedFromContext(*protect(scriptExecutionContext()))->postMessageToRemote(WTF::move(message), m_remoteIdentifier);
     return { };
 }
 
@@ -230,7 +230,7 @@ void MessagePort::start()
         return;
 
     m_started = true;
-    protectedScriptExecutionContext()->processMessageWithMessagePortsSoon([pendingActivity = makePendingActivity(*this)] { });
+    protect(scriptExecutionContext())->processMessageWithMessagePortsSoon([pendingActivity = makePendingActivity(*this)] { });
 }
 
 void MessagePort::close()

@@ -216,6 +216,13 @@ static WKCookiePolicy toWKCookiePolicy(WebCore::HTTPCookieAcceptPolicy policy)
     });
 }
 
+- (void)getCookiesForURL:(NSURL *)url completionHandler:(void (^)(NSArray<NSHTTPCookie *> *))completionHandler
+{
+    bool isOptInCookiePartitioningEnabled = self._protectedCookieStore->isOptInCookiePartitioningEnabled();
+    self._protectedCookieStore->cookiesForURL(url, [isOptInCookiePartitioningEnabled, handler = makeBlockPtr(completionHandler)] (const Vector<WebCore::Cookie>& cookies) {
+        handler.get()(coreCookiesToNSCookies(cookies, isOptInCookiePartitioningEnabled));
+    });
+}
 #pragma mark WKObject protocol implementation
 
 - (API::Object&)_apiObject
@@ -229,10 +236,7 @@ static WKCookiePolicy toWKCookiePolicy(WebCore::HTTPCookieAcceptPolicy policy)
 
 - (void)_getCookiesForURL:(NSURL *)url completionHandler:(void (^)(NSArray<NSHTTPCookie *> *))completionHandler
 {
-    bool isOptInCookiePartitioningEnabled = self._protectedCookieStore->isOptInCookiePartitioningEnabled();
-    self._protectedCookieStore->cookiesForURL(url, [isOptInCookiePartitioningEnabled, handler = makeBlockPtr(completionHandler)] (const Vector<WebCore::Cookie>& cookies) {
-        handler.get()(coreCookiesToNSCookies(cookies, isOptInCookiePartitioningEnabled));
-    });
+    [self getCookiesForURL:url completionHandler:completionHandler];
 }
 
 - (void)_setCookieAcceptPolicy:(NSHTTPCookieAcceptPolicy)policy completionHandler:(void (^)())completionHandler

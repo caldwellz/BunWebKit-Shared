@@ -69,7 +69,7 @@ struct AnchorScrollSnapshot {
 class AnchorScrollAdjuster {
 public:
     AnchorScrollAdjuster(RenderBox& anchored, const RenderBoxModelObject& defaultAnchor);
-    RenderBox* anchored() const;
+    RenderBox* NODELETE anchored() const;
 
     inline bool isEmpty() const;
     bool mayNeedAdjustment() const { return m_needsXAdjustment | m_needsYAdjustment; }

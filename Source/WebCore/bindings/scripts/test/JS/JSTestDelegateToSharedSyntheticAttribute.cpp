@@ -269,7 +269,7 @@ void JSTestDelegateToSharedSyntheticAttributeOwner::finalize(JSC::Handle<JSC::Un
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestDelegateToSharedSyntheticAttribute = static_cast<JSTestDelegateToSharedSyntheticAttribute*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestDelegateToSharedSyntheticAttribute->protectedWrapped().ptr(), jsTestDelegateToSharedSyntheticAttribute);
+    uncacheWrapper(world, protect(jsTestDelegateToSharedSyntheticAttribute->wrapped()).ptr(), jsTestDelegateToSharedSyntheticAttribute);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

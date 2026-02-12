@@ -296,13 +296,13 @@ void Location::reload(LocalDOMWindow& activeWindow)
     if (targetDocument->quirks().shouldDelayReloadWhenRegisteringServiceWorker()) {
         if (RefPtr container = targetDocument->serviceWorkerContainer()) {
             container->whenRegisterJobsAreFinished([localFrame, activeDocument] {
-                localFrame->protectedNavigationScheduler()->scheduleRefresh(activeDocument);
+                protect(localFrame->navigationScheduler())->scheduleRefresh(activeDocument);
             });
             return;
         }
     }
 
-    localFrame->protectedNavigationScheduler()->scheduleRefresh(activeDocument);
+    protect(localFrame->navigationScheduler())->scheduleRefresh(activeDocument);
 }
 
 ExceptionOr<void> Location::setLocation(LocalDOMWindow& incumbentWindow, LocalDOMWindow& firstWindow, const String& urlString)

@@ -790,6 +790,8 @@ static WebCore::ScriptTrackingPrivacyFlags allowedScriptTrackingCategories(WPScr
         result.add(WebCore::ScriptTrackingPrivacyFlag::Speech);
     if (categories & WPScriptAccessCategoryFormControls)
         result.add(WebCore::ScriptTrackingPrivacyFlag::FormControls);
+    if (categories & WPScriptAccessCategoryNetworkRequests)
+        result.add(WebCore::ScriptTrackingPrivacyFlag::NetworkRequests);
     return result;
 }
 

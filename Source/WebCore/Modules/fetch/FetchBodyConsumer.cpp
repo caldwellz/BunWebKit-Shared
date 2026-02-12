@@ -399,7 +399,7 @@ void FetchBodyConsumer::resolve(Ref<DeferredPromise>&& promise, const String& co
         return;
     case FetchBodyConsumer::Type::FormData: {
         auto buffer = takeData();
-        if (auto formData = packageFormData(promise->protectedScriptExecutionContext().get(), contentType, buffer ? buffer->makeContiguous()->span() : std::span<const uint8_t> { }))
+        if (auto formData = packageFormData(protect(promise->scriptExecutionContext()).get(), contentType, buffer ? buffer->makeContiguous()->span() : std::span<const uint8_t> { }))
             promise->resolve<IDLInterface<DOMFormData>>(*formData);
         else
             promise->reject(ExceptionCode::TypeError);

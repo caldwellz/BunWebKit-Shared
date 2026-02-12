@@ -31,7 +31,6 @@ class RenderSVGBlock : public RenderBlockFlow {
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(RenderSVGBlock);
 public:
     inline SVGGraphicsElement& graphicsElement() const;
-    inline Ref<SVGGraphicsElement> protectedGraphicsElement() const;
 
 protected:
     RenderSVGBlock(Type, SVGGraphicsElement&, RenderStyle&&);

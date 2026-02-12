@@ -859,7 +859,7 @@ input:is([type="checkbox"], [type="radio"]):checked:disabled {
 }
 
 input[type=checkbox]:not([switch]):checked::checkmark {
-    content: '\2713' / '';
+    content: "\2713" / "";
 }
 
 input[type=radio]:checked::checkmark {
@@ -1055,49 +1055,53 @@ input[type="color"]::-webkit-color-swatch {
 select {
     box-sizing: border-box;
     appearance: auto;
+    border: 1px solid;
+    -webkit-rtl-ordering: logical;
 #if defined(WTF_PLATFORM_IOS_FAMILY) && WTF_PLATFORM_IOS_FAMILY
-    letter-spacing: normal;
-    word-spacing: normal;
-    line-height: normal;
     padding-block: 0;
     padding-inline: 0.4em;
     color: -apple-system-blue;
     font: 11px system-ui;
-    border: 1px solid -webkit-control-background;
-    border-radius: initial;
+    border-color: -webkit-control-background;
 #if defined(WTF_PLATFORM_VISION) && WTF_PLATFORM_VISION
     background-color: rgba(0, 0, 0, 0.04);
 #else
     background-color: -apple-system-opaque-secondary-fill;
 #endif /* defined(WTF_PLATFORM_VISION) && WTF_PLATFORM_VISION */
 #else
-    border-radius: 5px;
-    border: 1px solid;
     color: CanvasText;
     background-color: Canvas;
 #endif
+}
+
+/* FIXME: Replace with select:-internal-uses-menulist */
+#if !(defined(WTF_PLATFORM_IOS_FAMILY) && WTF_PLATFORM_IOS_FAMILY)
+select:not([size], [multiple]),
+select:is([size=""], [size="0"], [size="1"]):not([multiple]) {
+#else
+select {
+#endif
+#if !(defined(WTF_PLATFORM_IOS_FAMILY) && WTF_PLATFORM_IOS_FAMILY)
+    border-radius: 5px;
+#endif
     align-items: center;
     white-space: pre;
-    -webkit-rtl-ordering: logical;
     cursor: default;
 }
 
+/* FIXME: Replace with select:not(:-internal-uses-menulist) */
 #if !(defined(WTF_PLATFORM_IOS_FAMILY) && WTF_PLATFORM_IOS_FAMILY)
-select:is([size], [multiple]), select[size][multiple] {
-    align-items: normal;
-    cursor: auto;
-    border: 1px inset gray;
-    border-radius: initial;
-    white-space: initial;
-}
-
-select:is([size=""], [size="0"], [size="1"]) {
-    align-items: center;
-    border: 1px solid;
-    border-radius: 5px;
-    white-space: pre;
+select[size][multiple],
+select:is([size], [multiple]):not([size=""], [size="0"], [size="1"]) {
+    border-style: inset;
+    border-color: gray;
 }
 #endif
+
+select:not([multiple]):-internal-uses-menulist > button:first-child {
+    all: unset;
+    /* FIXME: add display: contents; once it works as expected */
+}
 
 optgroup {
     font-weight: bolder;

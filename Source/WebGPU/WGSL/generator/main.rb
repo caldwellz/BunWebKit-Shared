@@ -302,6 +302,7 @@ module DSL
         properties = {
             must_use: false,
             const: false,
+            validate: false,
             stage: [:fragment, :compute, :vertex],
         }
         map.each do |key, value|
@@ -372,6 +373,15 @@ module DSL
                 entry[:const]
             end
 
+            validation_function = case entry[:validate]
+            when false
+                "nullptr"
+            when true
+                "validate#{name[0].upcase}#{name[1..]}"
+            else
+                entry[:const]
+            end
+
             stages = entry[:stage].kind_of?(Array) ? entry[:stage] : [entry[:stage]]
             visibility = stages.map { |s| "ShaderStage::#{s.to_s.capitalize}" }.join ", "
 
@@ -380,6 +390,7 @@ module DSL
             out << "    .kind = OverloadedDeclaration::#{entry[:kind].to_s.capitalize},"
             out << "    .mustUse = #{entry[:must_use]},"
             out << "    .constantFunction = #{constant_function},"
+            out << "    .validationFunction = #{validation_function},"
             out << "    .visibility = { #{visibility} },"
             out << "    .overloads = { }"
             out << "});"

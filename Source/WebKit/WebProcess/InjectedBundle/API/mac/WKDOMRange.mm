@@ -36,11 +36,6 @@
 #import <wtf/MainThread.h>
 #import <wtf/cocoa/VectorCocoa.h>
 
-static Ref<WebCore::Range> protectedImpl(WKDOMRange *range)
-{
-    return *range->_impl;
-}
-
 @implementation WKDOMRange
 
 - (id)_initWithImpl:(WebCore::Range*)impl
@@ -72,77 +67,77 @@ static Ref<WebCore::Range> protectedImpl(WKDOMRange *range)
 {
     if (!node)
         return;
-    protectedImpl(self)->setStart(*WebKit::toWebCoreNode(node), offset);
+    protect(*_impl)->setStart(*WebKit::toWebCoreNode(node), offset);
 }
 
 - (void)setEnd:(WKDOMNode *)node offset:(int)offset
 {
     if (!node)
         return;
-    protectedImpl(self)->setEnd(*WebKit::toWebCoreNode(node), offset);
+    protect(*_impl)->setEnd(*WebKit::toWebCoreNode(node), offset);
 }
 
 - (void)collapse:(BOOL)toStart
 {
-    protectedImpl(self)->collapse(toStart);
+    protect(*_impl)->collapse(toStart);
 }
 
 - (void)selectNode:(WKDOMNode *)node
 {
     if (!node)
         return;
-    protectedImpl(self)->selectNode(*WebKit::toProtectedWebCoreNode(node));
+    protect(*_impl)->selectNode(*WebKit::toProtectedWebCoreNode(node));
 }
 
 - (void)selectNodeContents:(WKDOMNode *)node
 {
     if (!node)
         return;
-    protectedImpl(self)->selectNodeContents(*WebKit::toProtectedWebCoreNode(node));
+    protect(*_impl)->selectNodeContents(*WebKit::toProtectedWebCoreNode(node));
 }
 
 - (WKDOMNode *)startContainer
 {
-    return WebKit::toWKDOMNode(protect(protectedImpl(self)->startContainer()).ptr());
+    return WebKit::toWKDOMNode(protect(protect(*_impl)->startContainer()).ptr());
 }
 
 - (NSInteger)startOffset
 {
-    return protectedImpl(self)->startOffset();
+    return protect(*_impl)->startOffset();
 }
 
 - (WKDOMNode *)endContainer
 {
-    return WebKit::toWKDOMNode(protect(protectedImpl(self)->endContainer()).ptr());
+    return WebKit::toWKDOMNode(protect(protect(*_impl)->endContainer()).ptr());
 }
 
 - (NSInteger)endOffset
 {
-    return protectedImpl(self)->endOffset();
+    return protect(*_impl)->endOffset();
 }
 
 - (NSString *)text
 {
-    auto range = makeSimpleRange(protectedImpl(self));
+    auto range = makeSimpleRange(protect(*_impl));
     protect(range.start.document())->updateLayout();
     return plainText(range).createNSString().autorelease();
 }
 
 - (BOOL)isCollapsed
 {
-    return protectedImpl(self)->collapsed();
+    return protect(*_impl)->collapsed();
 }
 
 - (NSArray *)textRects
 {
-    auto range = makeSimpleRange(protectedImpl(self));
+    auto range = makeSimpleRange(protect(*_impl));
     protect(range.start.document())->updateLayout(WebCore::LayoutOptions::IgnorePendingStylesheets);
     return createNSArray(WebCore::RenderObject::absoluteTextRects(range)).autorelease();
 }
 
 - (WKDOMRange *)rangeByExpandingToWordBoundaryByCharacters:(NSUInteger)characters inDirection:(WKDOMRangeDirection)direction
 {
-    auto range = makeSimpleRange(protectedImpl(self));
+    auto range = makeSimpleRange(protect(*_impl));
     auto newRange = rangeExpandedByCharactersInDirectionAtWordBoundary(makeDeprecatedLegacyPosition(direction == WKDOMRangeDirectionForward ? range.end : range.start), characters, direction == WKDOMRangeDirectionForward ? WebCore::SelectionDirection::Forward : WebCore::SelectionDirection::Backward);
     return adoptNS([[WKDOMRange alloc] _initWithImpl:createLiveRange(newRange).get()]).autorelease();
 }
@@ -153,7 +148,7 @@ static Ref<WebCore::Range> protectedImpl(WKDOMRange *range)
 
 - (WKBundleRangeHandleRef)_copyBundleRangeHandleRef
 {
-    auto rangeHandle = WebKit::InjectedBundleRangeHandle::getOrCreate(protectedImpl(self).ptr());
+    auto rangeHandle = WebKit::InjectedBundleRangeHandle::getOrCreate(protect(*_impl).ptr());
     return toAPILeakingRef(WTF::move(rangeHandle));
 }
 

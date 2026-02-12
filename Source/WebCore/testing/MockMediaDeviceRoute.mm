@@ -55,6 +55,37 @@ void MockMediaDeviceRoute::setURLCallback(MockMediaDeviceRouteURLCallback* urlCa
     [m_platformRoute setURLCallback:urlCallback];
 }
 
+String MockMediaDeviceRoute::deviceName() const
+{
+    return [m_platformRoute routeDisplayName];
+}
+
+void MockMediaDeviceRoute::setDeviceName(const String& deviceName)
+{
+    [m_platformRoute setRouteDisplayName:deviceName.createNSString().get()];
+}
+
+bool MockMediaDeviceRoute::ready() const
+{
+    return [m_platformRoute isReady];
+}
+
+void MockMediaDeviceRoute::setReady(bool ready)
+{
+    [m_platformRoute setReady:ready];
+}
+
+bool MockMediaDeviceRoute::hasPlaybackError() const
+{
+    return !![m_platformRoute playbackError];
+}
+
+void MockMediaDeviceRoute::setHasPlaybackError(bool)
+{
+    RetainPtr error = [NSError errorWithDomain:WebMockMediaDeviceRouteErrorDomain code:WebMockMediaDeviceRouteErrorPlaybackError userInfo:nil];
+    [m_platformRoute setPlaybackError:error.get()];
+}
+
 } // namespace WebCore
 
 #endif // ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)

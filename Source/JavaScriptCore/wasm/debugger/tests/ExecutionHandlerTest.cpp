@@ -50,7 +50,7 @@
 
 namespace ExecutionHandlerTest {
 
-using ExecutionHandlerTestSupport::defaultTimeoutSeconds;
+using ExecutionHandlerTestSupport::getReplyCount;
 using ExecutionHandlerTestSupport::setupTestEnvironment;
 using ExecutionHandlerTestSupport::verboseLogging;
 using ExecutionHandlerTestSupport::waitForCondition;
@@ -59,7 +59,6 @@ using JSC::JSWebAssemblyInstance;
 using JSC::VM;
 using JSC::VMManager;
 using JSC::Wasm::Breakpoint;
-using JSC::Wasm::CalleeGroup;
 using JSC::Wasm::DebugServer;
 using JSC::Wasm::DebugState;
 using JSC::Wasm::ExecutionHandler;
@@ -69,13 +68,11 @@ using TestScripts::TestScript;
 
 // ========== Test runtime state ==========
 
-static constexpr unsigned RAPID_CYCLES_COUNT = 1000;
-static constexpr unsigned CONTEXT_SWITCH_MULTIPLIER = 1000;
-static constexpr unsigned BREAKPOINT_CONTINUE_CYCLES_COUNT = 1000;
-static constexpr unsigned SINGLE_STEPPING_CYCLES_COUNT = 1000;
+static constexpr unsigned STRESS_TEST_ITERATIONS = 1000;
 static constexpr ASCIILiteral WORKER_THREAD_NAME = "WasmStressTest"_s;
 
-static int failuresFound = 0;
+static uint32_t failuresFound = 0;
+static uint32_t expectedVMCount = 0;
 static DebugServer* debugServer = nullptr;
 static ExecutionHandler* executionHandler = nullptr;
 static const TestScript* currentScript = nullptr;
@@ -105,9 +102,14 @@ static void validateStop()
 {
     auto info = VMManager::info();
     CHECK(info.worldMode == VMManager::Mode::Stopped, "All VMs should be stopped");
-    auto* state = executionHandler->debuggeeStateSafe();
-    CHECK(state->isStopped(), "Debuggee VM should be stopped");
     CHECK(info.targetVM == executionHandler->debuggeeVM(), "VMManager's targetVM should match ExecutionHandler's debuggee VM");
+    uint32_t stoppedCount = 0;
+    VMManager::forEachVM([&](VM& vm) {
+        CHECK(vm.debugState()->isStopped(), "VM should be stopped");
+        stoppedCount++;
+        return IterationStatus::Continue;
+    });
+    CHECK(stoppedCount == expectedVMCount, "Expected ", expectedVMCount, " stopped VMs, got ", stoppedCount);
 }
 
 static void interrupt()
@@ -119,11 +121,15 @@ static void interrupt()
 static void resume()
 {
     executionHandler->resume();
-
     auto info = VMManager::info();
     CHECK(info.worldMode == VMManager::Mode::RunAll, "All VMs should be running");
-    auto* state = executionHandler->debuggeeStateSafe();
-    CHECK(state->isRunning(), "Debuggee VM should be running");
+    uint32_t runningCount = 0;
+    VMManager::forEachVM([&](VM& vm) {
+        CHECK(vm.debugState()->isRunning(), "VM should be running");
+        runningCount++;
+        return IterationStatus::Continue;
+    });
+    CHECK(runningCount == expectedVMCount, "Expected ", expectedVMCount, " running VMs, got ", runningCount);
 }
 
 static void switchTarget(VM* newDebuggee)
@@ -164,13 +170,10 @@ static void setBreakpointsAtAllFunctionEntries(Breakpoint::Type type)
     VLOG("Set ", count, " breakpoints total");
 }
 
-static void clearBreakpointsAndResume(const char* errorMessage)
+static void clearBreakpointsAndResume()
 {
     executionHandler->breakpointManager()->clearAllBreakpoints();
-    executionHandler->resume();
-    waitForConditionAndCheck(errorMessage, [&]() {
-        return VMManager::info().worldMode == VMManager::Mode::RunAll;
-    });
+    resume();
 }
 
 // ========== BASIC TESTS ==========
@@ -178,7 +181,7 @@ static void clearBreakpointsAndResume(const char* errorMessage)
 static void testRapidInterruptResumeCycles()
 {
     TEST_LOG("\n=== Rapid Interrupt/Resume Cycles ===");
-    for (unsigned i = 0; i < RAPID_CYCLES_COUNT; ++i) {
+    for (unsigned i = 0; i < STRESS_TEST_ITERATIONS; ++i) {
         VLOG("Cycle ", i);
         interrupt();
         resume();
@@ -200,7 +203,7 @@ static void testVMContextSwitching()
     });
     VLOG("Found ", allVMs.size(), " VMs");
 
-    for (unsigned i = 0; i < allVMs.size() * CONTEXT_SWITCH_MULTIPLIER; ++i) {
+    for (unsigned i = 0; i < allVMs.size() * STRESS_TEST_ITERATIONS; ++i) {
         VM* nextDebuggee = allVMs[i % allVMs.size()];
         switchTarget(nextDebuggee);
     }
@@ -217,15 +220,14 @@ static void testBreakpointContinueCycles()
     interrupt();
 
     setBreakpointsAtAllFunctionEntries(Breakpoint::Type::Regular);
-    for (unsigned i = 0; i < BREAKPOINT_CONTINUE_CYCLES_COUNT; ++i) {
+    for (unsigned i = 0; i < STRESS_TEST_ITERATIONS; ++i) {
         VLOG("Continue cycle ", i);
 
+        unsigned expectedReplyCount = getReplyCount() + 1;
         executionHandler->resume();
 
         waitForConditionAndCheck("VMs did not stop at breakpoint in continue cycle", [&]() {
-            auto info = VMManager::info();
-            bool stopped = info.worldMode == VMManager::Mode::Stopped && info.targetVM->debugState()->isStopped();
-            return stopped;
+            return getReplyCount() == expectedReplyCount;
         });
 
         DebugState* state = executionHandler->debuggeeStateSafe();
@@ -233,7 +235,7 @@ static void testBreakpointContinueCycles()
         VLOG("  Stopped at breakpoint in vm:", RawPointer(executionHandler->debuggeeVM()));
     }
 
-    clearBreakpointsAndResume("VMs did not resume after clearing breakpoints");
+    clearBreakpointsAndResume();
 
     TEST_LOG("PASS");
 }
@@ -242,7 +244,7 @@ static void testBreakpointSingleStepping()
 {
     TEST_LOG("\n=== Breakpoint Single Stepping ===");
 
-    int initialFailures = failuresFound;
+    uint32_t initialFailures = failuresFound;
 
     // 1. Interrupt to stop all VMs
     interrupt();
@@ -252,14 +254,14 @@ static void testBreakpointSingleStepping()
 
     // 3. Continue - should hit a breakpoint immediately
     VLOG("Continuing execution (expecting breakpoint hit)...");
+    unsigned expectedReplyCount = getReplyCount() + 1;
     executionHandler->resume();
 
     waitForConditionAndCheck("Did not hit breakpoint after resume", [&]() {
-        auto info = VMManager::info();
-        if (info.worldMode != VMManager::Mode::Stopped || !info.targetVM->debugState()->isStopped())
+        bool stopped = getReplyCount() == expectedReplyCount;
+        if (!stopped)
             return false;
-        DebugState* state = executionHandler->debuggeeStateSafe();
-        return state && state->atBreakpoint();
+        return executionHandler->debuggeeStateSafe()->atBreakpoint();
     });
 
     DebugState* state = executionHandler->debuggeeStateSafe();
@@ -267,47 +269,46 @@ static void testBreakpointSingleStepping()
 
     // Record initial virtual address
     CHECK(state->stopData, "Should have stopData");
-    JSC::Wasm::VirtualAddress currentAddress = state->stopData->address;
-    VLOG("Hit breakpoint ", currentAddress);
+    JSC::Wasm::VirtualAddress beforeStepAddress = state->stopData->address;
+    VLOG("Hit breakpoint ", beforeStepAddress);
 
     // 4. Single-step several times and verify we advance
-    for (unsigned step = 0; step < SINGLE_STEPPING_CYCLES_COUNT; ++step) {
-        VLOG("Step ", step + 1, "/", SINGLE_STEPPING_CYCLES_COUNT);
+    for (unsigned step = 0; step < STRESS_TEST_ITERATIONS; ++step) {
+        VLOG("Step ", step + 1, "/", STRESS_TEST_ITERATIONS);
 
         // Simulate lldb behavior:
         // 1. If at Regular breakpoint: remove it, step, then re-insert it
         // 2. If at one-time breakpoint: just step directly
-        Breakpoint* breakpoint = executionHandler->breakpointManager()->findBreakpoint(currentAddress);
+        Breakpoint* breakpoint = executionHandler->breakpointManager()->findBreakpoint(beforeStepAddress);
         Breakpoint breakpointCopy;
 
         if (breakpoint) {
             breakpointCopy = *breakpoint;
             CHECK(breakpoint->type == Breakpoint::Type::Regular, "One-time breakpoints are cleared before stop. So, this must be a regular breakpoint");
-            executionHandler->breakpointManager()->removeBreakpoint(currentAddress);
+            executionHandler->breakpointManager()->removeBreakpoint(beforeStepAddress);
         }
 
+        unsigned expectedReplyCount = getReplyCount() + 1;
         executionHandler->step();
 
         waitForConditionAndCheck("VMs did not stop after step", [&]() {
-            auto info = VMManager::info();
-            bool stopped = info.worldMode == VMManager::Mode::Stopped && info.targetVM->debugState()->isStopped();
-            return stopped;
+            return getReplyCount() == expectedReplyCount;
         });
 
         if (breakpoint)
-            executionHandler->breakpointManager()->setBreakpoint(currentAddress, WTF::move(breakpointCopy));
+            executionHandler->breakpointManager()->setBreakpoint(beforeStepAddress, WTF::move(breakpointCopy));
 
         state = executionHandler->debuggeeStateSafe();
         CHECK(state->atBreakpoint(), "Should be at breakpoint after step");
 
         JSC::Wasm::VirtualAddress afterStepAddress = state->stopData->address;
         VLOG("  After step: ", afterStepAddress);
-        CHECK(afterStepAddress != currentAddress, "Virtual address should advance after step");
+        CHECK(afterStepAddress != beforeStepAddress, "Virtual address should advance after step");
 
-        currentAddress = afterStepAddress;
+        beforeStepAddress = afterStepAddress;
     }
 
-    clearBreakpointsAndResume("VMs did not resume after stepping test");
+    clearBreakpointsAndResume();
 
     TEST_LOG(failuresFound == initialFailures ? "PASS" : "FAIL");
 }
@@ -321,45 +322,60 @@ static void waitForVMCleanupFromPreviousTest()
         return !VMManager::info().numberOfVMs;
     });
 
-    if (!cleanedUp)
-        TEST_LOG("WARNING: VMs not cleaned up within timeout (count: ", VMManager::info().numberOfVMs, ")");
-    else
-        TEST_LOG("All VMs cleaned up successfully");
+    CHECK(cleanedUp, "VMs not cleaned up within timeout (count: ", VMManager::info().numberOfVMs, ")");
+    TEST_LOG("All VMs cleaned up successfully");
 }
 
-// FIXME: Add tests for VM lifecycle edge cases (construction, initialization, instance registration) and
-// interrupt() race conditions. Currently we only wait for VM construction and instance registration, which
-// doesn't guarantee VMs are actively running code that checks traps.
-static bool setupScriptAndWaitForVMs(const TestScript& script, unsigned initialVMCount, RefPtr<Thread>& outWorkerThread)
+// setupScriptAndWaitForVMs ensures all VMs are constructed, instances registered, entered with owner threads,
+// and actively running before tests start. However, this doesn't test edge cases where interrupt() races with:
+// FIXME: Add tests for VM lifecycle edge cases:
+// - interrupt() during VM construction (before m_debugState initialized)
+// - interrupt() during instance registration
+// - interrupt() race with VMs entering/activating
+// These edge cases could expose timing issues in stopTheWorld coordination that don't occur when
+// all VMs are already in a stable running state.
+static bool setupScriptAndWaitForVMs(const TestScript& script, RefPtr<Thread>& outWorkerThread)
 {
-    CHECK(!initialVMCount, "Expected initial VM count to be 0, got ", initialVMCount);
-
     ModuleManager& moduleManager = debugServer->moduleManager();
     unsigned initialInstanceId = moduleManager.nextInstanceId();
+    unsigned expectedInstanceId = initialInstanceId + script.expectedVMs;
 
     TEST_LOG("\nStarting worker thread with ", script.name, "...");
     outWorkerThread = Thread::create(WORKER_THREAD_NAME, [&script] {
         workerThreadTask(script.scriptGenerator());
     });
 
-    TEST_LOG("Waiting for ", script.expectedVMs, " VMs to start...");
-    if (!waitForCondition([&]() { return VMManager::info().numberOfVMs >= script.expectedVMs; })) {
-        TEST_LOG("FAIL: VMs did not start within timeout");
+    TEST_LOG("Waiting for ", script.expectedVMs, " VMs to be fully initialized and running...");
+    if (!waitForCondition([&]() {
+        auto info = VMManager::info();
+
+        if (info.numberOfVMs != script.expectedVMs)
+            return false;
+        if (moduleManager.nextInstanceId() != expectedInstanceId)
+            return false;
+        if (info.worldMode != VMManager::Mode::RunAll)
+            return false;
+        if (info.numberOfStoppedVMs)
+            return false;
+
+        unsigned activeCount = 0;
+        VMManager::forEachVM([&](VM& vm) {
+            if (vm.isEntered())
+                activeCount++;
+            return IterationStatus::Continue;
+        });
+        return activeCount == script.expectedVMs;
+    })) {
+        auto info = VMManager::info();
+        TEST_LOG("FAIL: VMs not ready within timeout");
+        TEST_LOG("  numberOfVMs=", info.numberOfVMs, " (expected ", script.expectedVMs, ")");
+        TEST_LOG("  instances=", moduleManager.nextInstanceId(), " (expected ", expectedInstanceId, ")");
+        TEST_LOG("  worldMode=", (int)info.worldMode, " (expected RunAll=", (int)VMManager::Mode::RunAll, ")");
+        TEST_LOG("  numberOfStoppedVMs=", info.numberOfStoppedVMs, " (expected 0)");
         return false;
     }
 
-    unsigned expectedInstanceId = initialInstanceId + script.expectedVMs;
-    TEST_LOG("Waiting for ", script.expectedVMs, " instances (ID: ", initialInstanceId, " -> ", expectedInstanceId, ")...");
-    if (!waitForCondition([&]() { return moduleManager.nextInstanceId() >= expectedInstanceId; })) {
-        TEST_LOG("FAIL: Instances timeout (expected: ", expectedInstanceId, ", got: ", moduleManager.nextInstanceId(), ")");
-        return false;
-    }
-
-    unsigned finalInstanceId = moduleManager.nextInstanceId();
-    unsigned instanceIncrement = finalInstanceId - initialInstanceId;
-    CHECK(instanceIncrement == script.expectedVMs, "Expected ", script.expectedVMs, " new instances, got ", instanceIncrement);
-
-    TEST_LOG("Setup complete: ", VMManager::info().numberOfVMs, " VMs, ", instanceIncrement, " instances (ID: ", initialInstanceId, " -> ", finalInstanceId, ")");
+    TEST_LOG("Setup complete: ", script.expectedVMs, " VMs constructed, instances registered, all entered and running");
     return true;
 }
 
@@ -395,12 +411,13 @@ UNUSED_FUNCTION static int runTests()
 
         auto scriptStartTime = MonotonicTime::now();
         failuresFound = 0;
+        expectedVMCount = script.expectedVMs;
         currentScript = &script;
 
         waitForVMCleanupFromPreviousTest();
 
         RefPtr<Thread> workerThread;
-        if (!setupScriptAndWaitForVMs(script, VMManager::info().numberOfVMs, workerThread)) {
+        if (!setupScriptAndWaitForVMs(script, workerThread)) {
             totalFailures++;
             continue;
         }
@@ -414,8 +431,7 @@ UNUSED_FUNCTION static int runTests()
 
         auto scriptDuration = MonotonicTime::now() - scriptStartTime;
         TEST_LOG("------------------------------------------");
-        TEST_LOG("Script ", script.name, ": ", failuresFound ? "FAIL" : "PASS",
-            " (", failuresFound, " failures, ", scriptDuration.millisecondsAs<long>(), " ms)");
+        TEST_LOG("Script ", script.name, ": ", failuresFound ? "FAIL" : "PASS", " (", failuresFound, " failures, ", scriptDuration.millisecondsAs<long>(), " ms)");
         TEST_LOG("------------------------------------------");
 
         totalFailures += failuresFound;
@@ -429,6 +445,7 @@ UNUSED_FUNCTION static int runTests()
     TEST_LOG("Total Failures: ", totalFailures);
     TEST_LOG("========================================");
 
+    waitForVMCleanupFromPreviousTest();
     return totalFailures;
 }
 

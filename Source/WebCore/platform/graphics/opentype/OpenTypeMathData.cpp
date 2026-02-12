@@ -37,6 +37,7 @@
 #include "SharedBuffer.h"
 
 #include <array>
+#include <utility>
 #include <wtf/IndexedRange.h>
 
 namespace WebCore {
@@ -58,9 +59,9 @@ struct MathValueRecord {
 };
 
 struct MathConstants {
-    std::array<OpenType::Int16, OpenTypeMathData::ScriptScriptPercentScaleDown - OpenTypeMathData::ScriptPercentScaleDown + 1> intConstants;
-    std::array<OpenType::UInt16, OpenTypeMathData::DisplayOperatorMinHeight - OpenTypeMathData::DelimitedSubFormulaMinHeight + 1> uIntConstants;
-    std::array<OpenType::MathValueRecord, OpenTypeMathData::RadicalKernAfterDegree - OpenTypeMathData::MathLeading + 1> mathValuesConstants;
+    std::array<OpenType::Int16, std::to_underlying(OpenTypeMathData::MathConstant::ScriptScriptPercentScaleDown) - std::to_underlying(OpenTypeMathData::MathConstant::ScriptPercentScaleDown) + 1> intConstants;
+    std::array<OpenType::UInt16, std::to_underlying(OpenTypeMathData::MathConstant::DisplayOperatorMinHeight) - std::to_underlying(OpenTypeMathData::MathConstant::DelimitedSubFormulaMinHeight) + 1> uIntConstants;
+    std::array<OpenType::MathValueRecord, std::to_underlying(OpenTypeMathData::MathConstant::RadicalKernAfterDegree) - std::to_underlying(OpenTypeMathData::MathConstant::MathLeading) + 1> mathValuesConstants;
     OpenType::UInt16 radicalDegreeBottomRaisePercent;
 };
 
@@ -286,24 +287,25 @@ float OpenTypeMathData::getMathConstant(const Font& font, MathConstant constant)
     const OpenType::MathConstants* mathConstants = math->mathConstants(*m_mathBuffer);
     ASSERT(mathConstants);
 
-    if (constant >= 0 && constant <= ScriptScriptPercentScaleDown)
-        value = int16_t(mathConstants->intConstants[constant]);
-    else if (constant >= DelimitedSubFormulaMinHeight && constant <= DisplayOperatorMinHeight)
-        value = uint16_t(mathConstants->uIntConstants[constant - DelimitedSubFormulaMinHeight]);
-    else if (constant >= MathLeading && constant <= RadicalKernAfterDegree)
-        value = int16_t(mathConstants->mathValuesConstants[constant - MathLeading].value);
-    else if (constant == RadicalDegreeBottomRaisePercent)
+    auto index = std::to_underlying(constant);
+    if (constant <= MathConstant::ScriptScriptPercentScaleDown)
+        value = int16_t(mathConstants->intConstants[index]);
+    else if (constant >= MathConstant::DelimitedSubFormulaMinHeight && constant <= MathConstant::DisplayOperatorMinHeight)
+        value = uint16_t(mathConstants->uIntConstants[index - std::to_underlying(MathConstant::DelimitedSubFormulaMinHeight)]);
+    else if (constant >= MathConstant::MathLeading && constant <= MathConstant::RadicalKernAfterDegree)
+        value = int16_t(mathConstants->mathValuesConstants[index - std::to_underlying(MathConstant::MathLeading)].value);
+    else if (constant == MathConstant::RadicalDegreeBottomRaisePercent)
         value = uint16_t(mathConstants->radicalDegreeBottomRaisePercent);
 
-    if (constant == ScriptPercentScaleDown || constant == ScriptScriptPercentScaleDown || constant == RadicalDegreeBottomRaisePercent)
+    if (constant == MathConstant::ScriptPercentScaleDown || constant == MathConstant::ScriptScriptPercentScaleDown || constant == MathConstant::RadicalDegreeBottomRaisePercent)
         return value / 100.0;
 
     return value * font.sizePerUnit();
 #elif USE(HARFBUZZ)
 float OpenTypeMathData::getMathConstant(const Font& font, MathConstant constant) const
 {
-    hb_position_t value = hb_ot_math_get_constant(m_mathFont.get(), static_cast<hb_ot_math_constant_t>(constant));
-    if (constant == ScriptPercentScaleDown || constant == ScriptScriptPercentScaleDown || constant == RadicalDegreeBottomRaisePercent)
+    hb_position_t value = hb_ot_math_get_constant(m_mathFont.get(), static_cast<hb_ot_math_constant_t>(std::to_underlying(constant)));
+    if (constant == MathConstant::ScriptPercentScaleDown || constant == MathConstant::ScriptScriptPercentScaleDown || constant == MathConstant::RadicalDegreeBottomRaisePercent)
         return value / 100.0;
 
     return value * font.sizePerUnit();

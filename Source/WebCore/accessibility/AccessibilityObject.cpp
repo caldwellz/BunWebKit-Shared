@@ -3192,12 +3192,7 @@ AccessibilityObject* AccessibilityObject::focusedUIElementInAnyLocalFrame() cons
     CheckedPtr axObjectCache = focusedDocument->axObjectCache();
     if (!axObjectCache)
         return nullptr;
-
-#if ENABLE_ACCESSIBILITY_LOCAL_FRAME
-    return axObjectCache->focusedObjectForLocalFrame();
-#else
     return axObjectCache->focusedObjectForPage(page.get());
-#endif
 }
 
 void AccessibilityObject::setSelectedRows(AccessibilityChildrenVector&& selectedRows)
@@ -3855,7 +3850,7 @@ bool AccessibilityObject::scrollByPage(ScrollByPageDirection direction) const
 
     if (newScrollPosition != scrollPosition) {
         scrollParent->scrollTo(newScrollPosition);
-        protectedDocument()->updateLayoutIgnorePendingStylesheets();
+        protect(document())->updateLayoutIgnorePendingStylesheets();
         return true;
     }
 

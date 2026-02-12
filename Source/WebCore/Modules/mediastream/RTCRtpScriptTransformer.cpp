@@ -139,7 +139,7 @@ void RTCRtpScriptTransformer::sendKeyFrameRequest(Ref<DeferredPromise>&& promise
     m_streamProducer->sendKeyFrameRequest();
 
     // FIXME: We should be able to know when the FIR request is sent to resolve the promise at this exact time.
-    context->checkedEventLoop()->queueTask(TaskSource::Networking, [promise = WTF::move(promise)]() mutable {
+    protect(context->eventLoop())->queueTask(TaskSource::Networking, [promise = WTF::move(promise)]() mutable {
         promise->resolve();
     });
 }

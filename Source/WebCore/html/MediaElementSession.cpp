@@ -211,11 +211,6 @@ MediaElementSession::~MediaElementSession()
 #endif
 }
 
-RefPtr<HTMLMediaElement> MediaElementSession::protectedElement() const
-{
-    return m_element.get();
-}
-
 void MediaElementSession::addMediaUsageManagerSessionIfNecessary()
 {
 #if ENABLE(MEDIA_USAGE)

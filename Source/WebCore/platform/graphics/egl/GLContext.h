@@ -101,6 +101,7 @@ public:
         bool EXT_unpack_subimage { false };
         bool APPLE_sync { false };
         bool OES_packed_depth_stencil { false };
+        bool EXT_YUV_target { false };
     };
     const GLExtensions& glExtensions() const;
 
@@ -137,7 +138,7 @@ public:
     };
 
 private:
-    static EGLContext createContextForEGLVersion(EGLDisplay, EGLConfig, EGLContext);
+    static EGLContext createEGLContext(GLDisplay&, EGLConfig, EGLContext);
 
     static std::unique_ptr<GLContext> createWindowContext(GLDisplay&, Target, GLNativeWindowType, EGLContext sharingContext);
     static std::unique_ptr<GLContext> createSurfacelessContext(GLDisplay&, Target, EGLContext sharingContext);

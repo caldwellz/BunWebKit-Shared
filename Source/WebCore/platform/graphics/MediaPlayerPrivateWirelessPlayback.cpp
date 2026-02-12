@@ -150,8 +150,18 @@ bool MediaPlayerPrivateWirelessPlayback::isCurrentPlaybackTargetWireless() const
 
 void MediaPlayerPrivateWirelessPlayback::setWirelessPlaybackTarget(Ref<MediaPlaybackTarget>&& playbackTarget)
 {
+    ASSERT(playbackTarget->type() == MediaPlaybackTargetType::WirelessPlayback);
     ALWAYS_LOG(LOGIDENTIFIER, playbackTarget->type());
+
     m_playbackTarget = WTF::move(playbackTarget);
+
+    RefPtr route = this->route();
+    if (!route) {
+        setNetworkState(MediaPlayer::NetworkState::FormatError);
+        return;
+    }
+
+    route->setClient(this);
     updateURLIfNeeded();
 }
 
@@ -160,19 +170,31 @@ void MediaPlayerPrivateWirelessPlayback::setShouldPlayToPlaybackTarget(bool shou
     if (shouldPlayToTarget == m_shouldPlayToTarget)
         return;
 
+    ALWAYS_LOG(LOGIDENTIFIER, shouldPlayToTarget);
     m_shouldPlayToTarget = shouldPlayToTarget;
 
     if (RefPtr player = m_player.get())
         player->currentPlaybackTargetIsWirelessChanged(isCurrentPlaybackTargetWireless());
 }
 
+MediaDeviceRoute* MediaPlayerPrivateWirelessPlayback::route() const
+{
+    if (RefPtr playbackTarget = dynamicDowncast<MediaPlaybackTargetWirelessPlayback>(m_playbackTarget))
+        return playbackTarget->route();
+    return nullptr;
+}
+
 void MediaPlayerPrivateWirelessPlayback::updateURLIfNeeded()
 {
-    RefPtr playbackTarget = dynamicDowncast<MediaPlaybackTargetWirelessPlayback>(m_playbackTarget);
-    if (!playbackTarget)
+    if (!m_playbackTarget)
         return;
 
-    playbackTarget->loadURL(m_url, [weakThis = ThreadSafeWeakPtr { *this }](const MediaDeviceRouteLoadURLResult& result) {
+    ALWAYS_LOG(LOGIDENTIFIER);
+
+    setNetworkState(MediaPlayer::NetworkState::Loading);
+
+    RefPtr route = this->route();
+    route->loadURL(m_url, [weakThis = ThreadSafeWeakPtr { *this }](const MediaDeviceRouteLoadURLResult& result) {
         RefPtr protectedThis = weakThis.get();
         if (!protectedThis)
             return;
@@ -182,7 +204,7 @@ void MediaPlayerPrivateWirelessPlayback::updateURLIfNeeded()
             return;
         }
 
-        // FIXME: Advance networkState and readyState once the target has loaded the URL
+        protectedThis->setNetworkState(MediaPlayer::NetworkState::Idle);
     });
 }
 
@@ -206,6 +228,24 @@ void MediaPlayerPrivateWirelessPlayback::setReadyState(MediaPlayer::ReadyState r
     m_readyState = readyState;
     if (RefPtr player = m_player.get())
         player->readyStateChanged();
+}
+
+void MediaPlayerPrivateWirelessPlayback::readyDidChange(MediaDeviceRoute& route)
+{
+    ASSERT(&route == this->route());
+    ALWAYS_LOG(LOGIDENTIFIER, route.ready());
+
+    if (route.ready())
+        setReadyState(MediaPlayerReadyState::HaveEnoughData);
+}
+
+void MediaPlayerPrivateWirelessPlayback::playbackErrorDidChange(MediaDeviceRoute& route)
+{
+    ASSERT(&route == this->route());
+    ALWAYS_LOG(LOGIDENTIFIER, !!route.playbackError());
+
+    if (route.playbackError())
+        setNetworkState(route.ready() ? MediaPlayer::NetworkState::DecodeError : MediaPlayer::NetworkState::FormatError);
 }
 
 #endif // ENABLE(WIRELESS_PLAYBACK_TARGET)

@@ -206,7 +206,7 @@ void updateImageControls(HTMLElement& element)
     if (!element.document().settings().imageControlsEnabled())
         return;
 
-    protect(element.document())->checkedEventLoop()->queueTask(TaskSource::InternalAsyncTask, [weakElement = WeakPtr { element }] {
+    protect(protect(element.document())->eventLoop())->queueTask(TaskSource::InternalAsyncTask, [weakElement = WeakPtr { element }] {
         RefPtr protectedElement = weakElement.get();
         if (!protectedElement)
             return;

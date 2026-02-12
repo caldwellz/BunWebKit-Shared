@@ -37,7 +37,6 @@ public:
     virtual ~LegacyRenderSVGResourceMarker();
 
     inline SVGMarkerElement& markerElement() const;
-    inline Ref<SVGMarkerElement> protectedMarkerElement() const;
 
     void removeAllClientsFromCache() override { }
     void removeClientFromCache(RenderElement&) override { }

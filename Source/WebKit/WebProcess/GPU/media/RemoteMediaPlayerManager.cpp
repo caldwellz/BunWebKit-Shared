@@ -134,11 +134,6 @@ RemoteMediaPlayerMIMETypeCache& RemoteMediaPlayerManager::typeCache(MediaPlayerE
     return *cachePtr;
 }
 
-CheckedRef<RemoteMediaPlayerMIMETypeCache> RemoteMediaPlayerManager::checkedTypeCache(MediaPlayerEnums::MediaEngineIdentifier remoteEngineIdentifier)
-{
-    return typeCache(remoteEngineIdentifier);
-}
-
 void RemoteMediaPlayerManager::initialize(const WebProcessCreationParameters& parameters)
 {
 #if PLATFORM(COCOA)
@@ -226,7 +221,7 @@ std::optional<MediaPlayerIdentifier> RemoteMediaPlayerManager::findRemotePlayerI
 
 void RemoteMediaPlayerManager::getSupportedTypes(MediaPlayerEnums::MediaEngineIdentifier remoteEngineIdentifier, HashSet<String>& result)
 {
-    result = checkedTypeCache(remoteEngineIdentifier)->supportedTypes();
+    result = protect(typeCache(remoteEngineIdentifier))->supportedTypes();
 }
 
 MediaPlayer::SupportsType RemoteMediaPlayerManager::supportsTypeAndCodecs(MediaPlayerEnums::MediaEngineIdentifier remoteEngineIdentifier, const MediaEngineSupportParameters& parameters)
@@ -239,7 +234,7 @@ MediaPlayer::SupportsType RemoteMediaPlayerManager::supportsTypeAndCodecs(MediaP
     if (!contentTypeMeetsContainerAndCodecTypeRequirements(parameters.type, parameters.allowedMediaContainerTypes, parameters.allowedMediaCodecTypes))
         return MediaPlayer::SupportsType::IsNotSupported;
 
-    return checkedTypeCache(remoteEngineIdentifier)->supportsTypeAndCodecs(parameters);
+    return protect(typeCache(remoteEngineIdentifier))->supportsTypeAndCodecs(parameters);
 }
 
 bool RemoteMediaPlayerManager::supportsKeySystem(MediaPlayerEnums::MediaEngineIdentifier, const String& keySystem, const String& mimeType)

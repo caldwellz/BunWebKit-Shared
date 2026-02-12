@@ -102,7 +102,7 @@ public:
     
     WEBCORE_EXPORT void decode(Ref<DeferredPromise>&&);
 
-#if PLATFORM(IOS_FAMILY)
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
     bool willRespondToMouseClickEventsWithEditability(Editability) const override;
 
     enum class IgnoreTouchCallout : bool { No, Yes };
@@ -124,7 +124,7 @@ public:
     void setImageMenuEnabled(bool value) { m_isImageMenuEnabled = value; }
 #endif
 
-    HTMLPictureElement* pictureElement() const;
+    HTMLPictureElement* NODELETE pictureElement() const;
     void setPictureElement(HTMLPictureElement*);
 
 #if USE(SYSTEM_PREVIEW)
@@ -242,11 +242,11 @@ private:
     bool childShouldCreateRenderer(const Node&) const override;
 #endif
 
-    HTMLSourceElement* sourceElement() const;
+    HTMLSourceElement* NODELETE sourceElement() const;
     void setSourceElement(HTMLSourceElement*);
 
     IntersectionObserverData& ensureIntersectionObserverData() final;
-    IntersectionObserverData* intersectionObserverDataIfExists() const final;
+    IntersectionObserverData* NODELETE intersectionObserverDataIfExists() const final;
 
     const std::unique_ptr<HTMLImageLoader> m_imageLoader;
     std::unique_ptr<IntersectionObserverData> m_intersectionObserverData;

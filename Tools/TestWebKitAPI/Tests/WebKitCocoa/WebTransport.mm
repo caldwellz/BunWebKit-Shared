@@ -583,6 +583,78 @@ TEST(WebTransport, WorkerAfterNetworkProcessCrash)
     EXPECT_WK_STREQ([webView _test_waitForAlert], "message from worker: successfully read abc");
 }
 
+TEST(WebTransport, ServiceWorker)
+{
+    if (!canLoadnw_webtransport_options_set_allow_joining_before_ready())
+        return;
+
+    WebTransportServer datagramServer([](ConnectionGroup group) -> ConnectionTask {
+        auto datagramConnection = group.createWebTransportConnection(ConnectionGroup::ConnectionType::Datagram);
+        auto request = co_await datagramConnection.awaitableReceiveBytes();
+        co_await datagramConnection.awaitableSend(WTF::move(request));
+    });
+
+    static constexpr auto serviceWorkerMainBytes = R"SWRESOURCE(
+    <script>
+    const channel = new MessageChannel();
+    channel.port1.onmessage = (event) => {
+        alert(event.data);
+    };
+
+    navigator.serviceWorker.register('/' + 'sw.js').then((registration) => {
+        if (registration.active) {
+            registration.active.postMessage({ port: channel.port2 }, [channel.port2]);
+            return;
+        }
+        worker = registration.installing;
+        worker.addEventListener('statechange', function() {
+            if (worker.state == 'activated')
+                worker.postMessage({ port: channel.port2 }, [channel.port2]);
+        });
+    }).catch((error) => {
+        alert("Registration failed with: " + error);
+    });
+    </script>
+    )SWRESOURCE"_s;
+
+    RetainPtr serviceWorkerJS = [NSString stringWithFormat:@""
+    "let port;"
+    "self.addEventListener('message', (event) => {"
+    "    port = event.data.port;"
+    "    port.onmessage = async (event) => {"
+    "        if (event.data != 'startWebTransport')"
+    "            return;"
+    "        try {"
+    "            const w = new WebTransport('https://127.0.0.1:%d/');"
+    "            const writer = w.datagrams.createWritable().getWriter();"
+    "            const reader = w.datagrams.readable.getReader();"
+    "            await writer.write(new TextEncoder().encode('abc'));"
+    "            const { value, done } = await reader.read();"
+    "            port.postMessage('successfully read ' + new TextDecoder().decode(value));"
+    "        } catch (e) { port.postMessage('caught ' + e); }"
+    "    };"
+    "    port.postMessage('ServiceWorker is running');"
+    "});", datagramServer.port()];
+
+    TestWebKitAPI::HTTPServer server({
+        { "/"_s, { serviceWorkerMainBytes } },
+        { "/sw.js"_s, { { { "Content-Type"_s, "text/javascript"_s } }, serviceWorkerJS.get() } }
+    });
+
+    RetainPtr configuration = adoptNS([WKWebViewConfiguration new]);
+    enableWebTransport(configuration.get());
+    RetainPtr webView = adoptNS([[TestWKWebView alloc] initWithFrame:CGRectMake(0, 0, 100, 100) configuration:configuration.get()]);
+    RetainPtr delegate = adoptNS([TestNavigationDelegate new]);
+    [delegate allowAnyTLSCertificate];
+    [webView setNavigationDelegate:delegate.get()];
+
+    [webView loadRequest:server.request()];
+    EXPECT_WK_STREQ([webView _test_waitForAlert], "ServiceWorker is running");
+
+    [webView evaluateJavaScript:@"channel.port1.postMessage('startWebTransport');" completionHandler:nil];
+    EXPECT_WK_STREQ([webView _test_waitForAlert], "successfully read abc");
+}
+
 TEST(WebTransport, CreateStreamsBeforeReady)
 {
     if (!canLoadnw_webtransport_options_set_allow_joining_before_ready())

@@ -56,7 +56,7 @@ public:
     static Ref<Permissions> create(NavigatorBase&);
     ~Permissions();
 
-    NavigatorBase* navigator();
+    NavigatorBase* NODELETE navigator();
     void query(JSC::Strong<JSC::JSObject>, DOMPromiseDeferred<IDLInterface<PermissionStatus>>&&);
     WEBCORE_EXPORT static std::optional<PermissionQuerySource> sourceFromContext(const ScriptExecutionContext&);
     WEBCORE_EXPORT static std::optional<PermissionName> toPermissionName(const String&);

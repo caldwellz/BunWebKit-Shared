@@ -238,7 +238,7 @@ RefPtr<ServiceWorkerFetchTask> WebSWServerConnection::createFetchTask(NetworkRes
 {
     if (loader.parameters().serviceWorkersMode == ServiceWorkersMode::None) {
         if (loader.parameters().request.requester() == ResourceRequestRequester::Fetch && isNavigationRequest(loader.parameters().options.destination)) {
-            if (auto task = ServiceWorkerFetchTask::fromNavigationPreloader(*this, loader, request, checkedSession().get()))
+            if (auto task = ServiceWorkerFetchTask::fromNavigationPreloader(*this, loader, request, protect(session()).get()))
                 return task;
         }
         return nullptr;
@@ -321,7 +321,7 @@ RefPtr<ServiceWorkerFetchTask> WebSWServerConnection::createFetchTask(NetworkRes
     }
 
     bool isWorkerReady = worker->isRunning() && worker->state() == ServiceWorkerState::Activated;
-    Ref task = ServiceWorkerFetchTask::create(*this, loader, ResourceRequest { request }, identifier(), worker->identifier(), *registration, checkedSession().get(), isWorkerReady, shouldRaceNetworkAndFetchHandler);
+    Ref task = ServiceWorkerFetchTask::create(*this, loader, ResourceRequest { request }, identifier(), worker->identifier(), *registration, protect(session()).get(), isWorkerReady, shouldRaceNetworkAndFetchHandler);
     startFetch(task, *worker);
     return task;
 }
@@ -803,11 +803,6 @@ PAL::SessionID WebSWServerConnection::sessionID() const
 NetworkSession* WebSWServerConnection::session()
 {
     return protect(networkProcess())->networkSession(sessionID());
-}
-
-CheckedPtr<NetworkSession> WebSWServerConnection::checkedSession()
-{
-    return session();
 }
 
 template<typename U> void WebSWServerConnection::sendToContextProcess(WebCore::SWServerToContextConnection& connection, U&& message)

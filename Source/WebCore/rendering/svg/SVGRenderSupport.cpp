@@ -43,6 +43,7 @@
 #include "PathOperation.h"
 #include "ReferencedSVGResources.h"
 #include "RenderChildIterator.h"
+#include "RenderDescendantIterator.h"
 #include "RenderElement.h"
 #include "RenderElementInlines.h"
 #include "RenderGeometryMap.h"
@@ -514,7 +515,7 @@ bool SVGRenderSupport::pointInClippingArea(const RenderElement& renderer, const 
 
 void SVGRenderSupport::applyStrokeStyleToContext(GraphicsContext& context, const RenderStyle& style, const RenderElement& renderer)
 {
-    auto element = dynamicDowncast<SVGElement>(renderer.protectedElement());
+    auto element = dynamicDowncast<SVGElement>(protect(renderer.element()));
     if (!element) {
         ASSERT_NOT_REACHED();
         return;
@@ -563,6 +564,33 @@ void SVGRenderSupport::styleChanged(RenderElement& renderer, const RenderStyle* 
 {
     if (renderer.element() && renderer.element()->isSVGElement() && (!oldStyle || renderer.style().hasBlendMode() != oldStyle->hasBlendMode()))
         SVGRenderSupport::updateMaskedAncestorShouldIsolateBlending(renderer);
+
+    bool hadNonScalingStroke = oldStyle && oldStyle->vectorEffect() == VectorEffect::NonScalingStroke;
+    bool hasNonScalingStroke = renderer.style().vectorEffect() == VectorEffect::NonScalingStroke;
+    if (hadNonScalingStroke != hasNonScalingStroke)
+        updateAncestorNonScalingStrokeCounts(renderer, hasNonScalingStroke ? 1 : -1);
+}
+
+void SVGRenderSupport::updateAncestorNonScalingStrokeCounts(RenderElement& renderer, int delta)
+{
+    for (CheckedPtr ancestor = renderer.parent(); ancestor; ancestor = ancestor->parent()) {
+        if (CheckedPtr container = dynamicDowncast<LegacyRenderSVGContainer>(*ancestor))
+            container->adjustNonScalingStrokeDescendantCount(delta);
+        else if (CheckedPtr root = dynamicDowncast<LegacyRenderSVGRoot>(*ancestor))
+            root->adjustNonScalingStrokeDescendantCount(delta);
+    }
+}
+
+void SVGRenderSupport::elementInsertedIntoTree(RenderElement& renderer)
+{
+    if (renderer.style().vectorEffect() == VectorEffect::NonScalingStroke)
+        updateAncestorNonScalingStrokeCounts(renderer, 1);
+}
+
+void SVGRenderSupport::elementWillBeRemovedFromTree(RenderElement& renderer)
+{
+    if (renderer.style().vectorEffect() == VectorEffect::NonScalingStroke)
+        updateAncestorNonScalingStrokeCounts(renderer, -1);
 }
 
 bool SVGRenderSupport::isolatesBlending(const RenderStyle& style)

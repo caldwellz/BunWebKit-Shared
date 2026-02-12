@@ -67,7 +67,6 @@ struct LengthWrapperData {
 
     float value() const { ASSERT(m_kind != LengthWrapperDataKind::Calculation); return m_floatValue; }
     Calculation::Value& calculationValue() const;
-    Ref<Calculation::Value> protectedCalculationValue() const;
 
     struct IPCData {
         float value;

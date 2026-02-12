@@ -295,7 +295,7 @@ void JSTestPluginInterfaceOwner::finalize(JSC::Handle<JSC::Unknown> handle, void
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestPluginInterface = static_cast<JSTestPluginInterface*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestPluginInterface->protectedWrapped().ptr(), jsTestPluginInterface);
+    uncacheWrapper(world, protect(jsTestPluginInterface->wrapped()).ptr(), jsTestPluginInterface);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

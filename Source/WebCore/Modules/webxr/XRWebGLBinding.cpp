@@ -44,22 +44,18 @@ ExceptionOr<Ref<XRWebGLBinding>> XRWebGLBinding::create(Ref<WebXRSession>&& sess
     if (session->ended())
         return Exception { ExceptionCode::InvalidStateError, "Cannot create an XRWebGLBinding with an XRSession that has ended."_s };
 
-    return WTF::switchOn(context,
-        [&](const RefPtr<WebGLRenderingContextBase>& baseContext) -> ExceptionOr<Ref<XRWebGLBinding>> {
-            if (!baseContext || baseContext->isContextLost())
+    return WTF::switchOn(WTF::move(context),
+        [&](auto&& context) -> ExceptionOr<Ref<XRWebGLBinding>> {
+            if (context->isContextLost())
                 return Exception { ExceptionCode::InvalidStateError, "Cannot create an XRWebGLBinding with a lost WebGL context."_s };
 
             if (!isImmersive(session->mode()))
                 return Exception { ExceptionCode::InvalidStateError, "Cannot create an XRWebGLBinding for non immersive sessions."_s };
 
-            if (!baseContext->isXRCompatible())
+            if (!context->isXRCompatible())
                 return Exception { ExceptionCode::InvalidStateError, "Cannot create an XRWebGLBinding with a non XR compatible WebGL context."_s };
 
             return adoptRef(*new XRWebGLBinding(WTF::move(session), WTF::move(context)));
-        },
-        [](std::monostate) {
-            ASSERT_NOT_REACHED();
-            return Exception { ExceptionCode::InvalidStateError };
         }
     );
 }

@@ -140,16 +140,6 @@ void Event::setTarget(RefPtr<EventTarget>&& target)
         receivedTarget();
 }
 
-RefPtr<EventTarget> Event::protectedTarget() const
-{
-    return m_target;
-}
-
-RefPtr<EventTarget> Event::protectedCurrentTarget() const
-{
-    return m_currentTarget;
-}
-
 void Event::setCurrentTarget(RefPtr<EventTarget>&& currentTarget, std::optional<bool> isInShadowTree)
 {
     m_currentTarget = WTF::move(currentTarget);
@@ -172,7 +162,7 @@ Vector<Ref<EventTarget>> Event::composedPath(JSC::JSGlobalObject& lexicalGlobalO
         return Vector<Ref<EventTarget>>();
     if (JSC::jsCast<JSDOMGlobalObject*>(&lexicalGlobalObject)->world().shadowRootIsAlwaysOpen())
         return m_eventPath->computePathTreatingAllShadowRootsAsOpen();
-    return m_eventPath->computePathUnclosedToTarget(*protectedCurrentTarget());
+    return m_eventPath->computePathUnclosedToTarget(*protect(currentTarget()));
 }
 
 void Event::setUnderlyingEvent(Event* underlyingEvent)

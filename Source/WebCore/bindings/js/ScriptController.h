@@ -116,6 +116,8 @@ public:
     // This asserts that URL argument is a JavaScript URL.
     void executeJavaScriptURL(const URL&, const NavigationAction&, bool& didReplaceDocument);
 
+    static uint64_t scriptExecutionCount();
+
     static void initializeMainThread();
 
     void loadModuleScriptInWorld(LoadableModuleScript&, const URL& topLevelModuleURL, Ref<JSC::ScriptFetchParameters>&&, DOMWrapperWorld&);
@@ -155,7 +157,6 @@ public:
 
     RefPtr<JSC::Bindings::Instance>  createScriptInstanceForWidget(Widget*);
     WEBCORE_EXPORT JSC::Bindings::RootObject* bindingRootObject();
-    RefPtr<JSC::Bindings::RootObject> protectedBindingRootObject();
     JSC::Bindings::RootObject* cacheableBindingRootObject();
     JSC::Bindings::RootObject* existingCacheableBindingRootObject() const { return m_cacheableBindingRootObject.get(); }
 
@@ -187,7 +188,6 @@ private:
 
     void disconnectPlatformScriptObjects();
 
-    Ref<WindowProxy> protectedWindowProxy() { return windowProxy(); }
     WEBCORE_EXPORT WindowProxy& windowProxy();
     WEBCORE_EXPORT JSWindowProxy& jsWindowProxy(DOMWrapperWorld&);
 

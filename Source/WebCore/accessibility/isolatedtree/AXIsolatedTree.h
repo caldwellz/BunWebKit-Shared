@@ -155,6 +155,7 @@ enum class AXProperty : uint16_t {
     Columns,
     ColumnIndex,
     ColumnIndexRange,
+    IsFocusedWebArea,
     CrossFrameChildFrameID,
     CrossFrameParentFrameID,
     CrossFrameParentAXID,

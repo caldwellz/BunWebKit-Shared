@@ -47,7 +47,7 @@ public:
     bool isEmpty() const { return m_fontFaceName.isEmpty(); }
     const AtomString& fontFaceName() const { return m_fontFaceName; }
 
-    SVGFontFaceElement* svgFontFaceElement() const;
+    SVGFontFaceElement* NODELETE svgFontFaceElement() const;
     void setSVGFontFaceElement(SVGFontFaceElement&);
 
     String customCSSText(const CSS::SerializationContext&) const;

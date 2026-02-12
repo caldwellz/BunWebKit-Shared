@@ -104,6 +104,7 @@ struct Request {
     bool includeEventListeners { false };
     bool includeAccessibilityAttributes { false };
     bool includeTextInAutoFilledControls { false };
+    bool includeOffscreenPasswordFields { false };
 #if ENABLE(DATA_DETECTION)
     OptionSet<DataDetectorType> dataDetectorTypes;
 #endif

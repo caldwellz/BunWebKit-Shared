@@ -25,13 +25,11 @@
 
 #pragma once
 
-#include "ActiveDOMObject.h"
-#include "EventHandler.h"
-#include "EventTarget.h"
-#include "EventTargetInterfaces.h"
-#include "HistoryItem.h"
-#include "ReferrerPolicy.h"
-#include "ScriptExecutionContextIdentifier.h"
+#include <WebCore/ActiveDOMObject.h>
+#include <WebCore/EventTarget.h>
+#include <WebCore/EventTargetInterfaces.h>
+#include <WebCore/ReferrerPolicy.h>
+#include <WebCore/ScriptExecutionContextIdentifier.h>
 #include <wtf/RefCounted.h>
 
 namespace JSC {
@@ -40,6 +38,7 @@ class JSValue;
 
 namespace WebCore {
 
+class HistoryItem;
 class JSDOMGlobalObject;
 class Navigation;
 class SerializedScriptValue;
@@ -87,7 +86,6 @@ private:
     // EventTarget.
     enum EventTargetInterfaceType eventTargetInterface() const final;
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using ActiveDOMObject::protectedScriptExecutionContext;
     void refEventTarget() final { ref(); }
     void derefEventTarget() final { deref(); }
     void eventListenersDidChange() final;

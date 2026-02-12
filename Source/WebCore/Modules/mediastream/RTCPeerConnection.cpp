@@ -2,7 +2,7 @@
  * Copyright (C) 2012 Google Inc. All rights reserved.
  * Copyright (C) 2013 Nokia Corporation and/or its subsidiary(-ies).
  * Copyright (C) 2015, 2016 Ericsson AB. All rights reserved.
- * Copyright (C) 2017-2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2017-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -188,11 +188,14 @@ ExceptionOr<void> RTCPeerConnection::removeTrack(RTCRtpSender& sender)
 
 static bool isAudioTransceiver(const RTCPeerConnection::AddTransceiverTrackOrKind& withTrack)
 {
-    return switchOn(withTrack, [] (const String& type) -> bool {
-        return type == "audio"_s;
-    }, [] (const RefPtr<MediaStreamTrack>& track) -> bool {
-        return track->isAudio();
-    });
+    return switchOn(withTrack,
+        [](const String& type) {
+            return type == "audio"_s;
+        },
+        [] (const Ref<MediaStreamTrack>& track) {
+            return track->isAudio();
+        }
+    );
 }
 
 // https://w3c.github.io/webrtc-pc/#dfn-addtransceiver-sendencodings-validation-steps
@@ -210,8 +213,8 @@ static std::optional<Exception> validateSendEncodings(Vector<RTCRtpEncodingParam
         if (encoding.scaleResolutionDownBy && *encoding.scaleResolutionDownBy < 1)
             return Exception { ExceptionCode::RangeError, "scaleResolutionDownBy is below 1"_s };
 
-        if (encoding.maxFramerate && *encoding.maxFramerate <= 0)
-            return Exception { ExceptionCode::RangeError, "maxFrameRate is below or equal 0"_s };
+        if (encoding.maxFramerate && *encoding.maxFramerate < 0)
+            return Exception { ExceptionCode::RangeError, "maxFrameRate is below 0"_s };
 
         if (hasAnyScaleResolutionDownBy) {
             if (!encoding.scaleResolutionDownBy)
@@ -244,7 +247,7 @@ ExceptionOr<Ref<RTCRtpTransceiver>> RTCPeerConnection::addTransceiver(AddTransce
     if (isClosed())
         return Exception { ExceptionCode::InvalidStateError };
 
-    auto track = std::get<RefPtr<MediaStreamTrack>>(withTrack).releaseNonNull();
+    Ref track = std::get<Ref<MediaStreamTrack>>(withTrack);
     return protectedBackend()->addTransceiver(WTF::move(track), init);
 }
 
@@ -452,8 +455,8 @@ void RTCPeerConnection::setRemoteDescription(RTCSessionDescriptionInit&& remoteD
 void RTCPeerConnection::addIceCandidate(Candidate&& rtcCandidate, Ref<DeferredPromise>&& promise)
 {
     std::optional<Exception> exception;
-    RefPtr candidate = WTF::switchOn(rtcCandidate,
-        [&exception](RTCIceCandidateInit& init) -> RefPtr<RTCIceCandidate> {
+    RefPtr candidate = WTF::switchOn(WTF::move(rtcCandidate),
+        [&exception](RTCIceCandidateInit&& init) -> RefPtr<RTCIceCandidate> {
             if (init.candidate.isEmpty())
                 return nullptr;
 
@@ -464,7 +467,7 @@ void RTCPeerConnection::addIceCandidate(Candidate&& rtcCandidate, Ref<DeferredPr
             }
             return result.releaseReturnValue();
         },
-        [](RefPtr<RTCIceCandidate>& iceCandidate) -> RefPtr<RTCIceCandidate> {
+        [](Ref<RTCIceCandidate>&& iceCandidate) -> RefPtr<RTCIceCandidate> {
             return WTF::move(iceCandidate);
         }
     );
@@ -1143,7 +1146,7 @@ Ref<RTCIceTransport> RTCPeerConnection::getOrCreateIceTransport(UniqueRef<RTCIce
     auto index = m_iceTransports.findIf([&backend](auto& transport) { return backend.get() == transport->backend(); });
     if (index == notFound) {
         index = m_iceTransports.size();
-        m_iceTransports.append(RTCIceTransport::create(*protectedScriptExecutionContext(), WTF::move(backend), *this));
+        m_iceTransports.append(RTCIceTransport::create(*protect(scriptExecutionContext()), WTF::move(backend), *this));
     }
 
     return m_iceTransports[index].copyRef();

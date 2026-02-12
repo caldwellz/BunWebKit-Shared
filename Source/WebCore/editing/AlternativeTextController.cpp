@@ -119,7 +119,7 @@ void AlternativeTextController::startAlternativeTextUITimer(AlternativeTextType 
     if (type == AlternativeTextType::Correction)
         m_rangeWithAlternative = std::nullopt;
     m_type = type;
-    m_timer = protectedDocument()->checkedEventLoop()->scheduleTask(correctionPanelTimerInterval, TaskSource::UserInteraction, [weakThis = WeakPtr { *this }] {
+    m_timer = protect(protectedDocument()->eventLoop())->scheduleTask(correctionPanelTimerInterval, TaskSource::UserInteraction, [weakThis = WeakPtr { *this }] {
         if (CheckedPtr checkedThis = weakThis.get())
             checkedThis->timerFired();
     });
@@ -761,7 +761,7 @@ void AlternativeTextController::applyDictationAlternative(const String& alternat
     auto selection = editor->selectedRange();
     if (!selection || !editor->shouldInsertText(alternativeString, *selection, EditorInsertAction::Pasted))
         return;
-    for (auto& marker : selection->startContainer().document().checkedMarkers()->markersInRange(*selection, DocumentMarkerType::DictationAlternatives))
+    for (auto& marker : protect(selection->startContainer().document().markers())->markersInRange(*selection, DocumentMarkerType::DictationAlternatives))
         removeDictationAlternativesForMarker(*marker);
     applyAlternativeTextToRange(*selection, alternativeString, AlternativeTextType::DictationAlternatives, markerTypesForAppliedDictationAlternative());
 #else

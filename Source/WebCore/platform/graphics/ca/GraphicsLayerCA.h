@@ -75,7 +75,6 @@ public:
 
     WEBCORE_EXPORT PlatformLayer* platformLayer() const override;
     PlatformCALayer* platformCALayer() const { return primaryLayer(); }
-    RefPtr<PlatformCALayer> protectedPlatformCALayer() const { return platformCALayer(); }
 
     WEBCORE_EXPORT bool setChildren(Vector<Ref<GraphicsLayer>>&&) override;
     WEBCORE_EXPORT void addChild(Ref<GraphicsLayer>&&) override;
@@ -334,7 +333,6 @@ private:
     RefPtr<PlatformCALayer> protectedBackdropLayer() const { return m_backdropLayer; }
     RefPtr<PlatformCALayer> protectedStructuralLayer() const { return m_structuralLayer; }
     PlatformCALayer* primaryLayer() const { return m_structuralLayer.get() ? m_structuralLayer.get() : m_layer.get(); }
-    RefPtr<PlatformCALayer> protectedPrimaryLayer() const { return primaryLayer(); }
     PlatformCALayer* hostLayerForSublayers() const;
     PlatformCALayer* layerForSuperlayer() const;
     PlatformCALayer* animatedLayer(AnimatedProperty) const;

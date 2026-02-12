@@ -30,6 +30,8 @@
 #include "AXCoreObject.h"
 
 #include "AXLoggerBase.h"
+#include "AXObjectCache.h"
+#include "AXTreeStoreInlines.h"
 #include "AXUtilities.h"
 #include "DocumentView.h"
 #include "HTMLAreaElement.h"
@@ -2074,6 +2076,20 @@ Color defaultColor()
 {
     static NeverDestroyed<Color> color = Color().toColorTypeLossy<SRGBA<uint8_t>>();
     return color.get();
+}
+
+bool performCustomActionPress(std::optional<AXID> treeID, AXID targetID)
+{
+    if (!treeID)
+        return false;
+
+    return retrieveValueFromMainThreadWithTimeoutAndDefault([treeID, targetID] () -> bool {
+        if (WeakPtr<AXObjectCache> cache = AXTreeStore<AXObjectCache>::axObjectCacheForID(*treeID)) {
+            if (RefPtr object = cache->objectForID(targetID))
+                return object->press();
+        }
+        return false;
+    }, InteractiveTimeout, false);
 }
 
 } // namespace Accessibility

@@ -73,7 +73,7 @@ auto CSSValueConversion<WordSpacing>::operator()(BuilderState& state, const CSSV
     if (primitiveValue->isCalculatedPercentageWithLength()) {
         return WordSpacing {
             typename WordSpacing::Calc {
-                primitiveValue->protectedCssCalcValue()->createCalculationValue(conversionData, CSSCalcSymbolTable { })
+                protect(primitiveValue->cssCalcValue())->createCalculationValue(conversionData, CSSCalcSymbolTable { })
             }
         };
     }

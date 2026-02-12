@@ -643,6 +643,8 @@ extern NSString * const UIPresentationControllerDismissalTransitionDidEndComplet
 @end
 @interface UIView ()
 - (void)_requestRemoteEffects:(NSArray *)effects forKey:(NSString *)key;
+- (void)_removeRemoteEffectsForKey:(NSString *)key;
+- (NSArray *)_remoteEffectsForKey:(NSString *)key;
 @end
 #endif // PLATFORM(VISION)
 

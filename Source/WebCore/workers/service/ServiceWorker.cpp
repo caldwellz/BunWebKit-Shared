@@ -152,7 +152,7 @@ void ServiceWorker::stop()
 {
     m_isStopped = true;
     removeAllEventListeners();
-    protectedScriptExecutionContext()->unregisterServiceWorker(*this);
+    protect(scriptExecutionContext())->unregisterServiceWorker(*this);
     updatePendingActivityForEventDispatch();
 }
 

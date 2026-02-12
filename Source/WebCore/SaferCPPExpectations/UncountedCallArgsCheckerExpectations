@@ -85,7 +85,6 @@ animation/StyleOriginatedAnimation.cpp
 animation/StyleOriginatedAnimationEvent.cpp
 animation/ViewTimeline.cpp
 animation/WebAnimation.cpp
-animation/WebAnimationUtilities.cpp
 bindings/js/CachedModuleScriptLoader.cpp
 bindings/js/CommonVM.cpp
 bindings/js/DOMPromiseProxy.h
@@ -361,7 +360,6 @@ html/HTMLAttachmentElement.cpp
 html/HTMLCanvasElement.cpp
 html/HTMLFormControlsCollection.cpp
 html/HTMLFormElement.cpp
-html/HTMLImageElement.cpp
 html/HTMLInputElement.cpp
 html/HTMLLinkElement.cpp
 html/HTMLMapElement.cpp
@@ -393,6 +391,8 @@ html/canvas/GPUCanvasContextCocoa.mm
 html/canvas/ImageBitmapRenderingContext.cpp
 html/canvas/OffscreenCanvasRenderingContext2D.cpp
 html/canvas/PlaceholderRenderingContext.cpp
+html/canvas/WebGL2RenderingContext.cpp
+html/canvas/WebGLRenderingContextBase.cpp
 html/parser/HTMLConstructionSite.cpp
 html/parser/HTMLConstructionSite.h
 html/parser/HTMLParserScheduler.cpp
@@ -439,7 +439,6 @@ inspector/agents/page/PageNetworkAgent.cpp
 inspector/agents/page/PageRuntimeAgent.cpp
 inspector/agents/worker/ServiceWorkerAgent.cpp
 inspector/agents/worker/WorkerRuntimeAgent.cpp
-layout/integration/LayoutIntegrationBoxGeometryUpdater.cpp
 layout/integration/inline/LayoutIntegrationInlineContentBuilder.cpp
 layout/integration/inline/LayoutIntegrationLineLayout.cpp
 loader/ApplicationManifestLoader.cpp
@@ -513,7 +512,6 @@ page/cocoa/PageCocoa.mm
 page/cocoa/ResourceUsageOverlayCocoa.mm
 page/cocoa/ResourceUsageThreadCocoa.mm
 page/cocoa/WebTextIndicatorLayer.mm
-[ iOS ] page/ios/ContentChangeObserver.cpp
 [ iOS ] page/ios/EventHandlerIOS.mm
 [ iOS ] page/ios/FrameIOS.mm
 page/mac/DragControllerMac.mm
@@ -631,7 +629,6 @@ rendering/MarkedText.cpp
 rendering/MotionPath.cpp
 rendering/RenderAttachment.cpp
 rendering/RenderBlock.cpp
-rendering/RenderBlockFlow.cpp
 rendering/RenderBox.cpp
 rendering/RenderBoxModelObject.cpp
 rendering/RenderButton.cpp

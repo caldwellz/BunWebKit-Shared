@@ -164,7 +164,7 @@ Ref<WebLockManager> WebLockManager::create(NavigatorBase& navigator)
 
 WebLockManager::WebLockManager(NavigatorBase& navigator)
     : ActiveDOMObject(navigator.scriptExecutionContext())
-    , m_mainThreadBridge(MainThreadBridge::create(navigator.protectedScriptExecutionContext().get()))
+    , m_mainThreadBridge(MainThreadBridge::create(protect(navigator.scriptExecutionContext()).get()))
 {
 }
 

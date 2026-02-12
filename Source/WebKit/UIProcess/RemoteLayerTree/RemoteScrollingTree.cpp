@@ -191,6 +191,20 @@ void RemoteScrollingTree::stickyScrollingTreeNodeBeganSticking(ScrollingNodeID n
         scrollingCoordinatorProxy->stickyScrollingTreeNodeBeganSticking(nodeID);
 }
 
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+void RemoteScrollingTree::stickyScrollingTreeNodeEndedSticking(ScrollingNodeID nodeID)
+{
+    if (CheckedPtr scrollingCoordinatorProxy = m_scrollingCoordinatorProxy.get())
+        scrollingCoordinatorProxy->stickyScrollingTreeNodeEndedSticking(nodeID);
+}
+
+void RemoteScrollingTree::scrollingTreeNodeWillBeRemoved(ScrollingNodeID nodeID)
+{
+    if (CheckedPtr scrollingCoordinatorProxy = m_scrollingCoordinatorProxy.get())
+        scrollingCoordinatorProxy->scrollingTreeNodeWillBeRemoved(nodeID);
+}
+#endif
+
 Ref<ScrollingTreeNode> RemoteScrollingTree::createScrollingTreeNode(ScrollingNodeType nodeType, ScrollingNodeID nodeID)
 {
     switch (nodeType) {

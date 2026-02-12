@@ -323,6 +323,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case MapGet:
     case LoadMapValue:
     case MapOrSetSize:
+    case GetRegExpFlag:
     case MapStorage:
     case MapStorageOrSentinel:
     case MapIterationNext:
@@ -346,6 +347,7 @@ bool safeToExecute(AbstractStateType& state, Graph& graph, Node* node, bool igno
     case NumberIsSafeInteger:
     case StringIndexOf:
     case StringStartsWith:
+    case StringEndsWith:
         return true;
 
     case GlobalIsFinite:

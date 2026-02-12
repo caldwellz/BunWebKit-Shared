@@ -133,21 +133,25 @@ void CredentialRequestCoordinator::prepareCredentialRequest(const Document& docu
     if (validatedRequestsOrException.hasException())
         return promise.reject(validatedRequestsOrException.releaseException());
 
+    setCurrentPromise(WTF::move(promise));
+
     if (signal) {
         // CredentialsContainer handled rejecting pre-aborted signal
         ASSERT(!signal->aborted());
-
-        signal->addAlgorithm([weakThis = WeakPtr { *this }, signal = RefPtr { signal }](JSC::JSValue reason) {
+        m_abortSignal = signal;
+        m_abortAlgorithmIdentifier = signal->addAlgorithm([weakThis = WeakPtr { *this }, signal = RefPtr { signal }](JSC::JSValue reason) {
             if (!weakThis)
                 return;
             LOG(DigitalCredentials, "Credential picker was aborted by AbortSignal");
-            weakThis->abortPicker(WTF::move(reason));
+            weakThis->abortPicker(ExceptionOr<JSC::JSValue> { WTF::move(reason) });
         });
     }
 
+    if (signal && signal->aborted())
+        return;
+
     setState(PickerState::Presenting);
-    setCurrentPromise(WTF::move(promise));
-    observeContext(document.protectedScriptExecutionContext().get());
+    observeContext(protect(document.scriptExecutionContext()).get());
 
     auto validatedCredentialRequests = validatedRequestsOrException.releaseReturnValue();
     DigitalCredentialsRequestData requestData {
@@ -167,9 +171,11 @@ void CredentialRequestCoordinator::prepareCredentialRequest(const Document& docu
 
 void CredentialRequestCoordinator::handleDigitalCredentialsPickerResult(Expected<DigitalCredentialsResponseData, ExceptionData>&& responseOrException, RefPtr<AbortSignal> signal)
 {
-    // Abort flow already owns dismiss + settle-after-teardown.
-    if (signal && signal->aborted())
+    if (signal && signal->aborted()) {
+        LOG(DigitalCredentials, "Credential picker result received after AbortSignal aborted");
+        abortPicker(ExceptionOr<JSC::JSValue> { signal->reason().getValue() });
         return;
+    }
 
     PickerStateGuard guard(*this);
 
@@ -241,6 +247,8 @@ ExceptionOr<JSC::JSObject*> CredentialRequestCoordinator::parseDigitalCredential
 
 void CredentialRequestCoordinator::dismissPickerAndSettle(ExceptionOr<RefPtr<BasicCredential>>&& result)
 {
+    clearAbortAlgorithm();
+
     auto promise = WTF::move(m_currentPromise);
     m_currentPromise.reset();
 
@@ -263,8 +271,22 @@ void CredentialRequestCoordinator::dismissPickerAndSettle(ExceptionOr<RefPtr<Bas
     });
 }
 
+void CredentialRequestCoordinator::clearAbortAlgorithm()
+{
+    if (!m_abortAlgorithmIdentifier)
+        return;
+
+    RefPtr signal = m_abortSignal;
+    if (signal)
+        signal->removeAlgorithm(*m_abortAlgorithmIdentifier);
+
+    m_abortAlgorithmIdentifier.reset();
+    m_abortSignal = nullptr;
+}
+
 void CredentialRequestCoordinator::abortPicker(ExceptionOr<JSC::JSValue>&& reason)
 {
+    clearAbortAlgorithm();
     if (m_state == PickerState::Idle) {
         // No UI teardown needed. Settle (defensively) and return.
         if (m_currentPromise) {
@@ -339,6 +361,8 @@ void CredentialRequestCoordinator::contextDestroyed()
 
 CredentialRequestCoordinator::~CredentialRequestCoordinator()
 {
+    clearAbortAlgorithm();
+
     if (m_currentPromise) {
         m_currentPromise->reject(ExceptionCode::AbortError);
         m_currentPromise.reset();

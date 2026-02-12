@@ -154,7 +154,8 @@ static JSObject* createTypeReflectionObject(JSGlobalObject* globalObject, JSWebA
         break;
     }
     case Wasm::ExternalKind::Memory: {
-        const auto& memory = module->moduleInformation().memory;
+        // FIXME(wasm-multimemory): double check this code
+        const auto& memory = module->moduleInformation().memory(impOrExp.kindIndex);
         PageCount maximum = memory.maximum();
         if (maximum.isValid()) {
             typeObj = constructEmptyObject(globalObject, globalObject->objectPrototype(), 3);

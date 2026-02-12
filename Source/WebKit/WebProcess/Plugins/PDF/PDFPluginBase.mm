@@ -942,13 +942,13 @@ IntRect PDFPluginBase::convertFromScrollbarToContainingView(const Scrollbar& scr
     IntRect rect = scrollbarRect;
     rect.move(scrollbar.location() - view->location());
 
-    return view->frame()->protectedView()->convertFromRendererToContainingView(view->pluginElement().checkedRenderer().get(), rect);
+    return view->frame()->protectedView()->convertFromRendererToContainingView(protect(view->pluginElement().renderer()).get(), rect);
 }
 
 IntRect PDFPluginBase::convertFromContainingViewToScrollbar(const Scrollbar& scrollbar, const IntRect& parentRect) const
 {
     Ref view = *m_view;
-    IntRect rect = view->frame()->protectedView()->convertFromContainingViewToRenderer(view->pluginElement().checkedRenderer().get(), parentRect);
+    IntRect rect = view->frame()->protectedView()->convertFromContainingViewToRenderer(protect(view->pluginElement().renderer()).get(), parentRect);
     rect.move(view->location() - scrollbar.location());
 
     return rect;
@@ -960,13 +960,13 @@ IntPoint PDFPluginBase::convertFromScrollbarToContainingView(const Scrollbar& sc
     IntPoint point = scrollbarPoint;
     point.move(scrollbar.location() - view->location());
 
-    return view->frame()->protectedView()->convertFromRendererToContainingView(view->pluginElement().checkedRenderer().get(), point);
+    return view->frame()->protectedView()->convertFromRendererToContainingView(protect(view->pluginElement().renderer()).get(), point);
 }
 
 IntPoint PDFPluginBase::convertFromContainingViewToScrollbar(const Scrollbar& scrollbar, const IntPoint& parentPoint) const
 {
     Ref view = *m_view;
-    IntPoint point = view->frame()->protectedView()->convertFromContainingViewToRenderer(view->pluginElement().checkedRenderer().get(), parentPoint);
+    IntPoint point = view->frame()->protectedView()->convertFromContainingViewToRenderer(protect(view->pluginElement().renderer()).get(), parentPoint);
     point.move(view->location() - scrollbar.location());
 
     return point;
@@ -1340,7 +1340,7 @@ bool PDFPluginBase::showContextMenuAtPoint(const IntPoint& point)
     if (!frameView)
         return false;
     IntPoint contentsPoint = frameView->contentsToRootView(point);
-    WebMouseEvent event({ WebEventType::MouseDown, OptionSet<WebEventModifier> { }, MonotonicTime::now() }, WebMouseEventButton::Right, 0, contentsPoint, contentsPoint, 0, 0, 0, 1, WebCore::ForceAtClick);
+    WebMouseEvent event({ WebEventType::MouseDown, OptionSet<WebEventModifier> { }, MonotonicTime::now() }, WebMouseEventButton::Right, 0, contentsPoint, contentsPoint, 0, 0, 0, 1, WebCore::ForceAtClick, WebMouseEventInputSource::Hardware);
     return handleContextMenuEvent(event);
 }
 
@@ -1627,7 +1627,7 @@ Color PDFPluginBase::pluginBackgroundColor() const
     RefPtr element = m_element.get();
     OptionSet<WebCore::StyleColorOptions> options;
     if (RefPtr element = m_element.get())
-        options = element->checkedRenderer()->styleColorOptions();
+        options = protect(element->renderer())->styleColorOptions();
     return WebCore::RenderTheme::singleton().systemColor(CSSValueAppleSystemBackground, WTF::move(options));
 #else
     static NeverDestroyed color = roundAndClampToSRGBALossy(RetainPtr { [CocoaColor grayColor].CGColor }.get());

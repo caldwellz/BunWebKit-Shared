@@ -133,7 +133,7 @@ void DeviceOrientationEvent::requestPermission(Document& document, PermissionPro
         return promise.resolve(PermissionState::Denied);
     }
 
-    document.checkedDeviceOrientationAndMotionAccessController()->shouldAllowAccess(document, [promise = WTF::move(promise)](PermissionState permissionState) mutable {
+    protect(document.deviceOrientationAndMotionAccessController())->shouldAllowAccess(document, [promise = WTF::move(promise)](PermissionState permissionState) mutable {
         if (permissionState == PermissionState::Prompt)
             return promise.reject(Exception { ExceptionCode::NotAllowedError, "Requesting device orientation access requires a user gesture to prompt"_s });
         promise.resolve(permissionState);

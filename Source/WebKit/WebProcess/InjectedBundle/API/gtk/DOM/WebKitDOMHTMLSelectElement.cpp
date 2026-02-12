@@ -359,23 +359,25 @@ void webkit_dom_html_select_element_add(WebKitDOMHTMLSelectElement* self, WebKit
     g_return_if_fail(WEBKIT_DOM_IS_HTML_ELEMENT(before));
     g_return_if_fail(!error || !*error);
     WebCore::HTMLSelectElement* item = WebKit::core(self);
-    WebCore::HTMLElement* convertedElement = WebKit::core(element);
-    WebCore::HTMLElement* convertedBefore = WebKit::core(before);
-    Variant<RefPtr<WebCore::HTMLOptionElement>, RefPtr<WebCore::HTMLOptGroupElement>> variantElement;
-    if (is<WebCore::HTMLOptionElement>(convertedElement))
-        variantElement = downcast<WebCore::HTMLOptionElement>(*convertedElement);
-    else if (is<WebCore::HTMLOptGroupElement>(convertedElement))
-        variantElement = downcast<WebCore::HTMLOptGroupElement>(*convertedElement);
+    Ref convertedElement = *WebKit::core(element);
+    Ref convertedBefore = *WebKit::core(before);
+
+    static auto raiseErrorOnDOMException = [](auto exception, auto** error) -> void
+    {
+        if (exception.hasException()) {
+            auto description = WebCore::DOMException::description(exception.releaseException().code());
+            g_set_error_literal(error, g_quark_from_string("WEBKIT_DOM"), description.legacyCode, description.name);
+        }
+    };
+
+    if (RefPtr optionElement = dynamicDowncast<WebCore::HTMLOptionElement>(convertedElement))
+        raiseErrorOnDOMException(item->add(optionElement.releaseNonNull(), WebCore::HTMLSelectElement::HTMLElementOrInt(convertedBefore)), error);
+    else if (RefPtr optGroupElement = dynamicDowncast<WebCore::HTMLOptGroupElement>(convertedElement))
+        raiseErrorOnDOMException(item->add(optGroupElement.releaseNonNull(), WebCore::HTMLSelectElement::HTMLElementOrInt(convertedBefore)), error);
     else {
         auto description = WebCore::DOMException::description(WebCore::ExceptionCode::TypeError);
         g_set_error_literal(error, g_quark_from_string("WEBKIT_DOM"), description.legacyCode, description.name);
         return;
-    }
-
-    auto exception = item->add(WTF::move(variantElement), WebCore::HTMLSelectElement::HTMLElementOrInt(convertedBefore));
-    if (exception.hasException()) {
-        auto description = WebCore::DOMException::description(exception.releaseException().code());
-        g_set_error_literal(error, g_quark_from_string("WEBKIT_DOM"), description.legacyCode, description.name);
     }
 }
 

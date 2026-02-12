@@ -79,6 +79,7 @@
 #include "JSPromisePrototype.h"
 #include "JSPromiseReaction.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "JSWrapForValidIterator.h"
 #include "MapConstructor.h"
 #include "NullSetterFunction.h"
@@ -3082,22 +3083,25 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand resultOperand, Ca
             return CallOptimizationResult::Inlined;
         }
 
-        case StringPrototypeStartsWithIntrinsic: {
+        case StringPrototypeStartsWithIntrinsic:
+        case StringPrototypeEndsWithIntrinsic: {
             if (argumentCountIncludingThis < 2)
                 return CallOptimizationResult::DidNothing;
 
             if (m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, Uncountable) || m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, BadType))
                 return CallOptimizationResult::DidNothing;
 
+            NodeType nodeType = intrinsic == StringPrototypeStartsWithIntrinsic ? StringStartsWith : StringEndsWith;
+
             insertChecks();
             Node* thisValue = get(virtualRegisterForArgumentIncludingThis(0, registerOffset));
             Node* search = get(virtualRegisterForArgumentIncludingThis(1, registerOffset));
             Node* result = nullptr;
             if (argumentCountIncludingThis == 2)
-                result = addToGraph(StringStartsWith, thisValue, search);
+                result = addToGraph(nodeType, thisValue, search);
             else {
-                Node* index = get(virtualRegisterForArgumentIncludingThis(2, registerOffset));
-                result = addToGraph(StringStartsWith, thisValue, search, index);
+                Node* position = get(virtualRegisterForArgumentIncludingThis(2, registerOffset));
+                result = addToGraph(nodeType, thisValue, search, position);
             }
 
             setResult(result);
@@ -3812,6 +3816,27 @@ auto ByteCodeParser::handleIntrinsicCall(Node* callee, Operand resultOperand, Ca
                 addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSMapIterator::Field::Storage)), iterator, storage);
                 addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSSetIterator::Field::Kind)), iterator, kindNode);
             }
+
+            setResult(iterator);
+            return CallOptimizationResult::Inlined;
+        }
+
+        case JSStringIteratorIntrinsic: {
+            if (!is64Bit())
+                return CallOptimizationResult::DidNothing;
+
+            if (m_inlineStackTop->m_exitProfile.hasExitSite(m_currentIndex, BadType))
+                return CallOptimizationResult::DidNothing;
+
+            insertChecks();
+
+            Node* base = get(virtualRegisterForArgumentIncludingThis(0, registerOffset));
+            addToGraph(Check, Edge(base, StringUse));
+
+            JSGlobalObject* globalObject = m_graph.globalObjectFor(currentNodeOrigin().semantic);
+            Node* iterator = addToGraph(NewInternalFieldObject, OpInfo(m_graph.registerStructure(globalObject->stringIteratorStructure())));
+            addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSStringIterator::Field::Index)), iterator, jsConstant(jsNumber(0)));
+            addToGraph(PutInternalField, OpInfo(static_cast<uint32_t>(JSStringIterator::Field::IteratedString)), iterator, base);
 
             setResult(iterator);
             return CallOptimizationResult::Inlined;
@@ -5042,6 +5067,31 @@ bool ByteCodeParser::handleIntrinsicGetter(Operand result, SpeculatedType predic
     case JSMapSizeIntrinsic: {
         insertChecks();
         set(result, addToGraph(MapOrSetSize, Edge(thisNode, MapObjectUse)));
+        return true;
+    }
+
+    case RegExpHasIndicesIntrinsic:
+    case RegExpGlobalIntrinsic:
+    case RegExpIgnoreCaseIntrinsic:
+    case RegExpMultilineIntrinsic:
+    case RegExpDotAllIntrinsic:
+    case RegExpUnicodeIntrinsic:
+    case RegExpUnicodeSetsIntrinsic:
+    case RegExpStickyIntrinsic: {
+        Yarr::Flags flag;
+        switch (variant.intrinsic()) {
+        case RegExpHasIndicesIntrinsic: flag = Yarr::Flags::HasIndices; break;
+        case RegExpGlobalIntrinsic: flag = Yarr::Flags::Global; break;
+        case RegExpIgnoreCaseIntrinsic: flag = Yarr::Flags::IgnoreCase; break;
+        case RegExpMultilineIntrinsic: flag = Yarr::Flags::Multiline; break;
+        case RegExpDotAllIntrinsic: flag = Yarr::Flags::DotAll; break;
+        case RegExpUnicodeIntrinsic: flag = Yarr::Flags::Unicode; break;
+        case RegExpUnicodeSetsIntrinsic: flag = Yarr::Flags::UnicodeSets; break;
+        case RegExpStickyIntrinsic: flag = Yarr::Flags::Sticky; break;
+        default: RELEASE_ASSERT_NOT_REACHED(); flag = Yarr::Flags::Global; break;
+        }
+        insertChecks();
+        set(result, addToGraph(GetRegExpFlag, OpInfo(flag), Edge(thisNode, RegExpObjectUse)));
         return true;
     }
 

@@ -316,6 +316,10 @@ public:
         if (a.fieldSizing != b.fieldSizing)
             return true;
 
+        // We don't need a full layout, but do need to trigger scroll anchoring adjustments. This could be optimized.
+        if (a.overflowAnchor != b.overflowAnchor)
+            return true;
+
         return false;
     }
 

@@ -50,7 +50,6 @@ layout/formattingContexts/inline/InlineItemsBuilder.cpp
 layout/formattingContexts/inline/InlineLine.h
 layout/integration/inline/LayoutIntegrationLineLayout.h
 layout/layouttree/LayoutElementBox.h
-[ iOS ] page/ios/ContentChangeObserver.h
 [ Mac ] page/mac/ImageOverlayControllerMac.mm
 [ Mac ] page/mac/ServicesOverlayController.mm
 page/scrolling/ScrollingStateNode.h

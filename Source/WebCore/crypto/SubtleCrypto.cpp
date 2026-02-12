@@ -638,7 +638,7 @@ void SubtleCrypto::encrypt(JSC::JSGlobalObject& state, AlgorithmIdentifier&& alg
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->encrypt(*params, key, WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->encrypt(*params, key, WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::decrypt(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, CryptoKey& key, BufferSource&& dataBufferSource, Ref<DeferredPromise>&& promise)
@@ -678,7 +678,7 @@ void SubtleCrypto::decrypt(JSC::JSGlobalObject& state, AlgorithmIdentifier&& alg
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->decrypt(*params, key, WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->decrypt(*params, key, WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::sign(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, CryptoKey& key, BufferSource&& dataBufferSource, Ref<DeferredPromise>&& promise)
@@ -716,7 +716,7 @@ void SubtleCrypto::sign(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algori
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->sign(*params, key, WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->sign(*params, key, WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::doVerify(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, CryptoKey& key, BufferSource&& signatureBufferSource, BufferSource&& dataBufferSource, Ref<DeferredPromise>&& promise)
@@ -755,7 +755,7 @@ void SubtleCrypto::doVerify(JSC::JSGlobalObject& state, AlgorithmIdentifier&& al
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->doVerify(*params, key, WTF::move(signature), WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->doVerify(*params, key, WTF::move(signature), WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::digest(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, BufferSource&& dataBufferSource, Ref<DeferredPromise>&& promise)
@@ -783,7 +783,7 @@ void SubtleCrypto::digest(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algo
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->digest(WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->digest(WTF::move(data), WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::generateKey(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, bool extractable, Vector<CryptoKeyUsage>&& keyUsages, Ref<DeferredPromise>&& promise)
@@ -804,20 +804,20 @@ void SubtleCrypto::generateKey(JSC::JSGlobalObject& state, AlgorithmIdentifier&&
     WeakPtr weakThis { *this };
     auto callback = [index, weakThis](KeyOrKeyPair&& keyOrKeyPair) mutable {
         if (auto promise = getPromise(index, weakThis)) {
-            WTF::switchOn(keyOrKeyPair,
-                [&promise] (RefPtr<CryptoKey>& key) {
+            WTF::switchOn(WTF::move(keyOrKeyPair),
+                [&promise](Ref<CryptoKey>&& key) {
                     if ((key->type() == CryptoKeyType::Private || key->type() == CryptoKeyType::Secret) && !key->usagesBitmap()) {
                         rejectWithException(promise.releaseNonNull(), ExceptionCode::SyntaxError);
                         return;
                     }
-                    promise->resolve<IDLInterface<CryptoKey>>(*key);
+                    promise->resolve<IDLInterface<CryptoKey>>(WTF::move(key));
                 },
-                [&promise] (CryptoKeyPair& keyPair) {
+                [&promise](CryptoKeyPair&& keyPair) {
                     if (!keyPair.privateKey->usagesBitmap()) {
                         rejectWithException(promise.releaseNonNull(), ExceptionCode::SyntaxError);
                         return;
                     }
-                    promise->resolve<IDLDictionary<CryptoKeyPair>>(keyPair);
+                    promise->resolve<IDLDictionary<CryptoKeyPair>>(WTF::move(keyPair));
                 }
             );
         }
@@ -830,7 +830,7 @@ void SubtleCrypto::generateKey(JSC::JSGlobalObject& state, AlgorithmIdentifier&&
     // The 26 January 2017 version of the specification suggests we should perform the following task asynchronously
     // regardless what kind of keys it produces: https://www.w3.org/TR/WebCryptoAPI/#SubtleCrypto-method-generateKey
     // That's simply not efficient for AES, HMAC and EC keys. Therefore, we perform it as an async task only for RSA keys.
-    algorithm->generateKey(*params, extractable, keyUsagesBitmap, WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext());
+    algorithm->generateKey(*params, extractable, keyUsagesBitmap, WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()));
 }
 
 void SubtleCrypto::deriveKey(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, CryptoKey& baseKey, AlgorithmIdentifier&& derivedKeyType, bool extractable, Vector<CryptoKeyUsage>&& keyUsages, Ref<DeferredPromise>&& promise)
@@ -907,7 +907,7 @@ void SubtleCrypto::deriveKey(JSC::JSGlobalObject& state, AlgorithmIdentifier&& a
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->deriveBits(*params, baseKey, length, WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->deriveBits(*params, baseKey, length, WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::deriveBits(JSC::JSGlobalObject& state, AlgorithmIdentifier&& algorithmIdentifier, CryptoKey& baseKey, std::optional<unsigned> length, Ref<DeferredPromise>&& promise)
@@ -943,7 +943,7 @@ void SubtleCrypto::deriveBits(JSC::JSGlobalObject& state, AlgorithmIdentifier&& 
             rejectWithException(promise.releaseNonNull(), ec);
     };
 
-    algorithm->deriveBits(*params, baseKey, length, WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    algorithm->deriveBits(*params, baseKey, length, WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 void SubtleCrypto::importKey(JSC::JSGlobalObject& state, KeyFormat format, KeyDataVariant&& keyDataVariant, AlgorithmIdentifier&& algorithmIdentifier, bool extractable, Vector<CryptoKeyUsage>&& keyUsages, Ref<DeferredPromise>&& promise)
@@ -1254,7 +1254,7 @@ void SubtleCrypto::unwrapKey(JSC::JSGlobalObject& state, KeyFormat format, Buffe
         return;
     }
 
-    unwrapAlgorithm->decrypt(*unwrapParams, unwrappingKey, WTF::move(wrappedKey), WTF::move(callback), WTF::move(exceptionCallback), *protectedScriptExecutionContext(), m_workQueue);
+    unwrapAlgorithm->decrypt(*unwrapParams, unwrappingKey, WTF::move(wrappedKey), WTF::move(callback), WTF::move(exceptionCallback), *protect(scriptExecutionContext()), m_workQueue);
 }
 
 } // namespace WebCore

@@ -76,7 +76,7 @@ static JSValue encode(JSGlobalObject* globalObject, const WTF::BitSet<256>& doNo
     builder.reserveCapacity(characters.size());
 
     // 4. Repeat
-    auto* end = characters.data() + characters.size();
+    auto* end = std::to_address(characters.end());
     for (auto* cursor = characters.data(); cursor != end; ++cursor) {
         auto character = *cursor;
 

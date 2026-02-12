@@ -1652,20 +1652,37 @@ OptionSet<AnimationImpact> KeyframeEffect::apply(RenderStyle& targetStyle, const
     return impact;
 }
 
+bool KeyframeEffect::isRunningAccountingForSuspension() const
+{
+    RefPtr animation = this->animation();
+    if (!animation)
+        return false;
+    if (animation->isSuspended())
+        return false;
+    return m_isAssociatedWithProgressBasedTimeline || animation->playState() == WebAnimation::PlayState::Running;
+}
+
 bool KeyframeEffect::isRunningAccelerated() const
 {
 #if ENABLE(THREADED_ANIMATIONS)
-    if (canHaveAcceleratedRepresentation()) {
-        if (!m_inTargetEffectStack || !canBeAccelerated())
-            return false;
-        ASSERT(animation());
-        Ref animation = *this->animation();
-        if (animation->isSuspended())
-            return false;
-        return m_isAssociatedWithProgressBasedTimeline || animation->playState() == WebAnimation::PlayState::Running;
-    }
+    // Effects that have an accelerated representation are considered to be running
+    // provided they have at least one animated property.
+    if (canHaveAcceleratedRepresentation())
+        return m_acceleratedRepresentation && !m_acceleratedRepresentation->animatedProperties().isEmpty() && isRunningAccountingForSuspension();
 #endif
     return m_runningAccelerated == RunningAccelerated::Yes;
+}
+
+bool KeyframeEffect::isAboutToRunAccelerated() const
+{
+#if ENABLE(THREADED_ANIMATIONS)
+    // Effects that have an accelerated representation cannot be about to run accelerated since
+    // they are either running or were considered for running but failed to be accelerated.
+    if (canHaveAcceleratedRepresentation())
+        return !m_acceleratedRepresentation && m_inTargetEffectStack && canBeAccelerated() && isRunningAccountingForSuspension();
+#endif
+    // FIXME: This ignores the fact that some timing functions can prevent acceleration.
+    return m_acceleratedPropertiesState != AcceleratedProperties::None && m_lastRecordedAcceleratedAction != AcceleratedAction::Stop;
 }
 
 bool KeyframeEffect::isCurrentlyAffectingProperty(CSSPropertyID property, Accelerated accelerated) const
@@ -1709,9 +1726,17 @@ void KeyframeEffect::computeAcceleratedPropertiesState()
 
     if (RefPtr document = this->document()) {
         auto& settings = document->settings();
+        auto isMarker = m_pseudoElementIdentifier && m_pseudoElementIdentifier->type == PseudoElementType::Marker;
+
+        auto isAcceleratedProperty = [&](AnimatableCSSProperty property) {
+            if (isMarker && std::holds_alternative<CSSPropertyID>(property) && !Style::isValidMarkerStyleProperty(std::get<CSSPropertyID>(property)))
+                return false;
+            return Style::Interpolation::isAccelerated(property, settings);
+        };
+
         for (auto property : m_blendingKeyframes.properties()) {
             // If any animated property can be accelerated, then the animation should run accelerated.
-            if (Style::Interpolation::isAccelerated(property, settings))
+            if (isAcceleratedProperty(property))
                 hasSomeAcceleratedProperties = true;
             else
                 hasSomeUnacceleratedProperties = true;

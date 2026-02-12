@@ -32,6 +32,7 @@
 #include <wtf/RawPtrTraits.h>
 #include <wtf/SingleThreadIntegralWrapper.h>
 #include <wtf/TypeTraits.h>
+#include <wtf/UniqueRef.h>
 
 #if ASSERT_ENABLED
 #include <wtf/Threading.h>
@@ -275,6 +276,13 @@ template<typename T, typename PtrTraits>
 ALWAYS_INLINE CLANG_POINTER_CONVERSION CheckedRef<T, PtrTraits> protect(const CheckedRef<T, PtrTraits>& reference)
 {
     return reference;
+}
+
+template<typename T, typename PtrTraits = RawPtrTraits<T>>
+    requires (HasCheckedPtrMemberFunctions<T>::value && !HasRefPtrMemberFunctions<T>::value)
+ALWAYS_INLINE CLANG_POINTER_CONVERSION CheckedRef<T, PtrTraits> protect(const UniqueRef<T>& reference)
+{
+    return CheckedRef<T, PtrTraits>(reference.get());
 }
 
 template<typename P> struct CheckedRefHashTraits : SimpleClassHashTraits<CheckedRef<P>> {

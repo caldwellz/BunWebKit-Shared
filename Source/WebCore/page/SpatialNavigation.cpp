@@ -758,7 +758,7 @@ LayoutRect virtualRectForAreaElementAndDirection(HTMLAreaElement* area, FocusDir
     ASSERT(area->imageElement());
     // Area elements tend to overlap more than other focusable elements. We flatten the rect of the area elements
     // to minimize the effect of overlapping areas.
-    LayoutRect rect = virtualRectForDirection(direction, rectToAbsoluteCoordinates(area->document().protectedFrame().get(), area->computeRect(area->imageElement()->checkedRenderer().get())), 1);
+    LayoutRect rect = virtualRectForDirection(direction, rectToAbsoluteCoordinates(area->document().protectedFrame().get(), area->computeRect(protect(area->imageElement()->renderer()).get())), 1);
     return rect;
 }
 

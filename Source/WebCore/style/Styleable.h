@@ -66,7 +66,6 @@ struct Styleable {
     }
 
     RenderElement* renderer() const;
-    Ref<Element> protectedElement() const { return element; }
 
     std::unique_ptr<RenderStyle> computeAnimatedStyle() const;
 

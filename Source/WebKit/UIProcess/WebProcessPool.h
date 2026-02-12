@@ -638,6 +638,8 @@ public:
     void setPLTResourceDelayInterval(Seconds interval) { m_pltResourceDelayInterval = interval; }
     Seconds pltResourceDelayInterval() const { return m_pltResourceDelayInterval; }
 
+    bool hasUsedSiteIsolation() const { return m_hasUsedSiteIsolation; }
+
 private:
     enum class NeedsGlobalStaticInitialization : bool { No, Yes };
     void platformInitialize(NeedsGlobalStaticInitialization);
@@ -760,7 +762,7 @@ private:
 #endif
 
 #if ENABLE(MODEL_PROCESS)
-    ModelProcessProxy& ensureModelProcess();
+    ModelProcessProxy& NODELETE ensureModelProcess();
     void updateModelProcessAssertion();
     void terminateAllWebContentProcessesWithModelPlayers();
 #endif

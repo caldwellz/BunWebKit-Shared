@@ -103,7 +103,6 @@ public:
     void setBinaryType(BinaryType);
 
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using ActiveDOMObject::protectedScriptExecutionContext;
 
 private:
     explicit WebSocket(ScriptExecutionContext&);

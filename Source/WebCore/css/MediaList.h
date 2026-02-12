@@ -59,8 +59,8 @@ public:
     WEBCORE_EXPORT String mediaText() const;
     WEBCORE_EXPORT void setMediaText(const String&);
 
-    CSSRule* parentRule() const;
-    CSSStyleSheet* parentStyleSheet() const;
+    CSSRule* NODELETE parentRule() const;
+    CSSStyleSheet* NODELETE parentStyleSheet() const;
     void detachFromParent();
 
     const MQ::MediaQueryList& mediaQueries() const;

@@ -47,13 +47,13 @@ LayoutUnit usedBlockMinimumSize(const PlacedGridItem&, const TrackSizingFunction
 LayoutUnit computeGridLinePosition(size_t gridLineIndex, const TrackSizes&, LayoutUnit gap);
 LayoutUnit gridAreaDimensionSize(size_t startLine, size_t endLine, const TrackSizes&, LayoutUnit gap);
 
-LayoutUnit inlineAxisMinContentContribution(const ElementBox& gridItem, const IntegrationUtils&);
-LayoutUnit inlineAxisMaxContentContribution(const ElementBox& gridItem, const IntegrationUtils&);
-GridItemSizingFunctions inlineAxisGridItemSizingFunctions();
+LayoutUnit inlineAxisMinContentContribution(const PlacedGridItem&, LayoutUnit blockAxisConstraint, const IntegrationUtils&);
+LayoutUnit inlineAxisMaxContentContribution(const PlacedGridItem&, LayoutUnit blockAxisConstraint, const IntegrationUtils&);
+GridItemSizingFunctions inlineAxisGridItemSizingFunctions(const IntegrationUtils&);
 
-LayoutUnit blockAxisMinContentContribution(const ElementBox& gridItem, const IntegrationUtils&);
-LayoutUnit blockAxisMaxContentContribution(const ElementBox& gridItem, const IntegrationUtils&);
-GridItemSizingFunctions blockAxisGridItemSizingFunctions();
+LayoutUnit blockAxisMinContentContribution(const PlacedGridItem&, LayoutUnit inlineAxisConstraint, const GridFormattingContext&);
+LayoutUnit blockAxisMaxContentContribution(const PlacedGridItem&, LayoutUnit inlineAxisConstraint, const GridFormattingContext&);
+GridItemSizingFunctions blockAxisGridItemSizingFunctions(const GridFormattingContext&);
 
 bool preferredSizeBehavesAsAuto(const Style::PreferredSize&);
 bool preferredSizeDependsOnContainingBlockSize(const Style::PreferredSize&);

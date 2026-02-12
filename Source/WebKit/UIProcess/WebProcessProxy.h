@@ -32,6 +32,7 @@
 #include "GPUProcessConnectionIdentifier.h"
 #include "MessageReceiverMap.h"
 #include "NetworkProcessProxy.h"
+#include "PageClient.h"
 #include "ProcessLauncher.h"
 #include "ProcessThrottler.h"
 #include "RemoteWorkerInitializationData.h"
@@ -125,7 +126,6 @@ class AudioSessionRoutingArbitratorProxy;
 class FrameState;
 class JavaScriptEvaluationResult;
 class ModelProcessProxy;
-class PageClient;
 class ProvisionalPageProxy;
 class RemotePageProxy;
 class SuspendedPageProxy;

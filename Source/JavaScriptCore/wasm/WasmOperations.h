@@ -90,7 +90,7 @@ JSC_DECLARE_JIT_OPERATION(operationAllocateResultsArray, JSArray*, (JSWebAssembl
 JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationWasmWriteBarrierSlowPath, void, (JSCell*, VM*));
 JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationPopcount32, UCPUStrictInt32, (int32_t));
 JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationPopcount64, uint64_t, (int64_t));
-JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationGrowMemory, UCPUStrictInt32, (JSWebAssemblyInstance*, int32_t));
+JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationGrowMemory, int64_t, (JSWebAssemblyInstance*, int64_t));
 JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationWasmMemoryFill, UCPUStrictInt32, (JSWebAssemblyInstance*, uint32_t dstAddress, uint32_t targetValue, uint32_t count));
 JSC_DECLARE_NOEXCEPT_JIT_OPERATION(operationWasmMemoryCopy, UCPUStrictInt32, (JSWebAssemblyInstance*, uint32_t dstAddress, uint32_t srcAddress, uint32_t count));
 

@@ -98,7 +98,6 @@
 		A10826FA1F576292004772AC /* WebPanel.mm in Sources */ = {isa = PBXBuildFile; fileRef = A10826F81F576292004772AC /* WebPanel.mm */; };
 		A1175B4F1F6B337300C4B9F0 /* PopupMenu.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1175B4D1F6B337300C4B9F0 /* PopupMenu.mm */; };
 		A1175B581F6B470500C4B9F0 /* DefaultSearchProvider.cpp in Sources */ = {isa = PBXBuildFile; fileRef = A1175B561F6B470500C4B9F0 /* DefaultSearchProvider.cpp */; };
-		A13AB0832EE7AFDA003C1ED5 /* AVRoutingSPI.h in Headers */ = {isa = PBXBuildFile; fileRef = A13AB0822EE7AFDA003C1ED5 /* AVRoutingSPI.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		A15E661B2EDA937A007FB56F /* AVRoutingSoftLink.mm in Sources */ = {isa = PBXBuildFile; fileRef = A15E66192EDA937A007FB56F /* AVRoutingSoftLink.mm */; };
 		A15E66242EDA972C007FB56F /* AVRoutingSoftLink.h in Headers */ = {isa = PBXBuildFile; fileRef = A15E66182EDA937A007FB56F /* AVRoutingSoftLink.h */; settings = {ATTRIBUTES = (Private, ); }; };
 		A1F63CA021A4DBF7006FB43B /* PassKitSoftLink.mm in Sources */ = {isa = PBXBuildFile; fileRef = A1F63C9E21A4DBF7006FB43B /* PassKitSoftLink.mm */; };
@@ -698,7 +697,6 @@
 		A1175B551F6B470500C4B9F0 /* DefaultSearchProvider.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DefaultSearchProvider.h; sourceTree = "<group>"; };
 		A1175B561F6B470500C4B9F0 /* DefaultSearchProvider.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = DefaultSearchProvider.cpp; sourceTree = "<group>"; };
 		A1175B591F6B4A8400C4B9F0 /* NSScrollViewSPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = NSScrollViewSPI.h; sourceTree = "<group>"; };
-		A13AB0822EE7AFDA003C1ED5 /* AVRoutingSPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AVRoutingSPI.h; sourceTree = "<group>"; };
 		A15E66182EDA937A007FB56F /* AVRoutingSoftLink.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AVRoutingSoftLink.h; sourceTree = "<group>"; };
 		A15E66192EDA937A007FB56F /* AVRoutingSoftLink.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = AVRoutingSoftLink.mm; sourceTree = "<group>"; };
 		A169B040248EF03900EE8B7B /* PassKitInstallmentsSPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PassKitInstallmentsSPI.h; sourceTree = "<group>"; };
@@ -949,7 +947,6 @@
 		0C5AF90D1F43A4A4002EAC02 /* ios */ = {
 			isa = PBXGroup;
 			children = (
-				A13AB0822EE7AFDA003C1ED5 /* AVRoutingSPI.h */,
 				42EB2CA22D0388A400ECB173 /* AXRuntimeSPI.h */,
 				3C963637289DC1C600570DD6 /* BarcodeSupportSPI.h */,
 				F4F0A54B2B634D88001A54E5 /* BrowserEngineKitSPI.h */,
@@ -1422,7 +1419,6 @@
 				DD20DDDB27BC90D70093D175 /* AVFoundationSPI.h in Headers */,
 				DD20DDDC27BC90D70093D175 /* AVKitSPI.h in Headers */,
 				A15E66242EDA972C007FB56F /* AVRoutingSoftLink.h in Headers */,
-				A13AB0832EE7AFDA003C1ED5 /* AVRoutingSPI.h in Headers */,
 				DD20DDDD27BC90D70093D175 /* AVStreamDataParserSPI.h in Headers */,
 				42EB2CA32D0388A400ECB173 /* AXRuntimeSPI.h in Headers */,
 				DD20DDDE27BC90D70093D175 /* AXSpeechManagerSPI.h in Headers */,

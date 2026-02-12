@@ -89,20 +89,37 @@ void ScrollingTreeStickyNodeCocoa::applyLayerPositions()
         setIsSticking(isCurrentlySticking(*constrainingRect));
 }
 
-void ScrollingTreeStickyNodeCocoa::setIsSticking(bool isSticking)
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+void ScrollingTreeStickyNodeCocoa::willBeDestroyed()
 {
-    if (m_isSticking == isSticking)
-        return;
-
-    if (std::exchange(m_isSticking, isSticking))
-        return;
-
     RefPtr scrollingTree = this->scrollingTree();
     if (!scrollingTree)
         return;
 
     ensureOnMainRunLoop([scrollingTree = WTF::move(scrollingTree), nodeID = scrollingNodeID()] {
-        scrollingTree->stickyScrollingTreeNodeBeganSticking(nodeID);
+        scrollingTree->scrollingTreeNodeWillBeRemoved(nodeID);
+    });
+}
+#endif
+
+void ScrollingTreeStickyNodeCocoa::setIsSticking(bool isSticking)
+{
+    if (m_isSticking == isSticking)
+        return;
+
+    m_isSticking = isSticking;
+
+    RefPtr scrollingTree = this->scrollingTree();
+    if (!scrollingTree)
+        return;
+
+    ensureOnMainRunLoop([scrollingTree = WTF::move(scrollingTree), nodeID = scrollingNodeID(), isSticking] {
+        if (isSticking)
+            scrollingTree->stickyScrollingTreeNodeBeganSticking(nodeID);
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+        else
+            scrollingTree->stickyScrollingTreeNodeEndedSticking(nodeID);
+#endif
     });
 }
 

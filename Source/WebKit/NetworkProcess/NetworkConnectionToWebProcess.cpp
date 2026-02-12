@@ -191,7 +191,7 @@ NetworkConnectionToWebProcess::~NetworkConnectionToWebProcess()
     m_networkResourceLoaders.clear();
 
     for (auto& port : m_processEntangledPorts)
-        m_networkProcess->checkedMessagePortChannelRegistry()->didCloseMessagePort(port);
+        protect(m_networkProcess->messagePortChannelRegistry())->didCloseMessagePort(port);
 
     auto completionHandlers = std::exchange(m_messageBatchDeliveryCompletionHandlers, { });
     for (auto& completionHandler : completionHandlers.values())
@@ -775,7 +775,7 @@ NetworkStorageSession* NetworkConnectionToWebProcess::storageSession()
 
 void NetworkConnectionToWebProcess::startDownload(DownloadID downloadID, const ResourceRequest& request, const std::optional<WebCore::SecurityOriginData>& topOrigin, std::optional<NavigatingToAppBoundDomain> isNavigatingToAppBoundDomain, const String& suggestedName, FromDownloadAttribute fromDownloadAttribute, std::optional<WebCore::FrameIdentifier> frameID, std::optional<WebCore::PageIdentifier> pageID)
 {
-    m_networkProcess->checkedDownloadManager()->startDownload(m_sessionID, downloadID, request, topOrigin, isNavigatingToAppBoundDomain, suggestedName, fromDownloadAttribute, frameID, pageID, webProcessIdentifier());
+    protect(m_networkProcess->downloadManager())->startDownload(m_sessionID, downloadID, request, topOrigin, isNavigatingToAppBoundDomain, suggestedName, fromDownloadAttribute, frameID, pageID, webProcessIdentifier());
 }
 
 void NetworkConnectionToWebProcess::loadCancelledDownloadRedirectRequestInFrame(const WebCore::ResourceRequest& request, const WebCore::FrameIdentifier& frameID, const WebCore::PageIdentifier& pageID)
@@ -788,7 +788,7 @@ void NetworkConnectionToWebProcess::convertMainResourceLoadToDownload(std::optio
     RELEASE_ASSERT(RunLoop::isMain());
 
     if (!mainResourceLoadIdentifier) {
-        m_networkProcess->checkedDownloadManager()->startDownload(m_sessionID, downloadID, request, topOrigin, isNavigatingToAppBoundDomain);
+        protect(m_networkProcess->downloadManager())->startDownload(m_sessionID, downloadID, request, topOrigin, isNavigatingToAppBoundDomain);
         return;
     }
 
@@ -1636,15 +1636,15 @@ void NetworkConnectionToWebProcess::createNewMessagePortChannel(const MessagePor
 {
     m_processEntangledPorts.add(port1);
     m_processEntangledPorts.add(port2);
-    m_networkProcess->checkedMessagePortChannelRegistry()->didCreateMessagePortChannel(port1, port2);
+    protect(m_networkProcess->messagePortChannelRegistry())->didCreateMessagePortChannel(port1, port2);
 }
 
 void NetworkConnectionToWebProcess::entangleLocalPortInThisProcessToRemote(const MessagePortIdentifier& local, const MessagePortIdentifier& remote)
 {
     m_processEntangledPorts.add(local);
-    m_networkProcess->checkedMessagePortChannelRegistry()->didEntangleLocalToRemote(local, remote, m_webProcessIdentifier);
+    protect(m_networkProcess->messagePortChannelRegistry())->didEntangleLocalToRemote(local, remote, m_webProcessIdentifier);
 
-    RefPtr channel = m_networkProcess->checkedMessagePortChannelRegistry()->existingChannelContainingPort(local);
+    RefPtr channel = protect(m_networkProcess->messagePortChannelRegistry())->existingChannelContainingPort(local);
     if (channel && channel->hasAnyMessagesPendingOrInFlight())
         m_connection->send(Messages::NetworkProcessConnection::MessagesAvailableForPort(local), 0);
 }
@@ -1653,12 +1653,12 @@ void NetworkConnectionToWebProcess::messagePortDisentangled(const MessagePortIde
 {
     m_processEntangledPorts.remove(port);
 
-    m_networkProcess->checkedMessagePortChannelRegistry()->didDisentangleMessagePort(port);
+    protect(m_networkProcess->messagePortChannelRegistry())->didDisentangleMessagePort(port);
 }
 
 void NetworkConnectionToWebProcess::messagePortClosed(const MessagePortIdentifier& port)
 {
-    m_networkProcess->checkedMessagePortChannelRegistry()->didCloseMessagePort(port);
+    protect(m_networkProcess->messagePortChannelRegistry())->didCloseMessagePort(port);
 }
 
 MessageBatchIdentifier NetworkConnectionToWebProcess::nextMessageBatchIdentifier(CompletionHandler<void()>&& deliveryCallback)
@@ -1671,7 +1671,7 @@ MessageBatchIdentifier NetworkConnectionToWebProcess::nextMessageBatchIdentifier
 
 void NetworkConnectionToWebProcess::takeAllMessagesForPort(const MessagePortIdentifier& port, CompletionHandler<void(Vector<MessageWithMessagePorts>&&, std::optional<MessageBatchIdentifier>)>&& callback)
 {
-    m_networkProcess->checkedMessagePortChannelRegistry()->takeAllMessagesForPort(port, [this, protectedThis = Ref { *this }, callback = WTF::move(callback)](Vector<MessageWithMessagePorts>&& messages, CompletionHandler<void()>&& deliveryCallback) mutable {
+    protect(m_networkProcess->messagePortChannelRegistry())->takeAllMessagesForPort(port, [this, protectedThis = Ref { *this }, callback = WTF::move(callback)](Vector<MessageWithMessagePorts>&& messages, CompletionHandler<void()>&& deliveryCallback) mutable {
         callback(WTF::move(messages), nextMessageBatchIdentifier(WTF::move(deliveryCallback)));
     });
 }
@@ -1685,9 +1685,9 @@ void NetworkConnectionToWebProcess::didDeliverMessagePortMessages(MessageBatchId
 
 void NetworkConnectionToWebProcess::postMessageToRemote(MessageWithMessagePorts&& message, const MessagePortIdentifier& port)
 {
-    if (m_networkProcess->checkedMessagePortChannelRegistry()->didPostMessageToRemote(WTF::move(message), port)) {
+    if (protect(m_networkProcess->messagePortChannelRegistry())->didPostMessageToRemote(WTF::move(message), port)) {
         // Look up the process for that port
-        RefPtr channel = m_networkProcess->checkedMessagePortChannelRegistry()->existingChannelContainingPort(port);
+        RefPtr channel = protect(m_networkProcess->messagePortChannelRegistry())->existingChannelContainingPort(port);
         ASSERT(channel);
         auto processIdentifier = channel->processForPort(port);
         if (processIdentifier) {

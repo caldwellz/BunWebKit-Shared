@@ -54,7 +54,7 @@ public:
     static ExceptionOr<Ref<URLPattern>> create(ScriptExecutionContext&, URLPatternInput&&, String&& baseURL, URLPatternOptions&&);
     static ExceptionOr<Ref<URLPattern>> create(ScriptExecutionContext&, URLPatternInput&&, URLPatternOptions&&);
 
-    using Compatible = Variant<String, URLPatternInit, RefPtr<URLPattern>>;
+    using Compatible = Variant<String, URLPatternInit, Ref<URLPattern>>;
     static ExceptionOr<Ref<URLPattern>> create(ScriptExecutionContext&, Compatible&&, const String&);
 
     ~URLPattern();

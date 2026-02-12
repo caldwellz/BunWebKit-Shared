@@ -33,6 +33,10 @@
 
 NS_ASSUME_NONNULL_BEGIN
 
+#if 0 // API_WEBKIT_ADDITIONS_REPLACEMENT
+#import <WebKitAdditions/WKWebViewAdditionsBefore.h>
+#endif
+
 #if TARGET_OS_IOS
 @class UIFindInteraction;
 @class UIConversationContext;
@@ -720,6 +724,10 @@ typedef NS_OPTIONS(NSUInteger, WKWebViewDataType) {
 @property (nonatomic) NSEdgeInsets obscuredContentInsets WK_API_AVAILABLE(macos(26.0));
 #else
 @property (nonatomic) UIEdgeInsets obscuredContentInsets WK_API_AVAILABLE(ios(26.0), visionos(26.0));
+#endif
+
+#if 0 // API_WEBKIT_ADDITIONS_REPLACEMENT
+#import <WebKitAdditions/WKWebViewAdditions.h>
 #endif
 
 @end

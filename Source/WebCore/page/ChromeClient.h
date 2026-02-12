@@ -55,7 +55,6 @@
 
 #if PLATFORM(IOS_FAMILY)
 #include <WebCore/PlatformLayer.h>
-#include <WebCore/WKContentObservation.h>
 #define NSResponder WAKResponder
 #ifndef __OBJC__
 class WAKResponder;
@@ -177,6 +176,7 @@ enum class AXLoadingEvent : uint8_t;
 enum class AXNotification : uint8_t;
 enum class AXTextChange : uint8_t;
 enum class BroadcastFocusedElement : bool;
+enum class ContentChange : uint8_t;
 enum class DidFilterLinkDecoration : bool { No, Yes };
 enum class IsLoggedIn : uint8_t;
 enum class LinkDecorationFilteringTrigger : uint8_t;
@@ -341,9 +341,9 @@ public:
 #endif
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-    virtual void allowImmersiveElement(const Element&, CompletionHandler<void(bool)>&& completion) const { completion(false); }
-    virtual void presentImmersiveElement(const Element&, const LayerHostingContextIdentifier, CompletionHandler<void(bool)>&& completion) const { completion(false); }
-    virtual void dismissImmersiveElement(const Element&, CompletionHandler<void()>&& completion) const { completion(); }
+    virtual void allowImmersiveElement(CompletionHandler<void(bool)>&& completion) const { completion(false); }
+    virtual void presentImmersiveElement(const LayerHostingContextIdentifier, CompletionHandler<void(bool)>&& completion) const { completion(false); }
+    virtual void dismissImmersiveElement(CompletionHandler<void()>&& completion) const { completion(); }
 #endif
 
 #if ENABLE(APP_HIGHLIGHTS)
@@ -370,7 +370,6 @@ public:
 #if PLATFORM(IOS_FAMILY)
     virtual void didReceiveMobileDocType(bool) = 0;
     virtual void setNeedsScrollNotifications(LocalFrame&, bool) = 0;
-    virtual void didFinishContentChangeObserving(LocalFrame&, WKContentChange) = 0;
     virtual void notifyRevealedSelectionByScrollingFrame(LocalFrame&) = 0;
 
     enum LayoutType { NormalLayout, Scroll };
@@ -397,6 +396,10 @@ public:
     virtual void showPlaybackTargetPicker(bool hasVideo, RouteSharingPolicy, const String&) = 0;
 
     virtual bool showDataDetectorsUIForElement(const Element&, const Event&) = 0;
+#endif
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+    virtual void didFinishContentChangeObserving(LocalFrame&, ContentChange) = 0;
 #endif
 
 #if ENABLE(ORIENTATION_EVENTS)

@@ -59,7 +59,7 @@ RenderPtr<RenderElement> BaseButtonInputType::createInputRenderer(RenderStyle&& 
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderButton>(*protectedElement(), WTF::move(style));
+    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderButton>(*protect(element()), WTF::move(style));
 }
 
 bool BaseButtonInputType::storesValueSeparateFromAttribute()

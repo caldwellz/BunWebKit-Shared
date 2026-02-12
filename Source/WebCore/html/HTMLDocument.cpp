@@ -110,24 +110,24 @@ Ref<DocumentParser> HTMLDocument::createParser()
 }
 
 // https://html.spec.whatwg.org/multipage/dom.html#dom-document-nameditem
-std::optional<Variant<RefPtr<WindowProxy>, RefPtr<Element>, RefPtr<HTMLCollection>>> HTMLDocument::namedItem(const AtomString& name)
+std::optional<Variant<Ref<WindowProxy>, Ref<Element>, Ref<HTMLCollection>>> HTMLDocument::namedItem(const AtomString& name)
 {
     if (name.isNull() || !hasDocumentNamedItem(name))
         return std::nullopt;
 
     if (documentNamedItemContainsMultipleElements(name)) [[unlikely]] {
-        auto collection = documentNamedItems(name);
+        Ref collection = documentNamedItems(name);
         ASSERT(collection->length() > 1);
-        return Variant<RefPtr<WindowProxy>, RefPtr<Element>, RefPtr<HTMLCollection>> { RefPtr<HTMLCollection> { WTF::move(collection) } };
+        return Variant<Ref<WindowProxy>, Ref<Element>, Ref<HTMLCollection>> { WTF::move(collection) };
     }
 
     Ref element = *documentNamedItem(name);
-    if (RefPtr iframe = dynamicDowncast<HTMLIFrameElement>(element.get()); iframe) [[unlikely]] {
+    if (RefPtr iframe = dynamicDowncast<HTMLIFrameElement>(element)) [[unlikely]] {
         if (RefPtr window = iframe->contentWindow())
-            return Variant<RefPtr<WindowProxy>, RefPtr<Element>, RefPtr<HTMLCollection>> { WTF::move(window) };
+            return Variant<Ref<WindowProxy>, Ref<Element>, Ref<HTMLCollection>> { window.releaseNonNull() };
     }
 
-    return Variant<RefPtr<WindowProxy>, RefPtr<Element>, RefPtr<HTMLCollection>> { RefPtr<Element> { WTF::move(element) } };
+    return Variant<Ref<WindowProxy>, Ref<Element>, Ref<HTMLCollection>> { WTF::move(element) };
 }
 
 bool HTMLDocument::isSupportedPropertyName(const AtomString& name) const

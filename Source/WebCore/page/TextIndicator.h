@@ -177,6 +177,7 @@ public:
 
     Color estimatedBackgroundColor() const { return m_data.estimatedBackgroundColor; }
     OptionSet<TextIndicatorOption> options() const { return m_data.options; }
+    void setOptions(OptionSet<TextIndicatorOption> options) { m_data.options = options; }
 
     TextIndicatorData data() const { return m_data; }
 

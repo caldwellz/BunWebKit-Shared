@@ -34,7 +34,7 @@
 namespace WebCore {
 
 using OptionalDoubleOrString = std::optional<Variant<double, String>>;
-using DoubleOrCSSNumericValueOrString = Variant<double, RefPtr<CSSNumericValue>, String>;
+using DoubleOrCSSNumericValueOrString = Variant<double, Ref<CSSNumericValue>, String>;
 
 struct EffectTiming {
     double delay { 0 };

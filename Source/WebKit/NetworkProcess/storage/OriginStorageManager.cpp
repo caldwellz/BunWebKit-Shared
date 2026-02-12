@@ -732,11 +732,6 @@ IDBStorageManager& OriginStorageManager::idbStorageManager(IDBStorageRegistry& r
     });
 }
 
-CheckedRef<IDBStorageManager> OriginStorageManager::checkedIDBStorageManager(IDBStorageRegistry& registry)
-{
-    return idbStorageManager(registry);
-}
-
 IDBStorageManager* OriginStorageManager::existingIDBStorageManager()
 {
     return defaultBucket().existingIDBStorageManager();

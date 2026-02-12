@@ -249,10 +249,14 @@ void FormData::appendMultiPartKeyValuePairItems(const DOMFormData& formData)
         Vector<uint8_t> header;
         FormDataBuilder::beginMultiPartHeader(header, m_boundary.span(), normalizedName);
 
-        if (auto* file = std::get_if<RefPtr<File>>(&item.data))
-            appendMultiPartFileValue(Ref { **file }, header, encoding);
-        else
-            appendMultiPartStringValue(std::get<String>(item.data), header, encoding);
+        WTF::switchOn(item.data,
+            [&](const Ref<File>& file) {
+                appendMultiPartFileValue(file, header, encoding);
+            },
+            [&](const String& string) {
+                appendMultiPartStringValue(string, header, encoding);
+            }
+        );
 
         constexpr std::array<uint8_t, 2> newline { '\r', '\n' };
         appendData(newline);
@@ -272,7 +276,8 @@ void FormData::appendNonMultiPartKeyValuePairItems(const DOMFormData& formData, 
         String stringValue = WTF::switchOn(item.data,
             [](const String& string) {
                 return string;
-            }, [](const RefPtr<File>& file) {
+            },
+            [](const Ref<File>& file) {
                 return file->name();
             }
         );
@@ -317,7 +322,7 @@ static void appendBlobResolved(BlobRegistryImpl* blobRegistry, FormData& formDat
     for (const auto& blobItem : blobData->items()) {
         switch (blobItem.type()) {
         case BlobDataItem::Type::Data:
-            formData.appendData(blobItem.protectedData()->span().subspan(blobItem.offset(), blobItem.length()));
+            formData.appendData(protect(blobItem.data())->span().subspan(blobItem.offset(), blobItem.length()));
             break;
         case BlobDataItem::Type::File: {
             Ref file = blobItem.file();

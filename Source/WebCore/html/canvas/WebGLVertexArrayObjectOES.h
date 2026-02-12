@@ -27,7 +27,7 @@
 
 #if ENABLE(WEBGL)
 
-#include "WebGLVertexArrayObjectBase.h"
+#include <WebCore/WebGLVertexArrayObjectBase.h>
 
 namespace WebCore {
 

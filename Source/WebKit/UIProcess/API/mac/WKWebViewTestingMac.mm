@@ -131,7 +131,7 @@
 
 - (void)_setSelectedColorForColorPicker:(NSColor *)color
 {
-    _page->checkedColorPickerClient()->didChooseColor(WebCore::colorFromCocoaColor(color));
+    protect(_page->colorPickerClient())->didChooseColor(WebCore::colorFromCocoaColor(color));
 }
 
 - (void)_createFlagsChangedEventMonitorForTesting

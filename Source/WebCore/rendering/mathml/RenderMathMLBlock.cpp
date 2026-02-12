@@ -77,7 +77,7 @@ static LayoutUnit axisHeight(const RenderStyle& style)
     // If we have a MATH table we just return the AxisHeight constant.
     Ref primaryFont = style.fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData())
-        return LayoutUnit(mathData->getMathConstant(primaryFont, OpenTypeMathData::AxisHeight));
+        return LayoutUnit(mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::AxisHeight));
 
     // Otherwise, the idea is to try and use the middle of operators as the math axis which we thus approximate by "half of the x-height".
     // Note that Gecko has a slower but more accurate version that measures half of the height of U+2212 MINUS SIGN.

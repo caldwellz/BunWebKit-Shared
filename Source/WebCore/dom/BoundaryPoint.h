@@ -36,7 +36,6 @@ struct BoundaryPoint {
     BoundaryPoint(Ref<Node>&&, unsigned);
 
     inline Document& document() const; // Defined in BoundaryPointInlines.h
-    inline Ref<Document> protectedDocument() const; // Defined in BoundaryPointInlines.h
 
     String debugDescription() const;
 };

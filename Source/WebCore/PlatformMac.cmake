@@ -554,7 +554,6 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
     page/cocoa/DataDetectorElementInfo.h
     page/cocoa/ImageOverlayDataDetectionResultIdentifier.h
 
-    page/mac/TextIndicatorWindow.h
     page/mac/WebCoreFrameView.h
 
     page/scrolling/ScrollingStateOverflowScrollProxyNode.h
@@ -601,12 +600,10 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/cocoa/CoreVideoSoftLink.h
     platform/cocoa/LocalCurrentGraphicsContext.h
     platform/cocoa/NetworkExtensionContentFilter.h
-    platform/cocoa/PlatformView.h
     platform/cocoa/PlatformViewController.h
     platform/cocoa/PlaybackSessionModel.h
     platform/cocoa/PlaybackSessionModelMediaElement.h
     platform/cocoa/PowerSourceNotifier.h
-    platform/cocoa/PublicSuffixCocoa.mm
     platform/cocoa/SearchPopupMenuCocoa.h
     platform/cocoa/SharedVideoFrameInfo.h
     platform/cocoa/SystemBattery.h
@@ -674,7 +671,6 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/graphics/cocoa/FontFamilySpecificationCoreTextCache.h
     platform/graphics/cocoa/GraphicsContextGLCocoa.h
     platform/graphics/cocoa/IOSurface.h
-    platform/graphics/cocoa/MediaPlaybackTargetContext.h
     platform/graphics/cocoa/MediaPlayerPrivateWebM.h
     platform/graphics/cocoa/SourceBufferParser.h
     platform/graphics/cocoa/SourceBufferParserWebM.h
@@ -692,7 +688,6 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
 
     platform/graphics/mac/ColorMac.h
     platform/graphics/mac/GraphicsChecksMac.h
-    platform/graphics/mac/SwitchingGPUClient.h
 
     platform/ios/PlaybackSessionInterfaceAVKit.h
     platform/ios/WebAVPlayerController.h
@@ -713,14 +708,13 @@ list(APPEND WebCore_PRIVATE_FRAMEWORK_HEADERS
     platform/mac/SerializedPlatformDataCueMac.h
     platform/mac/ScrollbarThemeMac.h
     platform/mac/StringUtilities.h
-    platform/mac/VideoFullscreenInterfaceMac.h
     platform/mac/WebCoreFullScreenPlaceholderView.h
     platform/mac/WebCoreFullScreenWindow.h
     platform/mac/WebCoreNSFontManagerExtras.h
     platform/mac/WebCoreNSURLExtras.h
     platform/mac/WebCoreObjCExtras.h
     platform/mac/WebCoreView.h
-    platform/mac/WebNSAttributedStringExtras.h
+
     platform/mac/WebPlaybackControlsManager.h
 
     platform/mediarecorder/MediaRecorderPrivateEncoder.h

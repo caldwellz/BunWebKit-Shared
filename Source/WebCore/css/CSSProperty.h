@@ -81,7 +81,6 @@ public:
     bool isImportant() const { return m_metadata.m_important; }
 
     CSSValue* value() const { return m_value.ptr(); }
-    Ref<CSSValue> protectedValue() const { return m_value; }
 
     static CSSPropertyID resolveDirectionAwareProperty(CSSPropertyID, WritingMode);
     static CSSPropertyID unresolvePhysicalProperty(CSSPropertyID, WritingMode);

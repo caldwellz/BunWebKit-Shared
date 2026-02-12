@@ -184,7 +184,7 @@ String HTMLIFrameElement::srcdoc() const
     return attributeWithoutSynchronization(srcdocAttr);
 }
 
-ExceptionOr<void> HTMLIFrameElement::setSrcdoc(Variant<RefPtr<TrustedHTML>, String>&& value, SubstituteData::SessionHistoryVisibility sessionHistoryVisibility)
+ExceptionOr<void> HTMLIFrameElement::setSrcdoc(Variant<Ref<TrustedHTML>, String>&& value, SubstituteData::SessionHistoryVisibility sessionHistoryVisibility)
 {
     auto stringValueHolder = trustedTypeCompliantString(protect(protect(document())->contextDocument()), WTF::move(value), "HTMLIFrameElement srcdoc"_s);
 
@@ -206,7 +206,7 @@ static bool isFrameLazyLoadable(const Document& document, const URL& url, const 
     if (!url.isValid() || url.isAboutBlank())
         return false;
 
-    if (RefPtr frame = document.frame(); !frame || !frame->checkedScript()->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
+    if (RefPtr frame = document.frame(); !frame || !protect(frame->script())->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
         return false;
 
     return equalLettersIgnoringASCIICase(loadingAttributeValue, "lazy"_s);

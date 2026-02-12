@@ -562,13 +562,21 @@
 #define SUPPRESS_RETAINPTR_CTOR_ADOPT \
     IGNORE_CLANG_STATIC_ANALYZER_WARNINGS_ATTRIBUTE("alpha.webkit.RetainPtrCtorAdoptChecker")
 #define CLANG_POINTER_CONVERSION [[clang::annotate_type("webkit.pointerconversion")]]
+
+// Add this annotation to right after the return type of a function when the function does not run any destructor or free memory.
+// Static analyzer does not require the use of smart pointers in the code which calls a function with this annotation.
+#define NODELETE [[clang::annotate_type("webkit.nodelete")]]
+
 #else
+
 #define SUPPRESS_UNCOUNTED_LAMBDA_CAPTURE
 #define SUPPRESS_UNRETAINED_LOCAL
 #define SUPPRESS_UNRETAINED_ARG
 #define SUPPRESS_UNRETAINED_MEMBER
 #define SUPPRESS_RETAINPTR_CTOR_ADOPT
 #define CLANG_POINTER_CONVERSION
+#define NODELETE
+
 #endif
 
 // To suppress webkit.RefCntblBaseVirtualDtor, use NoVirtualDestructorBase instead.

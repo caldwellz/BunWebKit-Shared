@@ -49,7 +49,7 @@ const MQ::MediaQueryList& CSSMediaRule::mediaQueries() const
 
 void CSSMediaRule::setMediaQueries(MQ::MediaQueryList&& queries)
 {
-    downcast<StyleRuleMedia>(protectedGroupRule())->setMediaQueries(WTF::move(queries));
+    downcast<StyleRuleMedia>(protect(groupRule()))->setMediaQueries(WTF::move(queries));
 }
 
 String CSSMediaRule::cssText() const

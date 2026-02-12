@@ -271,15 +271,6 @@ std::unique_ptr<GLFence> AcceleratedSurface::RenderTargetShareableBuffer::create
 
 void AcceleratedSurface::RenderTargetShareableBuffer::sync(bool useExplicitSync)
 {
-#if USE(SKIA)
-    if (m_skiaSurface) {
-        PlatformDisplay::sharedDisplay().skiaGrContext()->flushAndSubmit(
-            m_skiaSurface.get(),
-            GLFence::isSupported(PlatformDisplay::sharedDisplay().glDisplay()) ? GrSyncCpu::kNo : GrSyncCpu::kYes
-        );
-    }
-#endif
-
     if (auto fence = createRenderingFence(useExplicitSync)) {
         m_renderingFenceFD = fence->exportFD();
         if (!m_renderingFenceFD)
@@ -1124,10 +1115,10 @@ void AcceleratedSurface::didRenderFrame()
 
     Vector<IntRect, 1> damageRects;
 #if ENABLE(DAMAGE_TRACKING)
-    // For now, we use bounding box damage for render target damage, as its only 2 consumers so far
+    // For GL targets we use bounding box damage for render target damage, as its only 2 consumers so far
     // (CoordinatedBackingStore & ThreadedCompositor) only fetch bounds. Thus having damage with
     // better resolution is pointless as the bounds are the same in such case.
-    m_target->setDamage(Damage(m_swapChain.size(), Damage::Mode::BoundingBox));
+    m_target->setDamage(Damage(m_swapChain.size(), usesGL() ? Damage::Mode::BoundingBox : Damage::Mode::Rectangles, 4));
     if (m_frameDamage) {
         damageRects = m_frameDamage->rects();
         m_frameDamage = std::nullopt;

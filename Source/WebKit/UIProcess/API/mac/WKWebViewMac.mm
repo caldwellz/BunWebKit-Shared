@@ -557,12 +557,12 @@ ALLOW_DEPRECATED_IMPLEMENTATIONS_BEGIN
 
 - (void)mouseDown:(NSEvent *)event
 {
-    _impl->mouseDown(event);
+    _impl->mouseDown(event, WebKit::WebMouseEventInputSource::Hardware);
 }
 
 - (void)mouseUp:(NSEvent *)event
 {
-    _impl->mouseUp(event);
+    _impl->mouseUp(event, WebKit::WebMouseEventInputSource::Hardware);
 }
 
 - (void)mouseDragged:(NSEvent *)event
@@ -746,12 +746,12 @@ ALLOW_DEPRECATED_IMPLEMENTATIONS_BEGIN
 
 - (NSRect)unionRectInVisibleSelectedRange
 {
-    return _impl->unionRectInVisibleSelectedRange();
+    return _impl->unionRectInVisibleSelectedRangeInScreen();
 }
 
 - (NSRect)documentVisibleRect
 {
-    return _impl->documentVisibleRect();
+    return _impl->documentVisibleRectInScreen();
 }
 
 - (void)showContextMenuForSelection:(id)sender
@@ -2125,6 +2125,11 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 - (void)_simulateMouseEnter:(NSEvent *)event
 {
     _impl->mouseEntered(event);
+}
+
+- (void)_simulateMouseExit:(NSEvent *)event
+{
+    _impl->mouseExited(event);
 }
 
 - (void)_setFont:(NSFont *)font sender:(id)sender

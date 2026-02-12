@@ -48,11 +48,13 @@ struct AudioFormatVorbisModeInfo {
 };
 typedef struct AudioFormatVorbisModeInfo AudioFormatVorbisModeInfo;
 
-enum SpatialAudioSourceID : UInt32;
-static constexpr UInt32 kSpatialAudioSource_Multichannel = 'mlti';
-static constexpr UInt32 kSpatialAudioSource_MonoOrStereo = 'most';
-static constexpr UInt32 kSpatialAudioSource_BinauralForHeadphones = 'binh';
-static constexpr UInt32 kSpatialAudioSource_Unknown = '?src';
+typedef CF_ENUM(UInt32, SpatialAudioSourceID)
+{
+    kSpatialAudioSource_Multichannel          = 'mlti',
+    kSpatialAudioSource_MonoOrStereo          = 'most',
+    kSpatialAudioSource_BinauralForHeadphones = 'binh',
+    kSpatialAudioSource_Unknown               = '?src'
+};
 
 enum SpatialContentTypeID : UInt32;
 static constexpr UInt32 kAudioSpatialContentType_Audiovisual = 'moov';

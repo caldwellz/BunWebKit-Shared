@@ -78,7 +78,6 @@ public:
     inline NodeListInvalidationType invalidationType() const;
     inline CollectionType type() const;
     ContainerNode& ownerNode() const { return m_ownerNode; }
-    Ref<ContainerNode> protectedOwnerNode() const { return m_ownerNode; }
     inline ContainerNode& rootNode() const;
     inline void invalidateCacheForAttribute(const QualifiedName& attributeName);
     WEBCORE_EXPORT virtual void invalidateCacheForDocument(Document&);

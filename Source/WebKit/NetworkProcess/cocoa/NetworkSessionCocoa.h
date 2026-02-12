@@ -81,8 +81,6 @@ public:
         : sessionWithCredentialStorage(makeUniqueRef<SessionWrapper>())
     { }
 
-    CheckedRef<SessionWrapper> checkedSessionWithCredentialStorage() { return sessionWithCredentialStorage.get(); }
-
     UniqueRef<SessionWrapper> sessionWithCredentialStorage;
     WallTime lastUsed;
 };
@@ -100,9 +98,6 @@ public:
     HashMap<WebCore::RegistrableDomain, std::unique_ptr<IsolatedSession>> isolatedSessions;
 
     std::unique_ptr<IsolatedSession> appBoundSession;
-
-    CheckedRef<SessionWrapper> checkedSessionWithCredentialStorage() { return sessionWithCredentialStorage.get(); }
-    CheckedRef<SessionWrapper> checkedEphemeralStatelessSession() { return ephemeralStatelessSession.get(); }
 
     UniqueRef<SessionWrapper> sessionWithCredentialStorage;
     UniqueRef<SessionWrapper> ephemeralStatelessSession;

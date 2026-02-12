@@ -71,7 +71,6 @@ private:
     bool handleKeyboardEvent(const WebKeyboardEvent&) override;
 #if PLATFORM(MAC)
     bool handleKeyboardCommand(const WebKeyboardEvent&);
-    CheckedPtr<WebCore::KeyboardScrollingAnimator> checkedKeyboardScrollingAnimator() const;
 #endif
 
     std::optional<PDFDocumentLayout::PageIndex> pageIndexForCurrentView(AnchorPoint) const override;

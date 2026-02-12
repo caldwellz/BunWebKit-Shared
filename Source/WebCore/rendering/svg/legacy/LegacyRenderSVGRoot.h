@@ -41,7 +41,6 @@ public:
     virtual ~LegacyRenderSVGRoot();
 
     SVGSVGElement& svgSVGElement() const;
-    Ref<SVGSVGElement> protectedSVGSVGElement() const;
 
     bool isEmbeddedThroughSVGImage() const;
     bool isEmbeddedThroughFrameContainingSVGDocument() const;
@@ -66,6 +65,13 @@ public:
     // The flag is cleared at the beginning of each layout() pass. Elements then call this
     // method during layout when they are invalidated by a filter.
     static void addResourceForClientInvalidation(LegacyRenderSVGResourceContainer*);
+
+    bool hasNonScalingStrokeDescendant() const { return m_nonScalingStrokeDescendantCount > 0; }
+    void adjustNonScalingStrokeDescendantCount(int delta)
+    {
+        ASSERT(delta > 0 || m_nonScalingStrokeDescendantCount >= static_cast<unsigned>(-delta));
+        m_nonScalingStrokeDescendantCount += delta;
+    }
 
 private:
     void element() const = delete;
@@ -126,6 +132,7 @@ private:
     bool m_isLayoutSizeChanged : 1 { false };
     bool m_needsBoundariesOrTransformUpdate : 1 { true };
     bool m_hasBoxDecorations : 1 { false };
+    unsigned m_nonScalingStrokeDescendantCount { 0 };
 };
 
 } // namespace WebCore

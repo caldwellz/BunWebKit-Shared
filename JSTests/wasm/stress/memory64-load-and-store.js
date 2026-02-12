@@ -1,5 +1,5 @@
 //@ skip if $addressBits <= 32
-//@ runDefaultWasm("-m", "--useBBQJIT=0", "--useWasmMemory64=1")
+//@ runDefaultWasm("-m", "--useWasmMemory64=1", "--useOMGJIT=0")
 import { instantiate } from "../wabt-wrapper.js";
 import * as assert from "../assert.js";
 
@@ -54,32 +54,38 @@ let wat = `
     }
 )`;
 
-async function test() {
-  const instance = await instantiate(wat, {}, {reference_types: true});
-  const exports = instance.exports;
+const instance = await instantiate(wat, {}, {reference_types: true});
+const exports = instance.exports;
 
-  let index = 0n;  // BigInt for i64 parameter
-  storeTypes.forEach((storeType) => {
-    const valueToLoad = storeType.type == "i64" ? 42n : 42;
-    // store value 42 at index
-    exports[`${storeType.type}_store${storeType.suffix}`](index, valueToLoad);
-    // increment index by the width that was stored
-    index += getWasmTypeWidth(storeType.type);
-  });
+function test() {
+    const storeAndLoad = (expectedValue) => {
+      let index = 0n;  // BigInt for i64 parameter
+      storeTypes.forEach((storeType) => {
+        const valueToLoad = storeType.type == "i64" ? BigInt(expectedValue) : expectedValue;
+        // store value 42 at index
+        exports[`${storeType.type}_store${storeType.suffix}`](index, valueToLoad);
+        // increment index by the width that was stored
+        index += getWasmTypeWidth(storeType.type);
+      });
 
-  index = 0n;  // BigInt for i64 parameter
-  loadTypes.forEach((loadType) => {
-    const expectedValue = 42;
-    // load value from index
-    const result = exports[`${loadType.type}_load${loadType.suffix}`](index);
+      index = 0n;
+      loadTypes.forEach((loadType) => {
+        // load value from index
+        const result = exports[`${loadType.type}_load${loadType.suffix}`](index);
 
-    assert.eq(Number(result), Number(expectedValue));
+        assert.eq(Number(result), Number(expectedValue));
 
-    // read the same adress for signed and unsigned values
-    if (!loadType.suffix.endsWith("_s"))
-      // increment index by the width that was stored
-      index += getWasmTypeWidth(loadType.type);
-  });
+        // read the same adress for signed and unsigned values
+        if (!loadType.suffix.endsWith("_s"))
+          // increment index by the width that was stored
+          index += getWasmTypeWidth(loadType.type);
+      });
+    }
+
+    storeAndLoad(42);
+    // reset
+    storeAndLoad(0);
 }
 
-await assert.asyncTest(test());
+for (let i = 0; i < wasmTestLoopCount; i++)
+    test();

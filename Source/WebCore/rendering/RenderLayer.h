@@ -180,14 +180,13 @@ public:
 
     WEBCORE_EXPORT ~RenderLayer();
 
-    WEBCORE_EXPORT RenderLayerScrollableArea* scrollableArea() const;
+    WEBCORE_EXPORT RenderLayerScrollableArea* NODELETE scrollableArea() const;
     WEBCORE_EXPORT CheckedPtr<RenderLayerScrollableArea> checkedScrollableArea() const;
     WEBCORE_EXPORT RenderLayerScrollableArea* ensureLayerScrollableArea();
 
     String name() const;
 
     inline Page& page() const; // Defined in RenderLayerInlines.h
-    inline Ref<Page> protectedPage() const; // Defined in RenderLayerInlines.h
     RenderLayerModelObject& renderer() const { return m_renderer; }
     RenderBox* renderBox() const { return dynamicDowncast<RenderBox>(renderer()); }
 

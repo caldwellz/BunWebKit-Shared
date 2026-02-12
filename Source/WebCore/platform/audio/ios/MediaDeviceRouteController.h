@@ -30,7 +30,6 @@
 // FIXME: Properly support using WKA in modules.
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wnon-modular-include-in-module"
-#include <WebKitAdditions/MediaDeviceRouteAdditions.h>
 #include <WebKitAdditions/MediaDeviceRouteControllerAdditions.h>
 #pragma clang diagnostic pop
 #include <wtf/AbstractThreadSafeRefCountedAndCanMakeWeakPtr.h>
@@ -38,7 +37,7 @@
 #include <wtf/ThreadSafeWeakPtr.h>
 #include <wtf/Vector.h>
 
-OBJC_CLASS WebMediaDeviceRouteController;
+OBJC_CLASS WebMediaDeviceRouteObserver;
 
 namespace WebCore {
 
@@ -70,10 +69,10 @@ public:
 private:
     MediaDeviceRouteController();
 
-    RetainPtr<WebMediaDeviceRouteController> m_controller;
     ThreadSafeWeakPtr<MediaDeviceRouteControllerClient> m_client;
     Vector<Ref<MediaDeviceRoute>> m_activeRoutes;
 #if HAVE(AVROUTING_FRAMEWORK)
+    RetainPtr<WebMediaDeviceRouteObserver> m_routeObserver;
     RetainPtr<WebMediaDevicePlatformRouteController> m_platformController;
 #endif
 };

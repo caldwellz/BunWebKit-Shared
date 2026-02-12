@@ -85,11 +85,14 @@ String FormAssociatedCustomElement::validationMessage() const
 
 ALWAYS_INLINE static CustomElementFormValue cloneIfIsFormData(CustomElementFormValue&& value)
 {
-    return WTF::switchOn(WTF::move(value), [](RefPtr<DOMFormData> value) -> CustomElementFormValue {
-        return value->clone().ptr();
-    }, [](const auto& value) -> CustomElementFormValue {
-        return value;
-    });
+    return WTF::switchOn(WTF::move(value),
+        [](Ref<DOMFormData>&& value) -> CustomElementFormValue {
+            return value->clone();
+        },
+        [](const auto& value) -> CustomElementFormValue {
+            return value;
+        }
+    );
 }
 
 void FormAssociatedCustomElement::setFormValue(CustomElementFormValue&& submissionValue, std::optional<CustomElementFormValue>&& state)
@@ -117,23 +120,31 @@ bool FormAssociatedCustomElement::appendFormData(DOMFormData& formData)
 {
     ASSERT(m_element->isDefinedCustomElement());
 
-    WTF::switchOn(m_submissionValue, [&](RefPtr<DOMFormData> value) {
-        for (const auto& item : value->items()) {
-            WTF::switchOn(item.data, [&](const String& value) {
-                formData.append(item.name, value);
-            }, [&](RefPtr<File> value) {
-                formData.append(item.name, *value);
-            });
+    WTF::switchOn(m_submissionValue,
+        [&](const Ref<DOMFormData>& value) {
+            for (const auto& item : value->items()) {
+                WTF::switchOn(item.data,
+                    [&](const String& value) {
+                        formData.append(item.name, value);
+                    },
+                    [&](const Ref<File>& value) {
+                        formData.append(item.name, value);
+                    }
+                );
+            }
+        },
+        [&](const String& value) {
+            if (!name().isEmpty())
+                formData.append(name(), value);
+        },
+        [&](const Ref<File>& value) {
+            if (!name().isEmpty())
+                formData.append(name(), value);
+        },
+        [](std::nullptr_t) {
+            // do nothing
         }
-    }, [&](const String& value) {
-        if (!name().isEmpty())
-            formData.append(name(), value);
-    }, [&](RefPtr<File> value) {
-        if (!name().isEmpty())
-            formData.append(name(), *value);
-    }, [](std::nullptr_t) {
-        // do nothing
-    });
+    );
 
     return true;
 }
@@ -163,7 +174,7 @@ void FormAssociatedCustomElement::didChangeForm()
     ASSERT(m_element->isDefinedCustomElement());
     ValidatedFormListedElement::didChangeForm();
     if (!belongsToFormThatIsBeingDestroyed())
-        CustomElementReactionQueue::enqueueFormAssociatedCallbackIfNeeded(asProtectedHTMLElement().get(), protectedForm().get());
+        CustomElementReactionQueue::enqueueFormAssociatedCallbackIfNeeded(asProtectedHTMLElement().get(), protect(form()).get());
 }
 
 void FormAssociatedCustomElement::willUpgrade()
@@ -227,12 +238,10 @@ FormControlState FormAssociatedCustomElement::saveFormControlState() const
 {
     ASSERT(m_element->isDefinedCustomElement());
 
-    FormControlState savedState;
-
     // FIXME: Support File when saving / restoring state.
     // https://bugs.webkit.org/show_bug.cgi?id=249895
     bool didLogMessage = false;
-    auto logUnsupportedFileWarning = [&](RefPtr<File>) {
+    auto logUnsupportedFileWarning = [&](const Ref<File>&) {
         Ref document = asHTMLElement().document();
         if (document->frame() && !didLogMessage) {
             document->addConsoleMessage(MessageSource::JS, MessageLevel::Warning, "File isn't currently supported when saving / restoring state."_s);
@@ -240,24 +249,39 @@ FormControlState FormAssociatedCustomElement::saveFormControlState() const
         }
     };
 
-    WTF::switchOn(m_state, [&](RefPtr<DOMFormData> state) {
-        savedState.reserveInitialCapacity(state->items().size() * 2);
+    return WTF::switchOn(m_state,
+        [&](const Ref<DOMFormData>& state) {
+            FormControlState savedState;
+            savedState.reserveInitialCapacity(state->items().size() * 2);
 
-        for (const auto& item : state->items()) {
-            WTF::switchOn(item.data, [&](const String& value) {
-                savedState.append(item.name);
-                savedState.append(value);
-            }, logUnsupportedFileWarning);
+            for (const auto& item : state->items()) {
+                WTF::switchOn(item.data,
+                    [&](const String& value) {
+                        savedState.append(item.name);
+                        savedState.append(value);
+                    },
+                    [&](const Ref<File>& file) {
+                        logUnsupportedFileWarning(file);
+                    }
+                );
+            }
+
+            savedState.shrinkToFit();
+            return savedState;
+        },
+        [&](const String& state) {
+            FormControlState savedState;
+            savedState.append(state);
+            return savedState;
+        },
+        [](std::nullptr_t) {
+            return FormControlState { };
+        },
+        [&](const Ref<File>& file) {
+            logUnsupportedFileWarning(file);
+            return FormControlState { };
         }
-
-        savedState.shrinkToFit();
-    }, [&](const String& state) {
-        savedState.append(state);
-    }, [](std::nullptr_t) {
-        // do nothing
-    }, logUnsupportedFileWarning);
-
-    return savedState;
+    );
 }
 
 void FormAssociatedCustomElement::restoreFormControlState(const FormControlState& savedState)
@@ -273,7 +297,7 @@ void FormAssociatedCustomElement::restoreFormControlState(const FormControlState
         auto formData = DOMFormData::create(&protect(element->document()).get(), PAL::UTF8Encoding());
         for (size_t i = 0; i < savedState.size(); i += 2)
             formData->append(savedState[i], savedState[i + 1]);
-        restoredState.emplace<RefPtr<DOMFormData>>(formData.ptr());
+        restoredState.emplace<Ref<DOMFormData>>(WTF::move(formData));
     }
 
     CustomElementReactionQueue::enqueueFormStateRestoreCallbackIfNeeded(element.get(), WTF::move(restoredState));

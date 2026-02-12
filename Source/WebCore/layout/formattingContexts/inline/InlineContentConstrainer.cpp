@@ -141,7 +141,7 @@ static bool cannotConstrainInlineItem(const InlineItem& inlineItem)
     // Opaque items are ignored by inline layout and do not affect constraint calculations.
     if (inlineItem.isOpaque())
         return false;
-    if (!inlineItem.layoutBox().isInlineLevelBox())
+    if (!inlineItem.isText() && !inlineItem.isSoftLineBreak() && !inlineItem.layoutBox().isInlineLevelBox())
         return true;
     if (containsTrailingSoftHyphen(inlineItem))
         return true;

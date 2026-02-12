@@ -51,23 +51,27 @@ FileSystemWritableFileStream::FileSystemWritableFileStream(Ref<InternalWritableS
 
 static JSC::JSValue convertChunk(JSC::JSGlobalObject& lexicalGlobalObject, JSDOMGlobalObject& globalObject, const FileSystemWritableFileStream::ChunkType& data)
 {
-    return WTF::switchOn(data, [&](const RefPtr<JSC::ArrayBufferView>& arrayBufferView) {
-        if (!arrayBufferView || arrayBufferView->isDetached())
-            return JSC::jsNull();
-        return toJS<IDLArrayBufferView>(lexicalGlobalObject, globalObject, *arrayBufferView);
-    }, [&](const RefPtr<JSC::ArrayBuffer>& arrayBuffer) {
-        if (!arrayBuffer || arrayBuffer->isDetached())
-            return JSC::jsNull();
-        return toJS<IDLArrayBuffer>(lexicalGlobalObject, globalObject, *arrayBuffer);
-    }, [&](const RefPtr<Blob>& blob) {
-        if (!blob)
-            return JSC::jsNull();
-        return toJS<IDLInterface<Blob>>(lexicalGlobalObject, globalObject, *blob);
-    }, [&](const String& string) {
-        return toJS<IDLDOMString>(lexicalGlobalObject, string);
-    }, [&](const FileSystemWritableFileStream::WriteParams& params) {
-        return toJS<IDLDictionary<FileSystemWritableFileStream::WriteParams>>(lexicalGlobalObject, globalObject, params);
-    });
+    return WTF::switchOn(data,
+        [&](const RefPtr<JSC::ArrayBufferView>& arrayBufferView) {
+            if (!arrayBufferView || arrayBufferView->isDetached())
+                return JSC::jsNull();
+            return toJS<IDLArrayBufferView>(lexicalGlobalObject, globalObject, *arrayBufferView);
+        },
+        [&](const RefPtr<JSC::ArrayBuffer>& arrayBuffer) {
+            if (!arrayBuffer || arrayBuffer->isDetached())
+                return JSC::jsNull();
+            return toJS<IDLArrayBuffer>(lexicalGlobalObject, globalObject, *arrayBuffer);
+        },
+        [&](const Ref<Blob>& blob) {
+            return toJS<IDLInterface<Blob>>(lexicalGlobalObject, globalObject, blob);
+        },
+        [&](const String& string) {
+            return toJS<IDLDOMString>(lexicalGlobalObject, string);
+        },
+        [&](const FileSystemWritableFileStream::WriteParams& params) {
+            return toJS<IDLDictionary<FileSystemWritableFileStream::WriteParams>>(lexicalGlobalObject, globalObject, params);
+        }
+    );
 }
 
 void FileSystemWritableFileStream::write(JSC::JSGlobalObject& lexicalGlobalObject, const ChunkType& data, DOMPromiseDeferred<void>&& promise)

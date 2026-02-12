@@ -40,7 +40,6 @@ inline bool RenderLayer::overlapBoundsIncludeChildren() const { return hasFilter
 inline bool RenderLayer::preserves3D() const { return renderer().style().preserves3D(); }
 inline int RenderLayer::zIndex() const { return renderer().style().usedZIndex().tryValue().value_or(0).value; }
 inline Page& RenderLayer::page() const { return renderer().page(); }
-inline Ref<Page> RenderLayer::protectedPage() const { return renderer().page(); }
 
 #if HAVE(CORE_MATERIAL)
 inline bool RenderLayer::hasAppleVisualEffect() const { return renderer().hasAppleVisualEffect(); }

@@ -94,7 +94,9 @@
 #include <algorithm>
 #include <stdio.h>
 #include <wtf/HexNumber.h>
+#include <wtf/Seconds.h>
 #include <wtf/TZoneMallocInlines.h>
+#include <wtf/WeakRandomNumber.h>
 #include <wtf/text/TextStream.h>
 
 namespace WebCore {
@@ -589,10 +591,10 @@ void RenderObject::clearNeedsLayout(HadSkippedLayout hadSkippedLayout)
 void RenderObject::scheduleLayout(RenderElement* layoutRoot)
 {
     if (auto* renderView = dynamicDowncast<RenderView>(layoutRoot))
-        return renderView->frameView().checkedLayoutContext()->scheduleLayout();
+        return protect(renderView->frameView().layoutContext())->scheduleLayout();
 
     if (layoutRoot && layoutRoot->isRooted())
-        layoutRoot->view().frameView().checkedLayoutContext()->scheduleSubtreeLayout(*layoutRoot);
+        protect(layoutRoot->view().frameView().layoutContext())->scheduleSubtreeLayout(*layoutRoot);
 }
 
 RenderElement* RenderObject::markContainingBlocksForLayout(RenderElement* layoutRoot)
@@ -822,7 +824,7 @@ void RenderObject::collectSelectionGeometries(Vector<SelectionGeometry>& geometr
     }
 
     for (auto& quad : quads)
-        geometries.append(SelectionGeometry(quad, HTMLElement::selectionRenderingBehavior(protectedNode().get()), isHorizontalWritingMode(), checkedView()->pageNumberForBlockProgressionOffset(quad.enclosingBoundingBox().x())));
+        geometries.append(SelectionGeometry(quad, HTMLElement::selectionRenderingBehavior(protect(node()).get()), isHorizontalWritingMode(), checkedView()->pageNumberForBlockProgressionOffset(quad.enclosingBoundingBox().x())));
 }
 
 IntRect RenderObject::absoluteBoundingBoxRect(bool useTransforms, bool* wasFixed) const
@@ -1875,11 +1877,6 @@ Node* RenderObject::nodeForHitTest() const
             node = renderer->element();
     }
     return node;
-}
-
-RefPtr<Node> RenderObject::protectedNodeForHitTest() const
-{
-    return nodeForHitTest();
 }
 
 void RenderObject::updateHitTestResult(HitTestResult& result, const LayoutPoint& point) const
@@ -3137,6 +3134,17 @@ void printLayerTreeForLiveDocuments()
     }
 }
 
+void printAccessibilityTreeForLiveDocumentsAfterDelay()
+{
+    // This is useful when debugging pages with frames and site isolation enabled. If all processes
+    // dump their tree at once, they will interleave in stderr, making it hard to understand.
+    // It's still possible for this to happen with this random delay, but is much less likely.
+    auto randomSeconds = Seconds { static_cast<double>(weakRandomNumber<unsigned>() % 21) };
+    sleep(randomSeconds);
+
+    printAccessibilityTreeForLiveDocuments();
+}
+
 void printAccessibilityTreeForLiveDocuments()
 {
     for (auto& document : Document::allDocuments()) {
@@ -3144,9 +3152,9 @@ void printAccessibilityTreeForLiveDocuments()
             continue;
         if (document->frame()) {
             if (document->frame()->isRootFrame())
-                WTFLogAlways("Accessibility tree for root document %p %s", document.ptr(), document->url().string().utf8().data());
+                WTFLogAlways("\nPID %d: Accessibility tree for root document %p %s", getpid(), document.ptr(), document->url().string().utf8().data());
             else
-                WTFLogAlways("Accessibility tree for non-root document %p %s", document.ptr(), document->url().string().utf8().data());
+                WTFLogAlways("\nPID %d: Accessibility tree for non-root document %p %s", getpid(), document.ptr(), document->url().string().utf8().data());
             dumpAccessibilityTreeToStderr(document.get());
         }
     }

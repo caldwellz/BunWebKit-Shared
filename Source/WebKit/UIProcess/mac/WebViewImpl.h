@@ -37,6 +37,7 @@
 #include "ImageAnalysisUtilities.h"
 #include "PDFPluginIdentifier.h"
 #include "WKLayoutMode.h"
+#include "WebMouseEvent.h"
 #include <WebCore/DOMPasteAccess.h>
 #include <WebCore/FocusDirection.h>
 #include <WebCore/HTMLMediaElementIdentifier.h>
@@ -60,6 +61,10 @@
 #include <wtf/WeakPtr.h>
 #include <wtf/WorkQueue.h>
 #include <wtf/text/WTFString.h>
+
+#if USE(APPLE_INTERNAL_SDK)
+#include <WebKitAdditions/AppKitSPIAdditions.h>
+#endif
 
 OBJC_CLASS NSAccessibilityRemoteUIElement;
 OBJC_CLASS NSImmediateActionGestureRecognizer;
@@ -533,6 +538,7 @@ public:
     NSUInteger accessibilityRemoteChildTokenHash();
     NSUInteger accessibilityUIProcessLocalTokenHash();
     NSArray<NSNumber *> *registeredRemoteAccessibilityPids();
+    NSData *remoteAccessibilityChildToken();
     bool hasRemoteAccessibilityChild();
 
     void updatePrimaryTrackingAreaOptions(NSTrackingAreaOptions);
@@ -675,8 +681,8 @@ public:
     void characterIndexForPoint(NSPoint, void(^)(NSUInteger));
     void typingAttributesWithCompletionHandler(void(^)(NSDictionary<NSString *, id> *));
 
-    NSRect unionRectInVisibleSelectedRange() const;
-    NSRect documentVisibleRect() const;
+    NSRect unionRectInVisibleSelectedRangeInScreen() const;
+    NSRect documentVisibleRectInScreen() const;
 
     bool isContentRichlyEditable() const;
 
@@ -689,8 +695,8 @@ public:
     bool hasFlagsChangedEventMonitor();
 
     void mouseMoved(NSEvent *);
-    void mouseDown(NSEvent *);
-    void mouseUp(NSEvent *);
+    void mouseDown(NSEvent *, WebMouseEventInputSource);
+    void mouseUp(NSEvent *, WebMouseEventInputSource);
     void mouseDragged(NSEvent *);
     void mouseEntered(NSEvent *);
     void mouseExited(NSEvent *);
@@ -833,6 +839,12 @@ public:
     void setClientImplicitlyRequestedTopScrollPocket();
 #endif
 
+#if ENABLE(BANNER_VIEW_OVERLAYS)
+void setBannerView(WKBannerView *);
+WKBannerView *bannerView() const { return m_bannerView.get(); }
+void applyBannerViewOverlayHeight(CGFloat, bool);
+#endif
+
 #if ENABLE(VIDEO)
     void showCaptionDisplaySettings(WebCore::HTMLMediaElementIdentifier, const WebCore::ResolvedCaptionDisplaySettingsOptions&, CompletionHandler<void(Expected<void, WebCore::ExceptionData>&&)>&&);
 #endif
@@ -888,6 +900,8 @@ private:
 #endif // ENABLE(WEB_PLAYBACK_CONTROLS_MANAGER)
 #endif // HAVE(TOUCH_BAR)
 
+    NSRect convertFromViewToScreen(NSRect rectInView) const;
+
     bool supportsArbitraryLayoutModes() const;
     float intrinsicDeviceScaleFactor() const;
 
@@ -903,14 +917,14 @@ private:
     Vector<WebCore::KeypressCommand> collectKeyboardLayoutCommandsForEvent(NSEvent *);
     void interpretKeyEvent(NSEvent *, void(^completionHandler)(BOOL handled, const Vector<WebCore::KeypressCommand>&));
 
-    void nativeMouseEventHandler(NSEvent *);
-    void nativeMouseEventHandlerInternal(NSEvent *);
-    
+    void nativeMouseEventHandler(NSEvent *, WebMouseEventInputSource);
+    void nativeMouseEventHandlerInternal(NSEvent *, WebMouseEventInputSource);
+
     void scheduleMouseDidMoveOverElement(NSEvent *);
 
     void mouseMovedInternal(NSEvent *);
-    void mouseDownInternal(NSEvent *);
-    void mouseUpInternal(NSEvent *);
+    void mouseDownInternal(NSEvent *, WebMouseEventInputSource);
+    void mouseUpInternal(NSEvent *, WebMouseEventInputSource);
     void mouseDraggedInternal(NSEvent *);
 
     void handleProcessSwapOrExit();
@@ -1131,6 +1145,10 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     bool m_clientImplicitlyRequestedTopScrollPocket { false };
 #endif
 
+#if ENABLE(BANNER_VIEW_OVERLAYS)
+    RetainPtr<WKBannerView> m_bannerView;
+#endif
+
 #if HAVE(INLINE_PREDICTIONS)
     bool m_inlinePredictionsEnabled { false };
 #endif
@@ -1140,7 +1158,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     RetainPtr<WKAppKitGestureController> m_appKitGestureController;
     RetainPtr<WKTextSelectionController> m_textSelectionController;
 #endif
-};
+} SWIFT_UNSAFE_REFERENCE;
 
 } // namespace WebKit
 

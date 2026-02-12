@@ -170,7 +170,6 @@ private:
     void writeOriginToFileIfNecessary(const WebCore::ClientOrigin&, StorageAreaBase* = nullptr);
     enum class ShouldWriteOriginFile : bool { No, Yes };
     OriginStorageManager& originStorageManager(const WebCore::ClientOrigin&, ShouldWriteOriginFile = ShouldWriteOriginFile::Yes);
-    CheckedRef<OriginStorageManager> checkedOriginStorageManager(const WebCore::ClientOrigin& origin, ShouldWriteOriginFile shouldWriteOriginFile = ShouldWriteOriginFile::Yes) { return originStorageManager(origin, shouldWriteOriginFile); }
     bool removeOriginStorageManagerIfPossible(const WebCore::ClientOrigin&);
 
     void forEachOriginDirectory(NOESCAPE const Function<void(const String&)>&);

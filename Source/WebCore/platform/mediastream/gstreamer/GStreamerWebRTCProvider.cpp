@@ -24,8 +24,8 @@
 #include "GStreamerWebRTCProvider.h"
 
 #include "ContentType.h"
+#include "GStreamerCommon.h"
 #include "GStreamerRegistryScanner.h"
-#include "NotImplemented.h"
 #include "PlatformMediaCapabilitiesDecodingInfo.h"
 #include "PlatformMediaCapabilitiesEncodingInfo.h"
 #include "PlatformMediaDecodingConfiguration.h"
@@ -43,6 +43,10 @@ UniqueRef<WebRTCProvider> WebRTCProvider::create()
 
 bool WebRTCProvider::webRTCAvailable()
 {
+    if (!isGStreamerPluginAvailable("webrtc"_s)) {
+        g_printerr("GstWebRTC plugin not found. Make sure to install gst-plugins-bad >= 1.20 with the webrtc plugin enabled.\n");
+        return false;
+    }
     return true;
 }
 
@@ -63,6 +67,11 @@ std::optional<RTCRtpCapabilities> GStreamerWebRTCProvider::senderCapabilities(co
     if (kind == "video"_s)
         return videoEncodingCapabilities();
     return { };
+}
+
+bool GStreamerWebRTCProvider::isWebCoreGStreamerWebRTCProvider() const
+{
+    return true;
 }
 
 void GStreamerWebRTCProvider::initializeAudioEncodingCapabilities()

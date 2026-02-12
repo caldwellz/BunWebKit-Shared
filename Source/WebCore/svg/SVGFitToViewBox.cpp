@@ -123,26 +123,26 @@ template<typename CharacterType> std::optional<FloatRect> SVGFitToViewBox::parse
         Ref document = Ref { m_viewBox }->contextElement()->document();
 
         if (!x || !y || !width || !height) {
-            document->checkedSVGExtensions()->reportWarning(makeString("Problem parsing viewBox=\""_s, stringToParse, "\""_s));
+            protect(document->svgExtensions())->reportWarning(makeString("Problem parsing viewBox=\""_s, stringToParse, "\""_s));
             return std::nullopt;
         }
 
         // Check that width is positive.
         if (*width < 0.0) {
-            document->checkedSVGExtensions()->reportError("A negative value for ViewBox width is not allowed"_s);
+            protect(document->svgExtensions())->reportError("A negative value for ViewBox width is not allowed"_s);
             return std::nullopt;
         }
 
         // Check that height is positive.
         if (*height < 0.0) {
-            document->checkedSVGExtensions()->reportError("A negative value for ViewBox height is not allowed"_s);
+            protect(document->svgExtensions())->reportError("A negative value for ViewBox height is not allowed"_s);
             return std::nullopt;
         }
 
         // Nothing should come after the last, fourth number.
         skipOptionalSVGSpaces(buffer);
         if (buffer.hasCharactersRemaining()) {
-            document->checkedSVGExtensions()->reportWarning(makeString("Problem parsing viewBox=\""_s, stringToParse, "\""_s));
+            protect(document->svgExtensions())->reportWarning(makeString("Problem parsing viewBox=\""_s, stringToParse, "\""_s));
             return std::nullopt;
         }
     }

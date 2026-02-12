@@ -122,7 +122,6 @@ public:
     const RenderStyle* rootElementRenderStyle() const { return m_context.rootElementStyle; }
 
     const Document& document() const { return *m_context.document; }
-    Ref<const Document> protectedDocument() const { return *m_context.document; }
     const Element* element() const { return m_context.element.get(); }
 
     inline void setZoom(Zoom);
@@ -141,8 +140,8 @@ public:
 
     float zoomWithTextZoomFactor();
 
-    bool useSVGZoomRules() const;
-    bool useSVGZoomRulesForLength() const;
+    bool NODELETE useSVGZoomRules() const;
+    bool NODELETE useSVGZoomRulesForLength() const;
 
     ScopeOrdinal styleScopeOrdinal() const { return m_currentProperty->styleScopeOrdinal; }
 
@@ -160,13 +159,13 @@ public:
         return m_currentProperty && m_currentProperty->origin == PropertyCascade::Origin::Author;
     }
 
-    CSSPropertyID cssPropertyID() const;
+    CSSPropertyID NODELETE cssPropertyID() const;
 
-    bool isCurrentPropertyInvalidAtComputedValueTime() const;
-    void setCurrentPropertyInvalidAtComputedValueTime();
+    bool NODELETE isCurrentPropertyInvalidAtComputedValueTime() const;
+    void NODELETE setCurrentPropertyInvalidAtComputedValueTime();
 
-    void setUsesViewportUnits();
-    void setUsesContainerUnits();
+    void NODELETE setUsesViewportUnits();
+    void NODELETE setUsesContainerUnits();
 
     double lookupCSSRandomBaseValue(const CSSCalc::RandomCachingKey&, std::optional<CSS::Keyword::ElementShared>) const;
 

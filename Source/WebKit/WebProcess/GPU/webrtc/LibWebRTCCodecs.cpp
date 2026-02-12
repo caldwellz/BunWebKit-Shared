@@ -696,7 +696,7 @@ template<typename Frame> RefPtr<LibWebRTCCodecs::FramePromise> LibWebRTCCodecs::
     if (!buffer)
         return nullptr;
 
-    SharedVideoFrame sharedVideoFrame { mediaTime, false, rotation, WTF::move(*buffer) };
+    SharedVideoFrame sharedVideoFrame { mediaTime, false, rotation, { }, WTF::move(*buffer) };
     auto promise = Ref { *encoder.connection }->sendWithPromisedReply(Messages::LibWebRTCCodecsProxy::EncodeFrame { encoder.identifier, WTF::move(sharedVideoFrame), timestamp, duration, shouldEncodeAsKeyFrame });
     return promise->whenSettled(workQueue(), [] (auto&& result) mutable {
         if (!result)

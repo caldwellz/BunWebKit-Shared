@@ -82,7 +82,7 @@ Ref<CSSUnparsedValue> CSSUnparsedValue::create(CSSParserTokenRange tokens)
                     // No fallback
                     auto variableReference = CSSOMVariableReferenceValue::create(identToken.value().toString());
                     ASSERT(!variableReference.hasException());
-                    segmentStack.last().append(CSSUnparsedSegment { RefPtr<CSSOMVariableReferenceValue> { variableReference.releaseReturnValue() } });
+                    segmentStack.last().append(CSSUnparsedSegment { variableReference.releaseReturnValue() });
                     tokens.consume();
                 } else
                     ASSERT_NOT_REACHED();
@@ -124,11 +124,14 @@ CSSUnparsedValue::~CSSUnparsedValue() = default;
 void CSSUnparsedValue::serialize(StringBuilder& builder, OptionSet<SerializationArguments> arguments) const
 {
     for (auto& segment : m_segments) {
-        WTF::visit(WTF::makeVisitor([&] (const String& value) {
-            builder.append(value);
-        }, [&] (const RefPtr<CSSOMVariableReferenceValue>& value) {
-            value->serialize(builder, arguments);
-        }), segment);
+        WTF::switchOn(segment,
+            [&](const String& value) {
+                builder.append(value);
+            },
+            [&](const Ref<CSSOMVariableReferenceValue>& value) {
+                value->serialize(builder, arguments);
+            }
+        );
     }
 }
 

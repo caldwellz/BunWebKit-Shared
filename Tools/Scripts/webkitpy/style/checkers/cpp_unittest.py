@@ -6850,6 +6850,12 @@ class WebKitStyleTest(CppStyleTestBase):
         self.assert_lint('postTask([foo = protect(m_foo)] {', '', 'foo.cpp')
         self.assert_lint('postTask([foo = protect(m_foo), bar] {', '', 'foo.cpp')
 
+        # Nested function calls - should NOT warn (protect/protectedFoo/checkedFoo is an argument, not the direct initializer)
+        self.assert_lint('if (RefPtr bar = someFunc(protect(foo())))', '', 'foo.cpp')
+        # FIXME: Remove protectedFoo() and checkedFoo() test cases once all these getters are removed from WebKit.
+        self.assert_lint('if (RefPtr document = viewportDocumentForFrame(protectedMainFrame()))', '', 'foo.cpp')
+        self.assert_lint('if (RefPtr foo = someFunction(checkedBar()))', '', 'foo.cpp')
+
     def test_ctype_fucntion(self):
         self.assert_lint(
             'int i = isascii(8);',

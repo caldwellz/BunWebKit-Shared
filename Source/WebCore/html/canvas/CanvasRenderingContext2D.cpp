@@ -234,7 +234,7 @@ void CanvasRenderingContext2D::setFontWithoutUpdatingStyle(const String& newFont
 
 inline TextDirection CanvasRenderingContext2D::toTextDirection(Direction direction, const RenderStyle** computedStyle) const
 {
-    auto* style = computedStyle || direction == Direction::Inherit ? protectedCanvas()->existingComputedStyle() : nullptr;
+    auto* style = computedStyle || direction == Direction::Inherit ? protect(canvas())->existingComputedStyle() : nullptr;
     if (computedStyle)
         *computedStyle = style;
     switch (direction) {

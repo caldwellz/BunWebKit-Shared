@@ -143,7 +143,8 @@ static void setEnableHighAccuracy(WKGeolocationManagerRef geolocationManager, bo
     // This is useful for WebKitTestRunner to provide a dummy geolocation provider. It is also used by certain apps to deny all
     // geolocation authorization as a way to disable support for geolocation.
     Ref protectedProcessPool { processPool };
-    if (wrapper(protectedProcessPool.get())._coreLocationProvider) {
+    RetainPtr wrappedProcessPool = wrapper(protectedProcessPool.get());
+    if (wrappedProcessPool.get()._coreLocationProvider) {
         _geolocationManager = protectedProcessPool->supplement<WebKit::WebGeolocationManagerProxy>();
         WKGeolocationProviderV1 providerCallback = {
             { 1, self },
@@ -152,7 +153,7 @@ static void setEnableHighAccuracy(WKGeolocationManagerRef geolocationManager, bo
             setEnableHighAccuracy
         };
         WKGeolocationManagerSetProvider(toAPI(_geolocationManager.get()), &providerCallback.base);
-        _coreLocationProvider = wrapper(protectedProcessPool.get())._coreLocationProvider;
+        _coreLocationProvider = wrappedProcessPool.get()._coreLocationProvider;
         [_coreLocationProvider setListener:self];
     }
     return self;

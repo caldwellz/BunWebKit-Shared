@@ -245,7 +245,7 @@ LayoutUnit RenderView::clientLogicalWidthForFixedPosition() const
 {
     Ref frameView = this->frameView();
     if (frameView->fixedElementsLayoutRelativeToFrame())
-        return LayoutUnit((isHorizontalWritingMode() ? frameView->visibleWidth() : frameView->visibleHeight()) / frameView->protectedFrame()->frameScaleFactor());
+        return LayoutUnit((isHorizontalWritingMode() ? frameView->visibleWidth() : frameView->visibleHeight()) / protect(frameView->frame())->frameScaleFactor());
 
 #if PLATFORM(IOS_FAMILY)
     if (frameView->useCustomFixedPositionLayoutRect())
@@ -262,7 +262,7 @@ LayoutUnit RenderView::clientLogicalHeightForFixedPosition() const
 {
     Ref frameView = this->frameView();
     if (frameView->fixedElementsLayoutRelativeToFrame())
-        return LayoutUnit((isHorizontalWritingMode() ? frameView->visibleHeight() : frameView->visibleWidth()) / frameView->protectedFrame()->frameScaleFactor());
+        return LayoutUnit((isHorizontalWritingMode() ? frameView->visibleHeight() : frameView->visibleWidth()) / protect(frameView->frame())->frameScaleFactor());
 
 #if PLATFORM(IOS_FAMILY)
     if (frameView->useCustomFixedPositionLayoutRect())
@@ -537,7 +537,7 @@ void RenderView::repaintViewRectangle(const LayoutRect& repaintRect)
             // left scrollbar (if one exists).
             Ref frameView = this->frameView();
             if (frameView->verticalScrollbar() && frameView->shouldPlaceVerticalScrollbarOnLeft())
-                adjustedRect.move(LayoutSize(frameView->protectedVerticalScrollbar()->occupiedWidth(), 0));
+                adjustedRect.move(LayoutSize(frameView->verticalScrollbar()->occupiedWidth(), 0));
 
             ownerBox->repaintRectangle(adjustedRect);
         }
@@ -599,7 +599,7 @@ void RenderView::flushAccumulatedRepaintRegion() const
         // left scrollbar (if one exists).
         Ref frameView = this->frameView();
         if (frameView->verticalScrollbar() && frameView->shouldPlaceVerticalScrollbarOnLeft())
-            rectOffsetLayoutSize += LayoutSize { frameView->protectedVerticalScrollbar()->occupiedWidth(), 0 };
+            rectOffsetLayoutSize += LayoutSize { frameView->verticalScrollbar()->occupiedWidth(), 0 };
 
         rectOffset = roundedIntSize(rectOffsetLayoutSize);
     }
@@ -681,7 +681,7 @@ bool RenderView::shouldUsePrintingLayout() const
 {
     if (!printing())
         return false;
-    return frameView().protectedFrame()->shouldUsePrintingLayout();
+    return protect(frameView().frame())->shouldUsePrintingLayout();
 }
 
 LayoutRect RenderView::viewRect() const

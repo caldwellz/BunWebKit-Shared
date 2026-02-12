@@ -30,6 +30,7 @@
 
 namespace WebCore {
 
+class HTMLOptionElement;
 class HTMLSelectElement;
 class RenderSelectFallbackButton;
 
@@ -40,10 +41,7 @@ public:
     static Ref<SelectFallbackButtonElement> create(Document&);
 
     HTMLSelectElement& selectElement() const;
-    void updateText();
-#if !PLATFORM(COCOA)
-    void setTextFromOption(int optionIndex);
-#endif
+    void updateText(HTMLOptionElement* = nullptr, int optionIndex = -1);
 
 private:
     explicit SelectFallbackButtonElement(Document&);

@@ -66,7 +66,7 @@ RefPtr<StyleImage> CSSImageSetValue::createStyleImage(const Style::BuilderState&
 
     Vector<ImageWithScale> images(length, [&](size_t i) {
         RefPtr<const CSSImageSetOptionValue> option = downcast<CSSImageSetOptionValue>(item(i));
-        return ImageWithScale { state.createStyleImage(option->image()), option->protectedResolution()->resolveAsResolution<float>(state.cssToLengthConversionData()), option->type() };
+        return ImageWithScale { state.createStyleImage(option->image()), protect(option->resolution())->resolveAsResolution<float>(state.cssToLengthConversionData()), option->type() };
     });
 
     // Sort the images so that they are stored in order from lowest resolution to highest.

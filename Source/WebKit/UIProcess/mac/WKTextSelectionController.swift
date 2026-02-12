@@ -27,6 +27,7 @@ import Foundation
 internal import WebKit_Internal
 import AppKit
 internal import WebCore_Private
+private import CxxStdlib
 
 @objc
 @implementation
@@ -62,8 +63,13 @@ extension WKTextSelectionController {
 @objc(NSTextSelectionManagerDelegate)
 @implementation
 extension WKTextSelectionController {
+    // Chosen to match the rest of the system.
+    private static let nearCaretDistance: Double = 40
+
     @objc(isTextSelectedAtPoint:)
     func isTextSelected(at point: NSPoint) -> Bool {
+        // The `point` location is relative to the view.
+
         // FIXME: Address warning "Cannot infer ownership of foreign reference value returned by 'get()'"
         guard let page = view?._protectedPage().get() else {
             return false
@@ -118,35 +124,100 @@ extension WKTextSelectionController {
 
     @objc(handleClickAtPoint:)
     func handleClick(at point: NSPoint) {
-        guard let page = view?._protectedPage().get() else {
+        Task.immediate {
+            await handleClickInternal(at: point)
+        }
+    }
+
+    @MainActor
+    private func handleClickInternal(at point: NSPoint) async {
+        // The `point` location is relative to the view.
+
+        guard let view, let page = view._protectedPage().get() else {
             return
         }
 
         Logger.viewGestures.log("[pageProxyID=\(page.logIdentifier())] Handling click at point \(point.debugDescription)...")
 
-        Task.immediate {
-            // Move the insertion point to the nearest word granularity boundary.
-
-            await page.selectWithGesture(
-                at: WebCore.IntPoint(point),
-                type: .OneFingerTap,
-                state: .Ended,
-                isInteractingWithFocusedElement: true, // FIXME: Properly handle the case where this isn't actually true.
-            )
-
+        defer {
             Logger.viewGestures.log("[pageProxyID=\(page.logIdentifier())] Done handling click.")
         }
 
-        // FIXME: If the click was near where the selection was, and the selection did not change, show context menu.
+        let previousState = unsafe page.editorState
+        let previousVisualData = unsafe Optional(fromCxx: previousState.visualData)
+
+        // Move the insertion point to the nearest word granularity boundary.
+
+        await page.selectWithGesture(
+            at: WebCore.IntPoint(point),
+            type: .OneFingerTap,
+            state: .Ended,
+            isInteractingWithFocusedElement: true, // FIXME: Properly handle the case where this isn't actually true.
+        )
+
+        // If the click was near where the caret selection was, or the selection did not change, show context menu.
+
+        let newState = unsafe page.editorState
+        let newVisualData = unsafe Optional(fromCxx: newState.visualData)
+
+        guard let previousVisualData = unsafe previousVisualData, let newVisualData = unsafe newVisualData else {
+            return
+        }
+
+        // FIXME: Reduce duplication of this logic.
+
+        let distance = unsafe CGRect(previousVisualData.caretRectAtStart).distance(to: point)
+        let clickLocationIsNearCaret = unsafe !previousState.selectionIsRange && distance < Self.nearCaretDistance
+        let caretLocationIsSame = unsafe previousVisualData.caretRectAtStart == newVisualData.caretRectAtStart
+
+        Logger.viewGestures.log(
+            "[pageProxyID=\(page.logIdentifier())] Click near insertion point: \(clickLocationIsNearCaret); Caret location is same: \(caretLocationIsSame)"
+        )
+
+        if clickLocationIsNearCaret || caretLocationIsSame {
+            let pointInGlobalCoordinateSpace = view.convert(point, to: nil)
+            showContextMenu(at: pointInGlobalCoordinateSpace)
+        }
     }
 
     @objc(showContextMenuAtPoint:)
     func showContextMenu(at point: NSPoint) {
-        guard let page = view?._protectedPage().get() else {
+        // The `point` location is relative to the window.
+
+        guard let page = view?._protectedPage().get(), let impl = unsafe view?._impl() else {
             return
         }
 
         Logger.viewGestures.log("[pageProxyID=\(page.logIdentifier())] Showing context menu at point \(point.debugDescription)...")
+
+        let timestamp = GetCurrentEventTime()
+        let windowNumber = unsafe impl.windowNumber()
+
+        let mouseDown = NSEvent.mouseEvent(
+            with: .rightMouseDown,
+            location: point,
+            modifierFlags: [],
+            timestamp: timestamp,
+            windowNumber: windowNumber,
+            context: nil,
+            eventNumber: 0,
+            clickCount: 1,
+            pressure: 1
+        )
+        let mouseUp = NSEvent.mouseEvent(
+            with: .rightMouseUp,
+            location: point,
+            modifierFlags: [],
+            timestamp: timestamp,
+            windowNumber: windowNumber,
+            context: nil,
+            eventNumber: 0,
+            clickCount: 1,
+            pressure: 0
+        )
+
+        unsafe impl.mouseDown(mouseDown, .Automation)
+        unsafe impl.mouseUp(mouseUp, .Automation)
     }
 
     @objc(dragSelectionWithGesture:completionHandler:)

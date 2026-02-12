@@ -28,6 +28,7 @@
 
 #include "IntlNumberFormatInlines.h"
 #include "IntlObjectInlines.h"
+#include "IntlPartObject.h"
 #include "IteratorOperations.h"
 #include "JSCInlines.h"
 #include "ObjectConstructor.h"
@@ -759,10 +760,7 @@ JSValue IntlDurationFormat::formatToParts(JSGlobalObject* globalObject, ISO8601:
     auto literalString = jsNontrivialString(vm, "literal"_s);
 
     auto createPart = [&](JSString* type, JSString* value) {
-        JSObject* part = constructEmptyObject(globalObject);
-        part->putDirect(vm, vm.propertyNames->type, type);
-        part->putDirect(vm, vm.propertyNames->value, value);
-        return part;
+        return createIntlPartObject(globalObject, type, value);
     };
 
     auto pushElements = [&](JSArray* parts, unsigned elementIndex) -> void {

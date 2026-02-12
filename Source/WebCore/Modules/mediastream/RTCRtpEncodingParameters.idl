@@ -1,5 +1,5 @@
 /*
-* Copyright (C) 2018 Apple Inc. All rights reserved.
+* Copyright (C) 2018-2026 Apple Inc. All rights reserved.
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions
@@ -34,8 +34,7 @@
 
     boolean active = true;
     unsigned long maxBitrate;
-    // FIXME: `maxFramerate` should be of type `double`.
-    unsigned long maxFramerate;
+    double maxFramerate;
     double scaleResolutionDownBy;
 
     RTCPriorityType priority = "low";

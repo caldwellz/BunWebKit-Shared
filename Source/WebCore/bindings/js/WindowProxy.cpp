@@ -144,7 +144,7 @@ JSWindowProxy& WindowProxy::createJSWindowProxyWithInitializedScript(DOMWrapperW
     JSLockHolder lock(world.vm());
     auto& windowProxy = createJSWindowProxy(world);
     if (RefPtr localFrame = dynamicDowncast<LocalFrame>(*m_frame))
-        localFrame->checkedScript()->initScriptForWindowProxy(windowProxy);
+        protect(localFrame->script())->initScriptForWindowProxy(windowProxy);
     return windowProxy;
 }
 

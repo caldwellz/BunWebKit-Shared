@@ -164,6 +164,11 @@ class WebKit::WebTouchEvent : WebKit::WebEvent {
     TwoFingerTap
 };
 
+[CustomHeader] enum class WebKit::WebMouseEventInputSource : uint8_t {
+    Hardware,
+    Automation,
+};
+
 enum class WebKit::GestureWasCancelled : bool;
 
 class WebKit::WebMouseEvent : WebKit::WebEvent {
@@ -176,6 +181,7 @@ class WebKit::WebMouseEvent : WebKit::WebEvent {
     float deltaZ();
     int32_t clickCount();
     double force();
+    WebKit::WebMouseEventInputSource inputSource();
     WebKit::WebMouseEventSyntheticClickType syntheticClickType();
 #if PLATFORM(MAC)
     int32_t eventNumber();

@@ -1,6 +1,0 @@
-[ iOS ] UIProcess/ios/ViewGestureControllerIOS.mm
-[ iOS ] UIProcess/ios/fullscreen/WKFullScreenViewController.mm
-[ iOS ] WebProcess/GPU/graphics/RemoteGraphicsContextProxy.cpp
-[ iOS ] WebProcess/Plugins/PDF/WKAccessibilityPDFDocumentObject.mm
-[ iOS ] WebProcess/WebPage/WebPage.cpp
-[ iOS ] WebProcess/WebPage/ios/WebPageIOS.mm

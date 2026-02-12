@@ -555,31 +555,31 @@ ExceptionOr<void> Node::appendChild(Node& newChild)
     return Exception { ExceptionCode::HierarchyRequestError };
 }
 
-static HashSet<RefPtr<Node>> nodeSetPreTransformedFromNodeOrStringVector(const FixedVector<NodeOrString>& vector)
+static HashSet<Ref<Node>> nodeSetPreTransformedFromNodeOrStringVector(const FixedVector<NodeOrString>& vector)
 {
-    HashSet<RefPtr<Node>> nodeSet;
+    HashSet<Ref<Node>> nodeSet;
     for (const auto& variant : vector) {
         WTF::switchOn(variant,
-            [&] (const RefPtr<Node>& node) { nodeSet.add(const_cast<Node*>(node.get())); },
-            [] (const String&) { }
+            [&](const Ref<Node>& node) { nodeSet.add(const_cast<Ref<Node>&>(node)); },
+            [](const String&) { }
         );
     }
     return nodeSet;
 }
 
-static RefPtr<Node> firstPrecedingSiblingNotInNodeSet(Node& context, const HashSet<RefPtr<Node>>& nodeSet)
+static RefPtr<Node> firstPrecedingSiblingNotInNodeSet(Node& context, const HashSet<Ref<Node>>& nodeSet)
 {
     for (auto* sibling = context.previousSibling(); sibling; sibling = sibling->previousSibling()) {
-        if (!nodeSet.contains(sibling))
+        if (!nodeSet.contains(*sibling))
             return sibling;
     }
     return nullptr;
 }
 
-static RefPtr<Node> firstFollowingSiblingNotInNodeSet(Node& context, const HashSet<RefPtr<Node>>& nodeSet)
+static RefPtr<Node> firstFollowingSiblingNotInNodeSet(Node& context, const HashSet<Ref<Node>>& nodeSet)
 {
     for (auto* sibling = context.nextSibling(); sibling; sibling = sibling->nextSibling()) {
-        if (!nodeSet.contains(sibling))
+        if (!nodeSet.contains(*sibling))
             return sibling;
     }
     return nullptr;
@@ -594,7 +594,7 @@ ExceptionOr<RefPtr<Node>> Node::convertNodesOrStringsIntoNode(FixedVector<NodeOr
     Ref document = this->document();
     auto nodes = WTF::map(WTF::move(nodeOrStringVector), [&](auto&& variant) -> Ref<Node> {
         return WTF::switchOn(WTF::move(variant),
-            [&](RefPtr<Node>&& node) { return node.releaseNonNull(); },
+            [&](Ref<Node>&& node) { return node; },
             [&](String&& string) -> Ref<Node> { return Text::create(document, WTF::move(string)); }
         );
     });
@@ -626,8 +626,8 @@ ExceptionOr<NodeVector> Node::convertNodesOrStringsIntoNodeVector(FixedVector<No
             continue;
         }
 
-        ASSERT(std::holds_alternative<RefPtr<Node>>(variant));
-        RefPtr node = WTF::move(std::get<RefPtr<Node>>(variant));
+        ASSERT(std::holds_alternative<Ref<Node>>(variant));
+        RefPtr node = WTF::move(std::get<Ref<Node>>(variant));
         ASSERT(node);
         if (RefPtr fragment = dynamicDowncast<DocumentFragment>(node.get()); fragment) [[unlikely]] {
             for (RefPtr child = fragment->firstChild(); child; child = child->nextSibling())
@@ -2063,7 +2063,7 @@ static void showSubTreeAcrossFrame(const Node* node, const Node* markedNode, con
     node->showNode();
     if (!node->isShadowRoot()) {
         if (auto* frameOwner = dynamicDowncast<HTMLFrameOwnerElement>(node))
-            showSubTreeAcrossFrame(frameOwner->protectedContentDocument().get(), markedNode, makeString(indent, '\t'));
+            showSubTreeAcrossFrame(protect(frameOwner->contentDocument()).get(), markedNode, makeString(indent, '\t'));
         if (RefPtr shadowRoot = node->shadowRoot())
             showSubTreeAcrossFrame(shadowRoot.get(), markedNode, makeString(indent, '\t'));
     }

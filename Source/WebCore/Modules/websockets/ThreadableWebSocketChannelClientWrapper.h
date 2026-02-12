@@ -49,7 +49,7 @@ class ThreadableWebSocketChannelClientWrapper : public ThreadSafeRefCountedAndCa
 public:
     static Ref<ThreadableWebSocketChannelClientWrapper> create(ScriptExecutionContext&, WebSocketChannelClient&);
 
-    WorkerThreadableWebSocketChannel::Peer* peer() const;
+    WorkerThreadableWebSocketChannel::Peer* NODELETE peer() const;
     void didCreateWebSocketChannel(Ref<WorkerThreadableWebSocketChannel::Peer>&&);
     void clearPeer();
 

@@ -98,11 +98,12 @@ using JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsD
 
 /* Hash table */
 
-static const struct CompactHashIndex JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsTableIndex[4] = {
+static const struct CompactHashIndex JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsTableIndex[5] = {
+    { -1, -1 },
+    { 0, 4 },
+    { -1, -1 },
     { -1, -1 },
     { 1, -1 },
-    { -1, -1 },
-    { 0, -1 },
 };
 
 
@@ -417,7 +418,7 @@ void JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltInsOw
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns = static_cast<JSTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns->protectedWrapped().ptr(), jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns);
+    uncacheWrapper(world, protect(jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns->wrapped()).ptr(), jsTestNamedSetterWithLegacyUnforgeablePropertiesAndLegacyOverrideBuiltIns);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

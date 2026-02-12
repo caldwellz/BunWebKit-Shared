@@ -152,6 +152,8 @@ set(JavaScriptCore_OBJECT_LUT_SOURCES
     wasm/js/WebAssemblyModulePrototype.cpp
     wasm/js/WebAssemblyRuntimeErrorConstructor.cpp
     wasm/js/WebAssemblyRuntimeErrorPrototype.cpp
+    wasm/js/WebAssemblySuspendErrorConstructor.cpp
+    wasm/js/WebAssemblySuspendErrorPrototype.cpp
     wasm/js/WebAssemblyStructConstructor.cpp
     wasm/js/WebAssemblyStructPrototype.cpp
     wasm/js/WebAssemblyTableConstructor.cpp
@@ -1216,6 +1218,7 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/ErrorPrototype.h
     runtime/ErrorPrototypeInlines.h
     runtime/ErrorType.h
+    runtime/EvacuatedStack.h
     runtime/EvalExecutable.h
     runtime/EvalExecutableInlines.h
     runtime/Exception.h
@@ -1558,7 +1561,7 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     runtime/OrderedHashTableHelper.h
     runtime/PageCount.h
     runtime/ParseInt.h
-    runtime/PredictionFileCreatingFuzzerAgent.h
+    runtime/PinballCompletion.h
     runtime/PrivateFieldPutKind.h
     runtime/PrivateName.h
     runtime/ProfilerSupport.h
@@ -1864,8 +1867,8 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     wasm/js/JSWebAssemblyLinkError.h
     wasm/js/JSWebAssemblyMemory.h
     wasm/js/JSWebAssemblyModule.h
-    wasm/js/JSWebAssemblyRuntimeError.h
-    wasm/js/JSWebAssemblyStruct.h
+    wasm/js/WebAssemblyPromising.h
+    wasm/js/WebAssemblySuspending.h
     wasm/js/JSWebAssemblyTable.h
     wasm/js/JSWebAssemblyTag.h
     wasm/js/WasmToJS.h
@@ -1893,14 +1896,8 @@ set(JavaScriptCore_PRIVATE_FRAMEWORK_HEADERS
     wasm/js/WebAssemblyModuleConstructor.h
     wasm/js/WebAssemblyModulePrototype.h
     wasm/js/WebAssemblyModuleRecord.h
-    wasm/js/WebAssemblyRuntimeErrorConstructor.h
-    wasm/js/WebAssemblyRuntimeErrorPrototype.h
-    wasm/js/WebAssemblyStructConstructor.h
-    wasm/js/WebAssemblyStructPrototype.h
-    wasm/js/WebAssemblyTableConstructor.h
-    wasm/js/WebAssemblyTablePrototype.h
-    wasm/js/WebAssemblyTagConstructor.h
-    wasm/js/WebAssemblyTagPrototype.h
+    wasm/js/WebAssemblySuspendingConstructor.h
+    wasm/js/WebAssemblySuspendingPrototype.h
     wasm/js/WebAssemblyWrapperFunction.h
 
     yarr/RegularExpression.h

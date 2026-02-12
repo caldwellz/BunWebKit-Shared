@@ -117,13 +117,13 @@ public:
         }
 
         auto resultValue = result.releaseReturnValue();
-        if (!std::holds_alternative<RefPtr<IDBDatabase>>(resultValue)) {
+        if (!std::holds_alternative<Ref<IDBDatabase>>(resultValue)) {
             m_executableWithDatabase->protectedRequestCallback()->sendFailure("Unexpected result type."_s);
             return;
         }
 
-        auto databaseResult = std::get<RefPtr<IDBDatabase>>(resultValue);
-        m_executableWithDatabase->execute(*databaseResult);
+        Ref databaseResult = std::get<Ref<IDBDatabase>>(resultValue);
+        m_executableWithDatabase->execute(databaseResult);
         databaseResult->close();
     }
 
@@ -359,12 +359,12 @@ public:
         }
         
         auto resultValue = result.releaseReturnValue();
-        if (!std::holds_alternative<RefPtr<IDBCursor>>(resultValue)) {
+        if (!std::holds_alternative<Ref<IDBCursor>>(resultValue)) {
             end(false);
             return;
         }
 
-        auto cursor = std::get<RefPtr<IDBCursor>>(resultValue);
+        auto cursor = std::get<Ref<IDBCursor>>(resultValue);
 
         if (m_skipCount) {
             if (cursor->advance(m_skipCount).hasException())

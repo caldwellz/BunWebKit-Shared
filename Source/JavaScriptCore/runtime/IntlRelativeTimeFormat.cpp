@@ -29,6 +29,7 @@
 
 #include "IntlNumberFormatInlines.h"
 #include "IntlObjectInlines.h"
+#include "IntlPartObject.h"
 #include "JSCInlines.h"
 #include "ObjectConstructor.h"
 #include <wtf/text/MakeString.h>
@@ -305,9 +306,7 @@ JSValue IntlRelativeTimeFormat::formatToParts(JSGlobalObject* globalObject, doub
 
         // Add initial literal if there is one.
         if (numberStart) {
-            JSObject* part = constructEmptyObject(globalObject);
-            part->putDirect(vm, vm.propertyNames->type, literalString);
-            part->putDirect(vm, vm.propertyNames->value, jsSubstring(vm, formattedRelativeTime, 0, numberStart));
+            JSObject* part = createIntlPartObject(globalObject, literalString, jsSubstring(vm, formattedRelativeTime, 0, numberStart));
             parts->push(globalObject, part);
             RETURN_IF_EXCEPTION(scope, { });
         }
@@ -320,9 +319,7 @@ JSValue IntlRelativeTimeFormat::formatToParts(JSGlobalObject* globalObject, doub
     // Add final literal if there is one.
     auto stringLength = formattedRelativeTime.length();
     if (numberEnd != stringLength) {
-        JSObject* part = constructEmptyObject(globalObject);
-        part->putDirect(vm, vm.propertyNames->type, literalString);
-        part->putDirect(vm, vm.propertyNames->value, jsSubstring(vm, formattedRelativeTime, numberEnd, stringLength - numberEnd));
+        JSObject* part = createIntlPartObject(globalObject, literalString, jsSubstring(vm, formattedRelativeTime, numberEnd, stringLength - numberEnd));
         parts->push(globalObject, part);
         RETURN_IF_EXCEPTION(scope, { });
     }

@@ -120,6 +120,12 @@ RefPtr<AccessibilityUIElement> AccessibilityUIElementPlayStation::ariaFlowToElem
     return nullptr;
 }
 
+RefPtr<AccessibilityUIElement> AccessibilityUIElementPlayStation::ariaActionsElementAtIndex(unsigned)
+{
+    notImplemented();
+    return nullptr;
+}
+
 RefPtr<AccessibilityUIElement> AccessibilityUIElementPlayStation::ariaControlsElementAtIndex(unsigned)
 {
     notImplemented();

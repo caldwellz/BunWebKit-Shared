@@ -70,7 +70,7 @@ void RenderSVGBlock::updateFromStyle()
 
 bool RenderSVGBlock::needsHasSVGTransformFlags() const
 {
-    return protectedGraphicsElement()->hasTransformRelatedAttributes();
+    return protect(graphicsElement())->hasTransformRelatedAttributes();
 }
 
 void RenderSVGBlock::boundingRects(Vector<LayoutRect>& rects, const LayoutPoint& accumulatedOffset) const

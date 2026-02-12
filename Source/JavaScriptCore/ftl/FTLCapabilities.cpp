@@ -175,6 +175,7 @@ inline CapabilityLevel canCompile(Node* node)
     case StringFromCharCode:
     case StringIndexOf:
     case StringStartsWith:
+    case StringEndsWith:
     case AllocatePropertyStorage:
     case ReallocatePropertyStorage:
     case NukeStructureAndSetButterfly:
@@ -289,6 +290,7 @@ inline CapabilityLevel canCompile(Node* node)
     case MapIterationEntryKey:
     case MapIterationEntryValue:
     case MapOrSetSize:
+    case GetRegExpFlag:
     case MapStorage:
     case MapStorageOrSentinel:
     case MapIteratorNext:

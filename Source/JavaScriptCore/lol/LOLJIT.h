@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2025-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -65,11 +65,16 @@ namespace JSC::LOL {
     macro(op_resolve_scope) \
     macro(op_get_from_scope) \
     macro(op_put_to_scope) \
+    macro(op_get_argument) \
+    macro(op_argument_count) \
     macro(op_lshift) \
     macro(op_to_number) \
     macro(op_to_string) \
     macro(op_to_object) \
     macro(op_to_numeric) \
+    macro(op_to_property_key) \
+    macro(op_to_property_key_or_number) \
+    macro(op_to_primitive) \
     macro(op_rshift) \
     macro(op_urshift) \
     macro(op_bitnot) \
@@ -110,6 +115,7 @@ namespace JSC::LOL {
     macro(op_jnstricteq) \
     macro(op_jbelow) \
     macro(op_jbeloweq) \
+    macro(op_ret) \
     macro(op_create_lexical_environment) \
     macro(op_create_direct_arguments) \
     macro(op_create_scoped_arguments) \
@@ -126,6 +132,13 @@ namespace JSC::LOL {
     macro(op_new_async_generator_func_exp) \
     macro(op_new_object) \
     macro(op_new_reg_exp) \
+    macro(op_get_prototype_of) \
+    macro(op_to_this) \
+    macro(op_create_this) \
+    macro(op_throw) \
+    macro(op_switch_imm) \
+    macro(op_switch_char) \
+    macro(op_switch_string) \
 
 
 #define FOR_EACH_OP_WITH_SLOW_CASE(macro) \

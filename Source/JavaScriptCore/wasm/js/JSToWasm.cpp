@@ -664,8 +664,7 @@ CodePtr<JSEntryPtrTag> FunctionSignature::jsToWasmICEntrypoint() const
             slowPath.append(jit.branchIfNotCell(scratchJSR));
             slowPath.append(jit.branchIfNotHeapBigInt(scratchJSR.payloadGPR()));
             if (isStack) {
-                // Since we're looping backwards we don't have to worry about the arguments being in registers yet so we can use them as scratches.
-                jit.toBigInt64(scratchJSR.payloadGPR(), stackLimitGPR, scratchGPR, Wasm::wasmCallingConvention().jsrArgs[1].payloadGPR());
+                jit.toBigInt64(scratchJSR.payloadGPR(), stackLimitGPR);
                 jit.store64(stackLimitGPR, calleeFrame.withOffset(wasmCallInfo.params[i].location.offsetFromSP()));
             } else {
                 static_assert(isX86() || noOverlap(GPRInfo::wasmBaseMemoryPointer, GPRInfo::numberTagRegister, GPRInfo::notCellMaskRegister));
@@ -675,7 +674,7 @@ CodePtr<JSEntryPtrTag> FunctionSignature::jsToWasmICEntrypoint() const
                     // FIXME: In theory this only needs to restore the numberTagRegister not both but this is rare.
                     haveTagRegisters = false;
                 }
-                jit.toBigInt64(scratchJSR.payloadGPR(), wasmCallInfo.params[i].location.jsr().payloadGPR(), stackLimitGPR, scratch);
+                jit.toBigInt64(scratchJSR.payloadGPR(), wasmCallInfo.params[i].location.jsr().payloadGPR());
             }
 #else
             UNUSED_PARAM(scratchGPR);

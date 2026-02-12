@@ -79,11 +79,9 @@ public:
     enum EventInterfaceType interfaceType() const { return static_cast<enum EventInterfaceType>(m_eventInterface); }
 
     EventTarget* target() const { return m_target.get(); }
-    RefPtr<EventTarget> protectedTarget() const;
     void setTarget(RefPtr<EventTarget>&&);
 
     EventTarget* currentTarget() const { return m_currentTarget.get(); }
-    RefPtr<EventTarget> protectedCurrentTarget() const;
     void setCurrentTarget(RefPtr<EventTarget>&&, std::optional<bool> isInShadowTree = std::nullopt);
     bool currentTargetIsInShadowTree() const { return m_currentTargetIsInShadowTree; }
 

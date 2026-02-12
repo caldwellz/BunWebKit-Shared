@@ -52,7 +52,7 @@ class TextTrackCueBox : public HTMLElement {
 public:
     static Ref<TextTrackCueBox> create(Document&, TextTrackCue&);
 
-    TextTrackCue* getCue() const;
+    TextTrackCue* NODELETE getCue() const;
     virtual void applyCSSProperties() { }
 
 protected:
@@ -78,7 +78,7 @@ public:
 
     void didMoveToNewDocument(Document&);
 
-    TextTrack* track() const;
+    TextTrack* NODELETE track() const;
     RefPtr<TextTrack> protectedTrack() const;
     void setTrack(TextTrack*);
 

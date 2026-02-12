@@ -101,11 +101,11 @@ public:
     bool hasScopedCustomElementRegistry() const { return m_hasScopedCustomElementRegistry; }
     CustomElementRegistry* registryForBindings() const;
 
-    ExceptionOr<void> setHTMLUnsafe(Variant<RefPtr<TrustedHTML>, String>&&);
+    ExceptionOr<void> setHTMLUnsafe(Variant<Ref<TrustedHTML>, String>&&);
     String getHTML(GetHTMLOptions&&) const;
 
     String innerHTML() const;
-    ExceptionOr<void> setInnerHTML(Variant<RefPtr<TrustedHTML>, String>&&);
+    ExceptionOr<void> setInnerHTML(Variant<Ref<TrustedHTML>, String>&&);
 
     Ref<Node> cloneNodeInternal(Document&, CloningOperation, CustomElementRegistry*) const override;
     SerializedNode serializeNode(CloningOperation) const override;

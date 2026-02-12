@@ -197,6 +197,18 @@ bool GStreamerMediaEndpoint::initializePipeline()
     if (!m_webrtcBin)
         m_webrtcBin = gst_element_factory_create(webrtcBinFactory.get(), binName.ascii().data());
 
+    if (auto peerConnectionBackend = this->peerConnectionBackend()) {
+        if (auto udpPortsRange = peerConnectionBackend->udpPortsRange()) {
+            auto [minPort, maxPort] = *udpPortsRange;
+            ASSERT(minPort < maxPort);
+            GST_INFO_OBJECT(m_pipeline.get(), "Setting ports range to [%d %d]", minPort, maxPort);
+
+            GRefPtr<GstWebRTCICE> iceAgent;
+            g_object_get(m_webrtcBin.get(), "ice-agent", &iceAgent.outPtr(), nullptr);
+            g_object_set(iceAgent.get(), "min-rtp-port", static_cast<unsigned>(minPort), "max-rtp-port", static_cast<unsigned>(maxPort), nullptr);
+        }
+    }
+
     // Lower default latency from 200ms to 40ms.
     g_object_set(m_webrtcBin.get(), "latency", 40, nullptr);
 

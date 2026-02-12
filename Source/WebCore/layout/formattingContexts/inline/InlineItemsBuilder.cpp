@@ -83,6 +83,28 @@ static unsigned moveToNextBreakablePosition(unsigned startPosition, CachedLineBr
     return textLength - startPosition;
 }
 
+static inline bool isTextOrLineBreak(const Box& layoutBox)
+{
+    return layoutBox.isInFlow() && (layoutBox.isInlineTextBox() || (layoutBox.isLineBreakBox() && !layoutBox.isWordBreakOpportunity()));
+}
+
+struct WidthAndGlyphOverflow {
+    InlineLayoutUnit width { 0.f };
+    std::optional<std::pair<LayoutUnit, LayoutUnit>> topBottomOverflow { };
+};
+static inline WidthAndGlyphOverflow nonWhitespaceContentWidth(const auto& inlineTextBox, auto startPosition, auto endPosition, auto mayHaveGlyphOverflow)
+{
+    auto& fontCascade = inlineTextBox.style().fontCascade();
+    if (!mayHaveGlyphOverflow)
+        return { TextUtil::width(inlineTextBox, fontCascade, startPosition, endPosition, { }, TextUtil::UseTrailingWhitespaceMeasuringOptimization::Yes), { } };
+
+    // We don’t need glyph overflow until after display boxes are created, but walking the content again is a major performance hit. See InlineDisplayContentBuilder::appendTextDisplayBox's addGlyphOverflow.
+    GlyphOverflow glyphOverflow;
+    glyphOverflow.computeBounds = true;
+    auto width = TextUtil::width(inlineTextBox, fontCascade, startPosition, endPosition, { }, TextUtil::UseTrailingWhitespaceMeasuringOptimization::Yes, { }, &glyphOverflow);
+    return { width, std::pair<LayoutUnit, LayoutUnit> { std::clamp(glyphOverflow.top, 0_lu, 31_lu), std::clamp(glyphOverflow.bottom, 0_lu, 7_lu) } };
+}
+
 InlineItemsBuilder::InlineItemsBuilder(InlineContentCache& inlineContentCache, const ElementBox& root, const SecurityOrigin& securityOrigin)
     : m_inlineContentCache(inlineContentCache)
     , m_root(root)
@@ -100,11 +122,15 @@ void InlineItemsBuilder::build(InlineItemPosition startPosition)
         breakAndComputeBidiLevels(inlineItemList);
     }
 
-    auto& inlineItemCache = inlineContentCache().inlineItems();
-    auto contentAttributes = computeContentAttributesAndInlineTextItemWidths(inlineItemList, startPosition, inlineItemCache.content());
+    if (contentRequiresVisualReordering() || m_hasTextAutospace)
+        computeInlineTextItemWidthsAndTextSpacing(inlineItemList);
+
     auto adjustInlineContentCacheWithNewInlineItems = [&] {
-        ASSERT(!startPosition || startPosition.index < inlineItemCache.content().size());
+        ASSERT(!startPosition || startPosition.index < inlineContentCache().inlineItems().content().size());
+
+        auto contentAttributes = InlineContentCache::InlineItems::ContentAttributes { m_contentRequiresVisualReordering, m_hasTextAndLineBreakOnlyContent, m_hasTextAutospace, m_inlineBoxCount };
         auto isPopulatedFromCache = m_textContentPopulatedFromCache && *m_textContentPopulatedFromCache ? InlineContentCache::InlineItems::IsPopulatedFromCache::Yes : InlineContentCache::InlineItems::IsPopulatedFromCache::No;
+        auto& inlineItemCache = inlineContentCache().inlineItems();
         if (!startPosition || startPosition.index >= inlineItemCache.content().size())
             return inlineItemCache.set(WTF::move(inlineItemList), contentAttributes, isPopulatedFromCache);
         inlineItemCache.replace(startPosition.index, WTF::move(inlineItemList), contentAttributes, isPopulatedFromCache);
@@ -115,19 +141,25 @@ void InlineItemsBuilder::build(InlineItemPosition startPosition)
     // Check if we've got matching inline box start/end pairs and unique inline level items (non-text, non-inline box items).
     size_t inlineBoxStart = 0;
     size_t inlineBoxEnd = 0;
+    auto hasTextAndLineBreakOnlyContent = true;
     auto inlineLevelItems = HashSet<const Box*> { };
     for (auto& inlineItem : inlineContentCache().inlineItems().content()) {
-        if (inlineItem.isInlineBoxStart())
+        if (inlineItem.isInlineBoxStart()) {
             ++inlineBoxStart;
-        else if (inlineItem.isInlineBoxEnd())
-            ++inlineBoxEnd;
-        else {
-            auto hasToBeUniqueLayoutBox = inlineItem.isAtomicInlineBox() || inlineItem.isFloat() || inlineItem.isHardLineBreak();
-            if (hasToBeUniqueLayoutBox)
-                ASSERT(inlineLevelItems.add(&inlineItem.layoutBox()).isNewEntry);
+            continue;
         }
+        if (inlineItem.isInlineBoxEnd()) {
+            ++inlineBoxEnd;
+            continue;
+        }
+        auto hasToBeUniqueLayoutBox = inlineItem.isAtomicInlineBox() || inlineItem.isFloat() || inlineItem.isHardLineBreak();
+        if (hasToBeUniqueLayoutBox)
+            ASSERT(inlineLevelItems.add(&inlineItem.layoutBox()).isNewEntry);
+        hasTextAndLineBreakOnlyContent &= isTextOrLineBreak(inlineItem.layoutBox());
     }
     ASSERT(inlineBoxStart == inlineBoxEnd);
+    ASSERT(m_inlineBoxCount == inlineBoxStart);
+    ASSERT(m_hasTextAndLineBreakOnlyContent == hasTextAndLineBreakOnlyContent);
 #endif
 }
 
@@ -189,11 +221,6 @@ void InlineItemsBuilder::computeInlineBoxBoundaryTextSpacings(const InlineItemLi
         inlineContentCache().setInlineBoxBoundaryTextSpacings(WTF::move(spacings));
 }
 
-static inline bool isTextOrLineBreak(const Box& layoutBox)
-{
-    return layoutBox.isInFlow() && (layoutBox.isInlineTextBox() || (layoutBox.isLineBreakBox() && !layoutBox.isWordBreakOpportunity()));
-}
-
 static bool requiresVisualReordering(const Box& layoutBox)
 {
     if (auto* inlineTextBox = dynamicDowncast<InlineTextBox>(layoutBox))
@@ -205,6 +232,11 @@ static bool requiresVisualReordering(const Box& layoutBox)
     return false;
 }
 
+static inline bool isInlineBoxWithInlineContent(const Box& layoutBox)
+{
+    return layoutBox.isInlineBox() && !layoutBox.isLineBreakBox() && !layoutBox.isOutOfFlowPositioned();
+}
+
 InlineItemsBuilder::LayoutQueue InlineItemsBuilder::traverseUntilDamaged(const Box& firstDamagedLayoutBox)
 {
     LayoutQueue queue;
@@ -212,6 +244,7 @@ InlineItemsBuilder::LayoutQueue InlineItemsBuilder::traverseUntilDamaged(const B
     auto appendAndCheckForDamage = [&] (auto& layoutBox) {
         queue.append(layoutBox);
         m_contentRequiresVisualReordering = m_contentRequiresVisualReordering || requiresVisualReordering(layoutBox);
+        m_hasTextAndLineBreakOnlyContent &= (isInlineBoxWithInlineContent(layoutBox) || isTextOrLineBreak(layoutBox));
         return &layoutBox == &firstDamagedLayoutBox;
     };
 
@@ -221,9 +254,9 @@ InlineItemsBuilder::LayoutQueue InlineItemsBuilder::traverseUntilDamaged(const B
     while (!queue.isEmpty()) {
         while (true) {
             auto layoutBox = queue.last();
-            auto isInlineBoxWithInlineContent = layoutBox->isInlineBox() && !layoutBox->isInlineTextBox() && !layoutBox->isLineBreakBox() && !layoutBox->isOutOfFlowPositioned();
-            if (!isInlineBoxWithInlineContent)
+            if (!isInlineBoxWithInlineContent(layoutBox))
                 break;
+            ++m_inlineBoxCount;
             auto* firstChild = downcast<ElementBox>(layoutBox).firstChild();
             if (!firstChild)
                 break;
@@ -304,8 +337,7 @@ void InlineItemsBuilder::collectInlineItems(InlineItemList& inlineItemList, Inli
     while (!layoutQueue.isEmpty()) {
         while (true) {
             auto layoutBox = layoutQueue.last();
-            auto isInlineBoxWithInlineContent = layoutBox->isInlineBox() && !layoutBox->isInlineTextBox() && !layoutBox->isLineBreakBox() && !layoutBox->isOutOfFlowPositioned();
-            if (!isInlineBoxWithInlineContent)
+            if (!isInlineBoxWithInlineContent(layoutBox))
                 break;
             // This is the start of an inline box (e.g. <span>).
             handleInlineBoxStart(layoutBox, inlineItemList);
@@ -317,6 +349,7 @@ void InlineItemsBuilder::collectInlineItems(InlineItemList& inlineItemList, Inli
 
         while (!layoutQueue.isEmpty()) {
             auto layoutBox = layoutQueue.takeLast();
+            m_hasTextAndLineBreakOnlyContent &= (isInlineBoxWithInlineContent(layoutBox) || isTextOrLineBreak(layoutBox));
             if (layoutBox->isOutOfFlowPositioned())
                 inlineItemList.append({ layoutBox, InlineItem::Type::Opaque });
             else if (auto* inlineTextBox = dynamicDowncast<InlineTextBox>(layoutBox.get()))
@@ -725,7 +758,7 @@ void InlineItemsBuilder::breakAndComputeBidiLevels(InlineItemList& inlineItemLis
     setBidiLevelForOpaqueInlineItems();
 }
 
-static inline bool canCacheMeasuredWidthOnInlineTextItem(const InlineTextBox& inlineTextBox, bool isWhitespace)
+static inline bool canCacheWidthOnInlineTextItem(const InlineTextBox& inlineTextBox, bool isWhitespace)
 {
     // Do not cache when:
     // 1. first-line style's unique font properties may produce non-matching width values.
@@ -752,34 +785,10 @@ static void handleTextSpacing(TextSpacing::SpacingState& spacingState, Trimmable
         spacingState.lastCharacterClassFromPreviousRun = TextSpacing::CharacterClass::Undefined;
 }
 
-InlineContentCache::InlineItems::ContentAttributes InlineItemsBuilder::computeContentAttributesAndInlineTextItemWidths(InlineItemList& inlineItemList, InlineItemPosition damagePosition, const InlineItemList& damagedItemList)
+void InlineItemsBuilder::computeInlineTextItemWidthsAndTextSpacing(InlineItemList& inlineItemList)
 {
-    if (inlineItemList.isEmpty() && !damagePosition)
-        return { };
-
-    bool isTextAndForcedLineBreakOnlyContent = true;
-    size_t inlineBoxCount = 0;
-
-    auto computeContentAttributesUpToDamage = [&] {
-        if (!damagePosition)
-            return;
-        // ContentAttributes::requiresVisualReordering is not handled here as we don't support partial layout with bidi content.
-        ASSERT(damagePosition.index < damagedItemList.size());
-        for (size_t index = 0; index < damagePosition.index && index < damagedItemList.size(); ++index) {
-            auto& inlineItem = damagedItemList[index];
-            if (inlineItem.isText())
-                continue;
-
-            if (inlineItem.isInlineBoxStart()) {
-                ++inlineBoxCount;
-                continue;
-            }
-
-            if (!inlineItem.isInlineBoxEnd())
-                isTextAndForcedLineBreakOnlyContent = isTextAndForcedLineBreakOnlyContent && isTextOrLineBreak(inlineItem.layoutBox());
-        }
-    };
-    computeContentAttributesUpToDamage();
+    if (inlineItemList.isEmpty())
+        return;
 
     if (m_hasTextAutospace)
         computeInlineBoxBoundaryTextSpacings(inlineItemList);
@@ -794,7 +803,7 @@ InlineContentCache::InlineItems::ContentAttributes InlineItemsBuilder::computeCo
         auto& inlineItem = inlineItemList[inlineItemIndex];
 
         if (auto* inlineTextItem = dynamicDowncast<InlineTextItem>(inlineItem)) {
-            auto needsMeasuring = inlineTextItem->length() && !inlineTextItem->isZeroWidthSpaceSeparator() && canCacheMeasuredWidthOnInlineTextItem(inlineTextItem->inlineTextBox(), inlineTextItem->isWhitespace());
+            auto needsMeasuring = inlineTextItem->length() && !inlineTextItem->isZeroWidthSpaceSeparator() && canCacheWidthOnInlineTextItem(inlineTextItem->inlineTextBox(), inlineTextItem->isWhitespace());
             if (needsMeasuring) {
                 auto start = inlineTextItem->start();
                 if (inlineItemIndex) {
@@ -826,18 +835,8 @@ InlineContentCache::InlineItems::ContentAttributes InlineItemsBuilder::computeCo
             continue;
         }
         spacingState.lastCharacterClassFromPreviousRun = TextSpacing::CharacterClass::Undefined;
-
-        if (inlineItem.isInlineBoxStart()) {
-            ++inlineBoxCount;
-            continue;
-        }
-
-        if (!inlineItem.isInlineBoxEnd())
-            isTextAndForcedLineBreakOnlyContent = isTextAndForcedLineBreakOnlyContent && isTextOrLineBreak(inlineItem.layoutBox());
     }
     inlineContentCache().setTrimmableTextSpacings(WTF::move(trimmableTextSpacings));
-
-    return { m_contentRequiresVisualReordering, isTextAndForcedLineBreakOnlyContent, m_hasTextAutospace, inlineBoxCount };
 }
 
 bool InlineItemsBuilder::buildInlineItemListForTextFromBreakingPositionsCache(const InlineTextBox& inlineTextBox, InlineItemList& inlineItemList)
@@ -849,10 +848,16 @@ bool InlineItemsBuilder::buildInlineItemListForTextFromBreakingPositionsCache(co
 
     auto shouldPreserveNewline = TextUtil::shouldPreserveNewline(inlineTextBox);
     auto shouldPreserveSpacesAndTabs = TextUtil::shouldPreserveSpacesAndTabs(inlineTextBox);
+    auto& style = inlineTextBox.style();
 
     auto intialSize = inlineItemList.size();
     auto contentLength = text.length();
     ASSERT(contentLength);
+
+    auto& fontCascade = style.fontCascade();
+    auto [ deferNonWhitespaceMeasurement, deferWhitespaceMeasurement ] = shouldDeferTextMeasurement(inlineTextBox);
+    auto singleSpaceWidth = !deferWhitespaceMeasurement ? std::optional(std::max(0.f, TextUtil::singleSpaceWidth(fontCascade, inlineTextBox.canUseSimplifiedContentMeasuring()))) : std::nullopt;
+    auto mayHaveGlyphOverflow = !inlineTextBox.canUseSimpleFontCodePath() || fontCascade.primaryFont()->origin() == FontOrigin::Remote;
 
     inlineItemList.reserveCapacity(inlineItemList.size() + breakingPositions->size());
     size_t previousPosition = 0;
@@ -876,13 +881,26 @@ bool InlineItemsBuilder::buildInlineItemListForTextFromBreakingPositionsCache(co
         auto isWhitespaceCharacter = character == space || character == newlineCharacter || character == tabCharacter;
         if (isWhitespaceCharacter) {
             auto isWordSeparator = character != tabCharacter || !shouldPreserveSpacesAndTabs;
-            inlineItemList.append(InlineTextItem::createWhitespaceItem(inlineTextBox, startPosition, endPosition - startPosition, UBIDI_DEFAULT_LTR, isWordSeparator, { }));
+            auto width = [&]() -> std::optional<InlineLayoutUnit> {
+                if (deferWhitespaceMeasurement)
+                    return { };
+                if (!shouldPreserveSpacesAndTabs || endPosition - startPosition == 1)
+                    return *singleSpaceWidth;
+                return TextUtil::width(inlineTextBox, fontCascade, startPosition, endPosition, { }, TextUtil::UseTrailingWhitespaceMeasuringOptimization::No);
+            };
+            inlineItemList.append(InlineTextItem::createWhitespaceItem(inlineTextBox, startPosition, endPosition - startPosition, UBIDI_DEFAULT_LTR, isWordSeparator, width()));
             continue;
         }
 
         ASSERT(endPosition);
         auto hasTrailingSoftHyphen = text[endPosition - 1] == softHyphen;
-        inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition, endPosition - startPosition, UBIDI_DEFAULT_LTR, hasTrailingSoftHyphen, { }));
+        auto length = endPosition - startPosition;
+        if (deferNonWhitespaceMeasurement || !length)
+            inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition, length, UBIDI_DEFAULT_LTR, hasTrailingSoftHyphen));
+        else {
+            auto widthAndGlyphOverflow = nonWhitespaceContentWidth(inlineTextBox, startPosition, endPosition, mayHaveGlyphOverflow);
+            inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition, length, UBIDI_DEFAULT_LTR, hasTrailingSoftHyphen, widthAndGlyphOverflow.width, widthAndGlyphOverflow.topBottomOverflow));
+        }
     }
     return true;
 }
@@ -897,7 +915,7 @@ void InlineItemsBuilder::handleTextContent(const InlineTextBox& inlineTextBox, I
     m_contentRequiresVisualReordering = m_contentRequiresVisualReordering || requiresVisualReordering(inlineTextBox);
 
     if (inlineTextBox.isCombined())
-        return inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, { }, contentLength, UBIDI_DEFAULT_LTR, false, { }));
+        return inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, { }, contentLength, UBIDI_DEFAULT_LTR, { }));
 
     if (!partialContentOffset && buildInlineItemListForTextFromBreakingPositionsCache(inlineTextBox, inlineItemList)) {
         if (!m_textContentPopulatedFromCache)
@@ -907,6 +925,10 @@ void InlineItemsBuilder::handleTextContent(const InlineTextBox& inlineTextBox, I
 
     m_textContentPopulatedFromCache = false;
     auto& style = inlineTextBox.style();
+    auto& fontCascade = style.fontCascade();
+    auto [ deferNonWhitespaceMeasurement, deferWhitespaceMeasurement ] = shouldDeferTextMeasurement(inlineTextBox);
+    auto mayHaveGlyphOverflow = !inlineTextBox.canUseSimpleFontCodePath() || fontCascade.primaryFont()->origin() == FontOrigin::Remote;
+    auto singleSpaceWidth = !deferWhitespaceMeasurement ? std::optional(std::max(0.f, TextUtil::singleSpaceWidth(fontCascade, inlineTextBox.canUseSimplifiedContentMeasuring()))) : std::nullopt;
     auto shouldPreserveSpacesAndTabs = TextUtil::shouldPreserveSpacesAndTabs(inlineTextBox);
     auto shouldPreserveNewline = TextUtil::shouldPreserveNewline(inlineTextBox);
     auto lineBreakIteratorFactory = CachedLineBreakIteratorFactory { text, Style::toPlatform(style.computedLocale()), TextUtil::lineBreakIteratorMode(style.lineBreak()), TextUtil::contentAnalysis(style.wordBreak()) };
@@ -922,7 +944,7 @@ void InlineItemsBuilder::handleTextContent(const InlineTextBox& inlineTextBox, I
         return true;
     };
     auto handleWhitespace = [&] {
-        auto stopAtWordSeparatorBoundary = shouldPreserveSpacesAndTabs && style.fontCascade().wordSpacing();
+        auto stopAtWordSeparatorBoundary = shouldPreserveSpacesAndTabs && fontCascade.wordSpacing();
         auto whitespaceContent = text.is8Bit()
             ? moveToNextNonWhitespacePosition(text.span8(), currentPosition, shouldPreserveNewline, shouldPreserveSpacesAndTabs, stopAtWordSeparatorBoundary)
             : moveToNextNonWhitespacePosition(text.span16(), currentPosition, shouldPreserveNewline, shouldPreserveSpacesAndTabs, stopAtWordSeparatorBoundary);
@@ -935,10 +957,18 @@ void InlineItemsBuilder::handleTextContent(const InlineTextBox& inlineTextBox, I
             // For break-spaces, a soft wrap opportunity exists after every space and every tab.
             // FIXME: if this turns out to be a perf hit with too many individual whitespace inline items, we should transition this logic to line breaking.
             inlineItemList.appendUsingFunctor(whitespaceContent->length, [&](size_t offset) {
-                return InlineTextItem::createWhitespaceItem(inlineTextBox, currentPosition + offset, 1, UBIDI_DEFAULT_LTR, whitespaceContent->isWordSeparator, { });
+                return InlineTextItem::createWhitespaceItem(inlineTextBox, currentPosition + offset, 1, UBIDI_DEFAULT_LTR, whitespaceContent->isWordSeparator, singleSpaceWidth);
             });
-        } else
-            inlineItemList.append(InlineTextItem::createWhitespaceItem(inlineTextBox, currentPosition, whitespaceContent->length, UBIDI_DEFAULT_LTR, whitespaceContent->isWordSeparator, { }));
+        } else {
+            auto width = [&]() -> std::optional<InlineLayoutUnit> {
+                if (deferWhitespaceMeasurement)
+                    return { };
+                if (!shouldPreserveSpacesAndTabs || whitespaceContent->length == 1)
+                    return *singleSpaceWidth;
+                return TextUtil::width(inlineTextBox, fontCascade, currentPosition, currentPosition + whitespaceContent->length, { }, TextUtil::UseTrailingWhitespaceMeasuringOptimization::No);
+            };
+            inlineItemList.append(InlineTextItem::createWhitespaceItem(inlineTextBox, currentPosition, whitespaceContent->length, UBIDI_DEFAULT_LTR, whitespaceContent->isWordSeparator, width()));
+        }
         currentPosition += whitespaceContent->length;
         return true;
 
@@ -957,7 +987,7 @@ void InlineItemsBuilder::handleTextContent(const InlineTextBox& inlineTextBox, I
         if (startPosition == endPosition)
             return false;
         inlineItemList.appendUsingFunctor(endPosition - startPosition, [&](size_t offset) {
-            return InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition + offset, 1, UBIDI_DEFAULT_LTR, { }, { });
+            return InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition + offset, 1, UBIDI_DEFAULT_LTR, false, nonWhitespaceContentWidth(inlineTextBox, startPosition + offset, startPosition + offset + 1, mayHaveGlyphOverflow).width, { });
         });
         currentPosition = endPosition;
         return true;
@@ -978,7 +1008,14 @@ void InlineItemsBuilder::handleTextContent(const InlineTextBox& inlineTextBox, I
             hasTrailingSoftHyphen = text[endPosition - 1] == softHyphen;
         }
         ASSERT_IMPLIES(style.hyphens() == Hyphens::None, !hasTrailingSoftHyphen);
-        inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition, endPosition - startPosition, UBIDI_DEFAULT_LTR, hasTrailingSoftHyphen, { }));
+
+        auto length = endPosition - startPosition;
+        if (deferNonWhitespaceMeasurement || !length)
+            inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition, length, UBIDI_DEFAULT_LTR, hasTrailingSoftHyphen));
+        else {
+            auto widthAndGlyphOverflow = nonWhitespaceContentWidth(inlineTextBox, startPosition, endPosition, mayHaveGlyphOverflow);
+            inlineItemList.append(InlineTextItem::createNonWhitespaceItem(inlineTextBox, startPosition, length, UBIDI_DEFAULT_LTR, hasTrailingSoftHyphen, widthAndGlyphOverflow.width, widthAndGlyphOverflow.topBottomOverflow));
+        }
         currentPosition = endPosition;
         return true;
     };
@@ -1001,6 +1038,7 @@ void InlineItemsBuilder::handleInlineBoxStart(const Box& inlineBox, InlineItemLi
     inlineItemList.append({ inlineBox, InlineItem::Type::InlineBoxStart });
     m_contentRequiresVisualReordering |= requiresVisualReordering(inlineBox);
     m_hasTextAutospace |= !inlineBox.style().textAutospace().isNoAutospace();
+    ++m_inlineBoxCount;
 }
 
 void InlineItemsBuilder::handleInlineBoxEnd(const Box& inlineBox, InlineItemList& inlineItemList)
@@ -1090,6 +1128,12 @@ void InlineItemsBuilder::populateBreakingPositionCache(const InlineItemList& inl
             breakingPositionCache.set({ inlineTextBox->content(), context, securityOrigin->data() }, WTF::move(breakingPositionList));
         index += span.size();
     }
+}
+
+std::pair<bool, bool> InlineItemsBuilder::shouldDeferTextMeasurement(const InlineTextBox& inlineTextBox) const
+{
+    auto shouldDefer = contentRequiresVisualReordering() || m_hasTextAutospace;
+    return { shouldDefer || !canCacheWidthOnInlineTextItem(inlineTextBox, false), shouldDefer || !canCacheWidthOnInlineTextItem(inlineTextBox, true) };
 }
 
 }

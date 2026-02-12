@@ -392,7 +392,7 @@ void DocumentFullscreen::elementEnterFullscreen(Element& element)
 
     queueFullscreenChangeEventForDocument(document);
 
-    RenderElement::markRendererDirtyAfterTopLayerChange(element.checkedRenderer().get(), containingBlockBeforeStyleResolution.get());
+    RenderElement::markRendererDirtyAfterTopLayerChange(protect(element.renderer()).get(), containingBlockBeforeStyleResolution.get());
 }
 
 bool DocumentFullscreen::didEnterFullscreen()
@@ -652,7 +652,7 @@ void DocumentFullscreen::didExitFullscreen(CompletionHandler<void(ExceptionOr<vo
     INFO_LOG(LOGIDENTIFIER);
 
     if (RefPtr frame = document().frame())
-        finishExitFullscreen(frame->protectedMainFrame(), ExitMode::Resize);
+        finishExitFullscreen(protect(frame->mainFrame()), ExitMode::Resize);
 
     if (RefPtr exitedFullscreenElement = fullscreenOrPendingElement())
         exitedFullscreenElement->didStopBeingFullscreenElement();

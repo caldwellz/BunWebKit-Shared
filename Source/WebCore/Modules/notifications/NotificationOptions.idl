@@ -26,7 +26,6 @@
 // https://notifications.spec.whatwg.org/#dictdef-notificationoptions
 [
     Conditional=NOTIFICATIONS,
-    LegacyNativeDictionaryRequiredInterfaceNullability,
 ] dictionary NotificationOptions {
     NotificationDirection dir = "auto";
     DOMString lang = "";

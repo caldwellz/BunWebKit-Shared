@@ -26,6 +26,6 @@
 [
     Conditional=WEB_AUDIO,
 ] dictionary ConvolverOptions : AudioNodeOptions {
-    AudioBuffer? buffer;
+    [ImplementationDefaultValue=null] AudioBuffer? buffer;
     boolean disableNormalization = false;
 };

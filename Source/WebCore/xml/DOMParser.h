@@ -35,7 +35,7 @@ public:
     static Ref<DOMParser> create(Document& contextDocument);
     ~DOMParser();
 
-    ExceptionOr<Ref<Document>> parseFromString(Variant<RefPtr<TrustedHTML>, String>&&, const AtomString& contentType);
+    ExceptionOr<Ref<Document>> parseFromString(Variant<Ref<TrustedHTML>, String>&&, const AtomString& contentType);
 
 private:
     explicit DOMParser(Document& contextDocument);

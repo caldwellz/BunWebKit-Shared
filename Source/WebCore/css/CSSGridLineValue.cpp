@@ -69,11 +69,11 @@ bool CSSGridLineValue::equals(const CSSGridLineValue& other) const
         return (!value && !otherValue) || value->equals(*otherValue);
     };
 
-    if (!equals(protectedSpanValue().get(), other.protectedSpanValue().get()))
+    if (!equals(protect(spanValue()).get(), protect(other.spanValue()).get()))
         return false;
-    if (!equals(protectedNumericValue().get(), other.protectedNumericValue().get()))
+    if (!equals(protect(numericValue()).get(), protect(other.numericValue()).get()))
         return false;
-    if (!equals(protectedGridLineName().get(), other.protectedGridLineName().get()))
+    if (!equals(protect(gridLineName()).get(), protect(other.gridLineName()).get()))
         return false;
 
     return true;

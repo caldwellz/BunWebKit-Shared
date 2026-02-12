@@ -38,7 +38,6 @@ public:
     virtual ~RenderSVGResourceMasker();
 
     inline SVGMaskElement& maskElement() const;
-    inline Ref<SVGMaskElement> protectedMaskElement() const;
 
     void applyMask(PaintInfo&, const RenderLayerModelObject& targetRenderer, const LayoutPoint& adjustedPaintOffset);
 

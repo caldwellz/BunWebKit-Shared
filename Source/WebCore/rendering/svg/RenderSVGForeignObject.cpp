@@ -55,11 +55,6 @@ SVGForeignObjectElement& RenderSVGForeignObject::foreignObjectElement() const
     return downcast<SVGForeignObjectElement>(RenderSVGBlock::graphicsElement());
 }
 
-Ref<SVGForeignObjectElement> RenderSVGForeignObject::protectedForeignObjectElement() const
-{
-    return foreignObjectElement();
-}
-
 void RenderSVGForeignObject::paint(PaintInfo& paintInfo, const LayoutPoint& paintOffset)
 {
     if (!shouldPaintSVGRenderer(paintInfo))
@@ -132,7 +127,7 @@ void RenderSVGForeignObject::updateFromStyle()
 
 void RenderSVGForeignObject::applyTransform(TransformationMatrix& transform, const RenderStyle& style, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption> options) const
 {
-    applySVGTransform(transform, protectedForeignObjectElement(), style, boundingBox, std::nullopt, std::nullopt, options);
+    applySVGTransform(transform, protect(foreignObjectElement()), style, boundingBox, std::nullopt, std::nullopt, options);
 }
 
 }

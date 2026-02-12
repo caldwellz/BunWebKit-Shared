@@ -404,6 +404,10 @@ private:
     RefPtr<WebCoreAVFResourceLoader> getResourceLoader(AVAssetResourceLoadingRequest *) const;
     RefPtr<WebCoreAVFResourceLoader> takeResourceLoader(AVAssetResourceLoadingRequest *);
 
+#if HAVE(AVPLAYER_PARTICIPATESINAUDIOSESSION)
+    void setParticipatesInAudioSession(bool);
+#endif
+
     RetainPtr<AVURLAsset> m_avAsset;
     RetainPtr<AVPlayer> m_avPlayer;
     RetainPtr<AVPlayerItem> m_avPlayerItem;

@@ -182,7 +182,7 @@ void ViewTransition::skipViewTransition(ExceptionOr<JSC::JSValue>&& reason)
 
     Ref document = *this->document();
     if (m_phase < ViewTransitionPhase::UpdateCallbackCalled) {
-        document->checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }] {
+        protect(document->eventLoop())->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }] {
             RefPtr protectedThis = weakThis.get();
             if (protectedThis && protect(protectedThis->document())->globalObject())
                 protectedThis->callUpdateCallback();
@@ -297,7 +297,7 @@ void ViewTransition::callUpdateCallback()
         protectedThis->skipViewTransition(WTF::move(result));
     });
 
-    m_updateCallbackTimeout = document->checkedEventLoop()->scheduleTask(defaultTimeout, TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }] {
+    m_updateCallbackTimeout = protect(document->eventLoop())->scheduleTask(defaultTimeout, TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }] {
         RefPtr protectedThis = weakThis.get();
         LOG_WITH_STREAM(ViewTransitions, stream << "ViewTransition " << protectedThis.get() << " update callback timed out");
         if (!protectedThis)
@@ -330,7 +330,7 @@ void ViewTransition::setupViewTransition()
     else
         document->setRenderingIsSuppressedForViewTransitionAfterUpdateRendering();
 
-    document->checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }] {
+    protect(document->eventLoop())->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }] {
         RefPtr protectedThis = weakThis.get();
         if (!protectedThis)
             return;
@@ -366,7 +366,7 @@ static AtomString effectiveViewTransitionName(RenderLayerModelObject& renderer, 
 
             Ref element = *renderer.element();
             if (scope == &Style::Scope::forNode(element) && element->hasID())
-                return makeAtomString("-ua-id-"_s, renderer.protectedElement()->getIdAttribute());
+                return makeAtomString("-ua-id-"_s, protect(renderer.element())->getIdAttribute());
 
             if (isCrossDocument)
                 return nullAtom();
@@ -611,7 +611,7 @@ bool ViewTransition::updatePropertiesForGroupPseudo(CapturedElement& capturedEle
         // group styles rule
         if (!capturedElement.groupStyleProperties) {
             capturedElement.groupStyleProperties = properties;
-            protect(document())->styleScope().protectedResolver()->setViewTransitionStyles(CSSSelector::PseudoElement::ViewTransitionGroup, name, *properties);
+            protect(protect(document())->styleScope().resolver())->setViewTransitionStyles(CSSSelector::PseudoElement::ViewTransitionGroup, name, *properties);
             return true;
         }
         return protect(*capturedElement.groupStyleProperties)->mergeAndOverrideOnConflict(*properties);

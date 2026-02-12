@@ -218,7 +218,7 @@ void MouseRelatedEvent::computeRelativePosition()
             renderer = renderer->parent();
 
         // Update the target node to point to the SVG root.
-        return std::pair { renderer, renderer->protectedNode() };
+        return std::pair { renderer, protect(renderer->node()) };
     };
 
     // Compute coordinates that are based on the target.

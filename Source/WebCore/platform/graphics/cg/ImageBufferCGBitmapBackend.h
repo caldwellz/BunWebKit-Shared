@@ -43,7 +43,7 @@ public:
 
     static std::unique_ptr<ImageBufferCGBitmapBackend> create(const Parameters&, const ImageBufferCreationContext&);
     bool canMapBackingStore() const final;
-    GraphicsContext& context() final;
+    GraphicsContext& NODELETE context() final;
 
 private:
     ImageBufferCGBitmapBackend(const Parameters&, std::span<uint8_t> data, RetainPtr<CGDataProviderRef>&&, std::unique_ptr<GraphicsContextCG>&&);

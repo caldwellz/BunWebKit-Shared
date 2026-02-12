@@ -92,6 +92,10 @@
 
 #endif
 
+@interface NSObject (Staging_170159369)
+- (void)willBeginWritingToolsSession:(WTSession *)session forProofreadingReview:(BOOL)proofreadingReview requestContexts:(void (^)(NSArray<WTContext *> *))completion;
+@end
+
 @protocol WKIntelligenceTextEffectCoordinating;
 
 @protocol WKIntelligenceTextEffectCoordinatorDelegate <NSObject>
@@ -932,6 +936,67 @@ TEST(WritingTools, ProofreadingWithAttemptedEditing)
         [webView waitForProofreadingSuggestionsToBeReplaced];
 
         EXPECT_WK_STREQ("Test", [webView contentsAsString]);
+
+        finished = true;
+    }];
+
+    TestWebKitAPI::Util::run(&finished);
+}
+
+TEST(WritingTools, ProofreadingReview)
+{
+    auto session = adoptNS([[WTSession alloc] initWithType:WTSessionTypeProofreading textViewDelegate:nil]);
+
+    auto webView = adoptNS([[WritingToolsWKWebView alloc] initWithHTMLString:@"<body contenteditable><p id='first'>This is a test of system. This is what we are doings.</p></body>"]);
+    [webView focusDocumentBodyAndSelectAll];
+
+    NSString *originalText = @"This is a test of system. This is what we are doings.";
+    NSString *proofreadText = @"This is a test of the system. This is what we are doing.";
+    NSString *finalText = @"This is a test of system. This is what we are doing.";
+
+    __block bool finished = false;
+
+    [(id)[webView writingToolsDelegate] willBeginWritingToolsSession:session.get() forProofreadingReview:YES requestContexts:^(NSArray<WTContext *> *contexts) {
+        EXPECT_EQ(1UL, contexts.count);
+
+        EXPECT_WK_STREQ(originalText, contexts.firstObject.attributedText.string);
+
+        [[webView writingToolsDelegate] didBeginWritingToolsSession:session.get() contexts:contexts];
+
+        auto suggestions = [NSMutableArray array];
+        auto firstSuggestion = adoptNS([[WTTextSuggestion alloc] initWithOriginalRange:NSMakeRange(15, 2) replacement:@"of the"]);
+        auto secondSuggestion = adoptNS([[WTTextSuggestion alloc] initWithOriginalRange:NSMakeRange(46, 6) replacement:@"doing"]);
+
+        [suggestions addObject:firstSuggestion.get()];
+        [suggestions addObject:secondSuggestion.get()];
+
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didReceiveSuggestions:suggestions processedRange:NSMakeRange(0, originalText.length) inContext:contexts.firstObject finished:YES];
+        [webView waitForProofreadingSuggestionsToBeReplaced];
+
+        EXPECT_WK_STREQ(originalText, [webView contentsAsString]);
+
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didUpdateState:WTTextSuggestionStateAccepted forSuggestionWithUUID:[firstSuggestion uuid] inContext:contexts.firstObject];
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didUpdateState:WTTextSuggestionStateAccepted forSuggestionWithUUID:[secondSuggestion uuid] inContext:contexts.firstObject];
+        [webView waitForProofreadingSuggestionsToBeReplaced];
+
+        EXPECT_WK_STREQ(proofreadText, [webView contentsAsString]);
+
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didUpdateState:WTTextSuggestionStatePending forSuggestionWithUUID:[firstSuggestion uuid] inContext:contexts.firstObject];
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didUpdateState:WTTextSuggestionStatePending forSuggestionWithUUID:[secondSuggestion uuid] inContext:contexts.firstObject];
+        [webView waitForProofreadingSuggestionsToBeReplaced];
+
+        EXPECT_WK_STREQ(originalText, [webView contentsAsString]);
+
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didUpdateState:WTTextSuggestionStateRejected forSuggestionWithUUID:[firstSuggestion uuid] inContext:contexts.firstObject];
+        [[webView writingToolsDelegate] proofreadingSession:session.get() didUpdateState:WTTextSuggestionStateAccepted forSuggestionWithUUID:[secondSuggestion uuid] inContext:contexts.firstObject];
+        [webView waitForProofreadingSuggestionsToBeReplaced];
+
+        EXPECT_WK_STREQ(finalText, [webView contentsAsString]);
+
+        [[webView writingToolsDelegate] didEndWritingToolsSession:session.get() accepted:YES];
+        [webView waitForProofreadingSuggestionsToBeReplaced];
+
+        EXPECT_WK_STREQ(finalText, [webView contentsAsString]);
 
         finished = true;
     }];

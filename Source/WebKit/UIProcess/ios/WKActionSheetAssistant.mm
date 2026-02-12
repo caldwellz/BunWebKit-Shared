@@ -201,7 +201,7 @@ static LSAppLink *appLinkForURL(NSURL *url)
 
 - (CGRect)_presentationRectForSheetGivenPoint:(CGPoint)point inHostView:(UIView *)hostView
 {
-    CGPoint presentationPoint = [hostView convertPoint:point fromView:_view.getAutoreleased()];
+    CGPoint presentationPoint = [hostView convertPoint:point fromView:protect(_view.getAutoreleased()).get()];
     CGRect presentationRect = CGRectMake(presentationPoint.x, presentationPoint.y, 1.0, 1.0);
 
     return CGRectInset(presentationRect, -22.0, -22.0);
@@ -236,7 +236,7 @@ static const CGFloat presentationElementRectPadding = 15;
     for (const auto& path : WebCore::PathUtilities::pathsWithShrinkWrappedRects(indicatedRects, 0)) {
         auto boundingRect = path.fastBoundingRect();
         if (boundingRect.contains(touchLocation))
-            return CGRectInset([view convertRect:(CGRect)boundingRect fromView:_view.getAutoreleased()], -presentationElementRectPadding, -presentationElementRectPadding);
+            return CGRectInset([view convertRect:(CGRect)boundingRect fromView:protect(_view.getAutoreleased()).get()], -presentationElementRectPadding, -presentationElementRectPadding);
     }
 
     return CGRectZero;
@@ -250,7 +250,7 @@ static const CGFloat presentationElementRectPadding = 15;
         return CGRectZero;
 
     auto elementBounds = _positionInformation->bounds;
-    return CGRectInset([view convertRect:elementBounds fromView:_view.getAutoreleased()], -presentationElementRectPadding, -presentationElementRectPadding);
+    return CGRectInset([view convertRect:elementBounds fromView:protect(_view.getAutoreleased()).get()], -presentationElementRectPadding, -presentationElementRectPadding);
 }
 
 - (CGRect)initialPresentationRectInHostViewForSheet
@@ -461,7 +461,8 @@ static bool isJavaScriptURL(NSURL *url)
 
 - (WKActionSheetPresentationStyle)_presentationStyleForPositionInfo:(const WebKit::InteractionInformationAtPosition&)positionInfo elementInfo:(_WKActivatedElementInfo *)elementInfo
 {
-    auto apparentElementRect = [_view convertRect:positionInfo.bounds toView:[_view window]];
+    RetainPtr protectedView = _view.get();
+    auto apparentElementRect = [protectedView convertRect:positionInfo.bounds toView:[protectedView window]];
     if (CGRectIsEmpty(apparentElementRect))
         return WKActionSheetPresentAtTouchLocation;
 
@@ -470,7 +471,7 @@ static bool isJavaScriptURL(NSURL *url)
     if ([delegate respondsToSelector:@selector(unoccludedWindowBoundsForActionSheetAssistant:)])
         visibleRect = [delegate unoccludedWindowBoundsForActionSheetAssistant:self];
     else
-        visibleRect = [[_view window] bounds];
+        visibleRect = [[protectedView window] bounds];
 
     apparentElementRect = CGRectIntersection(apparentElementRect, visibleRect);
     auto leftInset = CGRectGetMinX(apparentElementRect) - CGRectGetMinX(visibleRect);
@@ -551,7 +552,8 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (!hasAnimation)
         return;
 
-    if (![_delegate respondsToSelector:@selector(_allowAnimationControls)] || ![_delegate _allowAnimationControls])
+    RetainPtr delegate = _delegate.get();
+    if (![delegate respondsToSelector:@selector(_allowAnimationControls)] || ![delegate _allowAnimationControls])
         return;
 
     BOOL isAnimating = elementInfo.isAnimating;
@@ -593,14 +595,15 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     }
 
     if (elementInfo.type == _WKActivatedElementTypeImage || elementInfo._isImage) {
+        RetainPtr protectedDelegate = _delegate.get();
 #if ENABLE(IMAGE_ANALYSIS_ENHANCEMENTS)
-        if ([_delegate respondsToSelector:@selector(actionSheetAssistantShouldIncludeCopySubjectAction:)] && [_delegate actionSheetAssistantShouldIncludeCopySubjectAction:self])
+        if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistantShouldIncludeCopySubjectAction:)] && [protectedDelegate actionSheetAssistantShouldIncludeCopySubjectAction:self])
             [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeCopyCroppedImage info:elementInfo assistant:self]];
 #endif
 #if ENABLE(IMAGE_ANALYSIS)
-        if ([_delegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeShowTextActionForElement:)] && [_delegate actionSheetAssistant:self shouldIncludeShowTextActionForElement:elementInfo])
+        if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeShowTextActionForElement:)] && [protectedDelegate actionSheetAssistant:self shouldIncludeShowTextActionForElement:elementInfo])
             [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeImageExtraction info:elementInfo assistant:self]];
-        if ([_delegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeLookUpImageActionForElement:)] && [_delegate actionSheetAssistant:self shouldIncludeLookUpImageActionForElement:elementInfo])
+        if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeLookUpImageActionForElement:)] && [protectedDelegate actionSheetAssistant:self shouldIncludeLookUpImageActionForElement:elementInfo])
             [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeRevealImage info:elementInfo assistant:self]];
 #endif
     }
@@ -634,16 +637,17 @@ ALLOW_DEPRECATED_DECLARATIONS_END
         [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeViewSpatial info:elementInfo assistant:self]];
 #endif
 
+    RetainPtr protectedDelegate = _delegate.get();
 #if ENABLE(IMAGE_ANALYSIS_ENHANCEMENTS)
-    BOOL enableCopySubjectItem = [_delegate respondsToSelector:@selector(actionSheetAssistantShouldIncludeCopySubjectAction:)] && [_delegate actionSheetAssistantShouldIncludeCopySubjectAction:self];
+    BOOL enableCopySubjectItem = [protectedDelegate respondsToSelector:@selector(actionSheetAssistantShouldIncludeCopySubjectAction:)] && [protectedDelegate actionSheetAssistantShouldIncludeCopySubjectAction:self];
     [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeCopyCroppedImage info:elementInfo assistant:self disabled:!enableCopySubjectItem]];
 #endif
 
 #if ENABLE(IMAGE_ANALYSIS)
-    if ([_delegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeShowTextActionForElement:)] && [_delegate actionSheetAssistant:self shouldIncludeShowTextActionForElement:elementInfo])
+    if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeShowTextActionForElement:)] && [protectedDelegate actionSheetAssistant:self shouldIncludeShowTextActionForElement:elementInfo])
         [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeImageExtraction info:elementInfo assistant:self]];
 
-    BOOL enableLookUpItem = [_delegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeLookUpImageActionForElement:)] && [_delegate actionSheetAssistant:self shouldIncludeLookUpImageActionForElement:elementInfo];
+    BOOL enableLookUpItem = [protectedDelegate respondsToSelector:@selector(actionSheetAssistant:shouldIncludeLookUpImageActionForElement:)] && [protectedDelegate actionSheetAssistant:self shouldIncludeLookUpImageActionForElement:elementInfo];
     [defaultActions addObject:[_WKElementAction _elementActionWithType:_WKElementActionTypeRevealImage info:elementInfo assistant:self disabled:!enableLookUpItem]];
 #endif
     [self _appendAnimationAction:defaultActions.get() elementInfo:elementInfo];
@@ -673,14 +677,15 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     }
 
     auto elementInfo = adoptNS([[_WKActivatedElementInfo alloc] _initWithType:_WKActivatedElementTypeLink URL:targetURL.get() information:*_positionInformation]);
-    if ([_delegate respondsToSelector:@selector(actionSheetAssistant:showCustomSheetForElement:)] && [_delegate actionSheetAssistant:self showCustomSheetForElement:elementInfo.get()]) {
+    RetainPtr protectedDelegate = _delegate.get();
+    if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistant:showCustomSheetForElement:)] && [protectedDelegate actionSheetAssistant:self showCustomSheetForElement:elementInfo.get()]) {
         _needsLinkIndicator = NO;
         return;
     }
 
     auto defaultActions = [self defaultActionsForLinkSheet:elementInfo.get()];
 
-    RetainPtr<NSArray> actions = [_delegate actionSheetAssistant:self decideActionsForElement:elementInfo.get() defaultActions:WTF::move(defaultActions)];
+    RetainPtr<NSArray> actions = [protectedDelegate actionSheetAssistant:self decideActionsForElement:elementInfo.get() defaultActions:WTF::move(defaultActions)];
 
     if (![actions count]) {
         _needsLinkIndicator = NO;
@@ -717,8 +722,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
     _dataDetectorContextMenuPresenter = nullptr;
 
-    if ([_delegate respondsToSelector:@selector(removeContextMenuViewIfPossibleForActionSheetAssistant:)])
-        [_delegate removeContextMenuViewIfPossibleForActionSheetAssistant:self];
+    RetainPtr protectedDelegate = _delegate.get();
+    if ([protectedDelegate respondsToSelector:@selector(removeContextMenuViewIfPossibleForActionSheetAssistant:)])
+        [protectedDelegate removeContextMenuViewIfPossibleForActionSheetAssistant:self];
 }
 
 #endif // ENABLE(DATA_DETECTION)
@@ -746,8 +752,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (_captionDisplaySettingsMenuCompletionHandler)
         _captionDisplaySettingsMenuCompletionHandler({ });
 
-    if ([_delegate respondsToSelector:@selector(removeContextMenuViewIfPossibleForActionSheetAssistant:)])
-        [_delegate removeContextMenuViewIfPossibleForActionSheetAssistant:self];
+    RetainPtr protectedDelegate = _delegate.get();
+    if ([protectedDelegate respondsToSelector:@selector(removeContextMenuViewIfPossibleForActionSheetAssistant:)])
+        [protectedDelegate removeContextMenuViewIfPossibleForActionSheetAssistant:self];
 }
 
 #endif // ENABLE(MEDIA_CONTROLS_CONTEXT_MENUS)
@@ -805,10 +812,11 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     NSDictionary *context = nil;
     NSString *textAtSelection = nil;
 
-    if ([_delegate respondsToSelector:@selector(dataDetectionContextForActionSheetAssistant:positionInformation:)])
-        context = [_delegate dataDetectionContextForActionSheetAssistant:self positionInformation:*_positionInformation];
-    if ([_delegate respondsToSelector:@selector(selectedTextForActionSheetAssistant:)])
-        textAtSelection = [_delegate selectedTextForActionSheetAssistant:self];
+    RetainPtr protectedDelegate = _delegate.get();
+    if ([protectedDelegate respondsToSelector:@selector(dataDetectionContextForActionSheetAssistant:positionInformation:)])
+        context = [protectedDelegate dataDetectionContextForActionSheetAssistant:self positionInformation:*_positionInformation];
+    if ([protectedDelegate respondsToSelector:@selector(selectedTextForActionSheetAssistant:)])
+        textAtSelection = [protectedDelegate selectedTextForActionSheetAssistant:self];
 
     if ([controller respondsToSelector:@selector(shouldImmediatelyLaunchDefaultActionForURL:)] && [controller shouldImmediatelyLaunchDefaultActionForURL:targetURL.get()]) {
         auto action = [controller defaultActionForURL:targetURL.get() results:_positionInformation->dataDetectorResults.get() context:context];
@@ -820,9 +828,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     RetainPtr dataDetectorsActions = [controller actionsForURL:targetURL.get() identifier:_positionInformation->dataDetectorIdentifier.createNSString().get() selectedText:textAtSelection results:_positionInformation->dataDetectorResults.get() context:context];
     if ([dataDetectorsActions count] == 0)
         return;
-    
+
 #if USE(UICONTEXTMENU) && HAVE(UICONTEXTMENU_LOCATION)
-    if ([_view window])
+    if ([_view.get() window])
         self._dataDetectorContextMenuPresenter.present(_positionInformation->request.point);
 #else
     NSMutableArray *elementActions = [NSMutableArray array];
@@ -893,11 +901,12 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     } else
         itemsToPresent = WTF::move(items);
 
+    RetainPtr protectedDelegate = _delegate.get();
     NSArray<UIMenuElement *> *additionalItems = nil;
-    if ([_delegate respondsToSelector:@selector(additionalMediaControlsContextMenuItemsForActionSheetAssistant:)])
-        additionalItems = [_delegate additionalMediaControlsContextMenuItemsForActionSheetAssistant:self];
+    if ([protectedDelegate respondsToSelector:@selector(additionalMediaControlsContextMenuItemsForActionSheetAssistant:)])
+        additionalItems = [protectedDelegate additionalMediaControlsContextMenuItemsForActionSheetAssistant:self];
 
-    if (![_view window] || (itemsToPresent.isEmpty() && !additionalItems.count)) {
+    if (![_view.get() window] || (itemsToPresent.isEmpty() && !additionalItems.count)) {
         completionHandler(WebCore::MediaControlsContextMenuItem::invalidID);
         return;
     }
@@ -919,8 +928,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
 - (void)captionStyleMenuWillOpen:(PlatformMenu *)menu
 {
-    if ([_delegate respondsToSelector:@selector(captionStyleMenuWillOpenWithFrameInfo:identifier:)] && _mediaElementIdentifier && _frameInfo)
-        [_delegate captionStyleMenuWillOpenWithFrameInfo:*_frameInfo identifier:*_mediaElementIdentifier];
+    RetainPtr protectedDelegate = _delegate.get();
+    if ([protectedDelegate respondsToSelector:@selector(captionStyleMenuWillOpenWithFrameInfo:identifier:)] && _mediaElementIdentifier && _frameInfo)
+        [protectedDelegate captionStyleMenuWillOpenWithFrameInfo:*_frameInfo identifier:*_mediaElementIdentifier];
 }
 
 - (void)captionStyleMenu:(PlatformMenu *)captionStyleMenu didSelectProfile:(NSString *)profileID
@@ -944,7 +954,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
         for (id childMenuItem in menu.children) {
             if (RetainPtr childMenu = dynamic_objc_cast<UIMenu>(childMenuItem))
-                [newChildren addObject:menuUpdater(childMenu.get())];
+                [newChildren addObject:protect(menuUpdater(childMenu.get())).get()];
             else
                 [newChildren addObject:childMenuItem];
         }
@@ -958,8 +968,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
 - (void)captionStyleMenuDidClose:(PlatformMenu *)menu
 {
-    if ([_delegate respondsToSelector:@selector(captionStyleMenuWillOpenWithFrameInfo:identifier:)] && _mediaElementIdentifier && _frameInfo)
-        [_delegate captionStyleMenuDidCloseWithFrameInfo:*_frameInfo identifier:*_mediaElementIdentifier];
+    RetainPtr protectedDelegate = _delegate.get();
+    if ([protectedDelegate respondsToSelector:@selector(captionStyleMenuWillOpenWithFrameInfo:identifier:)] && _mediaElementIdentifier && _frameInfo)
+        [protectedDelegate captionStyleMenuDidCloseWithFrameInfo:*_frameInfo identifier:*_mediaElementIdentifier];
 
     if (_captionDisplaySettingsMenuCompletionHandler)
         _captionDisplaySettingsMenuCompletionHandler({ });
@@ -1010,10 +1021,11 @@ static NSMutableArray<UIMenuElement *> *menuElementsFromDefaultActions(RetainPtr
         NSDictionary *context = nil;
         NSString *textAtSelection = nil;
 
-        if ([_delegate respondsToSelector:@selector(dataDetectionContextForActionSheetAssistant:positionInformation:)])
-            context = [_delegate dataDetectionContextForActionSheetAssistant:self positionInformation:*_positionInformation];
-        if ([_delegate respondsToSelector:@selector(selectedTextForActionSheetAssistant:)])
-            textAtSelection = [_delegate selectedTextForActionSheetAssistant:self];
+        RetainPtr protectedDelegate = _delegate.get();
+        if ([protectedDelegate respondsToSelector:@selector(dataDetectionContextForActionSheetAssistant:positionInformation:)])
+            context = [protectedDelegate dataDetectionContextForActionSheetAssistant:self positionInformation:*_positionInformation];
+        if ([protectedDelegate respondsToSelector:@selector(selectedTextForActionSheetAssistant:)])
+            textAtSelection = [protectedDelegate selectedTextForActionSheetAssistant:self];
 
         NSDictionary *newContext = nil;
         RetainPtr ddResult = [controller resultForURL:_positionInformation->url.createNSURL().get() identifier:_positionInformation->dataDetectorIdentifier.createNSString().get() selectedText:textAtSelection results:_positionInformation->dataDetectorResults.get() context:context extendedContext:&newContext];
@@ -1027,9 +1039,10 @@ static NSMutableArray<UIMenuElement *> *menuElementsFromDefaultActions(RetainPtr
         auto ddContextMenuActionClass = PAL::getDDContextMenuActionClassSingleton();
         auto finalContext = [ddContextMenuActionClass updateContext:newContext withSourceRect:sourceRect];
 
+        RetainPtr protectedView = _view.get();
         if (ddResult)
-            return [ddContextMenuActionClass contextMenuConfigurationWithResult:ddResult.get() inView:_view.getAutoreleased() context:finalContext menuIdentifier:nil];
-        return [ddContextMenuActionClass contextMenuConfigurationWithURL:_positionInformation->url.createNSURL().get() inView:_view.getAutoreleased() context:finalContext menuIdentifier:nil];
+            return [ddContextMenuActionClass contextMenuConfigurationWithResult:ddResult.get() inView:protectedView context:finalContext menuIdentifier:nil];
+        return [ddContextMenuActionClass contextMenuConfigurationWithURL:_positionInformation->url.createNSURL().get() inView:protectedView context:finalContext menuIdentifier:nil];
     }
 #endif // ENABLE(DATA_DETECTION)
 
@@ -1058,18 +1071,20 @@ static NSMutableArray<UIMenuElement *> *menuElementsFromDefaultActions(RetainPtr
         if ([delegate respondsToSelector:@selector(createTargetedContextMenuHintForActionSheetAssistant:)])
             return [delegate createTargetedContextMenuHintForActionSheetAssistant:self];
 
+        RetainPtr protectedView = _view.get();
         RetainPtr<UIPreviewParameters> unusedPreviewParameters = adoptNS([[UIPreviewParameters alloc] init]);
-        RetainPtr<UIPreviewTarget> previewTarget = adoptNS([[UIPreviewTarget alloc] initWithContainer:_view.getAutoreleased() center:center]);
-        RetainPtr<UITargetedPreview> preview = adoptNS([[UITargetedPreview alloc] initWithView:_view.getAutoreleased() parameters:unusedPreviewParameters.get() target:previewTarget.get()]);
+        RetainPtr<UIPreviewTarget> previewTarget = adoptNS([[UIPreviewTarget alloc] initWithContainer:protectedView.get() center:center]);
+        RetainPtr<UITargetedPreview> preview = adoptNS([[UITargetedPreview alloc] initWithView:protectedView.get() parameters:unusedPreviewParameters.get() target:previewTarget.get()]);
         return preview.autorelease();
     }
 #endif // ENABLE(DATA_DETECTION)
 
 #if ENABLE(MEDIA_CONTROLS_CONTEXT_MENUS)
     if (_mediaControlsContextMenuPresenter && interaction == _mediaControlsContextMenuPresenter->interaction()) {
+        RetainPtr protectedView = _view.get();
         auto emptyView = adoptNS([[UIView alloc] initWithFrame:_mediaControlsContextMenuTargetFrame]);
         auto previewParameters = adoptNS([[UIPreviewParameters alloc] init]);
-        auto previewTarget = adoptNS([[UIPreviewTarget alloc] initWithContainer:_view.getAutoreleased() center:_mediaControlsContextMenuTargetFrame.center()]);
+        auto previewTarget = adoptNS([[UIPreviewTarget alloc] initWithContainer:protectedView.get() center:_mediaControlsContextMenuTargetFrame.center()]);
         auto preview = adoptNS([[UITargetedPreview alloc] initWithView:emptyView.get() parameters:previewParameters.get() target:previewTarget.get()]);
         return preview.autorelease();
     }
@@ -1085,8 +1100,9 @@ static NSMutableArray<UIMenuElement *> *menuElementsFromDefaultActions(RetainPtr
         if (!strongSelf)
             return;
 
-        if ([strongSelf->_delegate respondsToSelector:@selector(actionSheetAssistantDidShowContextMenu:)])
-            [strongSelf->_delegate actionSheetAssistantDidShowContextMenu:strongSelf.get()];
+        RetainPtr protectedDelegate = strongSelf->_delegate.get();
+        if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistantDidShowContextMenu:)])
+            [protectedDelegate actionSheetAssistantDidShowContextMenu:strongSelf.get()];
     }];
 }
 
@@ -1110,8 +1126,9 @@ static NSMutableArray<UIMenuElement *> *menuElementsFromDefaultActions(RetainPtr
         if (!strongSelf)
             return;
 
-        if ([strongSelf->_delegate respondsToSelector:@selector(actionSheetAssistantDidDismissContextMenu:)])
-            [strongSelf->_delegate actionSheetAssistantDidDismissContextMenu:strongSelf.get()];
+        RetainPtr protectedDelegate = strongSelf->_delegate.get();
+        if ([protectedDelegate respondsToSelector:@selector(actionSheetAssistantDidDismissContextMenu:)])
+            [protectedDelegate actionSheetAssistantDidDismissContextMenu:strongSelf.get()];
     }];
 }
 

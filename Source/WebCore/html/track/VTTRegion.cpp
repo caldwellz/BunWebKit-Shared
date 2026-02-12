@@ -407,7 +407,7 @@ void VTTRegion::scrollTimerFired()
 
 RefPtr<Document> VTTRegion::protectedDocument() const
 {
-    return downcast<Document>(protectedScriptExecutionContext());
+    return downcast<Document>(protect(scriptExecutionContext()));
 }
 
 } // namespace WebCore

@@ -273,14 +273,14 @@ FormControlState InputType::saveFormControlState() const
 void InputType::restoreFormControlState(const FormControlState& state)
 {
     ASSERT(element());
-    protectedElement()->setValue(state[0]);
+    protect(element())->setValue(state[0]);
 }
 
 bool InputType::isFormDataAppendable() const
 {
     ASSERT(element());
     // There is no form data unless there's a name for non-image types.
-    return !protectedElement()->name().isEmpty();
+    return !protect(element())->name().isEmpty();
 }
 
 bool InputType::appendFormData(DOMFormData& formData) const
@@ -598,13 +598,13 @@ RenderPtr<RenderElement> InputType::createInputRenderer(RenderStyle&& style)
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return RenderPtr<RenderElement>(RenderElement::createFor(*protectedElement(), WTF::move(style)));
+    SUPPRESS_UNCOUNTED_ARG return RenderPtr<RenderElement>(RenderElement::createFor(*protect(element()), WTF::move(style)));
 }
 
 void InputType::blur()
 {
     ASSERT(element());
-    protectedElement()->defaultBlur();
+    protect(element())->defaultBlur();
 }
 
 void InputType::createShadowSubtree()
@@ -614,7 +614,7 @@ void InputType::createShadowSubtree()
 void InputType::removeShadowSubtree()
 {
     ASSERT(element());
-    RefPtr root = protectedElement()->userAgentShadowRoot();
+    RefPtr root = protect(element())->userAgentShadowRoot();
     if (!root)
         return;
 
@@ -681,7 +681,7 @@ bool InputType::isKeyboardFocusable(const FocusEventData& focusEventData) const
 bool InputType::isMouseFocusable() const
 {
     ASSERT(element());
-    return protectedElement()->isTextFormControlMouseFocusable();
+    return protect(element())->isTextFormControlMouseFocusable();
 }
 
 bool InputType::shouldUseInputMethod() const
@@ -700,7 +700,7 @@ void InputType::handleBlurEvent()
 bool InputType::accessKeyAction(bool)
 {
     ASSERT(element());
-    protectedElement()->focus({ { }, { }, SelectionRestorationMode::SelectAll });
+    protect(element())->focus({ { }, { }, SelectionRestorationMode::SelectAll });
     return false;
 }
 
@@ -803,7 +803,7 @@ String InputType::localizeValue(const String& proposedValue) const
 String InputType::visibleValue() const
 {
     ASSERT(element());
-    return protectedElement()->value();
+    return protect(element())->value();
 }
 
 bool InputType::isEmptyValue() const
@@ -1157,7 +1157,7 @@ RefPtr<TextControlInnerTextElement> InputType::innerTextElementCreatingShadowSub
 String InputType::resultForDialogSubmit() const
 {
     ASSERT(element());
-    return protectedElement()->value();
+    return protect(element())->value();
 }
 
 void InputType::createShadowSubtreeIfNeeded()
@@ -1166,7 +1166,7 @@ void InputType::createShadowSubtreeIfNeeded()
         return;
     // FIXME: Remove protectedThis once all the callsites protect InputType.
     Ref protectedThis { *this };
-    protectedElement()->ensureUserAgentShadowRoot();
+    protect(element())->ensureUserAgentShadowRoot();
     m_hasCreatedShadowSubtree = true;
     createShadowSubtree();
 }
@@ -1177,7 +1177,7 @@ bool InputType::hasTouchEventHandler() const
 #if ENABLE(IOS_TOUCH_EVENTS)
     if (isSwitch()) {
         ASSERT(element());
-        return !protectedElement()->isDisabledFormControl();
+        return !protect(element())->isDisabledFormControl();
     }
 #else
     if (isRangeControl())

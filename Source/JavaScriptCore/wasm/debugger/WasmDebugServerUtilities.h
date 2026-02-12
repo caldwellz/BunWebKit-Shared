@@ -207,7 +207,6 @@ struct DebugState {
 
     void setStopped() { state = State::Stopped; }
     bool isStopped() const { return state == State::Stopped; }
-    void setRunning() { state = State::Running; }
     bool isRunning() const { return state == State::Running; }
 
     bool hasStepIntoEvent() { return stepIntoEvent.hasAny(); }

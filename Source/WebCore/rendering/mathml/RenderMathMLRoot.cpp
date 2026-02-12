@@ -112,8 +112,8 @@ RenderMathMLRoot::HorizontalParameters RenderMathMLRoot::horizontalParameters(La
     // We try and read constants to draw the radical from the OpenType MATH and use fallback values otherwise.
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData()) {
-        parameters.kernBeforeDegree = mathData->getMathConstant(primaryFont, OpenTypeMathData::RadicalKernBeforeDegree);
-        parameters.kernAfterDegree = mathData->getMathConstant(primaryFont, OpenTypeMathData::RadicalKernAfterDegree);
+        parameters.kernBeforeDegree = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::RadicalKernBeforeDegree);
+        parameters.kernAfterDegree = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::RadicalKernAfterDegree);
     } else {
         // RadicalKernBeforeDegree: No suggested value provided. OT Math Illuminated mentions 5/18 em, Gecko uses 0.
         // RadicalKernAfterDegree: Suggested value is -10/18 of em.
@@ -132,11 +132,11 @@ RenderMathMLRoot::VerticalParameters RenderMathMLRoot::verticalParameters()
     // We try and read constants to draw the radical from the OpenType MATH and use fallback values otherwise.
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData()) {
-        parameters.ruleThickness = mathData->getMathConstant(primaryFont, OpenTypeMathData::RadicalRuleThickness);
-        parameters.verticalGap = mathData->getMathConstant(primaryFont, style().mathStyle() == MathStyle::Normal ? OpenTypeMathData::RadicalDisplayStyleVerticalGap : OpenTypeMathData::RadicalVerticalGap);
-        parameters.extraAscender = mathData->getMathConstant(primaryFont, OpenTypeMathData::RadicalExtraAscender);
+        parameters.ruleThickness = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::RadicalRuleThickness);
+        parameters.verticalGap = mathData->getMathConstant(primaryFont, style().mathStyle() == MathStyle::Normal ? OpenTypeMathData::MathConstant::RadicalDisplayStyleVerticalGap : OpenTypeMathData::MathConstant::RadicalVerticalGap);
+        parameters.extraAscender = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::RadicalExtraAscender);
         if (rootType() == RootType::RootWithIndex)
-            parameters.degreeBottomRaisePercent = mathData->getMathConstant(primaryFont, OpenTypeMathData::RadicalDegreeBottomRaisePercent);
+            parameters.degreeBottomRaisePercent = mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::RadicalDegreeBottomRaisePercent);
     } else {
         // RadicalVerticalGap: Suggested value is 5/4 default rule thickness.
         // RadicalDisplayStyleVerticalGap: Suggested value is default rule thickness + 1/4 x-height.

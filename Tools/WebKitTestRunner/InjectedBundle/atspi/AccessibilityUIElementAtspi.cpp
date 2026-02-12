@@ -155,6 +155,11 @@ RefPtr<AccessibilityUIElement> AccessibilityUIElementAtspi::flowFromElementAtInd
     return elementForRelationAtIndex(m_element.get(), WebCore::Atspi::Relation::FlowsFrom, index);
 }
 
+RefPtr<AccessibilityUIElement> AccessibilityUIElementAtspi::ariaActionsElementAtIndex(unsigned index)
+{
+    return nullptr;
+}
+
 RefPtr<AccessibilityUIElement> AccessibilityUIElementAtspi::ariaControlsElementAtIndex(unsigned index)
 {
     return elementForRelationAtIndex(m_element.get(), WebCore::Atspi::Relation::ControllerFor, index);

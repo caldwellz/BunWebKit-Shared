@@ -63,10 +63,8 @@ public:
     virtual ~RenderWidget();
 
     inline HTMLFrameOwnerElement& frameOwnerElement() const; // Defined in RenderWidgetInlines.h
-    inline Ref<HTMLFrameOwnerElement> protectedFrameOwnerElement() const; // Defined in RenderWidgetInlines.h
 
     Widget* widget() const { return m_widget.get(); }
-    RefPtr<Widget> protectedWidget() const { return m_widget; }
     WEBCORE_EXPORT void setWidget(RefPtr<Widget>&&);
 
     static RenderWidget* find(const Widget&);

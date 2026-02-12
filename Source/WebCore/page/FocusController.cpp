@@ -504,6 +504,10 @@ void FocusController::setFocusedFrame(Frame* frame, BroadcastFocusedFrame broadc
                 localFrame->document()->updateServiceWorkerClientData();
             frame = frame->tree().parent();
         } while (frame);
+    } else if (RefPtr remoteFrame = dynamicDowncast<RemoteFrame>(frame)) {
+        RefPtr focusedOrMainFrame = this->focusedOrMainFrame();
+        if (CheckedPtr cache = focusedOrMainFrame ? focusedOrMainFrame->document()->existingAXObjectCache() : nullptr)
+            cache->onRemoteFrameGainedFocus(*remoteFrame);
     }
 
     if (shouldBroadcast)
@@ -535,11 +539,11 @@ void FocusController::setFocusedInternal(bool focused)
     }
 
     if (!focusedFrame())
-        setFocusedFrame(m_page->protectedMainFrame().ptr());
+        setFocusedFrame(protect(m_page->mainFrame()).ptr());
 
     RefPtr focusedFrame = focusedLocalFrame();
     if (focusedFrame && focusedFrame->view()) {
-        focusedFrame->checkedSelection()->setFocused(focused);
+        protect(focusedFrame->selection())->setFocused(focused);
         dispatchEventsOnWindowAndFocusedElement(protect(focusedFrame->document()).get(), focused);
     }
 }

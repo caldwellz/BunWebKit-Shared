@@ -104,6 +104,8 @@
 #include "Page.h"
 #include "ProgressTracker.h"
 #include "Range.h"
+#include "RemoteFrame.h"
+#include "RemoteFrameView.h"
 #include "RenderAttachment.h"
 #include "RenderImage.h"
 #include "RenderInline.h"
@@ -344,6 +346,25 @@ String AXObjectCache::debugDescription() const
     );
 }
 
+String AXNotificationWithData::debugDescription() const
+{
+    TextStream stream;
+    stream << "AXNotificationWithData { notification: " << notification;
+    WTF::switchOn(data,
+        [&] (const std::monostate&) { },
+        [&] (const AriaNotifyData& ariaData) {
+            stream << ", data: " << ariaData.debugDescription();
+        }
+#if PLATFORM(COCOA)
+        , [&] (const LiveRegionAnnouncementData& liveRegionData) {
+            stream << ", data: " << liveRegionData.debugDescription();
+        }
+#endif
+    );
+    stream << " }";
+    return stream.release();
+}
+
 bool AXObjectCache::isModalElement(Element& element) const
 {
     if (hasAnyRole(element, { "dialog"_s, "alertdialog"_s }) && equalLettersIgnoringASCIICase(element.attributeWithDefaultARIA(aria_modalAttr), "true"_s))
@@ -558,6 +579,16 @@ AccessibilityObject* AXObjectCache::focusedObjectForPage(const Page* page)
         return nullptr;
 
     document->updateStyleIfNeeded();
+
+    if (RefPtr remoteFrame = dynamicDowncast<RemoteFrame>(page->focusController().focusedFrame())) {
+        // Check if focus is in a site-isolated sub-frame. If so, return the AXRemoteFrame
+        // so ATs can follow it to the remote process to get the actual focused element.
+        if (RefPtr remoteFrameView = remoteFrame->view()) {
+            if (RefPtr scrollView = dynamicDowncast<AccessibilityScrollView>(getOrCreate(remoteFrameView.get())))
+                return scrollView->remoteFrame().unsafeGet();
+        }
+    }
+
     if (RefPtr focusedElement = document->focusedElement())
         return focusedObjectForNode(focusedElement.get());
     return focusedObjectForNode(document.get());
@@ -574,15 +605,23 @@ AccessibilityObject* AXObjectCache::focusedObjectForLocalFrame()
     if (!document)
         return nullptr;
 
-#if ENABLE_ACCESSIBILITY_LOCAL_FRAME
-    // If there's one AXObjectCache per frame, then we should return null if focus is in a different frame.
     RefPtr page = document->page();
+#if ENABLE(ACCESSIBILITY_LOCAL_FRAME)
     RefPtr focusedOrMainFrame = page ? page->focusController().focusedOrMainFrame() : nullptr;
-    if (!focusedOrMainFrame)
+    if (!focusedOrMainFrame || focusedOrMainFrame->document() != document.get()) {
+        // Return null if focus is in a different local frame (which would have a different AXObjectCache).
         return nullptr;
-    if (focusedOrMainFrame->document() != document.get())
-        return nullptr;
-#endif
+    }
+#endif // ENABLE(ACCESSIBILITY_LOCAL_FRAME)
+
+    if (RefPtr remoteFrame = page ? dynamicDowncast<RemoteFrame>(page->focusController().focusedFrame()) : nullptr) {
+        // Check if focus is in a site-isolated sub-frame. If so, return the AXRemoteFrame
+        // so ATs can follow it to the remote process to get the actual focused element.
+        if (RefPtr remoteFrameView = remoteFrame->view()) {
+            if (RefPtr scrollView = dynamicDowncast<AccessibilityScrollView>(getOrCreate(remoteFrameView.get())))
+                return scrollView->remoteFrame().unsafeGet();
+        }
+    }
 
     document->updateStyleIfNeeded();
     if (RefPtr focusedElement = document->focusedElement())
@@ -614,7 +653,7 @@ void AXObjectCache::setIsolatedTreeFocusedObject(AccessibilityObject* focus)
 {
     AX_ASSERT(isMainThread());
 
-    if (auto tree = AXIsolatedTree::treeForFrameID(m_frameID))
+    if (RefPtr tree = AXIsolatedTree::treeForFrameID(m_frameID))
         tree->setFocusedNodeID(focus ? std::optional { focus->objectID() } : std::nullopt);
 }
 #endif
@@ -1497,7 +1536,7 @@ void AXObjectCache::handleMenuOpened(Element& element)
         return;
     }
 
-    postNotification(getOrCreate(element), protectedDocument().get(), AXNotification::MenuOpened);
+    postNotification(getOrCreate(element), protect(document()).get(), AXNotification::MenuOpened);
 }
 
 void AXObjectCache::handleLiveRegionCreated(Element& element)
@@ -1531,7 +1570,7 @@ void AXObjectCache::handleLiveRegionCreated(Element& element)
 
 #if PLATFORM(COCOA)
         if (!m_liveRegionManager)
-            postNotification(axObject.get(), protectedDocument().get(), AXNotification::LiveRegionCreated);
+            postNotification(axObject.get(), protect(document()).get(), AXNotification::LiveRegionCreated);
 #endif
     }
 }
@@ -1881,7 +1920,7 @@ void AXObjectCache::handleMenuItemSelected(Element* element)
     if (!element->focused() && !equalLettersIgnoringASCIICase(element->attributeWithoutSynchronization(aria_selectedAttr), "true"_s))
         return;
 
-    postNotification(getOrCreate(*element), protectedDocument().get(), AXNotification::MenuListItemSelected);
+    postNotification(getOrCreate(*element), protect(document()).get(), AXNotification::MenuListItemSelected);
 }
 
 void AXObjectCache::handleTabPanelSelected(Element* oldElement, Element* newElement)
@@ -1966,6 +2005,24 @@ static bool shouldDeferFocusChange(Element* element)
 
 void AXObjectCache::onFocusChange(Element* oldElement, Element* newElement)
 {
+    if (m_deferredRemoteFrameFocus) {
+        if (newElement) {
+            // Focus is going to a local element, not the remote frame.
+            // Clear the pending remote frame focus.
+            m_deferredRemoteFrameFocus = std::nullopt;
+            // Fall through to process this focus change normally.
+        } else {
+            // When focus moves from a local element into a remote frame, this
+            // method will be called with a null |newElement|. We still want
+            // to process the remote-frame focus in this case, so make sure
+            // we we've captured the old-focus element (updating it if necessary)
+            // and returning before running any of the other logic in this method.
+            if (oldElement)
+                m_deferredRemoteFrameFocus->oldFocusedElement = oldElement;
+            return;
+        }
+    }
+
     if (shouldDeferFocusChange(newElement)) {
         if (m_deferredFocusedNodeChange) {
             // If we got a focus change notification but haven't committed a previously deferred focus change:
@@ -1989,6 +2046,18 @@ void AXObjectCache::onFocusChange(Element* oldElement, Element* newElement)
             m_performCacheUpdateTimer.startOneShot(0_s);
     } else
         handleFocusedUIElementChanged(oldElement, newElement);
+}
+
+void AXObjectCache::onFrameSelectionFocusedOrActiveStateChanged(Document& document)
+{
+#if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
+    // Update the WebArea's IsFocusedWebArea property to reflect the current
+    // frame->selection().isFocusedAndActive() state.
+    if (RefPtr webArea = get(document))
+        updateIsolatedTree(*webArea, AXProperty::IsFocusedWebArea);
+#else
+    UNUSED_PARAM(document);
+#endif
 }
 
 void AXObjectCache::onInertOrVisibilityChange(RenderElement& renderer)
@@ -2018,7 +2087,7 @@ void AXObjectCache::onPopoverToggle(const HTMLElement& popover)
         return;
     // There may be multiple elements with popovertarget attributes that point at |popover|.
     for (const auto& invoker : axPopover->controllers())
-        postNotification(dynamicDowncast<AccessibilityObject>(invoker.get()), protectedDocument().get(), AXNotification::ExpandedChanged);
+        postNotification(dynamicDowncast<AccessibilityObject>(invoker.get()), protect(document()).get(), AXNotification::ExpandedChanged);
 }
 
 void AXObjectCache::deferMenuListValueChange(Element* element)
@@ -2058,9 +2127,11 @@ void AXObjectCache::handleFocusedUIElementChanged(Element* oldElement, Element* 
     // FIXME: Consider creating a new ancestor flag to only do this work when |oldNode| or |newNode| have a tab panel ancestor (the only time it is necessary)
     handleTabPanelSelected(oldElement, newElement);
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
-    setIsolatedTreeFocusedObject(focusedObjectForNode(newElement));
+    // Use focusedObjectForLocalFrame() instead of focusedObjectForNode() to properly handle
+    // the case where focus is in a site-isolated sub-frame (returns the AXRemoteFrame).
+    setIsolatedTreeFocusedObject(focusedObjectForLocalFrame());
 #endif
-    platformHandleFocusedUIElementChanged(oldElement, newElement);
+    platformHandleFocusedUIElementChanged(getOrCreate(oldElement), getOrCreate(newElement));
 }
 
 void AXObjectCache::selectedChildrenChanged(Node* node)
@@ -2136,6 +2207,52 @@ void AXObjectCache::onRadioGroupMembershipChanged(HTMLElement& radio)
                 postNotification(axObject.get(), protect(sibling->document()).ptr(), AXNotification::RadioGroupMembershipChanged);
         }
     }
+}
+
+void AXObjectCache::onRemoteFrameGainedFocus(RemoteFrame& remoteFrame)
+{
+    RefPtr document = this->document();
+    RefPtr page = document ? document->page() : nullptr;
+    if (!page)
+        return;
+
+    RefPtr localFrame = page->focusController().focusedOrMainFrame();
+    RefPtr oldFocusedElement = localFrame ? localFrame->document()->focusedElement() : nullptr;
+
+    m_deferredRemoteFrameFocus = DeferredRemoteFrameFocus { remoteFrame, oldFocusedElement };
+
+    if (!m_performCacheUpdateTimer.isActive())
+        m_performCacheUpdateTimer.startOneShot(0_s);
+}
+
+void AXObjectCache::handleRemoteFrameGainedFocus(RemoteFrame& remoteFrame, Element* oldFocusedElement)
+{
+    RefPtr document = this->document();
+    RefPtr page = document ? document->page() : nullptr;
+    if (!page)
+        return;
+
+    RefPtr currentFocusedFrame = page->focusController().focusedFrame();
+    if (currentFocusedFrame.get() != &remoteFrame) {
+        // Focus moved away from the remote frame, so do nothing.
+        return;
+    }
+
+    RefPtr scrollView = dynamicDowncast<AccessibilityScrollView>(getOrCreate(RefPtr { remoteFrame.view() }.get()));
+    RefPtr axRemoteFrame = scrollView ? scrollView->remoteFrame() : nullptr;
+    if (!axRemoteFrame)
+        return;
+
+#if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
+    AX_ASSERT(focusedObjectForLocalFrame() == axRemoteFrame.get());
+    setIsolatedTreeFocusedObject(axRemoteFrame.get());
+#endif
+
+    // Call platform handler with the old element and the new focused AXRemoteFrame.
+    platformHandleFocusedUIElementChanged(getOrCreate(oldFocusedElement), axRemoteFrame.get());
+
+    // Recompute is-ignored for the old element since it lost focus.
+    recomputeIsIgnored(oldFocusedElement);
 }
 
 static bool isContentVisibilityHidden(const RenderStyle& style)
@@ -2760,14 +2877,14 @@ void AXObjectCache::handleAriaExpandedChange(Element& element)
 
         // Post that the ancestor's row count changed.
         if (ancestor)
-            handleRowCountChanged(ancestor.get(), protectedDocument().get());
+            handleRowCountChanged(ancestor.get(), protect(document()).get());
 
         // Post that the specific row either collapsed or expanded.
         auto role = object->role();
         if (role == AccessibilityRole::Row || role == AccessibilityRole::TreeItem)
-            postNotification(object.get(), protectedDocument().get(), object->isExpanded() ? AXNotification::RowExpanded : AXNotification::RowCollapsed);
+            postNotification(object.get(), protect(document()).get(), object->isExpanded() ? AXNotification::RowExpanded : AXNotification::RowCollapsed);
         else
-            postNotification(object.get(), protectedDocument().get(), AXNotification::ExpandedChanged);
+            postNotification(object.get(), protect(document()).get(), AXNotification::ExpandedChanged);
     }
 }
 
@@ -3323,11 +3440,11 @@ void AXObjectCache::handleLabelChanged(AccessibilityObject* object)
         auto labeledObjects = object->labelForObjects();
         for (auto& labeledObject : labeledObjects) {
             updateLabeledBy(RefPtr { labeledObject->element() }.get());
-            postNotification(&downcast<AccessibilityObject>(labeledObject.get()), protectedDocument().get(), AXNotification::ValueChanged);
+            postNotification(&downcast<AccessibilityObject>(labeledObject.get()), protect(document()).get(), AXNotification::ValueChanged);
         }
     }
 
-    postNotification(object, protectedDocument().get(), AXNotification::LabelChanged);
+    postNotification(object, protect(document()).get(), AXNotification::LabelChanged);
 }
 
 bool AXObjectCache::updateLabelFor(HTMLLabelElement& label)
@@ -3385,11 +3502,6 @@ void AXObjectCache::startCachingComputedObjectAttributesUntilTreeMutates()
 void AXObjectCache::stopCachingComputedObjectAttributes()
 {
     m_computedObjectAttributeCache = nullptr;
-}
-
-RefPtr<Document> AXObjectCache::protectedDocument() const
-{
-    return document();
 }
 
 VisiblePosition AXObjectCache::visiblePositionForTextMarkerData(const TextMarkerData& textMarkerData)
@@ -4689,6 +4801,7 @@ void AXObjectCache::prepareForDocumentDestruction(const Document& document)
     filterWeakHashSetForRemoval(m_deferredMenuListChange, document, nodesToRemove);
     filterWeakHashMapForRemoval(m_deferredTextFormControlValue, document, nodesToRemove);
     m_deferredFocusedNodeChange = std::nullopt;
+    m_deferredRemoteFrameFocus = std::nullopt;
 
     for (const auto& entry : m_deferredAttributeChange) {
         if (entry.element && (!entry.element->isConnected() || &entry.element->document() == &document))
@@ -4879,6 +4992,17 @@ void AXObjectCache::performDeferredCacheUpdate(ForceLayout forceLayout)
     RefPtr newFocusElement = m_deferredFocusedNodeChange ? m_deferredFocusedNodeChange->second.get() : nullptr;
     m_deferredFocusedNodeChange = std::nullopt;
 
+    if (m_deferredRemoteFrameFocus) {
+        AXLOG(makeString(
+            "Processing deferred remote frame focus. Old element "_s,
+            m_deferredRemoteFrameFocus->oldFocusedElement ? m_deferredRemoteFrameFocus->oldFocusedElement->debugDescription() : "nullptr"_s
+        ));
+        if (RefPtr remoteFrame = m_deferredRemoteFrameFocus->remoteFrame.get())
+            handleRemoteFrameGainedFocus(*remoteFrame, m_deferredRemoteFrameFocus->oldFocusedElement.get());
+        shouldRecomputeModal = true;
+        m_deferredRemoteFrameFocus = std::nullopt;
+    }
+
     AXLOGDeferredCollection("ModalChangedList"_s, m_deferredModalChangedList);
     for (Ref element : m_deferredModalChangedList) {
         if (!is<HTMLDialogElement>(element) && !hasAnyRole(element.get(), { "dialog"_s, "alertdialog"_s }))
@@ -4954,7 +5078,8 @@ void AXObjectCache::handleDeferredNotification(const DeferredNotificationData& d
     if (CheckedPtr renderer = data.renderer.get()) {
         // The point of deferring the notification is to post it when style and layout
         // are clean, so this function should not be called unless this is true.
-        AX_ASSERT(!needsLayoutOrStyleRecalc(renderer->document()) && !renderer->needsLayout());
+        AX_ASSERT(!needsLayoutOrStyleRecalc(renderer->document()));
+        AX_ASSERT(!renderer->needsLayout());
         postNotification(getOrCreate(*renderer), data.notification);
     } else if (RefPtr element = data.element.get()) {
         AX_ASSERT(!needsLayoutOrStyleRecalc(element->document()));
@@ -5460,7 +5585,8 @@ AXTreeData AXObjectCache::treeData(std::optional<OptionSet<AXStreamOptions>> add
                 options |= additionalOptions.value();
             streamSubtree(stream, root.releaseNonNull(), options);
         } else if (tree) {
-            stream << "Isolated tree present, but there was no root!";
+            // Trailing space is intentional to provide separation from the next sentence.
+            stream << "Isolated tree present, but there was no root! ";
 
             // There's no root — maybe there's a pending ID that can't be hydrated into an actual root object?
             if (std::optional pendingRootID = tree->pendingRootNodeID())
@@ -5481,6 +5607,7 @@ AXTreeData AXObjectCache::treeData(std::optional<OptionSet<AXStreamOptions>> add
 Vector<QualifiedName>& AXObjectCache::relationAttributes()
 {
     static NeverDestroyed<Vector<QualifiedName>> relationAttributes = Vector<QualifiedName> {
+        aria_actionsAttr,
         aria_activedescendantAttr,
         aria_controlsAttr,
         aria_describedbyAttr,
@@ -5500,6 +5627,10 @@ Vector<QualifiedName>& AXObjectCache::relationAttributes()
 AXRelation AXObjectCache::symmetricRelation(AXRelation relation)
 {
     switch (relation) {
+    case AXRelation::Actions:
+        return AXRelation::ActionsOf;
+    case AXRelation::ActionsOf:
+        return AXRelation::Actions;
     case AXRelation::ActiveDescendant:
         return AXRelation::ActiveDescendantOf;
     case AXRelation::ActiveDescendantOf:
@@ -5544,6 +5675,8 @@ AXRelation AXObjectCache::symmetricRelation(AXRelation relation)
 
 AXRelation AXObjectCache::attributeToRelationType(const QualifiedName& attribute)
 {
+    if (attribute == aria_actionsAttr && m_document && m_document->settings().aRIAActionsSupportEnabled())
+        return AXRelation::Actions;
     if (attribute == aria_activedescendantAttr)
         return AXRelation::ActiveDescendant;
     if (attribute == aria_controlsAttr || attribute == commandforAttr || attribute == popovertargetAttr)

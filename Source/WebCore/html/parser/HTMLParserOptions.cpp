@@ -47,7 +47,7 @@ HTMLParserOptions::HTMLParserOptions(Document& document)
     if (document.settings().htmlParserScriptingFlagPolicy() == HTMLParserScriptingFlagPolicy::Enabled)
         scriptingFlag = true;
     else
-        scriptingFlag = frame && frame->checkedScript()->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript) && document.allowsContentJavaScript();
+        scriptingFlag = frame && protect(frame->script())->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript) && document.allowsContentJavaScript();
 
     usePreHTML5ParserQuirks = document.settings().usePreHTML5ParserQuirks();
     enhancedSelect = document.settings().htmlEnhancedSelectParsingEnabled();

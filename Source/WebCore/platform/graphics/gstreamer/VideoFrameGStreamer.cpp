@@ -40,10 +40,12 @@
 #include <skia/core/SkData.h>
 #include <skia/core/SkImage.h>
 
-#if USE(GBM) && GST_CHECK_VERSION(1, 24, 0)
+#if USE(GBM)
 #include <drm_fourcc.h>
+#if GST_CHECK_VERSION(1, 24, 0)
 #include <gst/video/video-info-dma.h>
-#endif
+#endif // GST_CHECK_VERSION(1, 24, 0)
+#endif // USE(GBM)
 
 #if USE(GSTREAMER_GL)
 #include <gst/allocators/gstdmabuf.h>
@@ -69,13 +71,52 @@ static void ensureVideoFrameDebugCategoryInitialized()
     });
 }
 
+#if USE(GBM)
+static std::optional<uint32_t> videoFormatToDRMFourcc(GstVideoFormat format)
+{
+    switch (format) {
+    case GST_VIDEO_FORMAT_BGRx:
+        return DRM_FORMAT_XRGB8888;
+    case GST_VIDEO_FORMAT_RGBx:
+        return DRM_FORMAT_XBGR8888;
+    case GST_VIDEO_FORMAT_BGRA:
+        return DRM_FORMAT_ARGB8888;
+    case GST_VIDEO_FORMAT_RGBA:
+        return DRM_FORMAT_ABGR8888;
+    case GST_VIDEO_FORMAT_I420:
+        return DRM_FORMAT_YUV420;
+    case GST_VIDEO_FORMAT_YV12:
+        return DRM_FORMAT_YVU420;
+    case GST_VIDEO_FORMAT_NV12:
+        return DRM_FORMAT_NV12;
+    case GST_VIDEO_FORMAT_NV21:
+        return DRM_FORMAT_NV21;
+    case GST_VIDEO_FORMAT_Y444:
+        return DRM_FORMAT_YUV444;
+    case GST_VIDEO_FORMAT_Y41B:
+        return DRM_FORMAT_YUV411;
+    case GST_VIDEO_FORMAT_Y42B:
+        return DRM_FORMAT_YUV422;
+    case GST_VIDEO_FORMAT_P010_10LE:
+        return DRM_FORMAT_P010;
+    default:
+        break;
+    }
+
+    ASSERT_NOT_REACHED_WITH_MESSAGE("Un-handled video format: %s", gst_video_format_to_string(format));
+    GST_ERROR("Un-handled video format: %s", gst_video_format_to_string(format));
+    return std::nullopt;
+}
+#endif
+
 VideoFrameGStreamer::Info VideoFrameGStreamer::infoFromCaps(const GRefPtr<GstCaps>& caps)
 {
     GstVideoInfo videoInfo;
     gst_video_info_from_caps(&videoInfo, caps.get());
 
     std::optional<DMABufFormat> dmabufFormat;
-#if USE(GBM) && GST_CHECK_VERSION(1, 24, 0)
+#if USE(GBM)
+#if GST_CHECK_VERSION(1, 24, 0)
     if (gst_video_is_dma_drm_caps(caps.get())) {
         GstVideoInfoDmaDrm drmVideoInfo;
         if (!gst_video_info_dma_drm_from_caps(&drmVideoInfo, caps.get()))
@@ -86,7 +127,12 @@ VideoFrameGStreamer::Info VideoFrameGStreamer::infoFromCaps(const GRefPtr<GstCap
 
         dmabufFormat = { drmVideoInfo.drm_fourcc, drmVideoInfo.drm_modifier };
     }
-#endif
+#else
+    auto fourccFromFormat = videoFormatToDRMFourcc(GST_VIDEO_INFO_FORMAT(&videoInfo));
+    ASSERT(fourccFromFormat);
+    dmabufFormat = { *fourccFromFormat, DRM_FORMAT_MOD_INVALID };
+#endif // GST_CHECK_VERSION(1, 24, 0)
+#endif // USE(GBM)
     return { videoInfo, dmabufFormat };
 }
 
@@ -707,40 +753,6 @@ void VideoFrameGStreamer::setMemoryTypeFromCaps()
 }
 
 #if USE(GBM) && GST_CHECK_VERSION(1, 24, 0)
-static uint32_t videoFormatToDRMFourcc(GstVideoFormat format)
-{
-    switch (format) {
-    case GST_VIDEO_FORMAT_BGRx:
-        return DRM_FORMAT_XRGB8888;
-    case GST_VIDEO_FORMAT_RGBx:
-        return DRM_FORMAT_XBGR8888;
-    case GST_VIDEO_FORMAT_BGRA:
-        return DRM_FORMAT_ARGB8888;
-    case GST_VIDEO_FORMAT_RGBA:
-        return DRM_FORMAT_ABGR8888;
-    case GST_VIDEO_FORMAT_I420:
-        return DRM_FORMAT_YUV420;
-    case GST_VIDEO_FORMAT_YV12:
-        return DRM_FORMAT_YVU420;
-    case GST_VIDEO_FORMAT_NV12:
-        return DRM_FORMAT_NV12;
-    case GST_VIDEO_FORMAT_NV21:
-        return DRM_FORMAT_NV21;
-    case GST_VIDEO_FORMAT_Y444:
-        return DRM_FORMAT_YUV444;
-    case GST_VIDEO_FORMAT_Y41B:
-        return DRM_FORMAT_YUV411;
-    case GST_VIDEO_FORMAT_Y42B:
-        return DRM_FORMAT_YUV422;
-    case GST_VIDEO_FORMAT_P010_10LE:
-        return DRM_FORMAT_P010;
-    default:
-        break;
-    }
-
-    return 0;
-}
-
 RefPtr<DMABufBuffer> VideoFrameGStreamer::getDMABuf()
 {
     if (m_memoryType != MemoryType::DMABuf)
@@ -775,8 +787,14 @@ RefPtr<DMABufBuffer> VideoFrameGStreamer::getDMABuf()
     IntSize size(videoMeta->width, videoMeta->height);
     const auto& videoInfo = info();
     auto dmabufFormat = this->dmaBufFormat();
-    uint32_t fourcc = dmabufFormat ? dmabufFormat->first : videoFormatToDRMFourcc(GST_VIDEO_INFO_FORMAT(&videoInfo));
     uint64_t modifier = dmabufFormat ? dmabufFormat->second : DRM_FORMAT_MOD_INVALID;
+    uint32_t fourcc = 0;
+    if (dmabufFormat)
+        fourcc = dmabufFormat->first;
+    else if (auto fourccFromFormat = videoFormatToDRMFourcc(GST_VIDEO_INFO_FORMAT(&videoInfo)))
+        fourcc = *fourccFromFormat;
+    ASSERT(fourcc);
+
     RefPtr dmabuf = DMABufBuffer::create(size, fourcc, WTF::move(fds), WTF::move(offsets), WTF::move(strides), modifier);
 
     DMABufBuffer::ColorSpace colorSpace = DMABufBuffer::ColorSpace::Bt601;

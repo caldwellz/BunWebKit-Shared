@@ -135,7 +135,7 @@ RefPtr<RemoteLayerTreeNode> RemoteLayerTreeHost::makeNode(const RemoteLayerTreeT
         }
 #endif
 
-        auto view = adoptNS([[WKUIRemoteView alloc] initWithFrame:CGRectZero pid:protect(m_drawingArea)->page()->legacyMainFrameProcessID() contextID:properties.hostingContextID()]);
+        auto view = adoptNS([[WKUIRemoteView alloc] initWithFrame:CGRectZero pid:protect(protect(m_drawingArea)->page())->legacyMainFrameProcessID() contextID:properties.hostingContextID()]);
         return makeWithView(WTF::move(view));
     }
     case PlatformCALayer::LayerType::LayerTypeShapeLayer:
@@ -161,8 +161,8 @@ RefPtr<RemoteLayerTreeNode> RemoteLayerTreeHost::makeNode(const RemoteLayerTreeT
 #endif
 
         if (!modelHandledOutOfProcess) {
-            if (RefPtr page = m_drawingArea->page()) {
-                if (page->preferences().modelElementEnabled()) {
+            if (RefPtr page = protect(m_drawingArea)->page()) {
+                if (protect(page->preferences())->modelElementEnabled()) {
                     if (auto* model = std::get_if<Ref<Model>>(&properties.additionalData)) {
 #if ENABLE(SEPARATED_MODEL)
                 return makeWithView(adoptNS([[WKSeparatedModelView alloc] initWithModel:*model]));

@@ -371,23 +371,24 @@ ExceptionOr<Ref<CSSStyleValue>> CSSStyleValueFactory::reifyValue(Document& docum
     return CSSStyleValue::create(Ref(const_cast<CSSValue&>(cssValue)));
 }
 
-ExceptionOr<Vector<Ref<CSSStyleValue>>> CSSStyleValueFactory::vectorFromStyleValuesOrStrings(Document& document, const AtomString& property, FixedVector<Variant<RefPtr<CSSStyleValue>, String>>&& values)
+ExceptionOr<Vector<Ref<CSSStyleValue>>> CSSStyleValueFactory::vectorFromStyleValuesOrStrings(Document& document, const AtomString& property, FixedVector<Variant<Ref<CSSStyleValue>, String>>&& values)
 {
     Vector<Ref<CSSStyleValue>> styleValues;
     for (auto&& value : WTF::move(values)) {
-        std::optional<Exception> exception;
-        switchOn(WTF::move(value), [&](RefPtr<CSSStyleValue>&& styleValue) {
-            ASSERT(styleValue);
-            styleValues.append(styleValue.releaseNonNull());
-        }, [&](String&& string) {
-            constexpr bool parseMultiple = true;
-            auto result = CSSStyleValueFactory::parseStyleValue(document, property, string, parseMultiple);
-            if (result.hasException()) {
-                exception = result.releaseException();
-                return;
+        auto exception = switchOn(WTF::move(value),
+            [&](Ref<CSSStyleValue>&& styleValue) -> std::optional<Exception> {
+                styleValues.append(WTF::move(styleValue));
+                return std::nullopt;
+            },
+            [&](String&& string) -> std::optional<Exception> {
+                constexpr bool parseMultiple = true;
+                auto result = CSSStyleValueFactory::parseStyleValue(document, property, string, parseMultiple);
+                if (result.hasException())
+                    return result.releaseException();
+                styleValues.appendVector(result.releaseReturnValue());
+                return std::nullopt;
             }
-            styleValues.appendVector(result.releaseReturnValue());
-        });
+        );
         if (exception)
             return { WTF::move(*exception) };
     }

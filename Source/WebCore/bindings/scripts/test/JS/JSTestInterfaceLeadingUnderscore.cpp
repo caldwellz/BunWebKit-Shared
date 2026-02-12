@@ -206,7 +206,7 @@ void JSTestInterfaceLeadingUnderscoreOwner::finalize(JSC::Handle<JSC::Unknown> h
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestInterfaceLeadingUnderscore = static_cast<JSTestInterfaceLeadingUnderscore*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestInterfaceLeadingUnderscore->protectedWrapped().ptr(), jsTestInterfaceLeadingUnderscore);
+    uncacheWrapper(world, protect(jsTestInterfaceLeadingUnderscore->wrapped()).ptr(), jsTestInterfaceLeadingUnderscore);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

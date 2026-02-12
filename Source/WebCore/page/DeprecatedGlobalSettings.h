@@ -122,6 +122,11 @@ public:
     static bool modelDocumentEnabled() { return singleton().m_modelDocumentEnabled; }
 #endif
 
+#if HAVE(WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST)
+    static void setWebContentRestrictionsTransitiveTrustEnabled(bool isEnabled) { singleton().m_webContentRestrictionsTransitiveTrustEnabled = isEnabled; }
+    static bool webContentRestrictionsTransitiveTrustEnabled() { return singleton().m_webContentRestrictionsTransitiveTrustEnabled; }
+#endif
+
 private:
     WEBCORE_EXPORT static DeprecatedGlobalSettings& singleton();
     DeprecatedGlobalSettings() = default;
@@ -175,6 +180,10 @@ private:
 
 #if ENABLE(MODEL_ELEMENT)
     bool m_modelDocumentEnabled { false };
+#endif
+
+#if HAVE(WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST)
+    bool m_webContentRestrictionsTransitiveTrustEnabled { true };
 #endif
 
     friend class NeverDestroyed<DeprecatedGlobalSettings>;

@@ -108,6 +108,7 @@
 #include "IntlNumberFormatConstructor.h"
 #include "IntlNumberFormatPrototype.h"
 #include "IntlObject.h"
+#include "IntlPartObject.h"
 #include "IntlPluralRules.h"
 #include "IntlPluralRulesPrototype.h"
 #include "IntlRelativeTimeFormat.h"
@@ -231,6 +232,7 @@
 #include "ObjectPropertyChangeAdaptiveWatchpoint.h"
 #include "ObjectPropertyConditionSet.h"
 #include "ObjectPrototypeInlines.h"
+#include "PinballCompletion.h"
 #include "ProfilerSupport.h"
 #include "ProxyConstructorInlines.h"
 #include "ProxyObjectInlines.h"
@@ -314,6 +316,10 @@
 #include "WebAssemblyRuntimeErrorPrototype.h"
 #include "WebAssemblyStructConstructor.h"
 #include "WebAssemblyStructPrototype.h"
+#include "WebAssemblySuspendErrorConstructor.h"
+#include "WebAssemblySuspendErrorPrototype.h"
+#include "WebAssemblySuspendingConstructor.h"
+#include "WebAssemblySuspendingPrototype.h"
 #include "WebAssemblyTableConstructor.h"
 #include "WebAssemblyTablePrototype.h"
 #include "WebAssemblyTagConstructor.h"
@@ -747,13 +753,11 @@ JSC_DEFINE_HOST_FUNCTION(enqueueJob, (JSGlobalObject* globalObject, CallFrame* c
 {
     auto* job = jsCast<JSFunction*>(callFrame->argument(0));
     ASSERT(job->globalObject() == globalObject);
-    // For $enqueueJob, we invoke the job function with up to 4 arguments directly
     JSValue argument0 = callFrame->argument(1);
     JSValue argument1 = callFrame->argument(2);
     JSValue argument2 = callFrame->argument(3);
-    JSValue argument3 = callFrame->argument(4);
-    // BunInvokeJobWithArguments expects: job, arg0, arg1, arg2, arg3
-    JSC::QueuedTask task { nullptr, JSC::InternalMicrotask::BunInvokeJobWithArguments, 0, globalObject, job, argument0, argument1, argument2, argument3 };
+    // maxMicrotaskArguments=4: job + 3 user arguments
+    JSC::QueuedTask task { nullptr, JSC::InternalMicrotask::BunInvokeJobWithArguments, 0, globalObject, job, argument0, argument1, argument2 };
     globalObject->vm().queueMicrotask(WTF::move(task));
     return encodedJSUndefined();
 }
@@ -1694,6 +1698,22 @@ capitalName ## Constructor* lowerName ## Constructor = featureFlag ? capitalName
     m_segmentDataObjectWithIsWordLikeStructure.initLater(
         [] (const Initializer<Structure>& init) {
             init.set(createSegmentDataObjectWithIsWordLikeStructure(init.vm, *init.owner));
+        });
+    m_intlPartObjectStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            init.set(createIntlPartObjectStructure(init.vm, *init.owner));
+        });
+    m_intlPartObjectWithSourceStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            init.set(createIntlPartObjectWithSourceStructure(init.vm, *init.owner));
+        });
+    m_intlPartObjectWithUnitStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            init.set(createIntlPartObjectWithUnitStructure(init.vm, *init.owner));
+        });
+    m_intlPartObjectWithUnitAndSourceStructure.initLater(
+        [] (const Initializer<Structure>& init) {
+            init.set(createIntlPartObjectWithUnitAndSourceStructure(init.vm, *init.owner));
         });
 
     m_dateTimeFormatStructure.initLater(
@@ -2955,6 +2975,10 @@ void JSGlobalObject::visitChildrenImpl(JSCell* cell, Visitor& visitor)
     thisObject->m_segmentsStructure.visit(visitor);
     thisObject->m_segmentDataObjectStructure.visit(visitor);
     thisObject->m_segmentDataObjectWithIsWordLikeStructure.visit(visitor);
+    thisObject->m_intlPartObjectStructure.visit(visitor);
+    thisObject->m_intlPartObjectWithSourceStructure.visit(visitor);
+    thisObject->m_intlPartObjectWithUnitStructure.visit(visitor);
+    thisObject->m_intlPartObjectWithUnitAndSourceStructure.visit(visitor);
     thisObject->m_dateTimeFormatStructure.visit(visitor);
     thisObject->m_numberFormatStructure.visit(visitor);
 
@@ -3704,17 +3728,6 @@ void JSGlobalObject::promiseRejectionTracker(JSGlobalObject* globalObject, JSPro
     }
 }
 
-#if USE(BUN_JSC_ADDITIONS)
-void JSGlobalObject::queueMicrotask(InternalMicrotask job, JSValue argument0, JSValue argument1, JSValue argument2, JSValue argument3, JSValue argument4)
-{
-    QueuedTask task { nullptr, job, 0, this, argument0, argument1, argument2, argument3, argument4 };
-    if (globalObjectMethodTable()->queueMicrotaskToEventLoop) {
-        globalObjectMethodTable()->queueMicrotaskToEventLoop(*this, WTF::move(task));
-        return;
-    }
-    vm().queueMicrotask(WTF::move(task));
-}
-#endif
 
 void JSGlobalObject::reportUncaughtExceptionAtEventLoop(JSGlobalObject*, Exception* exception)
 {

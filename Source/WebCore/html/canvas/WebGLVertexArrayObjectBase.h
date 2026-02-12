@@ -27,9 +27,9 @@
 
 #if ENABLE(WEBGL)
 
-#include "GraphicsContextGL.h"
-#include "WebGLBuffer.h"
-#include "WebGLObject.h"
+#include <WebCore/GraphicsContextGL.h>
+#include <WebCore/WebGLBuffer.h>
+#include <WebCore/WebGLObject.h>
 #include <optional>
 
 namespace JSC {

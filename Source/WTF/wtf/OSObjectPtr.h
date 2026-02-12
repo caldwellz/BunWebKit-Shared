@@ -81,6 +81,7 @@ public:
     constexpr OSObjectPtr(HashTableDeletedValueType) : m_ptr(hashTableDeletedValue()) { }
     constexpr bool isHashTableDeletedValue() const { return m_ptr == hashTableDeletedValue(); }
 
+    constexpr operator PtrType() const LIFETIME_BOUND { return m_ptr; }
     T get() const LIFETIME_BOUND { return m_ptr; }
 
     explicit operator bool() const { return m_ptr; }

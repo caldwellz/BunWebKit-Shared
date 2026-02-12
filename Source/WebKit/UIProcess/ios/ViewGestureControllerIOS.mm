@@ -226,7 +226,8 @@ void ViewGestureController::beginSwipeGesture(_UINavigationInteractiveTransition
             backForwardList.currentItem()->setSnapshot(currentViewHistoryItem->snapshot());
     }
 
-    CGRect liveSwipeViewFrame = [m_liveSwipeView.get() frame];
+    RetainPtr liveSwipeView = m_liveSwipeView.get();
+    CGRect liveSwipeViewFrame = [liveSwipeView frame];
 
     RetainPtr<UIViewController> snapshotViewController = adoptNS([[UIViewController alloc] init]);
     m_snapshotView = adoptNS([[UIView alloc] initWithFrame:liveSwipeViewFrame]);
@@ -272,7 +273,7 @@ void ViewGestureController::beginSwipeGesture(_UINavigationInteractiveTransition
         }();
 
         if (canUseSnapshot)
-            [m_snapshotView layer].contents = snapshot->asLayerContents();
+            [m_snapshotView layer].contents = protect(snapshot->asLayerContents()).get();
 
         WebCore::Color coreColor = snapshot->backgroundColor();
         if (coreColor.isValid())
@@ -281,7 +282,7 @@ void ViewGestureController::beginSwipeGesture(_UINavigationInteractiveTransition
 
     [m_snapshotView setBackgroundColor:backgroundColor.get()];
     [m_snapshotView layer].contentsGravity = kCAGravityTopLeft;
-    [m_snapshotView layer].contentsScale = [m_liveSwipeView.get() window].screen.scale;
+    [m_snapshotView layer].contentsScale = [liveSwipeView window].screen.scale;
     [snapshotViewController setView:m_snapshotView.get()];
 
     m_transitionContainerView = adoptNS([[UIView alloc] initWithFrame:liveSwipeViewFrame]);
@@ -291,9 +292,9 @@ void ViewGestureController::beginSwipeGesture(_UINavigationInteractiveTransition
 
     [m_liveSwipeViewClippingView setClipsToBounds:YES];
 
-    [[m_liveSwipeView.get() superview] insertSubview:m_transitionContainerView.get() belowSubview:m_liveSwipeView.get().get()];
+    [[liveSwipeView superview] insertSubview:m_transitionContainerView.get() belowSubview:liveSwipeView.get()];
     [m_transitionContainerView addSubview:m_liveSwipeViewClippingView.get()];
-    [m_liveSwipeViewClippingView addSubview:m_liveSwipeView.get().get()];
+    [m_liveSwipeViewClippingView addSubview:liveSwipeView.get()];
 
     RetainPtr<UIViewController> targettedViewController = adoptNS([[UIViewController alloc] init]);
     [targettedViewController setView:m_liveSwipeViewClippingView.get()];
@@ -322,7 +323,7 @@ void ViewGestureController::beginSwipeGesture(_UINavigationInteractiveTransition
     auto pageID = page->identifier();
     GestureID gestureID = m_currentGestureID;
     [m_swipeTransitionContext _setCompletionHandler:[pageID, gestureID, targetItem] (_UIViewControllerTransitionContext *context, BOOL didComplete) {
-        if (auto gestureController = controllerForGesture(pageID, gestureID))
+        if (RefPtr gestureController = controllerForGesture(pageID, gestureID))
             gestureController->endSwipeGesture(targetItem.get(), context, !didComplete);
     }];
 
@@ -382,7 +383,7 @@ void ViewGestureController::endSwipeGesture(WebBackForwardListItem* targetItem, 
     [context _setAnimator:nil];
     
     [[m_transitionContainerView superview] insertSubview:m_snapshotView.get() aboveSubview:m_transitionContainerView.get()];
-    [[m_transitionContainerView superview] insertSubview:m_liveSwipeView.get().get() aboveSubview:m_transitionContainerView.get()];
+    [[m_transitionContainerView superview] insertSubview:protect(m_liveSwipeView.get().get()).get() aboveSubview:m_transitionContainerView.get()];
     [m_liveSwipeViewClippingView removeFromSuperview];
     m_liveSwipeViewClippingView = nullptr;
     [m_transitionContainerView removeFromSuperview];
@@ -431,7 +432,7 @@ void ViewGestureController::endSwipeGesture(WebBackForwardListItem* targetItem, 
         }
 
         page->callAfterNextPresentationUpdate([pageID, gestureID] {
-            if (auto gestureController = controllerForGesture(pageID, gestureID))
+            if (RefPtr gestureController = controllerForGesture(pageID, gestureID))
                 gestureController->willCommitPostSwipeTransitionLayerTree(true);
         });
         drawingArea->hideContentUntilPendingUpdate();

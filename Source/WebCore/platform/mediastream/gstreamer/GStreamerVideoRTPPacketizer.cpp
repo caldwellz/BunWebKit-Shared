@@ -191,7 +191,7 @@ void GStreamerVideoRTPPacketizer::configure(const GstStructure* encodingParamete
     ASSERT(encodingParameters);
     GST_DEBUG_OBJECT(m_bin.get(), "Configuring with encoding parameters: %" GST_PTR_FORMAT, encodingParameters);
 
-    auto maxFrameRate = gstStructureGet<unsigned>(encodingParameters, "max-framerate"_s).value_or(0);
+    auto maxFrameRate = gstStructureGet<double>(encodingParameters, "max-framerate"_s).value_or(0);
     if (maxFrameRate) {
         if (!m_videoRate)
             GST_WARNING_OBJECT(m_bin.get(), "Unable to configure max-framerate");
@@ -201,7 +201,7 @@ void GStreamerVideoRTPPacketizer::configure(const GstStructure* encodingParamete
                 maxFrameRate = 2;
 
             int numerator, denominator;
-            gst_util_double_to_fraction(static_cast<double>(maxFrameRate), &numerator, &denominator);
+            gst_util_double_to_fraction(maxFrameRate, &numerator, &denominator);
 
             auto caps = adoptGRef(gst_caps_new_simple("video/x-raw", "framerate", GST_TYPE_FRACTION, numerator, denominator, nullptr));
             g_object_set(m_frameRateCapsFilter.get(), "caps", caps.get(), nullptr);

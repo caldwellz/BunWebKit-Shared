@@ -50,7 +50,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
 - (void)dealloc
 {
-    [_identifier release];
+    SUPPRESS_UNRETAINED_ARG [_identifier release];
     [super dealloc];
 }
 

@@ -78,6 +78,19 @@ void ScrollingTreeFixedNodeCocoa::applyLayerPositions()
     [m_layer _web_setLayerTopLeftPosition:layerPosition - m_constraints.alignmentOffset()];
 }
 
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+void ScrollingTreeFixedNodeCocoa::willBeDestroyed()
+{
+    RefPtr scrollingTree = this->scrollingTree();
+    if (!scrollingTree)
+        return;
+
+    ensureOnMainRunLoop([scrollingTree = WTF::move(scrollingTree), nodeID = scrollingNodeID()] {
+        scrollingTree->scrollingTreeNodeWillBeRemoved(nodeID);
+    });
+}
+#endif
+
 void ScrollingTreeFixedNodeCocoa::dumpProperties(TextStream& ts, OptionSet<ScrollingStateTreeAsTextBehavior> behavior) const
 {
     ScrollingTreeFixedNode::dumpProperties(ts, behavior);

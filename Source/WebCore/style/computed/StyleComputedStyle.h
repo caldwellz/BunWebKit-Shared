@@ -59,21 +59,7 @@ public:
     inline bool fontCascadeEqual(const ComputedStyle&) const;
     bool scrollSnapDataEquivalent(const ComputedStyle&) const;
 
-    // MARK: - Style adjustment utilities
-
-    void setPageScaleTransform(float);
-    void setColumnStylesFromPaginationMode(PaginationMode);
-    inline void addToTextDecorationLineInEffect(TextDecorationLine);
-    inline void containIntrinsicWidthAddAuto();
-    inline void containIntrinsicHeightAddAuto();
-    inline void setGridAutoFlowDirection(GridAutoFlow::Direction);
-
-    void adjustAnimations();
-    void adjustTransitions();
-    void adjustBackgroundLayers();
-    void adjustMaskLayers();
-    void adjustScrollTimelines();
-    void adjustViewTimelines();
+    // MARK: - Style reset utilities
 
     inline void resetBorder();
     inline void resetBorderExceptRadius();
@@ -106,7 +92,7 @@ public:
 #endif
 
 private:
-    friend class WebCore::RenderStyleBase;
+    friend class WebCore::RenderStyleProperties;
 
     ComputedStyle(ComputedStyle&&);
     ComputedStyle& operator=(ComputedStyle&&);

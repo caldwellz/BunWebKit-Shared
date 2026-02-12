@@ -492,7 +492,7 @@ void JSTestEnabledBySettingOwner::finalize(JSC::Handle<JSC::Unknown> handle, voi
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestEnabledBySetting = static_cast<JSTestEnabledBySetting*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestEnabledBySetting->protectedWrapped().ptr(), jsTestEnabledBySetting);
+    uncacheWrapper(world, protect(jsTestEnabledBySetting->wrapped()).ptr(), jsTestEnabledBySetting);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

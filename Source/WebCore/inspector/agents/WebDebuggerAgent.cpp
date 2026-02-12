@@ -82,7 +82,7 @@ void WebDebuggerAgent::didAddEventListener(EventTarget& target, const AtomString
     if (m_registeredEventListeners.contains(registeredListener.ptr()))
         return;
 
-    auto* globalObject = target.protectedScriptExecutionContext()->globalObject();
+    auto* globalObject = protect(target.scriptExecutionContext())->globalObject();
     if (!globalObject)
         return;
 

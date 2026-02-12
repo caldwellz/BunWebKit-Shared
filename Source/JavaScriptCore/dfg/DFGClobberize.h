@@ -237,6 +237,7 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
     case StringCodePointAt:
     case StringIndexOf:
     case StringStartsWith:
+    case StringEndsWith:
     case CompareStrictEq:
     case SameValue:
     case IsEmpty:
@@ -481,13 +482,13 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         return;
 
     case ArithAdd:
-    case ArithMod:
     case DoubleAsInt32:
     case UInt32ToNumber:
         def(PureValue(node, node->arithMode()));
         return;
 
     case ArithDiv:
+    case ArithMod:
     case ArithMul:
     case ArithSub:
         switch (node->binaryUseKind()) {
@@ -2448,6 +2449,12 @@ void clobberize(Graph& graph, Node* node, const ReadFunctor& read, const WriteFu
         AbstractHeapKind heap = (mapOrSetEdge.useKind() == MapObjectUse) ? JSMapFields : JSSetFields;
         read(heap);
         def(HeapLocation(MapOrSetSizeLoc, heap, mapOrSetEdge), LazyNode(node));
+        return;
+    }
+
+    case GetRegExpFlag: {
+        read(MiscFields);
+        def(HeapLocation(GetRegExpFlagLoc, MiscFields, node->child1(), std::bit_cast<void*>(static_cast<uintptr_t>(node->regExpFlag()))), LazyNode(node));
         return;
     }
 

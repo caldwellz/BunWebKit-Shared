@@ -128,7 +128,7 @@ static double entropyScore(StringView text)
     return totalWeight / textLength;
 }
 
-static bool isProbablyHumanReadable(StringView text, double entropyThreshold = 0)
+bool isProbablyHumanReadable(StringView text)
 {
     static constexpr auto highEntropyThreshold = 40;
     static constexpr auto lowEntropyThreshold = 5;
@@ -139,7 +139,7 @@ static bool isProbablyHumanReadable(StringView text, double entropyThreshold = 0
     if (text.length() <= lowEntropyThreshold)
         return true;
 
-    return entropyScore(text) >= entropyThreshold;
+    return entropyScore(text) >= 0;
 }
 
 String lowEntropyLastPathComponent(const URL& url, const String& fallbackName)

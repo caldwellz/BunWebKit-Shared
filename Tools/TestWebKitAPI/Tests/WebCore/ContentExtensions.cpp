@@ -872,8 +872,8 @@ TEST_F(ContentExtensionTest, MultipleExtensions)
     testRequest(backend, mainDocumentRequest("http://webkit.org"_s), { }, 2);
     testRequest(backend, mainDocumentRequest("http://webkit.org/block_load.html"_s), { variantIndex<ContentExtensions::BlockLoadAction> }, 2);
     testRequest(backend, mainDocumentRequest("http://webkit.org/block_cookies.html"_s), { variantIndex<ContentExtensions::BlockCookiesAction> }, 2);
-    testRequest(backend, mainDocumentRequest("http://webkit.org/block_load/block_cookies.html"_s), { variantIndex<ContentExtensions::BlockCookiesAction>, variantIndex<ContentExtensions::BlockLoadAction> }, 2);
-    testRequest(backend, mainDocumentRequest("http://webkit.org/block_cookies/block_load.html"_s), { variantIndex<ContentExtensions::BlockCookiesAction>, variantIndex<ContentExtensions::BlockLoadAction> }, 2);
+    testRequest(backend, mainDocumentRequest("http://webkit.org/block_load/block_cookies.html"_s), { variantIndex<ContentExtensions::BlockLoadAction>, variantIndex<ContentExtensions::BlockCookiesAction> }, 2);
+    testRequest(backend, mainDocumentRequest("http://webkit.org/block_cookies/block_load.html"_s), { variantIndex<ContentExtensions::BlockLoadAction>, variantIndex<ContentExtensions::BlockCookiesAction> }, 2);
     
     auto ignoreExtension1 = InMemoryCompiledContentExtension::create("[{\"action\":{\"type\":\"block\"},\"trigger\":{\"url-filter\":\"block_load\"}},"
         "{\"action\":{\"type\":\"ignore-previous-rules\"},\"trigger\":{\"url-filter\":\"ignore1\"}}]"_s);

@@ -46,7 +46,7 @@ StyleRulePositionTry::StyleRulePositionTry(AtomString&& name, Ref<StylePropertie
 StyleRulePositionTry::StyleRulePositionTry(const StyleRulePositionTry& o)
     : StyleRuleBase(o)
     , m_name(o.m_name)
-    , m_properties(o.protectedProperties()->mutableCopy())
+    , m_properties(protect(o.properties())->mutableCopy())
 {
 }
 
@@ -95,7 +95,7 @@ void CSSPositionTryRule::reattach(StyleRuleBase& rule)
 {
     m_positionTryRule = downcast<StyleRulePositionTry>(rule);
     if (RefPtr propertiesCSSOMWrapper = m_propertiesCSSOMWrapper)
-        propertiesCSSOMWrapper->reattach(protectedPositionTryRule()->protectedMutableProperties());
+        propertiesCSSOMWrapper->reattach(protect(protectedPositionTryRule()->mutableProperties()));
 }
 
 AtomString CSSPositionTryRule::name() const

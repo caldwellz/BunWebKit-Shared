@@ -100,13 +100,13 @@ const AtomString& RangeInputType::formControlType() const
 double RangeInputType::valueAsDouble() const
 {
     ASSERT(element());
-    return parseToDoubleForNumberType(protectedElement()->value().get());
+    return parseToDoubleForNumberType(protect(element())->value().get());
 }
 
 ExceptionOr<void> RangeInputType::setValueAsDecimal(const Decimal& newValue, TextFieldEventBehavior eventBehavior) const
 {
     ASSERT(element());
-    protectedElement()->setValue(serialize(newValue), eventBehavior);
+    protect(element())->setValue(serialize(newValue), eventBehavior);
     return { };
 }
 
@@ -283,7 +283,7 @@ HTMLElement* RangeInputType::sliderTrackElement() const
     if (!hasCreatedShadowSubtree())
         return nullptr;
 
-    RefPtr root = protectedElement()->userAgentShadowRoot();
+    RefPtr root = protect(element())->userAgentShadowRoot();
     ASSERT(root);
     ASSERT(is<SliderContainerElement>(root->firstChild())); // container
     ASSERT(root->firstChild()->firstChild()); // track
@@ -317,7 +317,7 @@ RenderPtr<RenderElement> RangeInputType::createInputRenderer(RenderStyle&& style
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderSlider>(*protectedElement(), WTF::move(style));
+    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderSlider>(*protect(element()), WTF::move(style));
 }
 
 Decimal RangeInputType::parseToNumber(const String& src, const Decimal& defaultValue) const

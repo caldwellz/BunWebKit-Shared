@@ -52,6 +52,7 @@
 #include "JSPromiseReaction.h"
 #include "JSRegExpStringIterator.h"
 #include "JSSetIterator.h"
+#include "JSStringIterator.h"
 #include "JSWrapForValidIterator.h"
 #include "RegExpObject.h"
 #include "ResourceExhaustion.h"
@@ -179,6 +180,9 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationPopulateObjectInOSR, void, (JSGlobalO
             break;
         case JSSetIteratorType:
             materialize(jsCast<JSSetIterator*>(target));
+            break;
+        case JSStringIteratorType:
+            materialize(jsCast<JSStringIterator*>(target));
             break;
         case JSIteratorHelperType:
             materialize(jsCast<JSIteratorHelper*>(target));
@@ -486,6 +490,8 @@ JSC_DEFINE_NOEXCEPT_JIT_OPERATION(operationMaterializeObjectInOSR, HeapCell*, (J
             return create.operator()<JSMapIterator>();
         case JSSetIteratorType:
             return create.operator()<JSSetIterator>();
+        case JSStringIteratorType:
+            return create.operator()<JSStringIterator>();
         case JSIteratorHelperType:
             return create.operator()<JSIteratorHelper>();
         case JSWrapForValidIteratorType:

@@ -67,7 +67,6 @@ public:
     static std::unique_ptr<PlaceholderRenderingContext> create(HTMLCanvasElement&);
 
     HTMLCanvasElement& canvas() const;
-    Ref<HTMLCanvasElement> protectedCanvas() const { return canvas(); }
     IntSize size() const;
     void setPlaceholderBuffer(Ref<ImageBuffer>&&, bool originClean, bool opaque);
 

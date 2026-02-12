@@ -515,7 +515,7 @@ static void convertPathToScreenSpaceFunction(PathConversionInfo& conversion, con
 - (NSRange)accessibilityVisibleCharacterRange
 {
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
-    if (AXObjectCache::useAXThreadTextApis()) {
+    if (!isMainThread()) {
         RefPtr<AXCoreObject> backingObject = self.baseUpdateBackingStore;
         if (!backingObject)
             return NSMakeRange(NSNotFound, 0);
@@ -524,21 +524,19 @@ static void convertPathToScreenSpaceFunction(PathConversionInfo& conversion, con
     }
 #endif
 
-    return Accessibility::retrieveValueFromMainThread<NSRange>([protectedSelf = retainPtr(self)] () -> NSRange {
-        RefPtr<AXCoreObject> backingObject = protectedSelf.get().baseUpdateBackingStore;
-        if (!backingObject)
-            return NSMakeRange(NSNotFound, 0);
+    RefPtr<AXCoreObject> backingObject = self.baseUpdateBackingStore;
+    if (!backingObject)
+        return NSMakeRange(NSNotFound, 0);
 
-        auto elementRange = makeNSRange(backingObject->simpleRange());
-        if (elementRange.location == NSNotFound)
-            return elementRange;
+    auto elementRange = makeNSRange(backingObject->simpleRange());
+    if (elementRange.location == NSNotFound)
+        return elementRange;
 
-        std::optional visibleRange = backingObject->visibleCharacterRange();
-        if (!visibleRange || visibleRange->location == NSNotFound)
-            return NSMakeRange(NSNotFound, 0);
+    std::optional visibleRange = backingObject->visibleCharacterRange();
+    if (!visibleRange || visibleRange->location == NSNotFound)
+        return NSMakeRange(NSNotFound, 0);
 
-        return NSMakeRange(visibleRange->location - elementRange.location, visibleRange->length);
-    });
+    return NSMakeRange(visibleRange->location - elementRange.location, visibleRange->length);
 }
 
 - (id)_accessibilityWebDocumentView
@@ -768,6 +766,33 @@ std::optional<SimpleRange> makeDOMRange(Document* document, NSRange range)
         results[key.createNSString().get()] = result.get();
     }
     return results;
+}
+
+- (Vector<CustomActionData>)baseAccessibilityCustomActionsData
+{
+    RefPtr<AXCoreObject> backingObject = self.axBackingObject;
+    if (!backingObject)
+        return { };
+
+    auto actionElements = backingObject->associatedActionElements();
+    if (actionElements.isEmpty())
+        return { };
+
+    Vector<CustomActionData> result;
+    result.reserveInitialCapacity(actionElements.size());
+
+    for (Ref actionElement : actionElements) {
+        // Per the spec, action targets must have an accessible name.
+        String actionName = actionElement->title();
+        if (actionName.isEmpty())
+            actionName = actionElement->description();
+        if (actionName.isEmpty())
+            continue;
+
+        result.append({ WTF::move(actionName), actionElement->objectID(), backingObject->treeID() });
+    }
+
+    return result;
 }
 
 // This is set by DRT when it wants to listen for notifications.

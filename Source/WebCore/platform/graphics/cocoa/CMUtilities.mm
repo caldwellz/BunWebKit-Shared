@@ -476,7 +476,7 @@ Expected<RetainPtr<CMSampleBufferRef>, CString> toCMSampleBuffer(const MediaSamp
     if (!samples.info())
         return makeUnexpected("No TrackInfo found");
 
-    RetainPtr format = formatDescription ? retainPtr(formatDescription) : createFormatDescriptionFromTrackInfo(*samples.protectedInfo());
+    RetainPtr format = formatDescription ? retainPtr(formatDescription) : createFormatDescriptionFromTrackInfo(*protect(samples.info()));
     if (!format)
         return makeUnexpected("No CMFormatDescription available");
 
@@ -657,6 +657,57 @@ void attachColorSpaceToPixelBuffer(const PlatformVideoColorSpace& colorSpace, CV
         CVBufferSetAttachment(pixelBuffer, kCVImageBufferTransferFunctionKey, convertToCMTransferFunction(*colorSpace.transfer), kCVAttachmentMode_ShouldPropagate);
     if (colorSpace.matrix)
         CVBufferSetAttachment(pixelBuffer, kCVImageBufferYCbCrMatrixKey, convertToCMYCbCRMatrix(*colorSpace.matrix), kCVAttachmentMode_ShouldPropagate);
+}
+
+PlatformVideoColorSpace computeVideoFrameColorSpace(CVPixelBufferRef pixelBuffer)
+{
+    ASSERT(pixelBuffer);
+    if (!pixelBuffer)
+        return { };
+
+    std::optional<PlatformVideoColorPrimaries> primaries;
+    auto pixelPrimaries = CVBufferGetAttachment(pixelBuffer, kCVImageBufferColorPrimariesKey, nil);
+    if (safeCFEqual(pixelPrimaries, kCVImageBufferColorPrimaries_ITU_R_709_2))
+        primaries = PlatformVideoColorPrimaries::Bt709;
+    else if (safeCFEqual(pixelPrimaries, kCVImageBufferColorPrimaries_EBU_3213))
+        primaries = PlatformVideoColorPrimaries::JedecP22Phosphors;
+    else if (safeCFEqual(pixelPrimaries, PAL::kCMFormatDescriptionColorPrimaries_DCI_P3))
+        primaries = PlatformVideoColorPrimaries::SmpteRp431;
+    else if (safeCFEqual(pixelPrimaries, PAL::kCMFormatDescriptionColorPrimaries_P3_D65))
+        primaries = PlatformVideoColorPrimaries::SmpteEg432;
+    else if (safeCFEqual(pixelPrimaries, PAL::kCMFormatDescriptionColorPrimaries_ITU_R_2020))
+        primaries = PlatformVideoColorPrimaries::Bt2020;
+
+    std::optional<PlatformVideoTransferCharacteristics> transfer;
+    auto pixelTransfer = CVBufferGetAttachment(pixelBuffer, kCVImageBufferTransferFunctionKey, nil);
+    if (safeCFEqual(pixelTransfer, kCVImageBufferTransferFunction_ITU_R_709_2))
+        transfer = PlatformVideoTransferCharacteristics::Bt709;
+    else if (safeCFEqual(pixelTransfer, kCVImageBufferTransferFunction_SMPTE_240M_1995))
+        transfer = PlatformVideoTransferCharacteristics::Smpte240m;
+    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_SMPTE_ST_2084_PQ))
+        transfer = PlatformVideoTransferCharacteristics::SmpteSt2084;
+    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_SMPTE_ST_428_1))
+        transfer = PlatformVideoTransferCharacteristics::SmpteSt4281;
+    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_ITU_R_2100_HLG))
+        transfer = PlatformVideoTransferCharacteristics::AribStdB67Hlg;
+    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_Linear))
+        transfer = PlatformVideoTransferCharacteristics::Linear;
+    else if (PAL::canLoad_CoreMedia_kCMFormatDescriptionTransferFunction_sRGB() && safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_sRGB))
+        transfer = PlatformVideoTransferCharacteristics::Iec6196621;
+
+    std::optional<PlatformVideoMatrixCoefficients> matrix;
+    auto pixelMatrix = CVBufferGetAttachment(pixelBuffer, kCVImageBufferYCbCrMatrixKey, nil);
+    if (safeCFEqual(pixelMatrix, PAL::kCMFormatDescriptionYCbCrMatrix_ITU_R_2020))
+        matrix = PlatformVideoMatrixCoefficients::Bt2020NonconstantLuminance;
+    else if (safeCFEqual(pixelMatrix, kCVImageBufferYCbCrMatrix_ITU_R_709_2))
+        matrix = PlatformVideoMatrixCoefficients::Bt709;
+    else if (safeCFEqual(pixelMatrix, kCVImageBufferYCbCrMatrix_SMPTE_240M_1995))
+        matrix = PlatformVideoMatrixCoefficients::Smpte240m;
+
+    auto pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer);
+    bool isFullRange = pixelFormat != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
+
+    return { primaries, transfer, matrix, isFullRange };
 }
 
 PacketDurationParser::PacketDurationParser(const AudioInfo& info)

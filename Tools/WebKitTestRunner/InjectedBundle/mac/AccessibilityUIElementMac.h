@@ -82,6 +82,7 @@ public:
     void showMenu() override;
     void press() override;
     bool dismiss() override;
+    bool invokeCustomActionAtIndex(unsigned) override;
     void syncPress() override;
     void asyncIncrement() override;
     void asyncDecrement() override;
@@ -210,6 +211,7 @@ public:
     RefPtr<AccessibilityUIElement> disclosedRowAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> rowAtIndex(unsigned) override;
 
+    RefPtr<AccessibilityUIElement> ariaActionsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> controllerElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaControlsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaDescribedByElementAtIndex(unsigned) override;
@@ -328,6 +330,7 @@ public:
     bool isFirstItemInSuggestion() const override;
     bool isLastItemInSuggestion() const override;
     bool isRemoteFrame() const override;
+    bool isRemotePlatformElement() const final;
 
 private:
     AccessibilityUIElementMac(PlatformUIElement);

@@ -114,7 +114,7 @@ static ScriptExecutionContextIdentifier loaderContextIdentifierFromContext(const
 WorkerMessagingProxy::WorkerMessagingProxy(Worker& workerObject)
     : m_scriptExecutionContext(workerObject.scriptExecutionContext())
     , m_scriptExecutionContextIdentifier(m_scriptExecutionContext ? std::optional { m_scriptExecutionContext->identifier() } : std::nullopt)
-    , m_loaderContextIdentifier(loaderContextIdentifierFromContext(*workerObject.protectedScriptExecutionContext()))
+    , m_loaderContextIdentifier(loaderContextIdentifierFromContext(*protect(workerObject.scriptExecutionContext())))
     , m_inspectorProxy(WorkerInspectorProxy::create(workerObject.identifier()))
     , m_workerObject(&workerObject)
 {

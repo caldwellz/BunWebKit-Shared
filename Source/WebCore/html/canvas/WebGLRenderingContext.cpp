@@ -294,8 +294,8 @@ WebGLAny WebGLRenderingContext::getFramebufferAttachmentParameter(GCGLenum targe
         return static_cast<unsigned>(GraphicsContextGL::RENDERBUFFER);
     case GraphicsContextGL::FRAMEBUFFER_ATTACHMENT_OBJECT_NAME:
         if (isTexture)
-            return std::get<RefPtr<WebGLTexture>>(WTF::move(*object));
-        return std::get<RefPtr<WebGLRenderbuffer>>(WTF::move(*object));
+            return toWebGLAny(std::get<RefPtr<WebGLTexture>>(WTF::move(*object)));
+        return toWebGLAny(std::get<RefPtr<WebGLRenderbuffer>>(WTF::move(*object)));
     case GraphicsContextGL::FRAMEBUFFER_ATTACHMENT_TEXTURE_LEVEL:
     case GraphicsContextGL::FRAMEBUFFER_ATTACHMENT_TEXTURE_CUBE_MAP_FACE:
         if (!isTexture)

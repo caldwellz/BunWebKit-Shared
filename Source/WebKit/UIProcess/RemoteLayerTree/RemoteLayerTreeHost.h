@@ -69,7 +69,7 @@ public:
     RetainPtr<CALayer> protectedLayerForID(std::optional<WebCore::PlatformLayerIdentifier>) const;
     CALayer *rootLayer() const;
 
-    RemoteLayerTreeDrawingAreaProxy& drawingArea() const;
+    RemoteLayerTreeDrawingAreaProxy& NODELETE drawingArea() const;
 
     // Returns true if the root layer changed.
     bool updateLayerTree(const IPC::Connection&, const RemoteLayerTreeTransaction&, const std::optional<MainFrameData>&, float indicatorScaleFactor  = 1);

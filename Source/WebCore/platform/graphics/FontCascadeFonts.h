@@ -51,35 +51,6 @@ class IntRect;
 class MixedFontGlyphPage;
 
 struct GlyphOverflow {
-    bool isEmpty() const
-    {
-        return !left && !right && !top && !bottom;
-    }
-
-    void extendTo(const GlyphOverflow& other)
-    {
-        left = std::max(left, other.left);
-        right = std::max(right, other.right);
-        top = std::max(top, other.top);
-        bottom = std::max(bottom, other.bottom);
-    }
-
-    void extendTop(float extendTo)
-    {
-        top = std::max(top, LayoutUnit(ceilf(extendTo)));
-    }
-
-    void extendBottom(float extendTo)
-    {
-        bottom = std::max(bottom, LayoutUnit(ceilf(extendTo)));
-    }
-
-    bool operator!=(const GlyphOverflow& other)
-    {
-        // FIXME: Probably should name this rather than making it the != operator since it ignores the value of computeBounds. webkit.org/b/307002
-        return left != other.left || right != other.right || top != other.top || bottom != other.bottom;
-    }
-
     // FIXME: May need clearer&safer storage and names. See webkit.org/b/307002
     LayoutUnit left;
     LayoutUnit right;

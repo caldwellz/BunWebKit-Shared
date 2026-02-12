@@ -106,3 +106,12 @@ cleanup = "rdar://169211412"
 symbols = [
     "CGContextStrokeArc",
 ]
+
+[[temporary-usage]]
+request = "rdar://168696619"
+cleanup = "rdar://169487203"
+classes = ["WCRBrowserEngineClient"]
+selectors = [
+    { name = "evaluateURL:mainDocumentURL:withCompletion:onCompletionQueue:", class = "WCRBrowserEngineClient" },
+]
+requires = ["HAVE_WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST"]

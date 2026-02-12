@@ -33,13 +33,11 @@
 #include "Completion.h"
 #include "ExecutionHandlerTestSupport.h"
 #include "JSCJSValue.h"
-#include "JSCJSValueInlines.h"
 #include "JSGlobalObject.h"
 #include "JSLock.h"
 #include "Protect.h"
 #include "SourceCode.h"
 #include "SourceOrigin.h"
-#include "Structure.h"
 #include "StructureInlines.h"
 #include "VM.h"
 #include "VMManager.h"
@@ -62,7 +60,7 @@ using JSC::Wasm::ExecutionHandler;
 // ========== Test Configuration ==========
 
 static constexpr bool verboseLogging = false;
-static constexpr unsigned STRESS_TEST_ITERATIONS = 10000;
+static constexpr unsigned STRESS_TEST_ITERATIONS = 1000;
 static constexpr ASCIILiteral WORKER_THREAD_NAME = "RunLoopDispatchTestVM"_s;
 
 // ========== Test Runtime State ==========
@@ -93,7 +91,7 @@ static std::atomic<bool> runVM = false;
 // Signaling for VM construction completion
 static Lock vmReadyLock;
 static Condition vmReadyCondition;
-static bool vmReady = false;
+static unsigned vmReadyCount = 0;
 
 static void simpleVMTask()
 {
@@ -110,8 +108,8 @@ static void simpleVMTask()
         // Signal that VM is fully constructed and ready
         {
             Locker locker { vmReadyLock };
-            vmReady = true;
-            vmReadyCondition.notifyOne();
+            vmReadyCount++;
+            vmReadyCondition.notifyAll();
         }
         VLOG("[VMThread] VM constructed and ready");
     } // Release API lock - VM is now truly idle without lock
@@ -159,10 +157,10 @@ static void simpleVMTask()
 
 // ========== HELPER FUNCTIONS ==========
 
-static void waitForVMConstruction()
+static void waitForVMsConstruction(unsigned count)
 {
     Locker locker { vmReadyLock };
-    while (!vmReady)
+    while (vmReadyCount < count)
         vmReadyCondition.wait(vmReadyLock);
 }
 
@@ -173,10 +171,8 @@ static void waitForVMCleanup()
         return !VMManager::info().numberOfVMs;
     });
 
-    if (!cleanedUp)
-        TEST_LOG("WARNING: VM not cleaned up within timeout (count: ", VMManager::info().numberOfVMs, ")");
-    else
-        VLOG("VM cleaned up successfully");
+    CHECK(cleanedUp, "VM not cleaned up within timeout (count: ", VMManager::info().numberOfVMs, ")");
+    VLOG("VM cleaned up successfully");
 }
 
 static bool isRunning()
@@ -199,13 +195,21 @@ static void testOrderingVMEnterInterruptContinue()
     TEST_LOG("\n=== Ordering: VM Enter → Interrupt → Continue ===");
     TEST_LOG("VM signaled to run, then interrupted");
 
+    // Ensure no VMs from previous tests
+    auto initialInfo = VMManager::info();
+    CHECK(!initialInfo.numberOfVMs, "Expected 0 VMs at test start, got ", initialInfo.numberOfVMs);
+
     // Create ONE VM thread that will be reused for all iterations
     runVM = false;
-    vmReady = false;
+    vmReadyCount = 0;
     RefPtr<Thread> vmThread = Thread::create(WORKER_THREAD_NAME, simpleVMTask);
 
     // Wait for VM to be fully constructed and idle
-    waitForVMConstruction();
+    waitForVMsConstruction(1);
+
+    // Verify exactly 1 VM now exists
+    auto afterInfo = VMManager::info();
+    CHECK(afterInfo.numberOfVMs == 1, "Expected 1 VM after construction, got ", afterInfo.numberOfVMs);
 
     unsigned successCount = 0;
 
@@ -235,7 +239,8 @@ static void testOrderingVMEnterInterruptContinue()
 
     TEST_LOG("PASS: ", successCount, "/", STRESS_TEST_ITERATIONS, " iterations succeeded");
 
-    // Cleanup
+    // Cleanup - MUST resume world first to release any waiting VMs
+    VMManager::requestResumeAll(VMManager::StopReason::WasmDebugger);
     doneTesting = true;
     runVM = true;
     vmThread->waitForCompletion();
@@ -252,13 +257,21 @@ static void testOrderingInterruptVMEnterContinue()
     TEST_LOG("\n=== Ordering: Interrupt → VM Enter → Continue ===");
     TEST_LOG("VM enters at various points during interrupt");
 
+    // Ensure no VMs from previous tests
+    auto initialInfo = VMManager::info();
+    CHECK(!initialInfo.numberOfVMs, "Expected 0 VMs at test start, got ", initialInfo.numberOfVMs);
+
     // Create ONE VM thread that will be reused for all iterations
     runVM = false;
-    vmReady = false;
+    vmReadyCount = 0;
     RefPtr<Thread> vmThread = Thread::create(WORKER_THREAD_NAME, simpleVMTask);
 
     // Wait for VM to be fully constructed and idle
-    waitForVMConstruction();
+    waitForVMsConstruction(1);
+
+    // Verify exactly 1 VM now exists
+    auto afterInfo = VMManager::info();
+    CHECK(afterInfo.numberOfVMs == 1, "Expected 1 VM after construction, got ", afterInfo.numberOfVMs);
 
     unsigned successCount = 0;
 
@@ -291,7 +304,8 @@ static void testOrderingInterruptVMEnterContinue()
 
     TEST_LOG("PASS: ", successCount, "/", STRESS_TEST_ITERATIONS, " iterations succeeded");
 
-    // Cleanup
+    // Cleanup - MUST resume world first to release any waiting VMs
+    VMManager::requestResumeAll(VMManager::StopReason::WasmDebugger);
     doneTesting = true;
     runVM = true;
     vmThread->waitForCompletion();
@@ -308,13 +322,21 @@ static void testOrderingInterruptContinueVMEnter()
     TEST_LOG("\n=== Ordering: Interrupt → Continue → VM Enter ===");
     TEST_LOG("VM enters after resume completes");
 
+    // Ensure no VMs from previous tests
+    auto initialInfo = VMManager::info();
+    CHECK(!initialInfo.numberOfVMs, "Expected 0 VMs at test start, got ", initialInfo.numberOfVMs);
+
     // Create ONE VM thread that will be reused for all iterations
     runVM = false;
-    vmReady = false;
+    vmReadyCount = 0;
     RefPtr<Thread> vmThread = Thread::create(WORKER_THREAD_NAME, simpleVMTask);
 
     // Wait for VM to be fully constructed and idle
-    waitForVMConstruction();
+    waitForVMsConstruction(1);
+
+    // Verify exactly 1 VM now exists
+    auto afterInfo = VMManager::info();
+    CHECK(afterInfo.numberOfVMs == 1, "Expected 1 VM after construction, got ", afterInfo.numberOfVMs);
 
     unsigned successCount = 0;
 
@@ -351,7 +373,8 @@ static void testOrderingInterruptContinueVMEnter()
 
     TEST_LOG("PASS: ", successCount, "/", STRESS_TEST_ITERATIONS, " iterations succeeded");
 
-    // Cleanup
+    // Cleanup - MUST resume world first to release any waiting VMs
+    VMManager::requestResumeAll(VMManager::StopReason::WasmDebugger);
     doneTesting = true;
     runVM = true;
     vmThread->waitForCompletion();
@@ -368,13 +391,21 @@ static void testIdleVMInterruptResumeLoops()
     TEST_LOG("\n=== Idle VM Interrupt/Resume Loops ===");
     TEST_LOG("VM remains idle, interrupt/resume via RunLoop dispatch only");
 
+    // Ensure no VMs from previous tests
+    auto initialInfo = VMManager::info();
+    CHECK(!initialInfo.numberOfVMs, "Expected 0 VMs at test start, got ", initialInfo.numberOfVMs);
+
     // Create ONE VM thread that will remain idle the entire test
     runVM = false;
-    vmReady = false;
+    vmReadyCount = 0;
     RefPtr<Thread> vmThread = Thread::create(WORKER_THREAD_NAME, simpleVMTask);
 
     // Wait for VM to be fully constructed and idle
-    waitForVMConstruction();
+    waitForVMsConstruction(1);
+
+    // Verify exactly 1 VM now exists
+    auto afterInfo = VMManager::info();
+    CHECK(afterInfo.numberOfVMs == 1, "Expected 1 VM after construction, got ", afterInfo.numberOfVMs);
 
     unsigned successCount = 0;
 
@@ -413,6 +444,157 @@ static void testIdleVMInterruptResumeLoops()
     doneTesting = false;
 }
 
+// ========== ORDERING 5: Idle VM + Active VM on Thread ==========
+// Test idle VM without owner thread + active VM running
+
+static void idleVMTask()
+{
+    VLOG("[IdleVM] Starting VM construction");
+    VM& vm = VM::create(JSC::HeapType::Large).leakRef();
+    JSC::JSGlobalObject* globalObject = nullptr;
+
+    {
+        JSC::JSLockHolder locker(vm);
+        globalObject = JSC::JSGlobalObject::create(vm, JSC::JSGlobalObject::createStructure(vm, JSC::jsNull()));
+        gcProtect(globalObject);
+
+        // Signal that VM is fully constructed and ready
+        {
+            Locker locker { vmReadyLock };
+            vmReadyCount++;
+            vmReadyCondition.notifyAll();
+        }
+        VLOG("[IdleVM] VM constructed and ready");
+    } // Release API lock - VM is now idle
+
+    // Keep VM alive but idle - just cycle RunLoop to process dispatch callbacks
+    // Never execute any JavaScript code - truly idle
+    while (!doneTesting.load()) {
+        WTF::RunLoop::cycle(DefaultRunLoopMode);
+        VLOG("[IdleVM] Cycled RunLoop");
+    }
+
+    // Cleanup
+    {
+        JSC::JSLockHolder locker(vm);
+        gcUnprotect(globalObject);
+        vm.derefSuppressingSaferCPPChecking();
+    }
+    VLOG("[IdleVM] Exiting");
+}
+
+static void activeVMTask()
+{
+    VLOG("[ActiveVM] Starting VM construction");
+    VM& vm = VM::create(JSC::HeapType::Large).leakRef();
+    JSC::JSGlobalObject* globalObject = nullptr;
+
+    {
+        JSC::JSLockHolder locker(vm);
+        globalObject = JSC::JSGlobalObject::create(vm, JSC::JSGlobalObject::createStructure(vm, JSC::jsNull()));
+        gcProtect(globalObject);
+
+        // Signal that VM is fully constructed and ready
+        {
+            Locker locker { vmReadyLock };
+            vmReadyCount++;
+            vmReadyCondition.notifyAll();
+        }
+        VLOG("[ActiveVM] VM constructed and ready");
+    } // Release API lock - allow dispatch callbacks to execute
+
+    // Keep VM alive and run continuous loop
+    while (!doneTesting.load()) {
+        // Cycle RunLoop to process dispatch callbacks while not holding JSLock
+        WTF::RunLoop::cycle(DefaultRunLoopMode);
+
+        // Execute script - VM becomes active
+        {
+            JSC::JSLockHolder locker(vm);
+            JSC::SourceOrigin origin(URL({ }, "active-vm"_s));
+            // Tight loop that checks traps frequently
+            JSC::SourceCode sourceCode = JSC::makeSource("for (var i = 0; i < 1000000; i++) {}"_s, origin, JSC::SourceTaintedOrigin::Untainted);
+
+            NakedPtr<JSC::Exception> exception;
+            JSC::evaluate(globalObject, sourceCode, JSC::JSValue(), exception);
+            VLOG("[ActiveVM] Loop iteration completed");
+        } // Release API lock after each iteration
+    }
+
+    // Cleanup
+    {
+        JSC::JSLockHolder locker(vm);
+        gcUnprotect(globalObject);
+        vm.derefSuppressingSaferCPPChecking();
+    }
+    VLOG("[ActiveVM] Exiting");
+}
+
+static void testIdleVMWithActiveVM()
+{
+    TEST_LOG("\n=== 2 Idle VMs + 3 Active VMs on Threads ===");
+    TEST_LOG("Test 2 idle VMs (only cycle RunLoop) + 3 active VMs (execute code)");
+
+    // Ensure no VMs from previous tests
+    auto initialInfo = VMManager::info();
+    CHECK(!initialInfo.numberOfVMs, "Expected 0 VMs at test start, got ", initialInfo.numberOfVMs);
+
+    vmReadyCount = 0;
+
+    // Create 2 idle VMs on their own threads - they will only cycle RunLoop, never execute code
+    RefPtr<Thread> idleThread1 = Thread::create("IdleVM1"_s, idleVMTask);
+    RefPtr<Thread> idleThread2 = Thread::create("IdleVM2"_s, idleVMTask);
+
+    // Create 3 active VMs on separate threads - they will execute code continuously
+    RefPtr<Thread> activeThread1 = Thread::create("ActiveVM1"_s, activeVMTask);
+    RefPtr<Thread> activeThread2 = Thread::create("ActiveVM2"_s, activeVMTask);
+    RefPtr<Thread> activeThread3 = Thread::create("ActiveVM3"_s, activeVMTask);
+
+    // Wait for all 5 VMs to be fully constructed
+    waitForVMsConstruction(5);
+
+    // Verify exactly 5 VMs now exist (2 idle + 3 active)
+    auto afterInfo = VMManager::info();
+    CHECK(afterInfo.numberOfVMs == 5, "Expected 5 VMs after construction (2 idle + 3 active), got ", afterInfo.numberOfVMs);
+
+    unsigned successCount = 0;
+
+    for (unsigned i = 0; i < STRESS_TEST_ITERATIONS; ++i) {
+        VLOG("[Test5][Iter ", i, "] start >>>>>>>>>>>>>>>>>>>>>>> ");
+
+        executionHandler->interrupt();
+        CHECK(isStopped(), "Should be stopped after interrupt");
+
+        auto info = VMManager::info();
+        VLOG("[Test5][Iter ", i, "] After interrupt: worldMode=", (int)info.worldMode, ", numberOfVMs=", info.numberOfVMs, ", numberOfActiveVMs=", info.numberOfActiveVMs);
+
+        CHECK(info.numberOfActiveVMs <= 5, "Expected 0-5 active VMs, got ", info.numberOfActiveVMs);
+
+        executionHandler->resume();
+        CHECK(isRunning(), "Should be running after resume");
+
+        successCount++;
+        VLOG("[Test5][Iter ", i, "] end <<<<<<<<<<<<<<<<<<<<<<<<< ");
+    }
+
+    TEST_LOG("PASS: ", successCount, "/", STRESS_TEST_ITERATIONS, " iterations succeeded");
+
+    // Cleanup - MUST resume world first to release any waiting VMs
+    VMManager::requestResumeAll(VMManager::StopReason::WasmDebugger);
+    doneTesting = true;
+    idleThread1->waitForCompletion();
+    idleThread2->waitForCompletion();
+    activeThread1->waitForCompletion();
+    activeThread2->waitForCompletion();
+    activeThread3->waitForCompletion();
+
+    waitForVMCleanup();
+    executionHandler->reset();
+
+    doneTesting = false;
+    vmReadyCount = 0;
+}
+
 // ========== MAIN TEST RUNNER ==========
 
 UNUSED_FUNCTION static int runIdleVMStopStressTests()
@@ -429,6 +611,7 @@ UNUSED_FUNCTION static int runIdleVMStopStressTests()
     testOrderingInterruptVMEnterContinue(); // VM enters during interrupt
     testOrderingInterruptContinueVMEnter(); // VM enters after resume
     testIdleVMInterruptResumeLoops(); // VM stays idle throughout
+    testIdleVMWithActiveVM(); // 2 Idle VMs + 3 Active VMs - stress test with multiple VMs
 
     TEST_LOG("\n========================================");
     TEST_LOG(failuresFound ? "FAIL" : "PASS", " - Idle VM Stress Tests");

@@ -54,10 +54,10 @@ public:
     bool isValid() const { return !!m_undoManager; }
     void invalidate();
 
-    Document* document() const;
+    Document* NODELETE document() const;
     RefPtr<Document> protectedDocument() const;
 
-    UndoManager* undoManager() const;
+    UndoManager* NODELETE undoManager() const;
     void setUndoManager(UndoManager*);
 
     const String& label() const { return m_label; }

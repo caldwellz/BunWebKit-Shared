@@ -34,7 +34,6 @@
 namespace WebCore {
 
 inline Document& RenderObject::document() const { return m_node.get().document(); }
-inline Ref<Document> RenderObject::protectedDocument() const { return document(); }
 
 inline bool RenderObject::isDocumentElementRenderer() const
 {

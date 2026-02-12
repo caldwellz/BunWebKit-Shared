@@ -79,7 +79,7 @@ void SmartMagnificationController::handleSmartMagnificationGesture(FloatPoint or
 
 void SmartMagnificationController::handleResetMagnificationGesture(FloatPoint origin)
 {
-    [m_contentView.get() _zoomOutWithOrigin:origin];
+    [protect(m_contentView.get()) _zoomOutWithOrigin:origin];
 }
 
 std::tuple<FloatRect, double, double> SmartMagnificationController::smartMagnificationTargetRectAndZoomScales(FloatRect targetRect, double minimumScale, double maximumScale, bool addMagnificationPadding)
@@ -153,7 +153,7 @@ void SmartMagnificationController::didCollectGeometryForSmartMagnificationGestur
 
 void SmartMagnificationController::scrollToRect(FloatPoint origin, FloatRect targetRect)
 {
-    [m_contentView.get() _scrollToRect:targetRect withOrigin:origin minimumScrollDistance:0];
+    [protect(m_contentView.get()) _scrollToRect:targetRect withOrigin:origin minimumScrollDistance:0];
 }
 
 } // namespace WebKit

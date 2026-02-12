@@ -134,7 +134,6 @@ page/PageColorSampler.cpp
 page/PrintContext.cpp
 page/ResizeObservation.cpp
 page/SpatialNavigation.cpp
-[ iOS ] page/ios/ContentChangeObserver.cpp
 [ iOS ] page/ios/EventHandlerIOS.mm
 [ iOS ] page/ios/FrameIOS.mm
 [ Mac ] page/mac/EventHandlerMac.mm
@@ -339,7 +338,6 @@ style/Styleable.cpp
 style/computed/StyleComputedStyleBase.cpp
 style/values/grid/StyleGridPositionsResolver.cpp
 style/values/primitives/StyleLengthResolution.cpp
-style/values/text/StyleTextAlign.cpp
 style/values/transforms/StyleTransformList.cpp
 svg/SVGClipPathElement.cpp
 svg/SVGFEFloodElement.cpp

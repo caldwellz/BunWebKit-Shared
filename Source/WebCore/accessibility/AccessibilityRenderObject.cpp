@@ -2596,7 +2596,7 @@ std::optional<AXCoreObject::AccessibilityChildrenVector> AccessibilityRenderObje
     if (!element)
         return std::nullopt;
 
-    page->chrome().client().requestTextRecognition(*element, { }, [] (RefPtr<Element>&& imageOverlayHost) {
+    page->chrome().client().requestTextRecognition(*element, { }, [](RefPtr<Element>&& imageOverlayHost) {
         if (!imageOverlayHost)
             return;
 

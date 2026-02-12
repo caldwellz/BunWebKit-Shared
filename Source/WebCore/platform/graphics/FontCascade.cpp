@@ -444,7 +444,7 @@ GlyphData FontCascade::glyphDataForCharacter(char32_t c, bool mirror, FontVarian
 
     auto emojiPolicy = resolvedEmojiPolicy.value_or(resolveEmojiPolicy(m_fontDescription.variantEmoji(), c));
 
-    return protectedFonts()->glyphDataForCharacter(c, m_fontDescription, protect(fontSelector()).get(), variant, emojiPolicy);
+    return protect(fonts())->glyphDataForCharacter(c, m_fontDescription, protect(fontSelector()).get(), variant, emojiPolicy);
 }
 
 

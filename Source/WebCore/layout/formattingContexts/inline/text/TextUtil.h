@@ -58,6 +58,7 @@ public:
     static InlineLayoutUnit width(const InlineTextBox&, const FontCascade&, unsigned from, unsigned to, InlineLayoutUnit contentLogicalLeft, UseTrailingWhitespaceMeasuringOptimization = UseTrailingWhitespaceMeasuringOptimization::Yes, TextSpacing::SpacingState spacingState = { }, GlyphOverflow* = nullptr);
 
     static InlineLayoutUnit trailingWhitespaceWidth(const InlineTextBox&, const FontCascade&, size_t startPosition, size_t endPosition);
+    static InlineLayoutUnit singleSpaceWidth(const FontCascade&, bool canUseSimplifiedContentMeasuring);
 
     using FallbackFontList = SingleThreadWeakHashSet<const Font>;
     enum class IncludeHyphen : bool { No, Yes };

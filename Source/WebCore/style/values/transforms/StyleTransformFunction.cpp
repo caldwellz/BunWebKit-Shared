@@ -67,7 +67,7 @@ static TranslateTransformFunction::LengthPercentage resolveAsTranslateLengthPerc
     if (primitiveValue.isPercentage())
         return TranslateTransformFunction::LengthPercentage::Percentage { static_cast<float>(primitiveValue.resolveAsPercentage<double>(conversionData)) };
     if (primitiveValue.isCalculated())
-        return TranslateTransformFunction::LengthPercentage::Calc { primitiveValue.protectedCssCalcValue()->createCalculationValue(conversionData, CSSCalcSymbolTable { }) };
+        return TranslateTransformFunction::LengthPercentage::Calc { protect(primitiveValue.cssCalcValue())->createCalculationValue(conversionData, CSSCalcSymbolTable { }) };
 
     state.setCurrentPropertyInvalidAtComputedValueTime();
     return 0_css_px;

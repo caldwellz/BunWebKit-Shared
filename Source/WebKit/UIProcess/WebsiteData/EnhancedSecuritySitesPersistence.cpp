@@ -81,11 +81,6 @@ static String databasePath(const String& directoryPath)
     return FileSystem::pathByAppendingComponent(directoryPath, "EnhancedSecuritySites.db"_s);
 }
 
-CheckedPtr<WebCore::SQLiteDatabase> EnhancedSecuritySitesPersistence::checkedDatabase() const
-{
-    return m_sqliteDB.get();
-}
-
 WebCore::SQLiteStatementAutoResetScope EnhancedSecuritySitesPersistence::cachedStatement(StatementType type)
 {
     ASSERT(m_sqliteDB);
@@ -196,7 +191,7 @@ void EnhancedSecuritySitesPersistence::deleteAllSites()
         return;
     }
 
-    auto deleteStatement = checkedDatabase()->prepareStatement(deleteAllSitesSQL);
+    auto deleteStatement = protect(m_sqliteDB)->prepareStatement(deleteAllSitesSQL);
     if (!deleteStatement || !deleteStatement->executeCommand())
         return reportSQLError(__FUNCTION__, "delete all sites"_s);
 }
@@ -210,7 +205,7 @@ HashSet<WebCore::RegistrableDomain> EnhancedSecuritySitesPersistence::enhancedSe
         return { };
     }
 
-    auto selectStatement = checkedDatabase()->prepareStatement(selectEnhancedSecurityOnlySitesSQL);
+    auto selectStatement = protect(m_sqliteDB)->prepareStatement(selectEnhancedSecurityOnlySitesSQL);
     if (!selectStatement) {
         reportSQLError(__FUNCTION__, "fetch enhanced security only sites"_s);
         return { };
@@ -234,7 +229,7 @@ HashSet<WebCore::RegistrableDomain> EnhancedSecuritySitesPersistence::allEnhance
         return { };
     }
 
-    auto selectStatement = checkedDatabase()->prepareStatement(selectAllSitesSQL);
+    auto selectStatement = protect(m_sqliteDB)->prepareStatement(selectAllSitesSQL);
     if (!selectStatement) {
         reportSQLError(__FUNCTION__, "fetch all sites"_s);
         return { };
@@ -289,7 +284,7 @@ void EnhancedSecuritySitesPersistence::closeDatabase()
 
     if (isDatabaseOpen()) {
         ENHANCEDSECURITY_RELEASE_LOG("%s: Closing database", __FUNCTION__);
-        checkedDatabase()->close();
+        protect(m_sqliteDB)->close();
     }
 
     m_sqliteDB = nullptr;

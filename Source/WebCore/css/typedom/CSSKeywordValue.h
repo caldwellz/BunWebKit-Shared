@@ -33,7 +33,7 @@ namespace WebCore {
 
 template<typename> class ExceptionOr;
 class CSSKeywordValue;
-using CSSKeywordish = Variant<String, RefPtr<CSSKeywordValue>>;
+using CSSKeywordish = Variant<String, Ref<CSSKeywordValue>>;
 
 class CSSKeywordValue final : public CSSStyleValue {
     WTF_MAKE_TZONE_ALLOCATED(CSSKeywordValue);
@@ -47,11 +47,10 @@ public:
     
     static Ref<CSSKeywordValue> rectifyKeywordish(CSSKeywordish&&);
 
+    void serialize(StringBuilder&, OptionSet<SerializationArguments> = { }) const final;
     RefPtr<CSSValue> toCSSValue() const final;
 
 private:
-    void serialize(StringBuilder&, OptionSet<SerializationArguments>) const final;
-
     explicit CSSKeywordValue(const String& value)
         : m_value(value) { }
     String m_value;

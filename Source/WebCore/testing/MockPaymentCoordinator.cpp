@@ -167,7 +167,7 @@ bool MockPaymentCoordinator::showPaymentUI(const URL&, const Vector<URL>&, const
     ASSERT(m_showCount == m_hideCount);
     ++m_showCount;
     dispatchIfShowing([page = WTF::move(page)]() {
-        page->protectedPaymentCoordinator()->validateMerchant(URL { "https://webkit.org/"_str });
+        protect(page->paymentCoordinator())->validateMerchant(URL { "https://webkit.org/"_str });
     });
     return true;
 }
@@ -179,7 +179,7 @@ void MockPaymentCoordinator::completeMerchantValidation(const PaymentMerchantSes
         return;
 
     dispatchIfShowing([page = WTF::move(page), shippingAddress = m_shippingAddress]() mutable {
-        page->protectedPaymentCoordinator()->didSelectShippingContact(MockPaymentContact { WTF::move(shippingAddress) });
+        protect(page->paymentCoordinator())->didSelectShippingContact(MockPaymentContact { WTF::move(shippingAddress) });
     });
 }
 
@@ -308,7 +308,7 @@ void MockPaymentCoordinator::changeShippingOption(String&& shippingOption)
     dispatchIfShowing([page = WTF::move(page), shippingOption = WTF::move(shippingOption)]() mutable {
         ApplePayShippingMethod shippingMethod;
         shippingMethod.identifier = WTF::move(shippingOption);
-        page->protectedPaymentCoordinator()->didSelectShippingMethod(shippingMethod);
+        protect(page->paymentCoordinator())->didSelectShippingMethod(shippingMethod);
     });
 }
 
@@ -319,7 +319,7 @@ void MockPaymentCoordinator::changePaymentMethod(ApplePayPaymentMethod&& payment
         return;
 
     dispatchIfShowing([page = WTF::move(page), paymentMethod = WTF::move(paymentMethod)]() mutable {
-        page->protectedPaymentCoordinator()->didSelectPaymentMethod(MockPaymentMethod { WTF::move(paymentMethod) });
+        protect(page->paymentCoordinator())->didSelectPaymentMethod(MockPaymentMethod { WTF::move(paymentMethod) });
     });
 }
 
@@ -332,7 +332,7 @@ void MockPaymentCoordinator::changeCouponCode(String&& couponCode)
         return;
 
     dispatchIfShowing([page = WTF::move(page), couponCode = WTF::move(couponCode)]() mutable {
-        page->protectedPaymentCoordinator()->didChangeCouponCode(WTF::move(couponCode));
+        protect(page->paymentCoordinator())->didChangeCouponCode(WTF::move(couponCode));
     });
 }
 
@@ -349,7 +349,7 @@ void MockPaymentCoordinator::acceptPayment()
         payment.shippingContact = shippingAddress;
         LocalizedApplePayPayment localizedPayment;
         localizedPayment.shippingContact = shippingAddress;
-        page->protectedPaymentCoordinator()->didAuthorizePayment(MockPayment { WTF::move(payment), WTF::move(localizedPayment) });
+        protect(page->paymentCoordinator())->didAuthorizePayment(MockPayment { WTF::move(payment), WTF::move(localizedPayment) });
     });
 }
 
@@ -360,7 +360,7 @@ void MockPaymentCoordinator::cancelPayment()
         return;
 
     dispatchIfShowing([protectedThis = Ref { *this }, page = WTF::move(page)] {
-        page->protectedPaymentCoordinator()->didCancelPaymentSession({ });
+        protect(page->paymentCoordinator())->didCancelPaymentSession({ });
         ++protectedThis->m_hideCount;
         ASSERT(protectedThis->m_showCount == protectedThis->m_hideCount);
     });

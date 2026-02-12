@@ -55,7 +55,6 @@ public:
         ~ElementRecord();
 
         Element& element() const { return m_item.element(); }
-        Ref<Element> protectedElement() const { return m_item.element(); }
         ContainerNode& node() const { return m_item.node(); }
         ElementName elementName() const { return m_item.elementName(); }
         HTMLStackItem& stackItem() { return m_item; }
@@ -138,10 +137,10 @@ public:
     bool secondElementIsHTMLBodyElement() const;
     bool hasTemplateInHTMLScope() const;
     Element& htmlElement() const;
-    Element& headElement() const;
-    Element& bodyElement() const;
+    Element& NODELETE headElement() const;
+    Element& NODELETE bodyElement() const;
 
-    ContainerNode& rootNode() const;
+    ContainerNode& NODELETE rootNode() const;
 
 #if ENABLE(TREE_DEBUGGING)
     void show();

@@ -414,7 +414,6 @@ public:
     void clearPluginData();
 
     OpportunisticTaskScheduler& opportunisticTaskScheduler() const { return m_opportunisticTaskScheduler.get(); }
-    Ref<OpportunisticTaskScheduler> protectedOpportunisticTaskScheduler() const;
 
     WEBCORE_EXPORT void setCanStartMedia(bool);
     bool canStartMedia() const { return m_canStartMedia; }
@@ -425,11 +424,9 @@ public:
     WEBCORE_EXPORT Document* localTopDocument() const;
 
     Frame& mainFrame() const { return m_mainFrame.get(); }
-    WEBCORE_EXPORT Ref<Frame> protectedMainFrame() const;
     WEBCORE_EXPORT void setMainFrame(Ref<Frame>&&);
     WEBCORE_EXPORT const URL& mainFrameURL() const;
     SecurityOrigin& mainFrameOrigin() const;
-    Ref<SecurityOrigin> protectedMainFrameOrigin() const;
     WEBCORE_EXPORT RefPtr<Frame> findFrameByPath(const Vector<uint64_t>& path) const;
 
     WEBCORE_EXPORT void setMainFrameURLAndOrigin(const URL&, RefPtr<SecurityOrigin>&&);
@@ -461,17 +458,15 @@ public:
     const RegistrableDomain& openedByScriptDomain() const { return m_openedByScriptDomain; }
     void setOpenedByScriptDomain(RegistrableDomain&& domain) { m_openedByScriptDomain = WTF::move(domain); }
 
-    WEBCORE_EXPORT void goToItem(LocalFrame& rootFrame, HistoryItem&, FrameLoadType, ShouldTreatAsContinuingLoad, ProcessSwapDisposition processSwapDisposition = ProcessSwapDisposition::None);
+    WEBCORE_EXPORT void goToItem(LocalFrame& rootFrame, HistoryItem&, FrameLoadType, ShouldTreatAsContinuingLoad);
     void goToItemForNavigationAPI(LocalFrame& rootFrame, HistoryItem&, FrameLoadType, LocalFrame& triggeringFrame, NavigationAPIMethodTracker*);
 
     WEBCORE_EXPORT void setGroupName(const String&);
     WEBCORE_EXPORT const String& groupName() const;
 
     WEBCORE_EXPORT PageGroup& group();
-    WEBCORE_EXPORT CheckedRef<PageGroup> checkedGroup();
 
     BroadcastChannelRegistry& broadcastChannelRegistry() { return m_broadcastChannelRegistry; }
-    WEBCORE_EXPORT Ref<BroadcastChannelRegistry> protectedBroadcastChannelRegistry() const;
     WEBCORE_EXPORT void setBroadcastChannelRegistry(Ref<BroadcastChannelRegistry>&&); // Only used by WebKitLegacy.
 
     WEBCORE_EXPORT static void forEachPage(NOESCAPE const Function<void(Page&)>&);
@@ -516,8 +511,6 @@ public:
     WEBCORE_EXPORT void enableICECandidateFiltering();
     bool shouldEnableICECandidateFilteringByDefault() const { return m_shouldEnableICECandidateFilteringByDefault; }
 
-    WEBCORE_EXPORT CheckedRef<ElementTargetingController> checkedElementTargetingController();
-
     void didChangeMainDocument(Document* newDocument);
     void mainFrameDidChangeToNonInitialEmptyDocument();
 
@@ -546,15 +539,13 @@ public:
 
     ProgressTracker& progress() { return m_progress.get(); }
     const ProgressTracker& progress() const { return m_progress.get(); }
-    CheckedRef<ProgressTracker> checkedProgress();
-    CheckedRef<const ProgressTracker> checkedProgress() const;
 
     WEBCORE_EXPORT void applyWindowFeatures(const WindowFeatures&);
 
     void progressEstimateChanged(LocalFrame&) const;
     void progressFinished(LocalFrame&) const;
     BackForwardController& backForward() { return m_backForwardController.get(); }
-    WEBCORE_EXPORT CheckedRef<BackForwardController> checkedBackForward();
+    ElementTargetingController& elementTargetingController() { return m_elementTargetingController.get(); }
 
     Seconds domTimerAlignmentInterval() const { return m_domTimerAlignmentInterval; }
 
@@ -733,7 +724,6 @@ public:
     WEBCORE_EXPORT unsigned pageCountAssumingLayoutIsUpToDate() const;
 
     WEBCORE_EXPORT DiagnosticLoggingClient& diagnosticLoggingClient() const;
-    WEBCORE_EXPORT CheckedRef<DiagnosticLoggingClient> checkedDiagnosticLoggingClient() const;
 
     WEBCORE_EXPORT void logMediaDiagnosticMessage(const RefPtr<FormData>&) const;
 
@@ -764,7 +754,6 @@ public:
 
 #if ENABLE(APPLE_PAY)
     PaymentCoordinator& paymentCoordinator() const { return *m_paymentCoordinator; }
-    WEBCORE_EXPORT Ref<PaymentCoordinator> protectedPaymentCoordinator() const;
     WEBCORE_EXPORT void setPaymentCoordinator(Ref<PaymentCoordinator>&&);
 #endif
 
@@ -997,19 +986,16 @@ public:
     CacheStorageProvider& cacheStorageProvider() { return m_cacheStorageProvider; }
     SocketProvider& socketProvider() { return m_socketProvider; }
     CookieJar& cookieJar() { return m_cookieJar.get(); }
-    WEBCORE_EXPORT Ref<CookieJar> protectedCookieJar() const;
 
     StorageNamespaceProvider& storageNamespaceProvider() { return m_storageNamespaceProvider.get(); }
-    WEBCORE_EXPORT Ref<StorageNamespaceProvider> protectedStorageNamespaceProvider() const;
 
     PluginInfoProvider& pluginInfoProvider();
-    Ref<PluginInfoProvider> protectedPluginInfoProvider() const;
 
     UserContentProvider& userContentProviderForFrame() { return m_userContentProvider; }
     WEBCORE_EXPORT Ref<UserContentProvider> protectedUserContentProviderForFrame();
     WEBCORE_EXPORT void setUserContentProviderForWebKitLegacy(Ref<UserContentProvider>&&);
 
-    ScreenOrientationManager* screenOrientationManager() const;
+    ScreenOrientationManager* NODELETE screenOrientationManager() const;
 
     VisitedLinkStore& visitedLinkStore();
     Ref<VisitedLinkStore> protectedVisitedLinkStore();
@@ -1091,7 +1077,7 @@ public:
     void setAllowsPlaybackControlsForAutoplayingAudio(bool allowsPlaybackControlsForAutoplayingAudio) { m_allowsPlaybackControlsForAutoplayingAudio = allowsPlaybackControlsForAutoplayingAudio; }
 
     IDBClient::IDBConnectionToServer& idbConnection();
-    WEBCORE_EXPORT IDBClient::IDBConnectionToServer* optionalIDBConnection();
+    WEBCORE_EXPORT IDBClient::IDBConnectionToServer* NODELETE optionalIDBConnection();
     WEBCORE_EXPORT void clearIDBConnection();
 
     void setShowAllPlugins(bool showAll) { m_showAllPlugins = showAll; }
@@ -1224,7 +1210,7 @@ public:
     WEBCORE_EXPORT void clearAccessibilityIsolatedTree();
 #endif
 #if USE(ATSPI)
-    AccessibilityRootAtspi* accessibilityRootObject() const;
+    AccessibilityRootAtspi* NODELETE accessibilityRootObject() const;
     void setAccessibilityRootObject(AccessibilityRootAtspi*);
 #endif
 
@@ -1364,7 +1350,7 @@ public:
     WEBCORE_EXPORT RefPtr<HTMLMediaElement> bestMediaElementForRemoteControls(PlatformMediaSessionPlaybackControlsPurpose, Document*);
 
     WEBCORE_EXPORT RefPtr<MediaSessionManagerInterface> mediaSessionManager();
-    WEBCORE_EXPORT MediaSessionManagerInterface* mediaSessionManagerIfExists() const;
+    WEBCORE_EXPORT MediaSessionManagerInterface* NODELETE mediaSessionManagerIfExists() const;
     WEBCORE_EXPORT static RefPtr<MediaSessionManagerInterface> mediaSessionManagerForPageIdentifier(PageIdentifier);
 
 #if ENABLE(MODEL_ELEMENT)
@@ -1402,8 +1388,6 @@ public:
     AcceleratedTimelinesUpdater* acceleratedTimelinesUpdater() const { return m_acceleratedTimelinesUpdater.get(); }
     AcceleratedTimelinesUpdater& ensureAcceleratedTimelinesUpdater();
 #endif
-
-    void syncLocalFrameInfoToRemote();
 
 private:
     explicit Page(PageConfiguration&&);
@@ -1456,8 +1440,7 @@ private:
     void prioritizeVisibleResources();
 
     RenderingUpdateScheduler& renderingUpdateScheduler();
-    CheckedRef<RenderingUpdateScheduler> checkedRenderingUpdateScheduler();
-    RenderingUpdateScheduler* existingRenderingUpdateScheduler();
+    RenderingUpdateScheduler* NODELETE existingRenderingUpdateScheduler();
 
     WheelEventTestMonitor& ensureWheelEventTestMonitor();
     Ref<WheelEventTestMonitor> ensureProtectedWheelEventTestMonitor();

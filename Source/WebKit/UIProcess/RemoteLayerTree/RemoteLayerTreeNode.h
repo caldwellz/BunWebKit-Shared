@@ -77,6 +77,22 @@ public:
     void setShouldBeSeparated(bool value) { m_shouldBeSeparated = value; }
 #endif
 
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    bool isLookToScrollExclusion() const { return m_isLookToScrollExclusion; }
+    void setIsLookToScrollExclusion(bool);
+
+    bool isFixedSubtreeRoot() const { return m_isFixedSubtreeRoot; }
+    void setIsFixedSubtreeRoot(bool value) { m_isFixedSubtreeRoot = value; }
+
+    enum class EventRegionChanged : bool { No, Yes };
+    void updateExclusionRegion(EventRegionChanged = EventRegionChanged::No);
+
+    void updateExclusionRegionAndDescendants(bool isExclusion);
+
+    void visibleRectChangedForOverlayRegions();
+    void updateOverlayRegionAfterHierarchyChange();
+#endif
+
 #if PLATFORM(IOS_FAMILY)
     UIView *uiView() const { return m_uiView.get(); }
 #endif
@@ -179,6 +195,13 @@ private:
 
 #if HAVE(CORE_ANIMATION_SEPARATED_LAYERS)
     bool m_shouldBeSeparated { false };
+#endif
+
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    bool m_isLookToScrollExclusion { false };
+    bool m_isFixedSubtreeRoot { false };
+    bool m_hasLookToScrollExclusionEffect { false };
+    bool m_hasVisibleRect { false };
 #endif
 
 #if PLATFORM(IOS_FAMILY)

@@ -36,6 +36,7 @@ namespace WebCore {
 class Frame;
 class HTMLImageElement;
 enum class BroadcastFocusedElement : bool;
+enum class ContentChange : uint8_t;
 enum class PointerLockRequestResult : uint8_t;
 struct FocusOptions;
 }
@@ -242,6 +243,10 @@ private:
     RefPtr<WebCore::ShapeDetection::TextDetector> createTextDetector() const final;
 
     void registerBlobPathForTesting(const String&, CompletionHandler<void()>&&) final;
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+    void didFinishContentChangeObserving(WebCore::LocalFrame&, WebCore::ContentChange) final;
+#endif
 
 #if ENABLE(VIDEO_PRESENTATION_MODE)
     bool m_mockVideoPresentationModeEnabled { false };

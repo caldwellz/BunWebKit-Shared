@@ -704,14 +704,14 @@ auto FunctionParser<Context>::unaryCompareCase(OpType op, UnaryOperationHandler 
 template<typename Context>
 auto FunctionParser<Context>::load(Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "load instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "load instruction without memory"_s);
 
     uint32_t alignment;
     uint64_t offset;
     TypedExpression pointer;
     WASM_PARSER_FAIL_IF(!parseVarUInt32(alignment), "can't get load alignment"_s);
     WASM_PARSER_FAIL_IF(alignment > memoryLog2Alignment(m_currentOpcode), "byte alignment "_s, 1ull << alignment, " exceeds load's natural alignment "_s, 1ull << memoryLog2Alignment(m_currentOpcode));
-    if (m_info.memory.isMemory64())
+    if (m_info.theOnlyMemory().isMemory64())
         WASM_PARSER_FAIL_IF(!parseVarUInt64(offset), "can't get load offset"_s);
     else {
         uint32_t offset32;
@@ -721,7 +721,7 @@ auto FunctionParser<Context>::load(Type memoryType) -> PartialResult
 
     WASM_TRY_POP_EXPRESSION_STACK_INTO(pointer, "load pointer"_s);
 
-    if (m_info.memory.isMemory64())
+    if (m_info.theOnlyMemory().isMemory64())
         WASM_VALIDATOR_FAIL_IF(!pointer.type().isI64(), m_currentOpcode, " pointer type mismatch"_s);
     else
         WASM_VALIDATOR_FAIL_IF(!pointer.type().isI32(), m_currentOpcode, " pointer type mismatch"_s);
@@ -735,7 +735,7 @@ auto FunctionParser<Context>::load(Type memoryType) -> PartialResult
 template<typename Context>
 auto FunctionParser<Context>::store(Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "store instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "store instruction without memory"_s);
 
     uint32_t alignment;
     uint64_t offset;
@@ -743,7 +743,7 @@ auto FunctionParser<Context>::store(Type memoryType) -> PartialResult
     TypedExpression pointer;
     WASM_PARSER_FAIL_IF(!parseVarUInt32(alignment), "can't get store alignment"_s);
     WASM_PARSER_FAIL_IF(alignment > memoryLog2Alignment(m_currentOpcode), "byte alignment "_s, 1ull << alignment, " exceeds store's natural alignment "_s, 1ull << memoryLog2Alignment(m_currentOpcode));
-    if (m_info.memory.isMemory64())
+    if (m_info.theOnlyMemory().isMemory64())
         WASM_PARSER_FAIL_IF(!parseVarUInt64(offset), "can't get store offset"_s);
     else {
         uint32_t offset32;
@@ -753,7 +753,7 @@ auto FunctionParser<Context>::store(Type memoryType) -> PartialResult
     WASM_TRY_POP_EXPRESSION_STACK_INTO(value, "store value"_s);
     WASM_TRY_POP_EXPRESSION_STACK_INTO(pointer, "store pointer"_s);
 
-    if (m_info.memory.isMemory64())
+    if (m_info.theOnlyMemory().isMemory64())
         WASM_VALIDATOR_FAIL_IF(!pointer.type().isI64(), m_currentOpcode, " pointer type mismatch"_s);
     else
         WASM_VALIDATOR_FAIL_IF(!pointer.type().isI32(), m_currentOpcode, " pointer type mismatch"_s);
@@ -781,7 +781,7 @@ auto FunctionParser<Context>::truncSaturated(Ext1OpType op, Type returnType, Typ
 template<typename Context>
 auto FunctionParser<Context>::atomicLoad(ExtAtomicOpType op, Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
 
     uint32_t alignment;
     uint32_t offset;
@@ -802,7 +802,7 @@ auto FunctionParser<Context>::atomicLoad(ExtAtomicOpType op, Type memoryType) ->
 template<typename Context>
 auto FunctionParser<Context>::atomicStore(ExtAtomicOpType op, Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
 
     uint32_t alignment;
     uint32_t offset;
@@ -824,7 +824,7 @@ auto FunctionParser<Context>::atomicStore(ExtAtomicOpType op, Type memoryType) -
 template<typename Context>
 auto FunctionParser<Context>::atomicBinaryRMW(ExtAtomicOpType op, Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
 
     uint32_t alignment;
     uint32_t offset;
@@ -848,7 +848,7 @@ auto FunctionParser<Context>::atomicBinaryRMW(ExtAtomicOpType op, Type memoryTyp
 template<typename Context>
 auto FunctionParser<Context>::atomicCompareExchange(ExtAtomicOpType op, Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
 
     uint32_t alignment;
     uint32_t offset;
@@ -875,7 +875,7 @@ auto FunctionParser<Context>::atomicCompareExchange(ExtAtomicOpType op, Type mem
 template<typename Context>
 auto FunctionParser<Context>::atomicWait(ExtAtomicOpType op, Type memoryType) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
 
     uint32_t alignment;
     uint32_t offset;
@@ -902,7 +902,7 @@ auto FunctionParser<Context>::atomicWait(ExtAtomicOpType op, Type memoryType) ->
 template<typename Context>
 auto FunctionParser<Context>::atomicNotify(ExtAtomicOpType op) -> PartialResult
 {
-    WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+    WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
 
     uint32_t alignment;
     uint32_t offset;
@@ -990,7 +990,7 @@ auto FunctionParser<Context>::simd(SIMDLaneOperation op, SIMDLane lane, SIMDSign
         default: RELEASE_ASSERT_NOT_REACHED();
         }
 
-        WASM_VALIDATOR_FAIL_IF(!m_info.memory, "simd memory instructions need a memory defined in the module"_s);
+        WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "simd memory instructions need a memory defined in the module"_s);
 
         uint32_t alignment;
         WASM_PARSER_FAIL_IF(!parseVarUInt32(alignment), "can't get simd memory op alignment"_s);
@@ -2202,7 +2202,7 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
             WASM_TRY_POP_EXPRESSION_STACK_INTO(targetValue, "memory.fill");
             WASM_TRY_POP_EXPRESSION_STACK_INTO(dstAddress, "memory.fill");
 
-            if (m_info.memory.isMemory64()) {
+            if (m_info.theOnlyMemory().isMemory64()) {
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I64 != dstAddress.type().kind, "memory.fill dstAddress to type ", dstAddress.type(), " expected ", TypeKind::I64);
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I32 != targetValue.type().kind, "memory.fill targetValue to type ", targetValue.type(), " expected ", TypeKind::I32);
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I64 != count.type().kind, "memory.fill size to type ", count.type(), " expected ", TypeKind::I64);
@@ -2228,7 +2228,7 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
             WASM_TRY_POP_EXPRESSION_STACK_INTO(srcAddress, "memory.copy");
             WASM_TRY_POP_EXPRESSION_STACK_INTO(dstAddress, "memory.copy");
 
-            if (m_info.memory.isMemory64()) {
+            if (m_info.theOnlyMemory().isMemory64()) {
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I64 != dstAddress.type().kind, "memory.copy dstAddress to type ", dstAddress.type(), " expected ", TypeKind::I64);
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I64 != srcAddress.type().kind, "memory.copy targetValue to type ", srcAddress.type(), " expected ", TypeKind::I64);
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I64 != count.type().kind, "memory.copy size to type ", count.type(), " expected ", TypeKind::I64);
@@ -2252,7 +2252,7 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
             WASM_TRY_POP_EXPRESSION_STACK_INTO(srcAddress, "memory.init");
             WASM_TRY_POP_EXPRESSION_STACK_INTO(dstAddress, "memory.init");
 
-            if (m_info.memory.isMemory64())
+            if (m_info.theOnlyMemory().isMemory64())
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I64 != dstAddress.type().kind, "memory.init dst address to type ", dstAddress.type(), " expected ", TypeKind::I64);
             else
                 WASM_VALIDATOR_FAIL_IF(TypeKind::I32 != dstAddress.type().kind, "memory.init dst address to type ", dstAddress.type(), " expected ", TypeKind::I32);
@@ -3744,14 +3744,14 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
     }
 
     case GrowMemory: {
-        WASM_PARSER_FAIL_IF(!m_info.memory, "grow_memory is only valid if a memory is defined or imported"_s);
+        WASM_PARSER_FAIL_IF(!m_info.memoryCount(), "grow_memory is only valid if a memory is defined or imported"_s);
 
         uint8_t reserved;
         WASM_PARSER_FAIL_IF(!parseUInt8(reserved), "can't parse reserved byte for grow_memory"_s);
         WASM_PARSER_FAIL_IF(reserved, "reserved byte for grow_memory must be zero"_s);
 
         TypedExpression delta;
-        bool isMemory64 = m_info.memory.isMemory64();
+        bool isMemory64 = m_info.theOnlyMemory().isMemory64();
         if (isMemory64) {
             WASM_TRY_POP_EXPRESSION_STACK_INTO(delta, "expect an i64 argument to grow_memory on the stack"_s);
             WASM_VALIDATOR_FAIL_IF(!delta.type().isI64(), "grow_memory with non-i64 delta argument has type: ", delta.type());
@@ -3768,7 +3768,7 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
     }
 
     case CurrentMemory: {
-        WASM_PARSER_FAIL_IF(!m_info.memory, "current_memory is only valid if a memory is defined or imported"_s);
+        WASM_PARSER_FAIL_IF(!m_info.memoryCount(), "current_memory is only valid if a memory is defined or imported"_s);
 
         uint8_t reserved;
         WASM_PARSER_FAIL_IF(!parseUInt8(reserved), "can't parse reserved byte for current_memory"_s);
@@ -3776,7 +3776,7 @@ FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE)
 
         ExpressionType result;
         WASM_TRY_ADD_TO_CONTEXT(addCurrentMemory(result));
-        m_expressionStack.constructAndAppend(m_info.memory.isMemory64() ? Types::I64 : Types::I32, result);
+        m_expressionStack.constructAndAppend(m_info.theOnlyMemory().isMemory64() ? Types::I64 : Types::I32, result);
 
         return { };
     }
@@ -3999,7 +3999,7 @@ auto FunctionParser<Context>::parseUnreachableExpression() -> PartialResult
     FOR_EACH_WASM_MEMORY_STORE_OP(CREATE_CASE) {
         uint32_t unused;
         WASM_PARSER_FAIL_IF(!parseVarUInt32(unused), "can't get first immediate for "_s, m_currentOpcode, " in unreachable context"_s);
-        if (m_info.memory.isMemory64()) {
+        if (m_info.theOnlyMemory().isMemory64()) {
             uint64_t unused64;
             WASM_PARSER_FAIL_IF(!parseVarUInt64(unused64), "can't get second immediate for "_s, m_currentOpcode, " in unreachable context"_s);
         } else
@@ -4370,7 +4370,7 @@ auto FunctionParser<Context>::parseUnreachableExpression() -> PartialResult
         case ExtAtomicOpType::I64AtomicRmw32CmpxchgU:
         case ExtAtomicOpType::I64AtomicRmwCmpxchg:
         {
-            WASM_VALIDATOR_FAIL_IF(!m_info.memory, "atomic instruction without memory"_s);
+            WASM_VALIDATOR_FAIL_IF(!m_info.memoryCount(), "atomic instruction without memory"_s);
             uint32_t alignment;
             uint32_t unused;
             WASM_PARSER_FAIL_IF(!parseVarUInt32(alignment), "can't get load alignment"_s);

@@ -102,14 +102,13 @@ CSSParserContext::CSSParserContext(const Settings& settings)
     , cssTextDecorationLineErrorValues { settings.cssTextDecorationLineErrorValues() }
     , cssWordBreakAutoPhraseEnabled { settings.cssWordBreakAutoPhraseEnabled() }
     , popoverAttributeEnabled { settings.popoverAttributeEnabled() }
-    , sidewaysWritingModesEnabled { settings.sidewaysWritingModesEnabled() }
     , cssTextWrapPrettyEnabled { settings.cssTextWrapPrettyEnabled() }
 #if ENABLE(SERVICE_CONTROLS)
     , imageControlsEnabled { settings.imageControlsEnabled() }
 #endif
     , colorLayersEnabled { settings.cssColorLayersEnabled() }
     , targetTextPseudoElementEnabled { settings.targetTextPseudoElementEnabled() }
-    , htmlEnhancedSelectPseudoElementsEnabled { settings.htmlEnhancedSelectPseudoElementsEnabled() }
+    , htmlEnhancedSelectEnabled { settings.htmlEnhancedSelectEnabled() }
     , cssRandomFunctionEnabled { settings.cssRandomFunctionEnabled() }
     , cssTreeCountingFunctionsEnabled { settings.cssTreeCountingFunctionsEnabled() }
     , cssURLModifiersEnabled { settings.cssURLModifiersEnabled() }
@@ -141,7 +140,6 @@ void add(Hasher& hasher, const CSSParserContext& context)
         context.cssPaintingAPIEnabled,
         context.cssWordBreakAutoPhraseEnabled,
         context.popoverAttributeEnabled,
-        context.sidewaysWritingModesEnabled,
         context.cssTextWrapPrettyEnabled,
 #if ENABLE(SERVICE_CONTROLS)
         context.imageControlsEnabled,
@@ -159,7 +157,7 @@ void add(Hasher& hasher, const CSSParserContext& context)
         context.cssTextTransformMathAutoEnabled,
         context.cssInternalAutoBaseParsingEnabled,
         context.cssMathDepthEnabled,
-        context.htmlEnhancedSelectPseudoElementsEnabled,
+        context.htmlEnhancedSelectEnabled,
         context.openPseudoClassEnabled
     );
     add(hasher, context.baseURL, context.charset, context.propertySettings, context.mode, bits);

@@ -132,6 +132,11 @@ MacroAssemblerCodeRef<JITThunkPtrTag> inPlaceInterpreterTableCatchEntryThunk();
 MacroAssemblerCodeRef<JITThunkPtrTag> inPlaceInterpreterTableCatchRefEntryThunk();
 MacroAssemblerCodeRef<JITThunkPtrTag> inPlaceInterpreterTableCatchAllEntryThunk();
 MacroAssemblerCodeRef<JITThunkPtrTag> inPlaceInterpreterTableCatchAllrefEntryThunk();
+#if CPU(ARM64E)
+MacroAssemblerCodeRef<NativeToJITGatePtrTag> relocateJITReturnPCThunk(void*);
+MacroAssemblerCodeRef<NativeToJITGatePtrTag> exitImplantedSliceGateThunk(void*);
+MacroAssemblerCodeRef<NativeToJITGatePtrTag> getSentinelFrameReturnPCGateThunk(void*);
+#endif
 #endif // ENABLE(WEBASSEMBLY)
 
 } } // namespace JSC::LLInt

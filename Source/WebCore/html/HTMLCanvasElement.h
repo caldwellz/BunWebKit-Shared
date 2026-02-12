@@ -73,7 +73,6 @@ public:
     static Ref<HTMLCanvasElement> create(const QualifiedName&, Document&);
     virtual ~HTMLCanvasElement();
 
-    using HTMLElement::protectedScriptExecutionContext;
 
     WEBCORE_EXPORT ExceptionOr<void> setWidth(unsigned);
     WEBCORE_EXPORT ExceptionOr<void> setHeight(unsigned);
@@ -181,7 +180,6 @@ private:
     bool usesContentsAsLayerContents() const;
 
     ScriptExecutionContext* canvasBaseScriptExecutionContext() const final { return HTMLElement::scriptExecutionContext(); }
-    RefPtr<ScriptExecutionContext> protectedCanvasBaseScriptExecutionContext() const { return canvasBaseScriptExecutionContext(); }
 
     void didMoveToNewDocument(Document& oldDocument, Document& newDocument) final;
 

@@ -528,6 +528,8 @@ private:
                     && isFullNumberOrBooleanSpeculationExpectingDefined(right)) {
                     if (m_graph.binaryArithShouldSpeculateInt32(node, m_pass))
                         changed |= mergePrediction(SpecInt32Only);
+                    else if ((op == ValueMod || op == ArithMod) && m_graph.modShouldSpeculateInt52(node))
+                        changed |= mergePrediction(SpecInt52Any);
                     else
                         changed |= mergePrediction(SpecBytecodeDouble);
                 } else if ((op == ValueDiv || op == ValueMod) && isBigIntSpeculation(left) && isBigIntSpeculation(right))
@@ -853,16 +855,17 @@ private:
         case ArithDiv: {
             SpeculatedType left = node->child1()->prediction();
             SpeculatedType right = node->child2()->prediction();
-                
+
             DoubleBallot ballot;
-                
+
             if (isFullNumberSpeculation(left)
                 && isFullNumberSpeculation(right)
-                && !m_graph.binaryArithShouldSpeculateInt32(node, m_pass))
+                && !m_graph.binaryArithShouldSpeculateInt32(node, m_pass)
+                && !((node->op() == ArithMod || node->op() == ValueMod) && m_graph.modShouldSpeculateInt52(node)))
                 ballot = VoteDouble;
             else
                 ballot = VoteValue;
-                
+
             m_graph.voteNode(node->child1(), ballot, weight);
             m_graph.voteNode(node->child2(), ballot, weight);
             break;
@@ -1137,6 +1140,7 @@ private:
             break;
 
         case MapIteratorNext:
+        case GetRegExpFlag:
             setPrediction(SpecBoolean);
             break;
 
@@ -1187,7 +1191,8 @@ private:
             break;
         }
 
-        case StringStartsWith: {
+        case StringStartsWith:
+        case StringEndsWith: {
             setPrediction(SpecBoolean);
             break;
         }

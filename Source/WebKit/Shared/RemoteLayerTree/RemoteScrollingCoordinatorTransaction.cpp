@@ -97,6 +97,7 @@ static void dump(TextStream& ts, const ScrollingStateScrollingNode& node, bool c
             ts.dumpProperty("requested-scroll-position-is-programatic"_s, requestedScrollData.scrollType);
             ts.dumpProperty("requested-scroll-position-clamping"_s, requestedScrollData.clamping);
             ts.dumpProperty("requested-scroll-position-animated"_s, requestedScrollData.animated == ScrollIsAnimated::Yes);
+            ts.dumpProperty("requested-scroll-scrollbars-reveal-behavior"_s, requestedScrollData.scrollbarRevealBehavior);
         }
     }
 

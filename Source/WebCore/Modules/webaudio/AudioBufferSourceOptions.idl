@@ -22,11 +22,11 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+// https://webaudio.github.io/web-audio-api/#AudioBufferSourceOptions
 [
     Conditional=WEB_AUDIO,
-    LegacyNativeDictionaryRequiredInterfaceNullability,
 ] dictionary AudioBufferSourceOptions {
-    AudioBuffer? buffer;
+    [ImplementationDefaultValue=null] AudioBuffer? buffer;
     float detune = 0;
     boolean loop = false;
     double loopEnd = 0;

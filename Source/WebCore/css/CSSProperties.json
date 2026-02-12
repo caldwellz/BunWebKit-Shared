@@ -1584,14 +1584,8 @@
                 "horizontal-tb",
                 "vertical-lr",
                 "vertical-rl",
-                {
-                    "value": "sideways-lr",
-                    "settings-flag": "sidewaysWritingModesEnabled"
-                },
-                {
-                    "value": "sideways-rl",
-                    "settings-flag": "sidewaysWritingModesEnabled"
-                },
+                "sideways-lr",
+                "sideways-rl",
                 {
                     "value": "lr-tb",
                     "status": "deprecated"
@@ -9136,7 +9130,7 @@
                 },
                 {
                     "value": "base-select",
-                    "settings-flag": "htmlEnhancedSelectPseudoElementsEnabled"
+                    "settings-flag": "htmlEnhancedSelectEnabled"
                 },
                 "auto",
                 "none",
@@ -9170,7 +9164,9 @@
                 "computed-style-storage-path": ["m_nonInheritedData", "miscData"],
                 "computed-style-storage-kind": "enum",
                 "computed-style-type": "StyleAppearance",
-                "parser-grammar": "<<values>>"
+                "parser-grammar": "<<values>>",
+                "top-priority": true,
+                "top-priority-reason": "This needs to be top priority so that -internal-auto-base() resolves correctly for high priority properties."
             },
             "specification": {
                 "category": "css-ui",

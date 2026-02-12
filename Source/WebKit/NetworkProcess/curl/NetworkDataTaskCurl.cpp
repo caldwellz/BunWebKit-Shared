@@ -578,7 +578,7 @@ bool NetworkDataTaskCurl::shouldBlockCookies(const WebCore::ResourceRequest& req
     bool shouldBlockCookies = m_storedCredentialsPolicy == WebCore::StoredCredentialsPolicy::EphemeralStateless;
 
     if (!shouldBlockCookies && m_session->networkStorageSession())
-        shouldBlockCookies = m_session->checkedNetworkStorageSession()->shouldBlockCookies(request, m_frameID, m_pageID, m_session->networkProcess().shouldRelaxThirdPartyCookieBlockingForPage(m_webPageProxyID), WebCore::IsKnownCrossSiteTracker::No);
+        shouldBlockCookies = protect(m_session->networkStorageSession())->shouldBlockCookies(request, m_frameID, m_pageID, m_session->networkProcess().shouldRelaxThirdPartyCookieBlockingForPage(m_webPageProxyID), WebCore::IsKnownCrossSiteTracker::No);
 
     if (shouldBlockCookies)
         return true;

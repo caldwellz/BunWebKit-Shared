@@ -210,7 +210,7 @@ void EventDispatcher::dispatchEvent(Node& node, Event& event)
         // FIXME: We should also set shouldClearTargetsAfterDispatch to true if an EventTarget object in eventContext's touch target list
         // is a node and its root is a shadow root.
         if (eventContext.target()) {
-            shouldClearTargetsAfterDispatch = isInShadowTree(eventContext.protectedTarget().get()) || isInShadowTree(eventContext.protectedRelatedTarget().get());
+            shouldClearTargetsAfterDispatch = isInShadowTree(protect(eventContext.target()).get()) || isInShadowTree(protect(eventContext.relatedTarget()).get());
             break;
         }
     }

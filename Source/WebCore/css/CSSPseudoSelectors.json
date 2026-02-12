@@ -50,6 +50,7 @@
             "conditional": "ENABLE(FULLSCREEN_API)"
         },
         "-internal-media-document": {},
+        "-internal-uses-menulist": {},
         "-webkit-any": {
             "argument": "required",
             "comment": "Alias of :is() with different specificity rules.",
@@ -552,7 +553,7 @@
         },
         "picker": {
             "argument": "required",
-            "settings-flag": "htmlEnhancedSelectPseudoElementsEnabled"
+            "settings-flag": "htmlEnhancedSelectEnabled"
         },
         "placeholder": {
             "aliases": [

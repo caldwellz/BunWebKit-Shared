@@ -86,8 +86,6 @@ private:
     void setCookieTransformForFirstPartyRequest(const WebCore::ResourceRequest&);
     void setCookieTransformForThirdPartyRequest(const WebCore::ResourceRequest&, IsRedirect);
 
-    CheckedPtr<NetworkSession> checkedNetworkSession() const;
-
     WeakPtr<NetworkSession> m_networkSession;
     bool m_hasBeenSetToUseStatelessCookieStorage { false };
     Seconds m_ageCapForCNAMECloakedCookies { 24_h * 7 };

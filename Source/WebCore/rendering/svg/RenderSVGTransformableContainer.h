@@ -41,7 +41,6 @@ private:
 
     void element() const = delete;
     SVGGraphicsElement& graphicsElement() const;
-    Ref<SVGGraphicsElement> protectedGraphicsElement() const;
 
     void applyTransform(TransformationMatrix&, const RenderStyle&, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption>) const final;
     void updateLayerTransform() final;

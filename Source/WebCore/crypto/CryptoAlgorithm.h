@@ -47,7 +47,7 @@ template<typename> class ExceptionOr;
 enum class ExceptionCode : uint8_t;
 
 using KeyData = Variant<Vector<uint8_t>, JsonWebKey>;
-using KeyOrKeyPair = Variant<RefPtr<CryptoKey>, CryptoKeyPair>;
+using KeyOrKeyPair = Variant<Ref<CryptoKey>, CryptoKeyPair>;
 
 class CryptoAlgorithm : public ThreadSafeRefCounted<CryptoAlgorithm> {
 public:

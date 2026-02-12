@@ -154,6 +154,7 @@ typedef void (*AXPostedNotificationCallback)(id element, NSString* notification,
 - (NSArray *)misspellingTextMarkerRange:(NSArray *)startTextMarkerRange forward:(BOOL)forward;
 - (NSArray *)textMarkerRangeFromMarkers:(NSArray *)markers withText:(NSString *)text;
 - (NSAttributedString *)_attributedStringForTextMarkerRangeForTesting:(NSArray *)markers;
+- (NSArray *)_associatedActionElements;
 @end
 
 @interface NSObject (WebAccessibilityObjectWrapperPrivate)
@@ -324,6 +325,14 @@ RefPtr<AccessibilityUIElement> AccessibilityUIElementIOS::ariaOwnsElementAtIndex
 RefPtr<AccessibilityUIElement> AccessibilityUIElementIOS::ariaFlowToElementAtIndex(unsigned index)
 {
     return nullptr;
+}
+
+RefPtr<AccessibilityUIElement> AccessibilityUIElementIOS::ariaActionsElementAtIndex(unsigned index)
+{
+    NSArray *elements = [m_element _associatedActionElements];
+    if (index >= elements.count)
+        return nullptr;
+    return AccessibilityUIElement::create(elements[index]);
 }
 
 RefPtr<AccessibilityUIElement> AccessibilityUIElementIOS::ariaControlsElementAtIndex(unsigned index)
@@ -1097,6 +1106,16 @@ void AccessibilityUIElementIOS::press()
 bool AccessibilityUIElementIOS::dismiss()
 {
     return [m_element accessibilityPerformEscape];
+}
+
+bool AccessibilityUIElementIOS::invokeCustomActionAtIndex(unsigned index)
+{
+    NSArray *customActions = [m_element accessibilityCustomActions];
+    if (index >= customActions.count)
+        return false;
+
+    UIAccessibilityCustomAction *action = customActions[index];
+    return action.actionHandler(action);
 }
 
 void AccessibilityUIElementIOS::setSelectedChild(AccessibilityUIElement* element) const

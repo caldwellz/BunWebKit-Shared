@@ -77,7 +77,6 @@ inspector/agents/page/PageNetworkAgent.cpp
 page/EventHandler.cpp
 page/FocusController.cpp
 [ iOS ] page/Quirks.cpp
-[ iOS ] page/ios/ContentChangeObserver.cpp
 [ iOS ] page/ios/EventHandlerIOS.mm
 [ iOS ] page/ios/FrameIOS.mm
 [ iOS ] platform/audio/ios/AudioSessionIOS.mm

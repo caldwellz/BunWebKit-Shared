@@ -87,12 +87,12 @@ void FileSystemDirectoryReader::readEntries(ScriptExecutionContext& context, Ref
     m_isReading = true;
     callOnMainThread([context = Ref { context }, successCallback = WTF::move(successCallback), errorCallback = WTF::move(errorCallback), pendingActivity = makePendingActivity(*this)]() mutable {
         pendingActivity->object().m_isReading = false;
-        pendingActivity->object().m_directory->filesystem().listDirectory(context, pendingActivity->object().m_directory, [successCallback = WTF::move(successCallback), errorCallback = WTF::move(errorCallback), pendingActivity = WTF::move(pendingActivity)](ExceptionOr<Vector<Ref<FileSystemEntry>>>&& result) mutable {
+        protect(pendingActivity->object().m_directory->filesystem())->listDirectory(context, pendingActivity->object().m_directory, [successCallback = WTF::move(successCallback), errorCallback = WTF::move(errorCallback), pendingActivity = WTF::move(pendingActivity)](ExceptionOr<Vector<Ref<FileSystemEntry>>>&& result) mutable {
             RefPtr document = pendingActivity->object().document();
             if (result.hasException()) {
                 pendingActivity->object().m_error = result.releaseException();
                 if (errorCallback && document) {
-                    document->checkedEventLoop()->queueTask(TaskSource::Networking, [errorCallback = WTF::move(errorCallback), pendingActivity = WTF::move(pendingActivity)]() mutable {
+                    protect(document->eventLoop())->queueTask(TaskSource::Networking, [errorCallback = WTF::move(errorCallback), pendingActivity = WTF::move(pendingActivity)]() mutable {
                         errorCallback->invoke(DOMException::create(*pendingActivity->object().m_error));
                     });
                 }
@@ -100,7 +100,7 @@ void FileSystemDirectoryReader::readEntries(ScriptExecutionContext& context, Ref
             }
             pendingActivity->object().m_isDone = true;
             if (document) {
-                document->checkedEventLoop()->queueTask(TaskSource::Networking, [successCallback = WTF::move(successCallback), pendingActivity = WTF::move(pendingActivity), result = result.releaseReturnValue()]() mutable {
+                protect(document->eventLoop())->queueTask(TaskSource::Networking, [successCallback = WTF::move(successCallback), pendingActivity = WTF::move(pendingActivity), result = result.releaseReturnValue()]() mutable {
                     successCallback->invoke(WTF::move(result));
                 });
             }

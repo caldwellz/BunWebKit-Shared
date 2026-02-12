@@ -71,7 +71,6 @@ private:
 
     void didReceiveMobileDocType(bool) final;
     void setNeedsScrollNotifications(WebCore::LocalFrame&, bool) final;
-    void didFinishContentChangeObserving(WebCore::LocalFrame&, WKContentChange) final;
     WebCore::FloatSize screenSize() const final;
     WebCore::FloatSize availableScreenSize() const final;
     WebCore::FloatSize overrideScreenSize() const final;

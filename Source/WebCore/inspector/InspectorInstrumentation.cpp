@@ -1140,7 +1140,7 @@ void InspectorInstrumentation::didEnableExtensionImpl(InstrumentingAgents& instr
 void InspectorInstrumentation::willDestroyWebGLProgram(WebGLProgram& program)
 {
     FAST_RETURN_IF_NO_FRONTENDS(void());
-    if (RefPtr agents = instrumentingAgents(program.protectedScriptExecutionContext().get()))
+    if (RefPtr agents = instrumentingAgents(protect(program.scriptExecutionContext()).get()))
         willDestroyWebGLProgramImpl(*agents, program);
 }
 

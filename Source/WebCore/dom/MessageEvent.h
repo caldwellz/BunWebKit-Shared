@@ -39,7 +39,7 @@ namespace WebCore {
 class Blob;
 class SecurityOrigin;
 
-using MessageEventSource = Variant<RefPtr<WindowProxy>, RefPtr<MessagePort>, RefPtr<ServiceWorker>>;
+using MessageEventSource = Variant<Ref<WindowProxy>, Ref<MessagePort>, Ref<ServiceWorker>>;
 
 class MessageEvent final : public Event {
     WTF_MAKE_TZONE_ALLOCATED(MessageEvent);
@@ -95,7 +95,7 @@ private:
     MessageEvent(const AtomString& type, DataType&&, RefPtr<SecurityOrigin>&& origin, const String& lastEventId = { }, std::optional<MessageEventSource>&& = std::nullopt, Vector<Ref<MessagePort>>&& = { });
 
     DataType m_data WTF_GUARDED_BY_LOCK(m_concurrentDataAccessLock);
-    Variant<String, RefPtr<SecurityOrigin>> m_origin;
+    Variant<String, Ref<SecurityOrigin>> m_origin;
     String m_lastEventId;
     std::optional<MessageEventSource> m_source;
     Vector<Ref<MessagePort>> m_ports;

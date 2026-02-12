@@ -201,7 +201,7 @@ void removeOverlaySoonIfNeeded(HTMLElement& element)
     if (!hasOverlay(element))
         return;
 
-    protect(element.document())->checkedEventLoop()->queueTask(TaskSource::InternalAsyncTask, [weakElement = WeakPtr { element }] {
+    protect(protect(element.document())->eventLoop())->queueTask(TaskSource::InternalAsyncTask, [weakElement = WeakPtr { element }] {
         RefPtr element = weakElement.get();
         if (!element)
             return;

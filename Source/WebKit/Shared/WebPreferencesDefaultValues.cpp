@@ -510,4 +510,19 @@ bool defaultCaptionDisplaySettingsEnabled()
 }
 #endif
 
+#if ENABLE(MEDIA_STREAM)
+bool defaultShouldEnableScreenCapture()
+{
+#if USE(APPLE_INTERNAL_SDK)
+    return defaultShouldEnableScreenCaptureFromAdditions();
+#endif
+
+#if USE(GSTREAMER) || PLATFORM(MAC)
+    return true;
+#endif
+
+    return false;
+}
+#endif
+
 } // namespace WebKit

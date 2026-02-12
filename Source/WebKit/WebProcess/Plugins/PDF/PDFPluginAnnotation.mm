@@ -101,7 +101,7 @@ PDFPluginAnnotation::~PDFPluginAnnotation()
 
     m_eventListener->setAnnotation(nullptr);
 
-    protect(element->document())->checkedEventLoop()->queueTask(TaskSource::InternalAsyncTask, [weakElement = WeakPtr<Node, WeakPtrImplWithEventTargetData> { element.get() }]() {
+    protect(protect(element->document())->eventLoop())->queueTask(TaskSource::InternalAsyncTask, [weakElement = WeakPtr<Node, WeakPtrImplWithEventTargetData> { element.get() }]() {
         if (RefPtr element = weakElement.get())
             element->remove();
     });

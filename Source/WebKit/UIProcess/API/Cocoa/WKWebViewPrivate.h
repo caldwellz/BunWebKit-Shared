@@ -637,8 +637,8 @@ typedef NS_OPTIONS(NSUInteger, _WKWebViewDataType) {
     _WKWebViewDataTypeSessionStorage = 1 << 0
 } WK_API_AVAILABLE(macos(15.4), ios(18.4), visionos(2.4));
 
-- (void)_fetchDataOfTypes:(_WKWebViewDataType)dataTypes completionHandler:(WK_SWIFT_UI_ACTOR void (^)(NSData *))completionHandler WK_API_AVAILABLE(macos(15.4), ios(18.4), visionos(2.4));
-- (void)_restoreData:(NSData *)data completionHandler:(WK_SWIFT_UI_ACTOR void(^)(BOOL))completionHandler WK_API_AVAILABLE(macos(15.4), ios(18.4), visionos(2.4));
+- (void)_fetchDataOfTypes:(_WKWebViewDataType)dataTypes completionHandler:(WK_SWIFT_UI_ACTOR void (^)(NSData *))completionHandler WK_API_DEPRECATED_WITH_REPLACEMENT("-fetchDataOfTypes:completionHandler:", macos(15.4, WK_MAC_TBA), ios(18.4, WK_IOS_TBA), visionos(2.4, WK_XROS_TBA));
+- (void)_restoreData:(NSData *)data completionHandler:(WK_SWIFT_UI_ACTOR void(^)(BOOL))completionHandler WK_API_DEPRECATED_WITH_REPLACEMENT("-restoreData:completionHandler:", macos(15.4, WK_MAC_TBA), ios(18.4, WK_IOS_TBA), visionos(2.4, WK_XROS_TBA));
 
 @property (nonatomic) audit_token_t presentingApplicationAuditToken WK_API_AVAILABLE(macos(15.4), ios(18.4), visionos(2.4));
 
@@ -649,6 +649,7 @@ typedef NS_OPTIONS(NSUInteger, _WKWebViewDataType) {
 - (NSUInteger)accessibilityUIProcessLocalTokenHash;
 - (NSArray<NSNumber *> *)registeredRemoteAccessibilityPids;
 - (bool)hasRemoteAccessibilityChild;
+- (NSData *)_remoteAccessibilityChildToken;
 #endif
 
 #if TARGET_OS_IPHONE
@@ -928,6 +929,7 @@ typedef NS_OPTIONS(NSUInteger, _WKWebViewDataType) {
 
 - (void)_simulateMouseMove:(NSEvent *)event WK_API_AVAILABLE(macos(13.0));
 - (void)_simulateMouseEnter:(NSEvent *)event WK_API_AVAILABLE(macos(15.0));
+- (void)_simulateMouseExit:(NSEvent *)event WK_API_AVAILABLE(macos(14.0));
 
 - (void)_setFont:(NSFont *)font sender:(id)sender WK_API_AVAILABLE(macos(13.3));
 

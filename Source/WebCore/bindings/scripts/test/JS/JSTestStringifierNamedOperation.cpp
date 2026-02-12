@@ -228,7 +228,7 @@ void JSTestStringifierNamedOperationOwner::finalize(JSC::Handle<JSC::Unknown> ha
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestStringifierNamedOperation = static_cast<JSTestStringifierNamedOperation*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestStringifierNamedOperation->protectedWrapped().ptr(), jsTestStringifierNamedOperation);
+    uncacheWrapper(world, protect(jsTestStringifierNamedOperation->wrapped()).ptr(), jsTestStringifierNamedOperation);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

@@ -508,7 +508,7 @@ static inline void processServerTrustEvaluation(NetworkSessionCocoa& session, Se
 
     if (auto downloadID = _sessionWrapper->downloadMap.getOptional(task.taskIdentifier)) {
         if (CheckedPtr session = _session.get()) {
-            if (RefPtr download = session->networkProcess().checkedDownloadManager()->download(*downloadID))
+            if (RefPtr download = protect(session->networkProcess().downloadManager())->download(*downloadID))
                 return downcast<NetworkSessionCocoa>(session->networkProcess().networkSession(download->sessionID()));
         }
         return nullptr;
@@ -726,7 +726,7 @@ static NSDictionary<NSString *, id> *extractResolutionReport(NSError *error)
             return;
         if (!_session)
             return;
-        RefPtr download = CheckedPtr { _session.get() }->networkProcess().checkedDownloadManager()->download(*downloadID);
+        RefPtr download = protect(protect(_session)->networkProcess().downloadManager())->download(*downloadID);
         if (!download)
             return;
 
@@ -922,7 +922,7 @@ static NSDictionary<NSString *, id> *extractResolutionReport(NSError *error)
     if (!downloadID)
         return;
     if (CheckedPtr session = _session.get()) {
-        if (RefPtr download = session->networkProcess().checkedDownloadManager()->download(*downloadID))
+        if (RefPtr download = protect(session->networkProcess().downloadManager())->download(*downloadID))
             download->didFinish();
     }
 }
@@ -937,7 +937,7 @@ static NSDictionary<NSString *, id> *extractResolutionReport(NSError *error)
     if (!downloadID)
         return;
     if (CheckedPtr session = _session.get()) {
-        if (RefPtr download = session->networkProcess().checkedDownloadManager()->download(*downloadID))
+        if (RefPtr download = protect(session->networkProcess().downloadManager())->download(*downloadID))
             download->didReceiveData(bytesWritten, totalBytesWritten, totalBytesExpectedToWrite);
     }
 }
@@ -1310,7 +1310,7 @@ void NetworkSessionCocoa::notifyAdAttributionKitOfSessionTermination()
 
 void NetworkSessionCocoa::initializeNSURLSessionsInSet(SessionSet& sessionSet, NSURLSessionConfiguration *configuration)
 {
-    sessionSet.checkedSessionWithCredentialStorage()->initialize(configuration, *this, WebCore::StoredCredentialsPolicy::Use, NavigatingToAppBoundDomain::No);
+    protect(sessionSet.sessionWithCredentialStorage)->initialize(configuration, *this, WebCore::StoredCredentialsPolicy::Use, NavigatingToAppBoundDomain::No);
     auto cookieAcceptPolicy = configuration.HTTPCookieStorage.cookieAcceptPolicy;
     LOG(NetworkSession, "Created NetworkSession with cookieAcceptPolicy %lu", static_cast<unsigned long>(cookieAcceptPolicy));
     RELEASE_LOG_IF(cookieAcceptPolicy == NSHTTPCookieAcceptPolicyNever, NetworkSession, "Creating network session with ID %" PRIu64 " that will not accept cookies.", m_sessionID.toUInt64());
@@ -1367,7 +1367,7 @@ SessionWrapper& SessionSet::initializeEphemeralStatelessSessionIfNeeded(Navigati
     configuration.get()._CTDataConnectionServiceType = existingConfiguration.get()._CTDataConnectionServiceType;
 #endif
 
-    checkedEphemeralStatelessSession()->initialize(configuration.get(), session, WebCore::StoredCredentialsPolicy::EphemeralStateless, isNavigatingToAppBoundDomain);
+    protect(ephemeralStatelessSession)->initialize(configuration.get(), session, WebCore::StoredCredentialsPolicy::EphemeralStateless, isNavigatingToAppBoundDomain);
 
     return ephemeralStatelessSession.get();
 }
@@ -1407,10 +1407,10 @@ SessionWrapper& NetworkSessionCocoa::appBoundSession(std::optional<WebPageProxyI
 
     if (!sessionSet->appBoundSession) {
         sessionSet->appBoundSession = makeUnique<IsolatedSession>();
-        sessionSet->appBoundSession->checkedSessionWithCredentialStorage()->initialize(sessionSet->sessionWithCredentialStorage->session.get().configuration, *this, WebCore::StoredCredentialsPolicy::Use, NavigatingToAppBoundDomain::Yes);
+        protect(sessionSet->appBoundSession->sessionWithCredentialStorage)->initialize(sessionSet->sessionWithCredentialStorage->session.get().configuration, *this, WebCore::StoredCredentialsPolicy::Use, NavigatingToAppBoundDomain::Yes);
     }
 
-    auto& sessionWrapper = [&](auto storedCredentialsPolicy) -> SessionWrapper& {
+    return [&](auto storedCredentialsPolicy) -> SessionWrapper& {
         switch (storedCredentialsPolicy) {
         case WebCore::StoredCredentialsPolicy::Use:
         case WebCore::StoredCredentialsPolicy::DoNotUse:
@@ -1420,8 +1420,6 @@ SessionWrapper& NetworkSessionCocoa::appBoundSession(std::optional<WebPageProxyI
             return initializeEphemeralStatelessSessionIfNeeded(webPageProxyID, NavigatingToAppBoundDomain::Yes);
         }
     } (storedCredentialsPolicy);
-
-    return sessionWrapper;
 }
 
 bool NetworkSessionCocoa::hasAppBoundSession() const
@@ -1453,7 +1451,7 @@ SessionWrapper& SessionSet::isolatedSession(WebCore::StoredCredentialsPolicy sto
 {
     auto& entry = isolatedSessions.ensure(firstPartyDomain, [this, &session, isNavigatingToAppBoundDomain] {
         auto newEntry = makeUnique<IsolatedSession>();
-        newEntry->checkedSessionWithCredentialStorage()->initialize(retainPtr(sessionWithCredentialStorage->session.get().configuration).get(), session, WebCore::StoredCredentialsPolicy::Use, isNavigatingToAppBoundDomain);
+        protect(newEntry->sessionWithCredentialStorage)->initialize(retainPtr(sessionWithCredentialStorage->session.get().configuration).get(), session, WebCore::StoredCredentialsPolicy::Use, isNavigatingToAppBoundDomain);
         return newEntry;
     }).iterator->value;
 
@@ -1634,7 +1632,7 @@ void NetworkSessionCocoa::continueDidReceiveChallenge(SessionWrapper& sessionWra
             return;
         }
         if (auto downloadID = sessionWrapper.downloadMap.getOptional(taskIdentifier)) {
-            if (RefPtr download = networkProcess().checkedDownloadManager()->download(*downloadID)) {
+            if (RefPtr download = protect(networkProcess().downloadManager())->download(*downloadID)) {
                 WebCore::AuthenticationChallenge authenticationChallenge { challenge };
                 // Received an authentication challenge for a download being resumed.
                 download->didReceiveChallenge(authenticationChallenge, WTF::move(completionHandler));
@@ -2051,14 +2049,14 @@ void NetworkSessionCocoa::clearAlternativeServices(WallTime modifiedSince)
 void NetworkSessionCocoa::forEachSessionWrapper(NOESCAPE const Function<void(SessionWrapper&)>& function)
 {
     auto sessionSetFunction = [&](SessionSet& sessionSet) {
-        function(sessionSet.checkedSessionWithCredentialStorage().get());
-        function(sessionSet.checkedEphemeralStatelessSession().get());
+        function(protect(sessionSet.sessionWithCredentialStorage).get());
+        function(protect(sessionSet.ephemeralStatelessSession).get());
         if (sessionSet.appBoundSession)
-            function(sessionSet.appBoundSession->checkedSessionWithCredentialStorage());
+            function(protect(sessionSet.appBoundSession->sessionWithCredentialStorage));
 
         for (auto& isolatedSession : sessionSet.isolatedSessions.values()) {
             if (isolatedSession)
-                function(isolatedSession->checkedSessionWithCredentialStorage());
+                function(protect(isolatedSession->sessionWithCredentialStorage));
         }
     };
     

@@ -134,7 +134,7 @@ void AutoscrollController::updateAutoscrollRenderer()
 
 #if ENABLE(PAN_SCROLLING)
     constexpr OptionSet<HitTestRequest::Type> hitType { HitTestRequest::Type::ReadOnly, HitTestRequest::Type::Active, HitTestRequest::Type::AllowChildFrameContent };
-    HitTestResult hitTest = m_autoscrollRenderer->protectedFrame()->eventHandler().hitTestResultAtPoint(m_panScrollStartPos, hitType);
+    HitTestResult hitTest = protect(m_autoscrollRenderer->frame())->eventHandler().hitTestResultAtPoint(m_panScrollStartPos, hitType);
 
     if (auto* nodeAtPoint = hitTest.innerNode())
         renderer = nodeAtPoint->renderer();
@@ -236,7 +236,7 @@ void AutoscrollController::startPanScrolling(RenderBox& scrollable, const IntPoi
     if (RefPtr view = scrollable.frame().view())
         view->addPanScrollIcon(lastKnownMousePosition);
 
-    scrollable.protectedFrame()->eventHandler().didPanScrollStart();
+    protect(scrollable.frame())->eventHandler().didPanScrollStart();
     startAutoscrollTimer();
 }
 #else

@@ -118,25 +118,25 @@ ExceptionOr<ViewTimeline::SpecifiedViewTimelineInsets> ViewTimeline::validateSpe
             return { { dynamicDowncast<CSSPrimitiveValue>(consumedInset), nullptr } };
     }
 
-    auto cssPrimitiveValueForCSSNumericValue = [&](RefPtr<CSSNumericValue> numericValue) -> ExceptionOr<RefPtr<CSSPrimitiveValue>> {
-        if (RefPtr insetValue = dynamicDowncast<CSSUnitValue>(*numericValue))
+    auto cssPrimitiveValueForCSSNumericValue = [&](Ref<CSSNumericValue> numericValue) -> ExceptionOr<RefPtr<CSSPrimitiveValue>> {
+        if (RefPtr insetValue = dynamicDowncast<CSSUnitValue>(numericValue))
             return dynamicDowncast<CSSPrimitiveValue>(insetValue->toCSSValue());
         return nullptr;
     };
 
-    auto cssPrimitiveValueForCSSKeywordValue = [&](RefPtr<CSSKeywordValue> keywordValue) -> ExceptionOr<RefPtr<CSSPrimitiveValue>> {
+    auto cssPrimitiveValueForCSSKeywordValue = [&](Ref<CSSKeywordValue> keywordValue) -> ExceptionOr<RefPtr<CSSPrimitiveValue>> {
         if (keywordValue->value() != "auto"_s)
             return Exception { ExceptionCode::TypeError };
         return nullptr;
     };
 
     auto cssPrimitiveValueForIndividualInset = [&](ViewTimelineIndividualInset individualInset) -> ExceptionOr<RefPtr<CSSPrimitiveValue>> {
-        if (auto* numericInset = std::get_if<RefPtr<CSSNumericValue>>(&individualInset))
+        if (auto* numericInset = std::get_if<Ref<CSSNumericValue>>(&individualInset))
             return cssPrimitiveValueForCSSNumericValue(*numericInset);
         if (auto* stringInset = std::get_if<String>(&individualInset))
             return cssPrimitiveValueForCSSKeywordValue(CSSKeywordValue::rectifyKeywordish(*stringInset));
-        ASSERT(std::holds_alternative<RefPtr<CSSKeywordValue>>(individualInset));
-        return cssPrimitiveValueForCSSKeywordValue(CSSKeywordValue::rectifyKeywordish(std::get<RefPtr<CSSKeywordValue>>(individualInset)));
+        ASSERT(std::holds_alternative<Ref<CSSKeywordValue>>(individualInset));
+        return cssPrimitiveValueForCSSKeywordValue(CSSKeywordValue::rectifyKeywordish(std::get<Ref<CSSKeywordValue>>(individualInset)));
     };
 
     // if a sequence is provided, the first value represents the start inset and the second value represents the end inset.

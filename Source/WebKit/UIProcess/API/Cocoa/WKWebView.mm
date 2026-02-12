@@ -1938,6 +1938,10 @@ inline OptionSet<WebKit::FindOptions> toFindOptions(WKFindConfiguration *configu
     return nil;
 }
 
+#if USE(APPLE_INTERNAL_SDK)
+#import <WebKitAdditions/WKWebViewAdditions.mm>
+#endif
+
 #endif // PLATFORM(MAC)
 
 #pragma mark - macOS/iOS internal
@@ -2258,6 +2262,13 @@ inline OptionSet<WebKit::FindOptions> toFindOptions(WKFindConfiguration *configu
     return _page.get();
 }
 
+#if PLATFORM(MAC)
+- (WebKit::WebViewImpl *)_impl
+{
+    return _impl.get();
+}
+#endif // PLATFORM(MAC)
+
 #if ENABLE(SCREEN_TIME)
 - (STWebpageController *)_screenTimeWebpageController
 {
@@ -2529,7 +2540,7 @@ static _WKSelectionAttributes selectionAttributes(const WebKit::EditorState& edi
     return WebKit::convertToCocoaWritingToolsBehavior(_page->writingToolsBehavior());
 }
 
-- (void)willBeginWritingToolsSession:(WTSession *)session requestContexts:(void (^)(NSArray<WTContext *> *))completion
+- (void)willBeginWritingToolsSession:(WTSession *)session forProofreadingReview:(BOOL)proofreadingReview requestContexts:(void (^)(NSArray<WTContext *> *))completion
 {
     auto webSession = WebKit::convertToWebSession(session);
 
@@ -2537,6 +2548,10 @@ static _WKSelectionAttributes selectionAttributes(const WebKit::EditorState& edi
         _activeWritingToolsSession = session;
         _page->setWritingToolsActive(true);
     }
+
+    _activeWritingToolsSessionIsForProofreadingReview = proofreadingReview;
+    if (proofreadingReview && webSession)
+        webSession->isForProofreadingReview = WebCore::WritingTools::IsForProofreadingReview::Yes;
 
     _page->willBeginWritingToolsSession(webSession, [completion = makeBlockPtr(completion)](const auto& contextData) {
         auto contexts = [NSMutableArray arrayWithCapacity:contextData.size()];
@@ -2546,6 +2561,11 @@ static _WKSelectionAttributes selectionAttributes(const WebKit::EditorState& edi
         }
         completion(contexts);
     });
+}
+
+- (void)willBeginWritingToolsSession:(WTSession *)session requestContexts:(void (^)(NSArray<WTContext *> *))completion
+{
+    [self willBeginWritingToolsSession:session forProofreadingReview:NO requestContexts:completion];
 }
 
 - (void)didBeginWritingToolsSession:(WTSession *)session contexts:(NSArray<WTContext *> *)contexts
@@ -2569,7 +2589,7 @@ static _WKSelectionAttributes selectionAttributes(const WebKit::EditorState& edi
 
     _page->didBeginWritingToolsSession(*webSession, contextData);
 
-    if (session.type == WTSessionTypeProofreading)
+    if (session.type == WTSessionTypeProofreading && !_activeWritingToolsSessionIsForProofreadingReview)
         _intelligenceTextEffectCoordinator = adoptNS([WebKit::allocWKIntelligenceReplacementTextEffectCoordinatorInstance() initWithDelegate:(id<WKIntelligenceTextEffectCoordinatorDelegate>)self]);
     else if (session.type == WTSessionTypeComposition && session.compositionSessionType == WTCompositionSessionTypeSmartReply)
         _intelligenceTextEffectCoordinator = adoptNS([WebKit::allocWKIntelligenceSmartReplyTextEffectCoordinatorInstance() initWithDelegate:(id<WKIntelligenceTextEffectCoordinatorDelegate>)self]);
@@ -2620,7 +2640,10 @@ static _WKSelectionAttributes selectionAttributes(const WebKit::EditorState& edi
         });
     });
 
-    [_intelligenceTextEffectCoordinator requestReplacementWithProcessedRange:range finished:finished characterDelta:delta operation:operation.get() completion:^{ }];
+    if (_activeWritingToolsSessionIsForProofreadingReview)
+        _page->proofreadingSessionDidReceiveSuggestions(*webSession, replacementData, range, *webContext, finished, [] { });
+    else
+        [_intelligenceTextEffectCoordinator requestReplacementWithProcessedRange:range finished:finished characterDelta:delta operation:operation.get() completion:^{ }];
 }
 
 - (void)proofreadingSession:(WTSession *)session didUpdateState:(WTTextSuggestionState)state forSuggestionWithUUID:(NSUUID *)suggestionUUID inContext:(WTContext *)context
@@ -2665,6 +2688,20 @@ static _WKSelectionAttributes selectionAttributes(const WebKit::EditorState& edi
     _activeWritingToolsSession = nil;
     [_writingToolsTextSuggestions removeAllObjects];
 
+    if (_activeWritingToolsSessionIsForProofreadingReview) {
+        // The proofreading review case will not have animations or reversions at this point,
+        // but the willEndWritingToolsSession call here makes sure any necessary cleanup takes place.
+        _activeWritingToolsSessionIsForProofreadingReview = NO;
+        _page->setWritingToolsActive(false);
+        _page->willEndWritingToolsSession(*webSession, accepted, [webSession, accepted, weakSelf = WeakObjCPtr<WKWebView>(self)] {
+            auto strongSelf = weakSelf.get();
+            if (!strongSelf)
+                return;
+
+            strongSelf->_page->didEndWritingToolsSession(*webSession, accepted);
+        });
+        return;
+    }
     if (!_intelligenceTextEffectCoordinator) {
         _page->setWritingToolsActive(false);
         _page->didEndWritingToolsSession(*webSession, accepted);
@@ -3594,7 +3631,7 @@ static ASCIILiteral descriptionForReason(WebKit::HideScrollPocketReason reason)
 {
     if (insets.top < 0 || insets.left < 0 || insets.right < 0 || insets.bottom < 0) {
 #if PLATFORM(IOS_FAMILY)
-        [NSException raise:NSInvalidArgumentException format:@"-obscuredContentInsets cannot be negative: %@", NSStringFromUIEdgeInsets(insets)];
+        [NSException raise:NSInvalidArgumentException format:@"-obscuredContentInsets cannot be negative: %@", protect(NSStringFromUIEdgeInsets(insets)).get()];
 #else
         [NSException raise:NSInvalidArgumentException format:@"-obscuredContentInsets cannot be negative: { top=%f, left=%f, bottom=%f, right=%f }"
             , insets.top, insets.left, insets.bottom, insets.right];
@@ -6602,17 +6639,12 @@ static Vector<Ref<API::TargetedElementInfo>> elementsFromWKElements(NSArray<_WKT
 
 - (void)_fetchDataOfTypes:(_WKWebViewDataType)dataTypes completionHandler:(void (^)(NSData *))completionHandler
 {
-    [self fetchDataOfTypes:dataTypes completionHandler:makeBlockPtr([completionHandler = makeBlockPtr(completionHandler)](NSData *data, NSError *error) {
-        UNUSED_PARAM(error);
-        completionHandler(data);
-    }).get()];
+    completionHandler(nullptr);
 }
 
 - (void)_restoreData:(NSData *)data completionHandler:(void(^)(BOOL))completionHandler
 {
-    [self restoreData:data completionHandler:makeBlockPtr([completionHandler = makeBlockPtr(completionHandler)](NSError *error) {
-        completionHandler(!error);
-    }).get()];
+    completionHandler(NO);
 }
 
 - (audit_token_t)presentingApplicationAuditToken
@@ -6706,6 +6738,11 @@ static Vector<Ref<API::TargetedElementInfo>> elementsFromWKElements(NSArray<_WKT
 - (bool)hasRemoteAccessibilityChild
 {
     return _impl->hasRemoteAccessibilityChild();
+}
+
+- (NSData *)_remoteAccessibilityChildToken
+{
+    return _impl->remoteAccessibilityChildToken();
 }
 
 - (RetainPtr<NSPopUpButtonCell>)_activePopupButtonCell
@@ -7307,6 +7344,7 @@ static OptionSet<WebCore::DataDetectorType> coreDataDetectorTypes(_WKTextExtract
             .includeEventListeners = !!configuration.includeEventListeners,
             .includeAccessibilityAttributes = !!configuration.includeAccessibilityAttributes,
             .includeTextInAutoFilledControls = !!configuration.includeTextInAutoFilledControls,
+            .includeOffscreenPasswordFields = !!configuration.includeOffscreenPasswordFields,
 #if ENABLE(DATA_DETECTION)
             .dataDetectorTypes = coreDataDetectorTypes(configuration.dataDetectorTypes),
 #endif
@@ -7525,6 +7563,15 @@ static OptionSet<WebCore::DataDetectorType> coreDataDetectorTypes(_WKTextExtract
         completion(info ? wrapper(API::JSHandle::create(WTF::move(*info))).get() : nil);
     });
 }
+
+#if ENABLE(BANNER_VIEW_OVERLAYS)
+
+- (CGFloat)_bannerViewOverlayHeight
+{
+    return 0;
+}
+
+#endif
 
 @end
 

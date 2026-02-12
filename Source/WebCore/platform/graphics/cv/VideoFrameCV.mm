@@ -27,6 +27,7 @@
 #include "VideoFrameCV.h"
 
 #if ENABLE(VIDEO) && USE(AVFOUNDATION)
+#include "CMUtilities.h"
 #include "CVUtilities.h"
 #include "GraphicsContext.h"
 #include "ImageTransferSessionVT.h"
@@ -497,10 +498,17 @@ Ref<VideoFrameCV> VideoFrameCV::create(CMSampleBufferRef sampleBuffer, bool isMi
     return VideoFrameCV::create(PAL::toMediaTime(timeStamp), isMirrored, rotation, pixelBuffer.get());
 }
 
-Ref<VideoFrameCV> VideoFrameCV::create(MediaTime presentationTime, bool isMirrored, Rotation rotation, RetainPtr<CVPixelBufferRef>&& pixelBuffer, std::optional<PlatformVideoColorSpace>&& colorSpace)
+Ref<VideoFrameCV> VideoFrameCV::create(MediaTime presentationTime, bool isMirrored, Rotation rotation, RetainPtr<CVPixelBufferRef>&& pixelBuffer, PlatformVideoColorSpace&& colorSpace)
 {
     ASSERT(pixelBuffer);
+    attachColorSpaceToPixelBuffer(colorSpace, pixelBuffer.get());
     return adoptRef(*new VideoFrameCV(presentationTime, isMirrored, rotation, WTF::move(pixelBuffer), WTF::move(colorSpace)));
+}
+
+Ref<VideoFrameCV> VideoFrameCV::create(MediaTime presentationTime, bool isMirrored, Rotation rotation, RetainPtr<CVPixelBufferRef>&& pixelBuffer)
+{
+    ASSERT(pixelBuffer);
+    return adoptRef(*new VideoFrameCV(presentationTime, isMirrored, rotation, WTF::move(pixelBuffer), computeVideoFrameColorSpace(pixelBuffer.get())));
 }
 
 RefPtr<VideoFrame> VideoFrame::createFromPixelBuffer(Ref<PixelBuffer>&& pixelBuffer, PlatformVideoColorSpace&& colorSpace)
@@ -527,62 +535,6 @@ RefPtr<VideoFrame> VideoFrame::createFromPixelBuffer(Ref<PixelBuffer>&& pixelBuf
 
     ASSERT_UNUSED(status, !status);
     return RefPtr { VideoFrameCV::create({ }, false, Rotation::None, WTF::move(cvPixelBuffer), WTF::move(colorSpace)) };
-}
-
-static PlatformVideoColorSpace computeVideoFrameColorSpace(CVPixelBufferRef pixelBuffer)
-{
-    if (!pixelBuffer)
-        return { };
-
-    std::optional<PlatformVideoColorPrimaries> primaries;
-    auto pixelPrimaries = CVBufferGetAttachment(pixelBuffer, kCVImageBufferColorPrimariesKey, nil);
-    if (safeCFEqual(pixelPrimaries, kCVImageBufferColorPrimaries_ITU_R_709_2))
-        primaries = PlatformVideoColorPrimaries::Bt709;
-    else if (safeCFEqual(pixelPrimaries, kCVImageBufferColorPrimaries_EBU_3213))
-        primaries = PlatformVideoColorPrimaries::JedecP22Phosphors;
-    else if (safeCFEqual(pixelPrimaries, PAL::kCMFormatDescriptionColorPrimaries_DCI_P3))
-        primaries = PlatformVideoColorPrimaries::SmpteRp431;
-    else if (safeCFEqual(pixelPrimaries, PAL::kCMFormatDescriptionColorPrimaries_P3_D65))
-        primaries = PlatformVideoColorPrimaries::SmpteEg432;
-    else if (safeCFEqual(pixelPrimaries, PAL::kCMFormatDescriptionColorPrimaries_ITU_R_2020))
-        primaries = PlatformVideoColorPrimaries::Bt2020;
-
-    std::optional<PlatformVideoTransferCharacteristics> transfer;
-    auto pixelTransfer = CVBufferGetAttachment(pixelBuffer, kCVImageBufferTransferFunctionKey, nil);
-    if (safeCFEqual(pixelTransfer, kCVImageBufferTransferFunction_ITU_R_709_2))
-        transfer = PlatformVideoTransferCharacteristics::Bt709;
-    else if (safeCFEqual(pixelTransfer, kCVImageBufferTransferFunction_SMPTE_240M_1995))
-        transfer = PlatformVideoTransferCharacteristics::Smpte240m;
-    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_SMPTE_ST_2084_PQ))
-        transfer = PlatformVideoTransferCharacteristics::SmpteSt2084;
-    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_SMPTE_ST_428_1))
-        transfer = PlatformVideoTransferCharacteristics::SmpteSt4281;
-    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_ITU_R_2100_HLG))
-        transfer = PlatformVideoTransferCharacteristics::AribStdB67Hlg;
-    else if (safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_Linear))
-        transfer = PlatformVideoTransferCharacteristics::Linear;
-    else if (PAL::canLoad_CoreMedia_kCMFormatDescriptionTransferFunction_sRGB() && safeCFEqual(pixelTransfer, PAL::kCMFormatDescriptionTransferFunction_sRGB))
-        transfer = PlatformVideoTransferCharacteristics::Iec6196621;
-
-    std::optional<PlatformVideoMatrixCoefficients> matrix;
-    auto pixelMatrix = CVBufferGetAttachment(pixelBuffer, kCVImageBufferYCbCrMatrixKey, nil);
-    if (safeCFEqual(pixelMatrix, PAL::kCMFormatDescriptionYCbCrMatrix_ITU_R_2020))
-        matrix = PlatformVideoMatrixCoefficients::Bt2020NonconstantLuminance;
-    else if (safeCFEqual(pixelMatrix, kCVImageBufferYCbCrMatrix_ITU_R_709_2))
-        matrix = PlatformVideoMatrixCoefficients::Bt709;
-    else if (safeCFEqual(pixelMatrix, kCVImageBufferYCbCrMatrix_SMPTE_240M_1995))
-        matrix = PlatformVideoMatrixCoefficients::Smpte240m;
-
-    auto pixelFormat = CVPixelBufferGetPixelFormatType(pixelBuffer);
-    bool isFullRange = pixelFormat != kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange;
-
-    return { primaries, transfer, matrix, isFullRange };
-}
-
-VideoFrameCV::VideoFrameCV(MediaTime presentationTime, bool isMirrored, Rotation rotation, RetainPtr<CVPixelBufferRef>&& pixelBuffer, std::optional<PlatformVideoColorSpace>&& colorSpace)
-    : VideoFrame(presentationTime, isMirrored, rotation, WTF::move(colorSpace).value_or(computeVideoFrameColorSpace(pixelBuffer.get())))
-    , m_pixelBuffer(WTF::move(pixelBuffer))
-{
 }
 
 VideoFrameCV::VideoFrameCV(MediaTime presentationTime, bool isMirrored, Rotation rotation, RetainPtr<CVPixelBufferRef>&& pixelBuffer, PlatformVideoColorSpace&& colorSpace)

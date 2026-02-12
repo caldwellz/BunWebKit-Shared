@@ -44,7 +44,7 @@ namespace WebCore {
 
 Ref<ResizeObserver> ResizeObserver::create(Document& document, Ref<ResizeObserverCallback>&& callback)
 {
-    return adoptRef(*new ResizeObserver(document, { RefPtr<ResizeObserverCallback> { WTF::move(callback) } }));
+    return adoptRef(*new ResizeObserver(document, { WTF::move(callback) }));
 }
 
 Ref<ResizeObserver> ResizeObserver::createNativeObserver(Document& document, NativeResizeObserverCallback&& nativeCallback)
@@ -202,7 +202,7 @@ void ResizeObserver::deliverObservations()
 
     // FIXME: The JSResizeObserver wrapper should be kept alive as long as the resize observer can fire events.
     ASSERT(isJSCallback());
-    auto jsCallback = std::get<RefPtr<ResizeObserverCallback>>(m_JSOrNativeCallback);
+    auto jsCallback = std::get<Ref<ResizeObserverCallback>>(m_JSOrNativeCallback);
     ASSERT(jsCallback->hasCallback());
     if (!jsCallback->hasCallback())
         return;
@@ -277,7 +277,7 @@ bool ResizeObserver::removeObservation(const Element& target)
 
 bool ResizeObserver::isJSCallback()
 {
-    return std::holds_alternative<RefPtr<ResizeObserverCallback>>(m_JSOrNativeCallback);
+    return std::holds_alternative<Ref<ResizeObserverCallback>>(m_JSOrNativeCallback);
 }
 
 bool ResizeObserver::isNativeCallback()
@@ -288,12 +288,13 @@ bool ResizeObserver::isNativeCallback()
 ResizeObserverCallback* ResizeObserver::callbackConcurrently()
 {
     return WTF::switchOn(m_JSOrNativeCallback,
-    [] (const RefPtr<ResizeObserverCallback>& jsCallback) -> ResizeObserverCallback* {
-        return jsCallback.get();
-    },
-    [] (const NativeResizeObserverCallback&) -> ResizeObserverCallback* {
-        return nullptr;
-    });
+        [](const Ref<ResizeObserverCallback>& jsCallback) -> ResizeObserverCallback* {
+            return jsCallback.ptr();
+        },
+        [](const NativeResizeObserverCallback&) -> ResizeObserverCallback* {
+            return nullptr;
+        }
+    );
 }
 
 void ResizeObserver::resetObservationSize(Element& target)

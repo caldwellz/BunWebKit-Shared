@@ -66,7 +66,7 @@ public:
 
     USING_CAN_MAKE_WEAKPTR(AbstractWorker);
 
-    static ExceptionOr<Ref<Worker>> create(ScriptExecutionContext&, JSC::RuntimeFlags, Variant<RefPtr<TrustedScriptURL>, String>&&, WorkerOptions&&);
+    static ExceptionOr<Ref<Worker>> create(ScriptExecutionContext&, JSC::RuntimeFlags, Variant<Ref<TrustedScriptURL>, String>&&, WorkerOptions&&);
     virtual ~Worker();
 
     ExceptionOr<void> postMessage(JSC::JSGlobalObject&, JSC::JSValue message, StructuredSerializeOptions&&);
@@ -79,7 +79,6 @@ public:
     const String& name() const { return m_options.name; }
 
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using ActiveDOMObject::protectedScriptExecutionContext;
 
     void dispatchEvent(Event&) final;
     void reportError(const String&);

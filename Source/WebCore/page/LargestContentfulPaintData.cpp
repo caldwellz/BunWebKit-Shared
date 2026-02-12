@@ -196,7 +196,7 @@ void LargestContentfulPaintData::potentiallyAddLargestContentfulPaintEntry(Eleme
 
     if (image) {
         pendingEntry->setURLString(image->url().string());
-        auto loadTimestamp = window->protectedPerformance()->relativeTimeFromTimeOriginInReducedResolution(loadTime);
+        auto loadTimestamp = protect(window->performance())->relativeTimeFromTimeOriginInReducedResolution(loadTime);
         pendingEntry->setLoadTime(loadTimestamp);
     }
 

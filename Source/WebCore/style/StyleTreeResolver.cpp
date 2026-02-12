@@ -416,7 +416,9 @@ auto TreeResolver::resolveElement(Element& element, const RenderStyle* existingS
     resolveAndAddPseudoElementStyle({ PseudoElementType::Before });
     resolveAndAddPseudoElementStyle({ PseudoElementType::After });
     resolveAndAddPseudoElementStyle({ PseudoElementType::Backdrop });
-    resolveAndAddPseudoElementStyle({ PseudoElementType::Checkmark });
+
+    if (m_document->settings().cssAppearanceBaseEnabled())
+        resolveAndAddPseudoElementStyle({ PseudoElementType::Checkmark });
 
     if (isDocumentElement && m_document->hasViewTransitionPseudoElementTree()) {
         resolveAndAddPseudoElementStyle({ PseudoElementType::ViewTransition });

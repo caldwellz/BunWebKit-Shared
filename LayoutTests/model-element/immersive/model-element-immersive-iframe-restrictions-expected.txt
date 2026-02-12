@@ -1,0 +1,7 @@
+
+FAIL document.immersiveEnabled is true on top-level document assert_true: document.immersiveEnabled should be true on top-level document expected true got false
+PASS document.immersiveEnabled is false on iframe document
+PASS requestImmersive rejects with InvalidAccessError in iframe
+PASS requestImmersive error message is correct for iframe
+PASS immersiveerror event fires for iframe restriction
+

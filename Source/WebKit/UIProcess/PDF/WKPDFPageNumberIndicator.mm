@@ -28,8 +28,11 @@
 
 #if ENABLE(PDF_PAGE_NUMBER_INDICATOR)
 
+#import "PDFDisplayMode.h"
 #import "UIKitSPI.h"
 #import "WKWebViewIOS.h"
+#import "WKWebViewInternal.h"
+#import "WebPageProxy.h"
 #import <WebCore/LocalizedStrings.h>
 #import <pal/system/ios/UserInterfaceIdiom.h>
 #import <wtf/CompletionHandler.h>
@@ -48,10 +51,52 @@ static constexpr Seconds indicatorFadeInDuration { 0.1_s };
 static constexpr Seconds indicatorFadeOutDuration { 0.75_s };
 static constexpr Seconds indicatorMoveDuration { 0.3_s };
 
+static UIActionIdentifier const WKPDFActionSinglePageIdentifier = @"WKPDFActionSinglePageIdentifier";
+static UIActionIdentifier const WKPDFActionTwoPagesIdentifier = @"WKPDFActionPlayTwoPagesIdentifier";
+
+@class WKPDFPageNumberIndicatorButton;
+
+@protocol WKPDFPageNumberIndicatorButtonDelegate <NSObject>
+- (void)pdfPageNumberIndicatorButtonWillDisplayMenu:(WKPDFPageNumberIndicatorButton *)button;
+- (void)pdfPageNumberIndicatorButtonDidDismissMenu:(WKPDFPageNumberIndicatorButton *)button;
+@end
+
+@interface WKPDFPageNumberIndicatorButton : UIButton
+@property (nonatomic, weak) id<WKPDFPageNumberIndicatorButtonDelegate> delegate;
+@end
+
+@implementation WKPDFPageNumberIndicatorButton
+
+- (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willDisplayMenuForConfiguration:(UIContextMenuConfiguration *)configuration animator:(id<UIContextMenuInteractionAnimating>)animator
+{
+    [super contextMenuInteraction:interaction willDisplayMenuForConfiguration:configuration animator:animator];
+    [protect(_delegate) pdfPageNumberIndicatorButtonWillDisplayMenu:self];
+}
+
+- (void)contextMenuInteraction:(UIContextMenuInteraction *)interaction willEndForConfiguration:(UIContextMenuConfiguration *)configuration animator:(id<UIContextMenuInteractionAnimating>)animator
+{
+    [super contextMenuInteraction:interaction willEndForConfiguration:configuration animator:animator];
+
+    [animator addCompletion:[weakSelf = WeakObjCPtr<WKPDFPageNumberIndicatorButton>(self)] {
+        RetainPtr strongSelf = weakSelf.get();
+        if (!strongSelf)
+            return;
+
+        [protect(strongSelf->_delegate) pdfPageNumberIndicatorButtonDidDismissMenu:strongSelf.get()];
+    }];
+}
+
+@end
+
+@interface WKPDFPageNumberIndicator () <WKPDFPageNumberIndicatorButtonDelegate>
+@end
+
 @implementation WKPDFPageNumberIndicator {
-    RetainPtr<UIButton> _button;
+    RetainPtr<WKPDFPageNumberIndicatorButton> _button;
     RetainPtr<NSTimer> _timer;
     WeakObjCPtr<WKWebView> _webView;
+
+    BOOL _isShowingMenu;
 }
 
 - (instancetype)initWithFrame:(CGRect)frame view:(WKWebView *)view pageCount:(size_t)pageCount
@@ -61,9 +106,14 @@ static constexpr Seconds indicatorMoveDuration { 0.3_s };
         return nil;
 
     _webView = view;
+    _isShowingMenu = NO;
 
     self.alpha = 0;
-    self.userInteractionEnabled = NO;
+
+    BOOL shouldEnableUserInteraction = NO;
+    if (RefPtr page = view->_page)
+        shouldEnableUserInteraction = protect(page->preferences())->twoUpPDFDisplayModeSupportEnabled();
+    self.userInteractionEnabled = shouldEnableUserInteraction;
 
 #if HAVE(UI_GLASS_EFFECT)
     bool shouldUseBlurEffectForBackdrop = PAL::currentUserInterfaceIdiomIsVision();
@@ -91,11 +141,50 @@ static constexpr Seconds indicatorMoveDuration { 0.3_s };
         return attributes.autorelease();
     }];
 
-    _button = [UIButton buttonWithType:UIButtonTypeSystem];
+    _button = [WKPDFPageNumberIndicatorButton buttonWithType:UIButtonTypeSystem];
+    [_button setDelegate:self];
     [_button setConfiguration:buttonConfiguration.get()];
     [_button setFrame:self.bounds];
     [_button setAutoresizingMask:UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight];
     [self addSubview:_button.get()];
+
+    RetainPtr deferredMenu = [UIDeferredMenuElement elementWithUncachedProvider:[weakSelf = WeakObjCPtr<WKPDFPageNumberIndicator>(self)](void (^completion)(NSArray<UIMenuElement *> *)) {
+        RetainPtr strongSelf = weakSelf.get();
+        if (!strongSelf) {
+            completion(@[ ]);
+            return;
+        }
+
+        UIActionHandler actionHandler = [weakSelf](UIAction *action) {
+            RetainPtr strongSelf = weakSelf.get();
+            if (!strongSelf)
+                return;
+
+            if (RetainPtr webView = strongSelf->_webView.get()) {
+                if (RefPtr page = webView->_page) {
+                    BOOL isSinglePage = [action.identifier isEqualToString:WKPDFActionSinglePageIdentifier];
+
+                    if ([strongSelf _isSinglePage] == isSinglePage)
+                        return;
+
+                    page->requestPDFDisplayMode(isSinglePage ? WebKit::PDFDisplayMode::SinglePageContinuous : WebKit::PDFDisplayMode::TwoUpContinuous);
+                }
+            }
+        };
+
+        RetainPtr singlePageAction = [UIAction actionWithTitle:WebCore::contextMenuItemPDFSinglePage().createNSString().get() image:nil identifier:WKPDFActionSinglePageIdentifier handler:actionHandler];
+        RetainPtr twoPagesAction = [UIAction actionWithTitle:WebCore::contextMenuItemPDFTwoPages().createNSString().get() image:nil identifier:WKPDFActionTwoPagesIdentifier handler:actionHandler];
+
+        if ([strongSelf _isSinglePage])
+            [singlePageAction setState:UIMenuElementStateOn];
+        else
+            [twoPagesAction setState:UIMenuElementStateOn];
+
+        completion(@[ singlePageAction.get(), twoPagesAction.get() ]);
+    }];
+
+    [_button setMenu:[UIMenu menuWithTitle:@"" children:@[ deferredMenu.get() ]]];
+    [_button setShowsMenuAsPrimaryAction:YES];
 
     [self updatePosition:self.frame];
     [self setPageCount:pageCount];
@@ -156,6 +245,11 @@ static constexpr Seconds indicatorMoveDuration { 0.3_s };
 
 - (void)hide:(NSTimer *)timer
 {
+    if (_isShowingMenu) {
+        [std::exchange(_timer, nil) invalidate];
+        return;
+    }
+
     // FIXME: <rdar://162795344> Remove this workaround and directly setAlpha:0 after rdar://154649008.
     static constexpr auto effectivelyTransparentAlpha = 0.0101;
     auto animations = [view = retainPtr(self)] {
@@ -203,12 +297,33 @@ static constexpr Seconds indicatorMoveDuration { 0.3_s };
 - (void)_updateLabel:(bool)labelTextShouldChange
 {
     if (labelTextShouldChange)
-        [_button setTitle:[NSString localizedStringWithFormat:WEB_UI_NSSTRING(@"%1$d of %2$d", "Label for PDF page number indicator."), _currentPageNumber, _pageCount] forState:UIControlStateNormal];
+        SUPPRESS_UNRETAINED_ARG [_button setTitle:[NSString localizedStringWithFormat:WEB_UI_NSSTRING(@"%1$d of %2$d", "Label for PDF page number indicator."), _currentPageNumber, _pageCount] forState:UIControlStateNormal];
     [self sizeToFit];
 
     if (!_pageCount || !_currentPageNumber)
         return;
 
+    [self show];
+}
+
+- (BOOL)_isSinglePage
+{
+    if (RetainPtr webView = _webView.get()) {
+        if (RefPtr page = webView->_page)
+            return page->pdfDisplayMode() == WebKit::PDFDisplayMode::SinglePageContinuous;
+    }
+
+    return YES;
+}
+
+- (void)pdfPageNumberIndicatorButtonWillDisplayMenu:(WKPDFPageNumberIndicatorButton *)button
+{
+    _isShowingMenu = YES;
+}
+
+- (void)pdfPageNumberIndicatorButtonDidDismissMenu:(WKPDFPageNumberIndicatorButton *)button
+{
+    _isShowingMenu = NO;
     [self show];
 }
 

@@ -305,7 +305,7 @@ void JSTestReadOnlySetLikeOwner::finalize(JSC::Handle<JSC::Unknown> handle, void
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestReadOnlySetLike = static_cast<JSTestReadOnlySetLike*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestReadOnlySetLike->protectedWrapped().ptr(), jsTestReadOnlySetLike);
+    uncacheWrapper(world, protect(jsTestReadOnlySetLike->wrapped()).ptr(), jsTestReadOnlySetLike);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

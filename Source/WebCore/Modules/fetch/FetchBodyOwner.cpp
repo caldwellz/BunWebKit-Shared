@@ -214,7 +214,7 @@ void FetchBodyOwner::formData(Ref<DeferredPromise>&& promise)
     if (isBodyNullOrOpaque()) {
         if (isBodyNull()) {
             // If the content-type is 'application/x-www-form-urlencoded', a body is not required and we should package an empty byte sequence as per the specification.
-            if (auto formData = FetchBodyConsumer::packageFormData(promise->protectedScriptExecutionContext().get(), contentType(), { })) {
+            if (auto formData = FetchBodyConsumer::packageFormData(protect(promise->scriptExecutionContext()).get(), contentType(), { })) {
                 promise->resolve<IDLInterface<DOMFormData>>(*formData);
                 return;
             }
@@ -282,7 +282,7 @@ void FetchBodyOwner::loadBlob(const Blob& blob, FetchBodyConsumer* consumer)
     Ref loader = FetchLoader::create(blobLoader.get(), consumer);
     blobLoader->loader = loader.copyRef();
 
-    loader->start(*protectedScriptExecutionContext(), blob);
+    loader->start(*protect(scriptExecutionContext()), blob);
     if (!loader->isStarted()) {
         m_body->loadingFailed(Exception { ExceptionCode::TypeError, "Blob loading failed"_s });
         m_blobLoader = nullptr;

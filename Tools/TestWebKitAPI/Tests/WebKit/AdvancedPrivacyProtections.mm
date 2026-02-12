@@ -212,6 +212,44 @@ static RetainPtr<TestWKWebView> createWebViewWithAdvancedPrivacyProtections(BOOL
         }
     }
 
+    RetainPtr handler = adoptNS([TestURLSchemeHandler new]);
+    [handler setStartURLSchemeTaskHandler:[](WKWebView *, id<WKURLSchemeTask> task) {
+        NSURL *requestedURL = task.request.URL;
+
+        NSString *pathExtension = requestedURL.pathExtension;
+        NSString *type = @"text/plain";
+        NSString *content;
+        if ([pathExtension isEqualToString:@"js"]) {
+            type = @"text/javascript";
+            if ([requestedURL.path hasSuffix:@"audio-fingerprinting.js"]) {
+                auto testJSURL = [NSBundle.test_resourcesBundle URLForResource:@"audio-fingerprinting" withExtension:@"js"];
+                RetainPtr jsFileData = adoptNS([[NSData alloc] initWithContentsOfURL:testJSURL]);
+                content = [[NSString alloc] initWithData:jsFileData.get() encoding:NSUTF8StringEncoding];
+            } else if ([requestedURL.path hasSuffix:@"fingerprint-audio-worklet.js"]) {
+                auto testJSURL = [NSBundle.test_resourcesBundle URLForResource:@"fingerprint-audio-worklet" withExtension:@"js"];
+                RetainPtr jsFileData = adoptNS([[NSData alloc] initWithContentsOfURL:testJSURL]);
+                content = [[NSString alloc] initWithData:jsFileData.get() encoding:NSUTF8StringEncoding];
+            } else {
+                [task didFailWithError:[NSError errorWithDomain:@"TestWebKitAPI" code:1 userInfo:nil]];
+                return;
+            }
+        } else if ([pathExtension isEqualToString:@"html"]) {
+            type = @"text/html";
+            auto testURL = [NSBundle.test_resourcesBundle URLForResource:@"audio-fingerprinting" withExtension:@"html"];
+            RetainPtr htmlFileData = adoptNS([[NSData alloc] initWithContentsOfURL:testURL]);
+            content = [[NSString alloc] initWithData:htmlFileData.get() encoding:NSUTF8StringEncoding];
+        } else {
+            [task didFailWithError:[NSError errorWithDomain:@"TestWebKitAPI" code:1 userInfo:nil]];
+            return;
+        }
+        RetainPtr response = adoptNS([[NSURLResponse alloc] initWithURL:requestedURL MIMEType:type expectedContentLength:[content length] textEncodingName:nil]);
+        [task didReceiveResponse:response.get()];
+        [task didReceiveData:[content dataUsingEncoding:NSUTF8StringEncoding]];
+        [task didFinish];
+    }];
+
+    [configuration setURLSchemeHandler:handler.get() forURLScheme:@"test"];
+
     return adoptNS([[TestWKWebView alloc] initWithFrame:CGRectMake(0, 0, 800, 600) configuration:configuration.get()]);
 }
 
@@ -1221,8 +1259,12 @@ TEST(AdvancedPrivacyProtections, AddNoiseToWebAudioAPIs)
     auto resourcesURL = NSBundle.test_resourcesBundle.resourceURL;
 
     auto webView = createWebViewWithAdvancedPrivacyProtections();
+    auto webViewWithFiltering = createWebViewLinkDecorationFiltering(YES);
     [webView loadFileRequest:[NSURLRequest requestWithURL:testURL] allowingReadAccessToURL:resourcesURL];
     [webView _test_waitForDidFinishNavigation];
+
+    [webViewWithFiltering loadRequest:[NSURLRequest requestWithURL:[NSURL URLWithString:@"test://consistentQueryParameterFiltering.internal/audio-fingerprinting.html"]]];
+    [webViewWithFiltering _test_waitForDidFinishNavigation];
 
     auto checkFingerprintForNoise = [&](NSString *functionName) {
         auto scriptToRun = [NSString stringWithFormat:@"return %@()", functionName];
@@ -1231,6 +1273,12 @@ TEST(AdvancedPrivacyProtections, AddNoiseToWebAudioAPIs)
             [[webView callAsyncJavaScriptAndWait:scriptToRun] floatValue]
         };
         EXPECT_NE(values.first, values.second);
+
+        auto valuesWithFiltering = std::pair {
+            [[webViewWithFiltering callAsyncJavaScriptAndWait:scriptToRun] floatValue],
+            [[webViewWithFiltering callAsyncJavaScriptAndWait:scriptToRun] floatValue]
+        };
+        EXPECT_NE(valuesWithFiltering.first, valuesWithFiltering.second);
     };
 
     checkFingerprintForNoise(@"testOscillatorCompressor");

@@ -641,7 +641,7 @@ static const IdentifierSchema& scriptingFeatureSchema()
         OptionSet<MediaQueryDynamicDependency>(),
         [](auto& context) {
             Ref frame = *context.document->frame();
-            if (!frame->checkedScript()->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
+            if (!protect(frame->script())->canExecuteScripts(ReasonForCallingCanExecuteScripts::NotAboutToExecuteScript))
                 return MatchingIdentifiers { CSSValueNone };
             return MatchingIdentifiers { CSSValueEnabled };
         }

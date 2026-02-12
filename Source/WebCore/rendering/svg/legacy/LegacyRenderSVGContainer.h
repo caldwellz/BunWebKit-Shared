@@ -39,6 +39,12 @@ public:
     virtual bool didTransformToRootUpdate() { return false; }
     bool isObjectBoundingBoxValid() const { return static_cast<bool>(m_objectBoundingBox); }
     bool isRepaintSuspendedForChildren() const { return m_repaintIsSuspendedForChildrenDuringLayout; }
+    bool hasNonScalingStrokeDescendant() const { return m_nonScalingStrokeDescendantCount > 0; }
+    void adjustNonScalingStrokeDescendantCount(int delta)
+    {
+        ASSERT(delta > 0 || m_nonScalingStrokeDescendantCount >= static_cast<unsigned>(-delta));
+        m_nonScalingStrokeDescendantCount += delta;
+    }
 
     FloatRect objectBoundingBox() const final { return m_objectBoundingBox.value_or(FloatRect()); }
 
@@ -80,6 +86,7 @@ private:
 
     bool m_needsBoundariesUpdate { true };
     bool m_repaintIsSuspendedForChildrenDuringLayout { false };
+    unsigned m_nonScalingStrokeDescendantCount { 0 };
 };
 
 } // namespace WebCore

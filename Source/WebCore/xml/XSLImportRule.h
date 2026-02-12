@@ -41,7 +41,6 @@ public:
     
     const String& href() const { return m_strHref; }
     XSLStyleSheet* styleSheet() const { return m_styleSheet.get(); }
-    RefPtr<XSLStyleSheet> protectedStyleSheet() const { return styleSheet(); }
 
     XSLStyleSheet* parentStyleSheet() const { return m_parentStyleSheet.get(); }
     void setParentStyleSheet(XSLStyleSheet* styleSheet) { m_parentStyleSheet = styleSheet; }

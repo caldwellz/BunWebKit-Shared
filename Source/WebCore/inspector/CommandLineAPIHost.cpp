@@ -91,7 +91,7 @@ static InstrumentingAgents* instrumentingAgentsForGlobalObject(JSC::JSGlobalObje
 
     if (executionContext->isDocument()) {
         if (RefPtr frame = downcast<Document>(executionContext)->frame())
-            return &frame->protectedInspectorController()->instrumentingAgents();
+            return &protect(frame->inspectorController())->instrumentingAgents();
     } else if (executionContext->isWorkerGlobalScope())
         return &downcast<WorkerGlobalScope>(executionContext)->inspectorController().instrumentingAgents();
 

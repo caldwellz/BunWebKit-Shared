@@ -310,10 +310,10 @@ void DOMTimer::fired()
     ASSERT(scriptExecutionContext());
     Ref context = *scriptExecutionContext();
 
-#if PLATFORM(IOS_FAMILY)
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
     if (RefPtr document = dynamicDowncast<Document>(context); document && m_oneShot) {
         if (auto* holdingTank = document->domTimerHoldingTankIfExists(); holdingTank && holdingTank->contains(*this)) {
-            m_timer = document->checkedEventLoop()->scheduleTask(0_s, TaskSource::Timer, [weakThis = WeakPtr { *this }] {
+            m_timer = protect(document->eventLoop())->scheduleTask(0_s, TaskSource::Timer, [weakThis = WeakPtr { *this }] {
                 if (RefPtr protectedThis = weakThis.get())
                     protectedThis->fired();
             });
@@ -339,7 +339,7 @@ void DOMTimer::fired()
         if (m_nestingLevel < maxTimerNestingLevel) {
             m_nestingLevel++;
             m_hasReachedMaxNestingLevel = m_nestingLevel >= maxTimerNestingLevelForRepeatingTimers;
-            context->checkedEventLoop()->setTimerHasReachedMaxNestingLevel(m_timer, m_hasReachedMaxNestingLevel);
+            protect(context->eventLoop())->setTimerHasReachedMaxNestingLevel(m_timer, m_hasReachedMaxNestingLevel);
             updateTimerIntervalIfNecessary();
         }
 
@@ -406,10 +406,10 @@ void DOMTimer::updateTimerIntervalIfNecessary()
     Ref context = *scriptExecutionContext();
     if (m_oneShot) {
         LOG(DOMTimers, "%p - Updating DOMTimer's fire interval from %.2f ms to %.2f ms due to throttling.", this, previousInterval.milliseconds(), m_currentTimerInterval.milliseconds());
-        context->checkedEventLoop()->adjustTimerNextFireTime(m_timer, m_currentTimerInterval - previousInterval);
+        protect(context->eventLoop())->adjustTimerNextFireTime(m_timer, m_currentTimerInterval - previousInterval);
     } else {
         LOG(DOMTimers, "%p - Updating DOMTimer's repeat interval from %.2f ms to %.2f ms due to throttling.", this, previousInterval.milliseconds(), m_currentTimerInterval.milliseconds());
-        context->checkedEventLoop()->adjustTimerRepeatInterval(m_timer, m_currentTimerInterval - previousInterval);
+        protect(context->eventLoop())->adjustTimerRepeatInterval(m_timer, m_currentTimerInterval - previousInterval);
     }
 }
 
@@ -425,7 +425,7 @@ Seconds DOMTimer::intervalClampedToMinimum() const
         return interval;
 
     // Apply two throttles - the global (per Page) minimum, and also a per-timer throttle.
-    interval = std::max(interval, protectedScriptExecutionContext()->minimumDOMTimerInterval());
+    interval = std::max(interval, protect(scriptExecutionContext())->minimumDOMTimerInterval());
     if (m_throttleState == ShouldThrottle)
         interval = std::max(interval, minIntervalForNonUserObservableChangeTimers);
     return interval;

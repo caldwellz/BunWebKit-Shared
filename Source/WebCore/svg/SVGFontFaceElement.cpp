@@ -309,7 +309,7 @@ void SVGFontFaceElement::removedFromAncestor(RemovalType removalType, ContainerN
     if (removalType.disconnectedFromDocument) {
         m_fontElement = nullptr;
         Ref<Document> document = this->document();
-        document->checkedSVGExtensions()->unregisterSVGFontFaceElement(*this);
+        protect(document->svgExtensions())->unregisterSVGFontFaceElement(*this);
         Ref fontFaceSet = document->fontSelector().cssFontFaceSet();
         Ref fontFaceRule = m_fontFaceRule;
         if (RefPtr fontFace = fontFaceSet->lookUpByCSSConnection(fontFaceRule))

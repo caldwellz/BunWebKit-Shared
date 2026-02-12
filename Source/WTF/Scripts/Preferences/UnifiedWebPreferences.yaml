@@ -66,6 +66,20 @@
 #  defaults may override a default value at runtime, using the preference
 #  name prefixed with "WebKitDebug".
 
+ARIAActionsSupportEnabled:
+  type: bool
+  status: testable
+  category: dom
+  humanReadableName: "aria-actions"
+  humanReadableDescription: "Enable support for aria-actions"
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
 AVFoundationEnabled:
   type: bool
   status: embedder
@@ -278,7 +292,8 @@ AllowMultiElementImplicitSubmission:
 
 AllowMultipleCommitLayerTreePending:
   type: bool
-  status: internal
+  status: testable
+  category: dom
   humanReadableName: "Allow requesting CommitLayerTree before the previous has completed"
   humanReadableDescription: "Allow requesting CommitLayerTree before the previous has completed"
   defaultValue:
@@ -1938,9 +1953,8 @@ ContentChangeObserverEnabled:
     WebKitLegacy:
       default: true
     WebKit:
-      default: true
+      default: defaultContentChangeObserverEnabled()
     WebCore:
-      "PLATFORM(IOS_FAMILY) && !PLATFORM(MACCATALYST)": true
       default: false
 
 ContentDispositionAttachmentSandboxEnabled:
@@ -2656,17 +2670,20 @@ EncryptedMediaAPIEnabled:
 
 EnhancedSecurityHeuristicsEnabled:
   type: bool
-  status: testable
+  status: stable
   category: security
   defaultsOverridable: true
   humanReadableName: "Enable EnhancedSecurity Heuristics"
   humanReadableDescription: "Triggers EnhancedSecurity when insecure HTTP loads occur"
   defaultValue:
     WebKitLegacy:
+      "PLATFORM(COCOA)": true
       default: false
     WebKit:
+      "PLATFORM(COCOA)": true
       default: false
     WebCore:
+      "PLATFORM(COCOA)": true
       default: false
 
 EnterKeyHintEnabled:
@@ -3398,6 +3415,20 @@ GridLanesEnabled:
     WebCore:
       default: true
 
+HTMLEnhancedSelectEnabled:
+   type: bool
+   status: testable
+   category: css
+   humanReadableName: "Enhanced HTML select element"
+   humanReadableDescription: "Enable enhanced HTML select element"
+   defaultValue:
+     WebKitLegacy:
+       default: false
+     WebKit:
+       default: false
+     WebCore:
+       default: false
+
 HTMLEnhancedSelectParsingEnabled:
    type: bool
    status: stable
@@ -3411,34 +3442,6 @@ HTMLEnhancedSelectParsingEnabled:
        default: true
      WebCore:
        default: true
-
-HTMLEnhancedSelectPseudoElementsEnabled:
-   type: bool
-   status: unstable
-   category: css
-   humanReadableName: "Enhanced HTML select element pseudo-elements"
-   humanReadableDescription: "Enable enhanced HTML select element pseudo-elements"
-   defaultValue:
-     WebKitLegacy:
-       default: false
-     WebKit:
-       default: false
-     WebCore:
-       default: false
-
-HTMLEnhancedSelectSelectedContentEnabled:
-   type: bool
-   status: unstable
-   category: dom
-   humanReadableName: "Enhanced HTML select: selectedcontent element"
-   humanReadableDescription: "Enable enhanced HTML select: selectedcontent element"
-   defaultValue:
-     WebKitLegacy:
-       default: false
-     WebKit:
-       default: false
-     WebCore:
-       default: false
 
 HTTPEquivEnabled:
   type: bool
@@ -5287,7 +5290,7 @@ MediaSourcePrefersDecompressionSession:
 
 MediaSourceUseRemoteAudioVideoRenderer:
   type: bool
-  status: testable
+  status: stable
   category: media
   humanReadableName: "MSE player uses GPU renderer"
   humanReadableDescription: "MSE player uses GPU renderer"
@@ -5296,9 +5299,9 @@ MediaSourceUseRemoteAudioVideoRenderer:
     WebKitLegacy:
       default: false
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
   sharedPreferenceForWebProcess: true
 
 MediaStreamTrackHandleEnabled:
@@ -5798,17 +5801,17 @@ OffscreenCanvasInWorkersEnabled:
 
 OpenPseudoClassEnabled:
   type: bool
-  status: testable
+  status: stable
   humanReadableName: ":open pseudo-class"
   humanReadableDescription: "Enable the :open CSS pseudo-class"
   category: css
   defaultValue:
     WebKitLegacy:
-      default: false
+      default: true
     WebKit:
-      default: false
+      default: true
     WebCore:
-      default: false
+      default: true
 
 OpenXRDMABufRelaxedForTesting:
   type: bool
@@ -6465,17 +6468,17 @@ ReadableStreamIterableEnabled:
 
 ReadableStreamTransferEnabled:
   type: bool
-  status: testable
+  status: stable
   category: dom
-  humanReadableName: "ReadableStream transfer"
-  humanReadableDescription: "Enable ReadableStream transfer"
+  humanReadableName: "ReadableStream/WritableStream/TransformStream transfer"
+  humanReadableDescription: "Enable ReadableStream/WritableStream/TransformStream transfer"
   defaultValue:
     WebCore:
-      default: false
+      default: true
     WebKitLegacy:
-      default: false
+      default: true
     WebKit:
-      default: false
+      default: true
 
 RemoteMediaSessionManagerEnabled:
   type: bool
@@ -6832,8 +6835,7 @@ ScreenCaptureEnabled:
     WebKitLegacy:
       default: false
     WebKit:
-      "PLATFORM(MAC) || USE(GSTREAMER)": true
-      default: false
+      default: WebKit::defaultShouldEnableScreenCapture()
     WebCore:
       default: false
 
@@ -7586,20 +7588,6 @@ ShrinksStandaloneImagesToFit:
     WebCore:
       default: true
 
-SidewaysWritingModesEnabled:
-  type: bool
-  status: stable
-  category: css
-  humanReadableName: "Sideways writing modes"
-  humanReadableDescription: "Enable support for sideways writing modes"
-  defaultValue:
-    WebKitLegacy:
-      default: true
-    WebKit:
-      default: true
-    WebCore:
-      default: true
-
 SiteIsolationEnabled:
   type: bool
   status: unstable
@@ -8249,9 +8237,24 @@ ThreadedScrollingEnabled:
     WebKit:
       default: true
 
-ThreadedTimeBasedAnimationsEnabled:
+ThreadedTimeBasedAnimationsAtHighFrameRateEnabled:
   type: bool
   status: unstable
+  category: animation
+  humanReadableName: "Threaded Time-based Animations at High Frame Rate"
+  humanReadableDescription: "Run qualifying time-based animations on a separate thread at a high frame rate"
+  condition: ENABLE(THREADED_ANIMATIONS) && PLATFORM(IOS_FAMILY)
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
+
+ThreadedTimeBasedAnimationsEnabled:
+  type: bool
+  status: preview
   category: animation
   humanReadableName: "Threaded Time-based Animations"
   humanReadableDescription: "Run qualifying time-based animations on a separate thread"
@@ -8357,6 +8360,20 @@ TrustedTypesEnabled:
       default: WebKit::defaultTrustedTypesEnabled()
     WebCore:
       default: true
+
+TwoUpPDFDisplayModeSupportEnabled:
+  type: bool
+  status: internal
+  humanReadableName: "Two-Up PDF Display Mode Support"
+  humanReadableDescription: "Enable support for two-up PDF display on iOS"
+  condition: ENABLE(UNIFIED_PDF) && PLATFORM(IOS_FAMILY)
+  defaultValue:
+    WebKitLegacy:
+      default: false
+    WebKit:
+      default: false
+    WebCore:
+      default: false
 
 UAVisualTransitionDetectionEnabled:
   type: bool
@@ -9273,6 +9290,25 @@ WebCodecsVideoEnabled:
   sharedPreferenceForWebProcess: true
   richJavaScript: true
   mediaPlaybackRelated: true
+
+WebContentRestrictionsTransitiveTrustEnabled:
+  type: bool
+  status: stable
+  category: security
+  defaultsOverridable: true
+  humanReadableName: "Web Content Restrictions Transitive Trust"
+  humanReadableDescription: "Enable Transitive Trust for WebContentRestrictions"
+  webcoreBinding: DeprecatedGlobalSettings
+  condition: HAVE(WEBCONTENTRESTRICTIONS_TRANSITIVE_TRUST)
+  defaultValue:
+    WebKitLegacy:
+      default: true
+    WebKit:
+      default: true
+    WebCore:
+      default: true
+  sharedPreferenceForWebProcess: true
+
 
 WebCryptoSafeCurvesEnabled:
   type: bool

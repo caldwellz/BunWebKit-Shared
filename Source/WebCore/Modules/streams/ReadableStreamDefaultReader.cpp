@@ -347,7 +347,7 @@ JSC::JSValue JSReadableStreamDefaultReader::read(JSC::JSGlobalObject& globalObje
     RefPtr internalDefaultReader = wrapped().internalDefaultReader();
     if (!internalDefaultReader) {
         return callPromiseFunction(globalObject, callFrame, [this](auto& globalObject, auto&, auto&& promise) {
-            protectedWrapped()->readForBindings(globalObject, WTF::move(promise));
+            protect(wrapped())->readForBindings(globalObject, WTF::move(promise));
         });
     }
 
@@ -358,7 +358,7 @@ JSC::JSValue JSReadableStreamDefaultReader::closed(JSC::JSGlobalObject& globalOb
 {
     RefPtr internalDefaultReader = wrapped().internalDefaultReader();
     if (!internalDefaultReader)
-        return protectedWrapped()->closedPromise().promise();
+        return protect(wrapped())->closedPromise().promise();
 
     return internalDefaultReader->closedForBindings(globalObject);
 }

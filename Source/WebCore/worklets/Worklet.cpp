@@ -74,7 +74,7 @@ void Worklet::addModule(const String& moduleURLString, WorkletOptions&& options,
         return;
     }
 
-    if (!document->checkedContentSecurityPolicy()->allowScriptFromSource(moduleURL)) {
+    if (!protect(document->contentSecurityPolicy())->allowScriptFromSource(moduleURL)) {
         promise.reject(Exception { ExceptionCode::SecurityError, "Not allowed by CSP"_s });
         return;
     }

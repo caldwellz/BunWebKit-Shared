@@ -70,7 +70,7 @@ DateComponentsType MonthInputType::dateType() const
 WallTime MonthInputType::valueAsDate() const
 {
     ASSERT(element());
-    auto date = parseToDateComponents(protectedElement()->value().get());
+    auto date = parseToDateComponents(protect(element())->value().get());
     if (!date)
         return WallTime::nan();
     double msec = date->millisecondsSinceEpoch();

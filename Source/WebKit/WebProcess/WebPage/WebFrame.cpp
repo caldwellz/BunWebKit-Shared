@@ -104,6 +104,7 @@
 #include <WebCore/LocalFrameInlines.h>
 #include <WebCore/LocalFrameView.h>
 #include <WebCore/MouseEventTypes.h>
+#include <WebCore/NavigationActivation.h>
 #include <WebCore/NodeDocument.h>
 #include <WebCore/OriginAccessPatterns.h>
 #include <WebCore/PluginDocument.h>
@@ -394,12 +395,17 @@ void WebFrame::loadDidCommitInAnotherProcess(std::optional<WebCore::LayerHosting
         return;
     }
 
+    // loadDidCommitInAnotherProcess implies the new frame is cross-origin to the current frame.
+    // Cross-origin navigation doesn't trigger view transitions, and does not provide any activation information.
+    protect(localFrame->document())->dispatchPageswapEvent(CanTriggerCrossDocumentViewTransition::No, nullptr);
+
     auto invalidator = frameLoaderClient->takeFrameInvalidator();
     RefPtr ownerRenderer = localFrame->ownerRenderer();
     localFrame->setView(nullptr);
 
     if (ownerElement)
         localFrame->disconnectOwnerElement();
+
     auto clientCreator = [protectedThis = Ref { *this }, invalidator = WTF::move(invalidator)] (auto&) mutable {
         return makeUniqueRef<WebRemoteFrameClient>(WTF::move(protectedThis), WTF::move(invalidator));
     };
@@ -546,6 +552,9 @@ void WebFrame::removeFromTree()
         ASSERT_NOT_REACHED();
         return;
     }
+
+    if (RefPtr client = localFrameLoaderClient())
+        client->removeStorageAccess();
 
     if (RefPtr parent = coreFrame->tree().parent())
         parent->tree().removeChild(*coreFrame);
@@ -724,7 +733,7 @@ String WebFrame::selectionAsString() const
     if (!localFrame)
         return String();
 
-    return localFrame->displayStringModifiedByEncoding(localFrame->protectedEditor()->selectedText());
+    return localFrame->displayStringModifiedByEncoding(protect(localFrame->editor())->selectedText());
 }
 
 IntSize WebFrame::size() const
@@ -853,7 +862,7 @@ String WebFrame::layerTreeAsText() const
     if (!localFrame)
         return emptyString();
 
-    return localFrame->checkedContentRenderer()->checkedCompositor()->layerTreeAsText();
+    return protect(protect(localFrame->contentRenderer())->compositor())->layerTreeAsText();
 }
 
 unsigned WebFrame::pendingUnloadCount() const
@@ -880,7 +889,7 @@ JSGlobalContextRef WebFrame::jsContext()
     if (!localFrame)
         return nullptr;
 
-    return toGlobalRef(localFrame->checkedScript()->globalObject(mainThreadNormalWorldSingleton()));
+    return toGlobalRef(protect(localFrame->script())->globalObject(mainThreadNormalWorldSingleton()));
 }
 
 JSGlobalContextRef WebFrame::jsContextForWorld(DOMWrapperWorld& world)
@@ -889,7 +898,7 @@ JSGlobalContextRef WebFrame::jsContextForWorld(DOMWrapperWorld& world)
     if (!localFrame)
         return nullptr;
 
-    return toGlobalRef(localFrame->checkedScript()->globalObject(world));
+    return toGlobalRef(protect(localFrame->script())->globalObject(world));
 }
 
 JSGlobalContextRef WebFrame::jsContextForWorld(InjectedBundleScriptWorld* world)
@@ -923,7 +932,7 @@ void WebFrame::setAccessibleName(const AtomString& accessibleName)
     if (!document)
         return;
 
-    RefPtr rootObject = document->checkedAXObjectCache()->rootObjectForFrame(*localFrame);
+    RefPtr rootObject = protect(document->axObjectCache())->rootObjectForFrame(*localFrame);
     if (!rootObject)
         return;
 
@@ -1095,7 +1104,7 @@ JSValueRef WebFrame::jsWrapperForWorld(InjectedBundleCSSStyleDeclarationHandle* 
     if (!localFrame)
         return nullptr;
 
-    auto* globalObject = localFrame->checkedScript()->globalObject(protect(world->coreWorld()));
+    auto* globalObject = protect(localFrame->script())->globalObject(protect(world->coreWorld()));
 
     JSLockHolder lock(globalObject);
     return toRef(globalObject, toJS(globalObject, globalObject, cssStyleDeclarationHandle->coreCSSStyleDeclaration()));
@@ -1107,7 +1116,7 @@ JSValueRef WebFrame::jsWrapperForWorld(InjectedBundleNodeHandle* nodeHandle, Inj
     if (!localFrame)
         return nullptr;
 
-    auto* globalObject = localFrame->checkedScript()->globalObject(protect(world->coreWorld()));
+    auto* globalObject = protect(localFrame->script())->globalObject(protect(world->coreWorld()));
 
     JSLockHolder lock(globalObject);
     RefPtr coreNode = nodeHandle->coreNode();
@@ -1120,7 +1129,7 @@ JSValueRef WebFrame::jsWrapperForWorld(InjectedBundleRangeHandle* rangeHandle, I
     if (!localFrame)
         return nullptr;
 
-    auto* globalObject = localFrame->checkedScript()->globalObject(protect(world->coreWorld()));
+    auto* globalObject = protect(localFrame->script())->globalObject(protect(world->coreWorld()));
 
     JSLockHolder lock(globalObject);
     return toRef(globalObject, toJS(globalObject, globalObject, Ref { rangeHandle->coreRange() }.get()));
@@ -1241,11 +1250,11 @@ void WebFrame::setTextDirection(const String& direction)
         return;
 
     if (direction == "auto"_s)
-        localFrame->protectedEditor()->setBaseWritingDirection(WritingDirection::Natural);
+        protect(localFrame->editor())->setBaseWritingDirection(WritingDirection::Natural);
     else if (direction == "ltr"_s)
-        localFrame->protectedEditor()->setBaseWritingDirection(WritingDirection::LeftToRight);
+        protect(localFrame->editor())->setBaseWritingDirection(WritingDirection::LeftToRight);
     else if (direction == "rtl"_s)
-        localFrame->protectedEditor()->setBaseWritingDirection(WritingDirection::RightToLeft);
+        protect(localFrame->editor())->setBaseWritingDirection(WritingDirection::RightToLeft);
 }
 
 #if PLATFORM(COCOA)

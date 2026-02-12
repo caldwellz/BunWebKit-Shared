@@ -135,7 +135,7 @@ ExceptionOr<void> FileReader::readInternal(Blob& blob, FileReaderLoader::ReadTyp
     m_loader = loader.copyRef();
     loader->setEncoding(m_encoding);
     loader->setDataType(m_blob->type());
-    loader->start(protectedScriptExecutionContext().get(), blob);
+    loader->start(protect(scriptExecutionContext()).get(), blob);
 
     return { };
 }

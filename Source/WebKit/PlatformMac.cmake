@@ -321,13 +321,13 @@ list(APPEND WebKit_PUBLIC_FRAMEWORK_HEADERS
     UIProcess/API/Cocoa/WKBrowsingContextLoadDelegate.h
     UIProcess/API/Cocoa/WKBrowsingContextLoadDelegatePrivate.h
     UIProcess/API/Cocoa/WKBrowsingContextPolicyDelegate.h
-    UIProcess/API/Cocoa/WKConnection.h
+
     UIProcess/API/Cocoa/WKContentRuleList.h
     UIProcess/API/Cocoa/WKContentRuleListPrivate.h
     UIProcess/API/Cocoa/WKContentRuleListStore.h
     UIProcess/API/Cocoa/WKContentRuleListStorePrivate.h
     UIProcess/API/Cocoa/WKContentWorld.h
-    UIProcess/API/Cocoa/WKContentWorldConfiguration.h
+
     UIProcess/API/Cocoa/WKContentWorldPrivate.h
     UIProcess/API/Cocoa/WKContextMenuElementInfo.h
     UIProcess/API/Cocoa/WKContextMenuElementInfoPrivate.h
@@ -361,8 +361,7 @@ list(APPEND WebKit_PUBLIC_FRAMEWORK_HEADERS
     UIProcess/API/Cocoa/WKPreviewActionItem.h
     UIProcess/API/Cocoa/WKPreviewActionItemIdentifiers.h
     UIProcess/API/Cocoa/WKPreviewElementInfo.h
-    UIProcess/API/Cocoa/WKProcessGroup.h
-    UIProcess/API/Cocoa/WKProcessGroupPrivate.h
+
     UIProcess/API/Cocoa/WKProcessPool.h
     UIProcess/API/Cocoa/WKProcessPoolPrivate.h
     UIProcess/API/Cocoa/WKScriptMessage.h

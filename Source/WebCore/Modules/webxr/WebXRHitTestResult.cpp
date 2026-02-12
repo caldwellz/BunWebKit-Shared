@@ -29,6 +29,7 @@
 #include <wtf/TZoneMallocInlines.h>
 
 #if ENABLE(WEBXR_HIT_TEST)
+#include "WebXRHitTestSource.h"
 #include "WebXRInputSpace.h"
 #include "WebXRPose.h"
 #include "WebXRRigidTransform.h"
@@ -38,51 +39,36 @@ namespace WebCore {
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(WebXRHitTestResult);
 
-Ref<WebXRHitTestResult> WebXRHitTestResult::create(WebXRFrame& frame, const PlatformXR::FrameData::HitTestResult& result)
+Ref<WebXRHitTestResult> WebXRHitTestResult::create(WebXRFrame& frame, WebXRSpace& space, const PlatformXR::FrameData::HitTestResult& result)
 {
-    return adoptRef(*new WebXRHitTestResult(frame, result));
+    return adoptRef(*new WebXRHitTestResult(frame, space, result));
 }
 
-WebXRHitTestResult::WebXRHitTestResult(WebXRFrame& frame, const PlatformXR::FrameData::HitTestResult& result)
+WebXRHitTestResult::WebXRHitTestResult(WebXRFrame& frame, WebXRSpace& space, const PlatformXR::FrameData::HitTestResult& result)
     : m_frame(frame)
+    , m_space(space)
     , m_result(result)
 {
 }
 
 WebXRHitTestResult::~WebXRHitTestResult() = default;
 
-class WebXRHitTestResultSpace : public WebXRSpace {
-public:
-    WebXRHitTestResultSpace(Document& document, WebXRSession& session, const PlatformXR::FrameData::Pose& pose)
-        : WebXRSpace(document, WebXRRigidTransform::create())
-        , m_session(session)
-        , m_pose(pose)
-    {
-    }
-
-private:
-    WebXRSession* session() const final { return m_session.get(); }
-    std::optional<TransformationMatrix> nativeOrigin() const final { return WebXRFrame::matrixFromPose(m_pose); }
-    void refEventTarget() final { }
-    void derefEventTarget() final { }
-    void ref() const final { }
-    void deref() const final { }
-
-    WeakPtr<WebXRSession> m_session;
-    PlatformXR::FrameData::Pose m_pose;
-};
-
 // https://immersive-web.github.io/hit-test/#dom-xrhittestresult-getpose
-ExceptionOr<RefPtr<WebXRPose>> WebXRHitTestResult::getPose(Document& document, const WebXRSpace& baseSpace)
+ExceptionOr<RefPtr<WebXRPose>> WebXRHitTestResult::getPose(Document& document, const WebXRSpace& space)
 {
-    WebXRHitTestResultSpace space { document, m_frame->session(), m_result.pose };
-    auto exceptionOrPose = m_frame->populatePose(document, space, baseSpace);
+    auto exceptionOrPose = m_frame->populatePose(document, space, m_space);
     if (exceptionOrPose.hasException())
         return exceptionOrPose.releaseException();
     auto populatedPose = exceptionOrPose.releaseReturnValue();
-    if (!populatedPose)
+    if (!populatedPose || !populatedPose->transform.isInvertible())
         return nullptr;
-    return RefPtr<WebXRPose>(WebXRPose::create(WebXRRigidTransform::create(populatedPose->transform), populatedPose->emulatedPosition));
+
+    TransformationMatrix poseInHitTestSourceSpaceTransform;
+    poseInHitTestSourceSpaceTransform.translate3d(m_result.pose.position.x(), m_result.pose.position.y(), m_result.pose.position.z());
+    poseInHitTestSourceSpaceTransform.multiply(TransformationMatrix::fromQuaternion({ m_result.pose.orientation.x, m_result.pose.orientation.y, m_result.pose.orientation.z, m_result.pose.orientation.w }));
+
+    auto poseInDestinationSpace = populatedPose->transform.inverse().value() * poseInHitTestSourceSpaceTransform;
+    return RefPtr<WebXRPose>(WebXRPose::create(WebXRRigidTransform::create(poseInDestinationSpace), populatedPose->emulatedPosition));
 }
 
 } // namespace WebCore

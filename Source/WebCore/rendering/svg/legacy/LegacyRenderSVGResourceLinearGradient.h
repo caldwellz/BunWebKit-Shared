@@ -35,7 +35,6 @@ public:
     virtual ~LegacyRenderSVGResourceLinearGradient();
 
     inline SVGLinearGradientElement& linearGradientElement() const;
-    inline Ref<SVGLinearGradientElement> protectedLinearGradientElement() const;
 
     FloatPoint startPoint(const LinearGradientAttributes&) const;
     FloatPoint endPoint(const LinearGradientAttributes&) const;

@@ -180,7 +180,7 @@ bool PDFDataDetectorOverlayController::handleMouseEvent(const WebMouseEvent& eve
             previousActiveHighlight->fadeOut();
 
         if (activeHighlight) {
-            installProtectedOverlayIfNeeded()->protectedLayer()->addChild(activeHighlight->layer());
+            protect(installProtectedOverlayIfNeeded()->layer())->addChild(activeHighlight->layer());
             activeHighlight->fadeIn();
         }
 

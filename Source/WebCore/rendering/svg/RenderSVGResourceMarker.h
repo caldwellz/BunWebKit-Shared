@@ -48,7 +48,6 @@ private:
     ASCIILiteral renderName() const final { return "RenderSVGResourceMarker"_s; }
 
     inline SVGMarkerElement& markerElement() const;
-    inline Ref<SVGMarkerElement> protectedMarkerElement() const;
     inline FloatPoint referencePoint() const;
     inline std::optional<float> angle() const;
     inline SVGMarkerUnitsType markerUnits() const;

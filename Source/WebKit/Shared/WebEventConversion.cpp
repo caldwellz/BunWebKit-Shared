@@ -78,6 +78,18 @@ WebMouseEventButton kit(WebCore::MouseButton button)
     }
 }
 
+WebCore::MouseEventInputSource platform(WebMouseEventInputSource source)
+{
+    switch (source) {
+    case WebMouseEventInputSource::Hardware:
+        return WebCore::MouseEventInputSource::Hardware;
+    case WebMouseEventInputSource::Automation:
+        return WebCore::MouseEventInputSource::Automation;
+    default:
+        RELEASE_ASSERT_NOT_REACHED();
+    }
+}
+
 WebCore::PlatformEvent::Type platform(WebEventType type)
 {
     switch (type) {
@@ -271,6 +283,7 @@ public:
         m_predictedEvents = WTF::map(webEvent.predictedEvents(), [&](const auto& event) {
             return platform(event);
         });
+        m_inputSource = platform(webEvent.inputSource());
 
 #if PLATFORM(MAC)
         m_eventNumber = webEvent.eventNumber();

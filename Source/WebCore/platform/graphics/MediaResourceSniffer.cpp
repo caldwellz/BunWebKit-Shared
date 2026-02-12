@@ -85,7 +85,7 @@ void MediaResourceSniffer::dataReceived(PlatformMediaResource&, const SharedBuff
 {
     m_received += buffer.size();
     m_content.append(buffer);
-    auto contiguousBuffer = m_content.protectedBuffer()->makeContiguous();
+    auto contiguousBuffer = protect(m_content.buffer())->makeContiguous();
     auto mimeType = MIMESniffer::getMIMETypeFromContent(contiguousBuffer->span());
     if (mimeType.isEmpty() && m_received < m_maxSize)
         return;

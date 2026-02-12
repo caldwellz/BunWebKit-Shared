@@ -52,11 +52,6 @@ SVGPatternElement& LegacyRenderSVGResourcePattern::patternElement() const
     return downcast<SVGPatternElement>(LegacyRenderSVGResourceContainer::element());
 }
 
-Ref<SVGPatternElement> LegacyRenderSVGResourcePattern::protectedPatternElement() const
-{
-    return patternElement();
-}
-
 void LegacyRenderSVGResourcePattern::removeAllClientsFromCache()
 {
     m_patternMap.clear();
@@ -107,7 +102,7 @@ PatternData* LegacyRenderSVGResourcePattern::buildPattern(RenderElement& rendere
     // Compute all necessary transformations to build the tile image & the pattern.
     FloatRect tileBoundaries;
     AffineTransform tileImageTransform;
-    if (!buildTileImageTransform(renderer, m_attributes, protectedPatternElement(), tileBoundaries, tileImageTransform))
+    if (!buildTileImageTransform(renderer, m_attributes, protect(patternElement()), tileBoundaries, tileImageTransform))
         return nullptr;
 
     auto absoluteTransform = SVGRenderingContext::calculateTransformationToOutermostCoordinateSystem(renderer);
@@ -159,7 +154,7 @@ auto LegacyRenderSVGResourcePattern::applyResource(RenderElement& renderer, cons
     ASSERT(!resourceMode.isEmpty());
 
     if (m_shouldCollectPatternAttributes) {
-        protectedPatternElement()->synchronizeAllAttributes();
+        protect(patternElement())->synchronizeAllAttributes();
 
         m_attributes = PatternAttributes();
         collectPatternAttributes(m_attributes);

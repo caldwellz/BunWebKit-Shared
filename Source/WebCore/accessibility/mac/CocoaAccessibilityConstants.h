@@ -151,6 +151,7 @@
 #define NSAccessibilityARIARowIndexAttribute @"AXARIARowIndex"
 #define NSAccessibilityARIASetSizeAttribute @"AXARIASetSize"
 #define NSAccessibilityAccessKeyAttribute @"AXAccessKey"
+#define NSAccessibilityActionTargetsAttribute @"_AXActionTargets"
 #define NSAccessibilityActiveElementAttribute @"AXActiveElement"
 #define NSAccessibilityAssociatedPluginParentAttribute @"_AXAssociatedPluginParent"
 #define NSAccessibilityAutocompleteValueAttribute @"AXAutocompleteValue"

@@ -38,11 +38,12 @@ class ImageBuffer;
 class OffscreenCanvas;
 template<typename> class ExceptionOr;
 
+using ImageBitmapCanvas = Variant<
+      Ref<HTMLCanvasElement>
 #if ENABLE(OFFSCREEN_CANVAS)
-using ImageBitmapCanvas = Variant<RefPtr<HTMLCanvasElement>, RefPtr<OffscreenCanvas>>;
-#else
-using ImageBitmapCanvas = Variant<RefPtr<HTMLCanvasElement>>;
+    , Ref<OffscreenCanvas>
 #endif
+>;
 
 class ImageBitmapRenderingContext final : public CanvasRenderingContext {
     WTF_MAKE_TZONE_ALLOCATED(ImageBitmapRenderingContext);

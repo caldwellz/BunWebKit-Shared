@@ -39,6 +39,8 @@ LayoutScope::~LayoutScope()
 {
     if (CheckedPtr block = dynamicDowncast<RenderBlock>(m_renderer))
         block->updateScrollInfoAfterLayout();
+
+    m_renderer->setScrollAnchoringSuppressionStyleChanged(false);
     m_renderer->clearNeedsLayout();
 }
 

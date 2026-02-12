@@ -512,10 +512,21 @@ END
     if ($settingsConditional) {
         if ($settingsConditional =~ /&/) {
             my @conditions = split(/&/, $settingsConditional);
-            my @runtime_parts = map { "document.settings().$_()" } @conditions;
+            my @runtime_parts = map {
+                my $cond = $_;
+                if ($cond =~ /^!(.+)$/) {
+                    "!document.settings().$1()"
+                } else {
+                    "document.settings().$cond()"
+                }
+            } @conditions;
             $runtimeCondition = join(' && ', @runtime_parts);
         } else {
-            $runtimeCondition = "document.settings().${settingsConditional}()";
+            if ($settingsConditional =~ /^!(.+)$/) {
+                $runtimeCondition = "!document.settings().$1()";
+            } else {
+                $runtimeCondition = "document.settings().${settingsConditional}()";
+            }
         }
     } elsif ($deprecatedGlobalSettingsConditional) {
         $runtimeCondition = "DeprecatedGlobalSettings::${deprecatedGlobalSettingsConditional}Enabled()";
@@ -523,7 +534,7 @@ END
 
     if ($runtimeCondition) {
         print F <<END;
-    if (!$runtimeCondition)
+    if (!($runtimeCondition))
         return $parameters{fallbackInterfaceName}::create($constructorTagName, document);
 END
     }

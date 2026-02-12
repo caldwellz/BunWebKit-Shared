@@ -349,7 +349,7 @@ void RenderThemeAdwaita::adjustMenuListButtonStyle(RenderStyle& style, const Ele
 
 Style::PaddingBox RenderThemeAdwaita::popupInternalPaddingBox(const RenderStyle& style) const
 {
-    if (style.usedAppearance() == StyleAppearance::None)
+    if (style.usedAppearance() == StyleAppearance::None || style.usedAppearance() == StyleAppearance::Base)
         return { 0_css_px };
 
     auto zoomedArrowSize = menuListButtonArrowSize * style.usedZoom();

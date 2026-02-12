@@ -72,11 +72,6 @@ inline Document& LiveNodeList::document() const
     return m_ownerNode->document();
 }
 
-inline Ref<Document> LiveNodeList::protectedDocument() const
-{
-    return document();
-}
-
 inline ContainerNode& LiveNodeList::rootNode() const
 {
     if (isRootedAtTreeScope() && m_ownerNode->isInTreeScope())

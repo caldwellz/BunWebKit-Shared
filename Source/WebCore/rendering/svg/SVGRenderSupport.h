@@ -92,6 +92,11 @@ public:
 
     static FloatRect calculateApproximateStrokeBoundingBox(const RenderElement&);
 
+    static void updateAncestorNonScalingStrokeCounts(RenderElement&, int delta);
+
+    static void elementInsertedIntoTree(RenderElement&);
+    static void elementWillBeRemovedFromTree(RenderElement&);
+
     // Shared between SVG renderers and resources.
     static void applyStrokeStyleToContext(GraphicsContext&, const RenderStyle&, const RenderElement&);
 

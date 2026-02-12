@@ -61,6 +61,34 @@ public:
     virtual void dataFlowStarted(MediaStreamTrackPrivate&) { };
 };
 
+class MediaStreamTrackPrivateSourceObserverSourceProxy;
+class MediaStreamTrackPrivateSourceObserver : public ThreadSafeRefCounted<MediaStreamTrackPrivateSourceObserver, WTF::DestructionThread::Main> {
+public:
+    WEBCORE_EXPORT ~MediaStreamTrackPrivateSourceObserver();
+    static Ref<MediaStreamTrackPrivateSourceObserver> create(Ref<RealtimeMediaSource>&& source, std::function<void(Function<void()>&&)>&& postTask) { return adoptRef(*new MediaStreamTrackPrivateSourceObserver(WTF::move(source), WTF::move(postTask))); }
+
+    void initialize(MediaStreamTrackPrivate&);
+    std::function<void(Function<void()>&&)> getPostTask() { return m_postTask; }
+    RealtimeMediaSource& source() { return m_source.get(); }
+    void start();
+    void stop();
+    void requestToEnd();
+    void setMuted(bool);
+    void close();
+
+    using ApplyConstraintsHandler = CompletionHandler<void(std::optional<RealtimeMediaSource::ApplyConstraintsError>&&, RealtimeMediaSourceSettings&&, RealtimeMediaSourceCapabilities&&)>;
+    void applyConstraints(const MediaConstraints&, ApplyConstraintsHandler&&);
+
+private:
+    MediaStreamTrackPrivateSourceObserver(Ref<RealtimeMediaSource>&&, std::function<void(Function<void()>&&)>&&);
+
+    const Ref<RealtimeMediaSource> m_source;
+    const std::unique_ptr<MediaStreamTrackPrivateSourceObserverSourceProxy> m_sourceProxy;
+    std::function<void(Function<void()>&&)> m_postTask;
+    HashMap<uint64_t, ApplyConstraintsHandler> m_applyConstraintsCallbacks;
+    uint64_t m_applyConstraintsCallbacksIdentifier { 0 };
+};
+
 class MediaStreamTrackPrivate final
     : public RefCountedAndCanMakeWeakPtr<MediaStreamTrackPrivate>
 #if !RELEASE_LOG_DISABLED
@@ -106,8 +134,6 @@ public:
 
     WEBCORE_EXPORT RealtimeMediaSource& source();
     const RealtimeMediaSource& source() const;
-    Ref<RealtimeMediaSource> protectedSource();
-    Ref<const RealtimeMediaSource> protectedSource() const;
     RealtimeMediaSource& sourceForProcessor();
     bool hasSource(const RealtimeMediaSource*) const;
 
@@ -157,6 +183,8 @@ public:
     UniqueRef<MediaStreamTrackDataHolder> toDataHolder(ShouldClone = ShouldClone::No);
 
     void updateLabelIfRemoteTrack();
+
+    MediaStreamTrackPrivateSourceObserver& sourceObserver() { return m_sourceObserver; }
 
 private:
     MediaStreamTrackPrivate(Ref<const Logger>&&, Ref<RealtimeMediaSource>&&, String&& id, std::function<void(Function<void()>&&)>&&);

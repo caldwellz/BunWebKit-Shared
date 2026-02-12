@@ -106,10 +106,8 @@ public:
 #if HAVE(MEDIAEXPERIENCE_AVSYSTEMCONTROLLER)
     void mediaServerConnectionDied();
 #endif
-#if PLATFORM(IOS_FAMILY) && !PLATFORM(IOS_FAMILY_SIMULATOR) && !PLATFORM(MACCATALYST) && !PLATFORM(WATCHOS)
     void activeAudioRouteDidChange(bool);
     void activeVideoRouteDidChange();
-#endif
 
 private:
     void setIsPlayingToAutomotiveHeadUnit(bool);
@@ -299,7 +297,10 @@ void MediaSessionHelper::activeRoutesDidChange(MediaDeviceRouteController& route
         return;
     }
 
-    // FIXME: Reset the active route for local playback
+#if PLATFORM(IOS_FAMILY_SIMULATOR)
+    activeAudioRouteDidChange(ShouldPause::Yes);
+    activeVideoRouteDidChange(SupportsAirPlayVideo::No, MediaPlaybackTargetCocoa::create());
+#endif
 }
 #endif // ENABLE(WIRELESS_PLAYBACK_MEDIA_PLAYER)
 
@@ -396,7 +397,6 @@ void MediaSessionHelperIOS::setIsPlayingToAutomotiveHeadUnit(bool isPlaying)
     isPlayingToAutomotiveHeadUnitDidChange(isPlaying ? PlayingToAutomotiveHeadUnit::Yes : PlayingToAutomotiveHeadUnit::No);
 }
 
-#if PLATFORM(IOS_FAMILY) && !PLATFORM(IOS_FAMILY_SIMULATOR) && !PLATFORM(MACCATALYST) && !PLATFORM(WATCHOS)
 void MediaSessionHelperIOS::activeAudioRouteDidChange(bool shouldPause)
 {
     MediaSessionHelper::activeAudioRouteDidChange(shouldPause ? ShouldPause::Yes : ShouldPause::No);
@@ -404,11 +404,10 @@ void MediaSessionHelperIOS::activeAudioRouteDidChange(bool shouldPause)
 
 void MediaSessionHelperIOS::activeVideoRouteDidChange()
 {
-    Ref<MediaPlaybackTarget> target = MediaPlaybackTargetCocoa::create();
+    Ref target = MediaPlaybackTargetCocoa::create();
     auto supportsRemoteVideoPlayback = target->supportsRemoteVideoPlayback() ? SupportsAirPlayVideo::Yes : SupportsAirPlayVideo::No;
     MediaSessionHelper::activeVideoRouteDidChange(supportsRemoteVideoPlayback, WTF::move(target));
 }
-#endif
 
 void MediaSessionHelperIOS::externalOutputDeviceAvailableDidChange()
 {
@@ -621,15 +620,19 @@ void MediaSessionHelperIOS::externalOutputDeviceAvailableDidChange()
 
     bool shouldPause = [[notification.userInfo objectForKey:AVAudioSessionRouteChangeReasonKey] unsignedIntegerValue] == AVAudioSessionRouteChangeReasonOldDeviceUnavailable;
     callOnWebThreadOrDispatchAsyncOnMainThread([self, protectedSelf = retainPtr(self), shouldPause]() {
-        if (RefPtr callback = _callback.get()) {
-            callback->updateCarPlayIsConnected();
-#if PLATFORM(IOS_FAMILY) && !PLATFORM(IOS_FAMILY_SIMULATOR) && !PLATFORM(MACCATALYST) && !PLATFORM(WATCHOS)
-            callback->activeAudioRouteDidChange(shouldPause);
-            callback->activeVideoRouteDidChange();
-#else
-            UNUSED_PARAM(shouldPause);
+        RefPtr callback = _callback.get();
+        if (!callback)
+            return;
+
+#if HAVE(AVROUTING_FRAMEWORK)
+        Ref target = MediaPlaybackTargetCocoa::create();
+        if (target->hasAirPlayDevice())
+            return;
 #endif
-        }
+
+        callback->updateCarPlayIsConnected();
+        callback->activeAudioRouteDidChange(shouldPause);
+        callback->activeVideoRouteDidChange();
     });
 }
 

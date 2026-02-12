@@ -24,12 +24,11 @@
 */
 
 // https://w3c.github.io/web-share/#sharedata-dictionary
-[
-    LegacyNativeDictionaryRequiredInterfaceNullability,
-] dictionary ShareData {
-    // FIXME: `files` should be a `sequence<File>`.
-    FrozenArray<File> files;
+dictionary ShareData {
     USVString title;
     USVString text;
     USVString url;
+    // `files` is placed last as we do not serialize it.
+    // FIXME: `files` should be a `sequence<File>`.
+    [ImplementationDefaultValue=[]] FrozenArray<File> files;
 };

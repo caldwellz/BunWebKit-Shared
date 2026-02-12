@@ -214,7 +214,7 @@ void JSTestReportExtraMemoryCostOwner::finalize(JSC::Handle<JSC::Unknown> handle
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestReportExtraMemoryCost = static_cast<JSTestReportExtraMemoryCost*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestReportExtraMemoryCost->protectedWrapped().ptr(), jsTestReportExtraMemoryCost);
+    uncacheWrapper(world, protect(jsTestReportExtraMemoryCost->wrapped()).ptr(), jsTestReportExtraMemoryCost);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

@@ -111,7 +111,7 @@ RenderPtr<RenderElement> ImageInputType::createInputRenderer(RenderStyle&& style
 {
     ASSERT(element());
     // FIXME: https://github.com/llvm/llvm-project/pull/142471 Moving style is not unsafe.
-    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderImage>(RenderObject::Type::Image, *protectedElement(), WTF::move(style));
+    SUPPRESS_UNCOUNTED_ARG return createRenderer<RenderImage>(RenderObject::Type::Image, *protect(element()), WTF::move(style));
 }
 
 void ImageInputType::attributeChanged(const QualifiedName& name)
@@ -135,7 +135,7 @@ void ImageInputType::attach()
     BaseButtonInputType::attach();
 
     ASSERT(element());
-    Ref imageLoader = protectedElement()->ensureImageLoader();
+    Ref imageLoader = protect(element())->ensureImageLoader();
     imageLoader->updateFromElement();
 
     CheckedPtr renderer = downcast<RenderImage>(element()->renderer());

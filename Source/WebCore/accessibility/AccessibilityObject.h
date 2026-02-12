@@ -521,7 +521,6 @@ public:
 
     Page* page() const final;
     Document* document() const override;
-    RefPtr<Document> protectedDocument() const;
     LocalFrameView* documentFrameView() const override;
     inline LocalFrame* frame() const;
     RefPtr<LocalFrame> localMainFrame() const;

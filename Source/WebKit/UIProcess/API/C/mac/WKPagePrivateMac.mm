@@ -48,11 +48,6 @@
 
 @end
 
-static Ref<WebKit::WebPageProxy> protectedPage(WKObservablePageState *state)
-{
-    return *state->_page;
-}
-
 @implementation WKObservablePageState
 
 - (id)initWithPage:(RefPtr<WebKit::WebPageProxy>&&)page
@@ -63,7 +58,7 @@ static Ref<WebKit::WebPageProxy> protectedPage(WKObservablePageState *state)
     _page = WTF::move(page);
     Ref observer = WebKit::PageLoadStateObserver::create(self, @"URL");
     _observer = observer.get();
-    protect(protectedPage(self)->pageLoadState())->addObserver(observer.get());
+    protect(protect(*_page)->pageLoadState())->addObserver(observer.get());
 
     return self;
 }
@@ -81,42 +76,42 @@ static Ref<WebKit::WebPageProxy> protectedPage(WKObservablePageState *state)
 
 - (BOOL)isLoading
 {
-    return protect(protectedPage(self)->pageLoadState())->isLoading();
+    return protect(protect(*_page)->pageLoadState())->isLoading();
 }
 
 - (NSString *)title
 {
-    return protect(protectedPage(self)->pageLoadState())->title().createNSString().autorelease();
+    return protect(protect(*_page)->pageLoadState())->title().createNSString().autorelease();
 }
 
 - (NSURL *)URL
 {
-    return [NSURL _web_URLWithWTFString:protect(protectedPage(self)->pageLoadState())->activeURL()];
+    return [NSURL _web_URLWithWTFString:protect(protect(*_page)->pageLoadState())->activeURL()];
 }
 
 - (BOOL)hasOnlySecureContent
 {
-    return protect(protectedPage(self)->pageLoadState())->hasOnlySecureContent();
+    return protect(protect(*_page)->pageLoadState())->hasOnlySecureContent();
 }
 
 - (BOOL)_webProcessIsResponsive
 {
-    return protect(protectedPage(self)->legacyMainFrameProcess())->isResponsive();
+    return protect(protect(*_page)->legacyMainFrameProcess())->isResponsive();
 }
 
 - (double)estimatedProgress
 {
-    return protectedPage(self)->estimatedProgress();
+    return protect(*_page)->estimatedProgress();
 }
 
 - (NSURL *)unreachableURL
 {
-    return [NSURL _web_URLWithWTFString:protectedPage(self)->pageLoadState().unreachableURL()];
+    return [NSURL _web_URLWithWTFString:protect(*_page)->pageLoadState().unreachableURL()];
 }
 
 - (SecTrustRef)serverTrust
 {
-    return protectedPage(self)->pageLoadState().certificateInfo().trust().get();
+    return protect(*_page)->pageLoadState().certificateInfo().trust().get();
 }
 
 @end

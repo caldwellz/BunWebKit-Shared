@@ -85,11 +85,11 @@ public:
 
     virtual ~IDBRequest();
 
-    using Result = Variant<RefPtr<IDBCursor>, RefPtr<IDBDatabase>, IDBKeyData, Vector<IDBKeyData>, IDBGetResult, IDBGetAllResult, uint64_t, NullResultType>;
+    using Result = Variant<Ref<IDBCursor>, Ref<IDBDatabase>, IDBKeyData, Vector<IDBKeyData>, IDBGetResult, IDBGetAllResult, uint64_t, NullResultType>;
     ExceptionOr<Result> result() const;
     JSValueInWrappedObject& resultWrapper() { return m_resultWrapper; }
 
-    using Source = Variant<RefPtr<IDBObjectStore>, RefPtr<IDBIndex>, RefPtr<IDBCursor>>;
+    using Source = Variant<Ref<IDBObjectStore>, Ref<IDBIndex>, Ref<IDBCursor>>;
     const std::optional<Source>& source() const { return m_source; }
 
     ExceptionOr<DOMException*> error() const;
@@ -108,7 +108,6 @@ public:
     IndexedDB::IndexRecordType requestedIndexRecordType() const;
 
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using IDBActiveDOMObject::protectedScriptExecutionContext;
 
     // ActiveDOMObject.
     void ref() const final { ThreadSafeRefCounted::ref(); }

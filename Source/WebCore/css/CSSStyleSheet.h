@@ -61,7 +61,7 @@ class CSSStyleSheet final : public StyleSheet, public CanMakeSingleThreadWeakPtr
 public:
     struct Init {
         String baseURL;
-        Variant<RefPtr<MediaList>, String> media { emptyString() };
+        Variant<Ref<MediaList>, String> media { emptyString() };
         bool disabled { false };
     };
     static Ref<CSSStyleSheet> create(Ref<StyleSheetContents>&&, CSSImportRule* ownerRule = nullptr, std::optional<bool>isOriginClean = std::nullopt);
@@ -72,7 +72,7 @@ public:
     virtual ~CSSStyleSheet();
 
     CSSStyleSheet* parentStyleSheet() const final;
-    Node* ownerNode() const final;
+    Node* NODELETE ownerNode() const final;
     MediaList* media() const final;
     String href() const final;
     String title() const final { return !m_title.isEmpty() ? m_title : String(); }
@@ -94,14 +94,14 @@ public:
 
     bool wasMutated() const { return m_wasMutated; }
     bool wasConstructedByJS() const { return m_wasConstructedByJS; }
-    Document* constructorDocument() const;
+    Document* NODELETE constructorDocument() const;
 
     // For CSSRuleList.
     unsigned length() const;
     CSSRule* item(unsigned index);
 
     void clearOwnerNode() final;
-    WEBCORE_EXPORT CSSImportRule* ownerRule() const final;
+    WEBCORE_EXPORT CSSImportRule* NODELETE ownerRule() const final;
     URL baseURL() const final;
     bool isLoading() const final;
 
@@ -114,7 +114,7 @@ public:
     Document* ownerDocument() const;
     CSSStyleSheet& rootStyleSheet();
     const CSSStyleSheet& rootStyleSheet() const;
-    Style::Scope* styleScope();
+    Style::Scope* NODELETE styleScope();
 
     const MQ::MediaQueryList& mediaQueries() const { return m_mediaQueries; }
     void setMediaQueries(MQ::MediaQueryList&&);

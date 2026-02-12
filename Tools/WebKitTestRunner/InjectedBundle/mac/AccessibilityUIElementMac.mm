@@ -38,6 +38,7 @@
 #import <WebCore/CocoaAccessibilityConstants.h>
 #import <WebCore/DateComponents.h>
 #import <WebKit/WKBundleFrame.h>
+#import <pal/spi/cocoa/NSAccessibilitySPI.h>
 #import <wtf/RetainPtr.h>
 #import <wtf/Vector.h>
 #import <wtf/cocoa/VectorCocoa.h>
@@ -181,6 +182,7 @@ static id attributeValue(id element, NSString *attribute)
     static NeverDestroyed<RetainPtr<NSArray>> internalAttributes = @[
         @"AXARIAPressedIsPresent",
         @"AXARIARole",
+        @"_AXActionTargets",
         @"AXAutocompleteValue",
         @"AXClickPoint",
         @"AXControllerFor",
@@ -636,6 +638,11 @@ RefPtr<AccessibilityUIElement> AccessibilityUIElementMac::elementForAttributeAtI
 RefPtr<AccessibilityUIElement> AccessibilityUIElementMac::linkedUIElementAtIndex(unsigned index)
 {
     return elementForAttributeAtIndex(NSAccessibilityLinkedUIElementsAttribute, index);
+}
+
+RefPtr<AccessibilityUIElement> AccessibilityUIElementMac::ariaActionsElementAtIndex(unsigned index)
+{
+    return elementForAttributeAtIndex(@"_AXActionTargets", index);
 }
 
 RefPtr<AccessibilityUIElement> AccessibilityUIElementMac::controllerElementAtIndex(unsigned index)
@@ -1903,6 +1910,16 @@ bool AccessibilityUIElementMac::dismiss()
     return performAction(@"AXDismissAction");
 }
 
+bool AccessibilityUIElementMac::invokeCustomActionAtIndex(unsigned index)
+{
+    NSArray *customActions = [m_element.getAutoreleased() accessibilityCustomActions];
+    if (index >= customActions.count)
+        return false;
+
+    NSAccessibilityCustomAction *action = customActions[index];
+    return action.handler();
+}
+
 bool AccessibilityUIElementMac::setSelectedTextMarkerRange(AccessibilityTextMarkerRange* markerRange)
 {
     if (!markerRange)
@@ -3080,11 +3097,18 @@ bool AccessibilityUIElementMac::isLastItemInSuggestion() const
 bool AccessibilityUIElementMac::isRemoteFrame() const
 {
     BEGIN_AX_OBJC_EXCEPTIONS
-    auto value = attributeValue(@"AXIsRemoteFrame");
+    RetainPtr value = attributeValue(@"AXIsRemoteFrame");
     if ([value isKindOfClass:[NSNumber class]])
         return [value boolValue];
     END_AX_OBJC_EXCEPTIONS
     return false;
+}
+
+bool AccessibilityUIElementMac::isRemotePlatformElement() const
+{
+    BEGIN_AX_OBJC_EXCEPTIONS
+    return [m_element isKindOfClass:NSAccessibilityRemoteUIElement.class];
+    END_AX_OBJC_EXCEPTIONS
 }
 
 } // namespace WTR

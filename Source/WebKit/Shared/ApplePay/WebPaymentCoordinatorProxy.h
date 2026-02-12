@@ -133,7 +133,6 @@ public:
 private:
     explicit WebPaymentCoordinatorProxy(Client&);
     Ref<WorkQueue> protectedCanMakePaymentsQueue() const;
-    CheckedPtr<Client> checkedClient() const { return m_client.get(); }
 
     // IPC::MessageReceiver
     void didReceiveMessage(IPC::Connection&, IPC::Decoder&) override;

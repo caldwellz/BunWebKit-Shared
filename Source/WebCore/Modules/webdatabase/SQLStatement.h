@@ -60,8 +60,8 @@ public:
     void setDatabaseDeletedError();
     void setVersionMismatchedError();
 
-    SQLError* sqlError() const;
-    SQLResultSet* sqlResultSet() const;
+    SQLError* NODELETE sqlError() const;
+    SQLResultSet* NODELETE sqlResultSet() const;
 
 private:
     void setFailureDueToQuota();

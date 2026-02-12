@@ -92,7 +92,7 @@ void NetworkLoad::startWithScheduling()
     RefPtr task = m_task;
     if (!task || !task->networkSession())
         return;
-    Ref scheduler = task->checkedNetworkSession()->networkLoadScheduler();
+    Ref scheduler = protect(task->networkSession())->networkLoadScheduler();
     m_scheduler = scheduler.get();
     scheduler->schedule(*this);
 }

@@ -49,19 +49,9 @@ inline const RenderStyle& RenderObject::firstLineStyle() const
     return downcast<RenderElement>(*this).firstLineStyle();
 }
 
-inline Ref<TreeScope> RenderObject::protectedTreeScopeForSVGReferences() const
-{
-    return treeScopeForSVGReferences();
-}
-
 inline LocalFrame& RenderObject::frame() const
 {
     return *document().frame();
-}
-
-inline Ref<LocalFrame> RenderObject::protectedFrame() const
-{
-    return frame();
 }
 
 inline Page& RenderObject::page() const
@@ -70,11 +60,6 @@ inline Page& RenderObject::page() const
     // so it's safe to assume Frame::page() is non-null as long as there are live RenderObjects.
     ASSERT(frame().page());
     return *frame().page();
-}
-
-inline Ref<Page> RenderObject::protectedPage() const
-{
-    return page();
 }
 
 inline Settings& RenderObject::settings() const

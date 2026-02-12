@@ -101,7 +101,7 @@ SVGSVGElement::~SVGSVGElement()
         viewSpec->resetContextElement();
     Ref<Document> document = this->document();
     document->unregisterForDocumentSuspensionCallbacks(*this);
-    document->checkedSVGExtensions()->removeTimeContainer(*this);
+    protect(document->svgExtensions())->removeTimeContainer(*this);
 }
 
 void SVGSVGElement::didMoveToNewDocument(Document& oldDocument, Document& newDocument)
@@ -294,15 +294,15 @@ Ref<NodeList> SVGSVGElement::collectIntersectionOrEnclosureList(SVGRect& rect, S
 static bool checkIntersectionWithoutUpdatingLayout(SVGElement& element, SVGRect& rect)
 {
     if (element.document().settings().layerBasedSVGEngineEnabled())
-        return RenderSVGModelObject::checkIntersection(element.checkedRenderer().get(), rect.value());
-    return LegacyRenderSVGModelObject::checkIntersection(element.checkedRenderer().get(), rect.value());
+        return RenderSVGModelObject::checkIntersection(protect(element.renderer()).get(), rect.value());
+    return LegacyRenderSVGModelObject::checkIntersection(protect(element.renderer()).get(), rect.value());
 }
     
 static bool checkEnclosureWithoutUpdatingLayout(SVGElement& element, SVGRect& rect)
 {
     if (element.document().settings().layerBasedSVGEngineEnabled())
-        return RenderSVGModelObject::checkEnclosure(element.checkedRenderer().get(), rect.value());
-    return LegacyRenderSVGModelObject::checkEnclosure(element.checkedRenderer().get(), rect.value());
+        return RenderSVGModelObject::checkEnclosure(protect(element.renderer()).get(), rect.value());
+    return LegacyRenderSVGModelObject::checkEnclosure(protect(element.renderer()).get(), rect.value());
 }
 
 Ref<NodeList> SVGSVGElement::getIntersectionList(SVGRect& rect, SVGElement* referenceElement)
@@ -332,7 +332,7 @@ bool SVGSVGElement::checkEnclosure(Ref<SVGElement>&& element, SVGRect& rect)
 void SVGSVGElement::deselectAll()
 {
     if (RefPtr frame = document().frame())
-        frame->checkedSelection()->clear();
+        protect(frame->selection())->clear();
 }
 
 Ref<SVGNumber> SVGSVGElement::createSVGNumber()
@@ -503,7 +503,7 @@ void SVGSVGElement::removedFromAncestor(RemovalType removalType, ContainerNode& 
 {
     if (removalType.disconnectedFromDocument) {
         Ref<Document> document = this->document();
-        document->checkedSVGExtensions()->removeTimeContainer(*this);
+        protect(document->svgExtensions())->removeTimeContainer(*this);
         pauseAnimations();
     }
     SVGGraphicsElement::removedFromAncestor(removalType, oldParentOfRemovedTree);

@@ -42,7 +42,9 @@ ExceptionOr<Ref<WebTransportReceiveStream>> WebTransportReceiveStream::create(We
     if (result.hasException())
         return result.releaseException();
 
-    return adoptRef(*new WebTransportReceiveStream(globalObject.protectedScriptExecutionContext().get(), identifier, session, result.releaseReturnValue()));
+    Ref stream = adoptRef(*new WebTransportReceiveStream(protect(globalObject.scriptExecutionContext()).get(), identifier, session, result.releaseReturnValue()));
+    stream->suspendIfNeeded();
+    return stream;
 }
 
 WebTransportReceiveStream::WebTransportReceiveStream(ScriptExecutionContext* context, WebTransportStreamIdentifier identifier, WebTransportSession& session, Ref<InternalReadableStream>&& stream)

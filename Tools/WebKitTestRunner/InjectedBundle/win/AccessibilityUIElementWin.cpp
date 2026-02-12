@@ -125,6 +125,12 @@ RefPtr<AccessibilityUIElement> AccessibilityUIElementWin::ariaFlowToElementAtInd
     return nullptr;
 }
 
+RefPtr<AccessibilityUIElement> AccessibilityUIElementWin::ariaActionsElementAtIndex(unsigned)
+{
+    notImplemented();
+    return nullptr;
+}
+
 RefPtr<AccessibilityUIElement> AccessibilityUIElementWin::ariaControlsElementAtIndex(unsigned)
 {
     notImplemented();

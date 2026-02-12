@@ -51,11 +51,6 @@
 #import <WebCore/WebCoreObjCExtras.h>
 #import <wtf/TZoneMallocInlines.h>
 
-static Ref<WebKit::WebUserContentControllerProxy> protectedUserContentControllerProxy(WKUserContentController *controller)
-{
-    return *controller->_userContentControllerProxy;
-}
-
 @implementation WKUserContentController
 
 WK_OBJECT_DISABLE_DISABLE_KVC_IVAR_ACCESS;
@@ -104,32 +99,32 @@ WK_OBJECT_DISABLE_DISABLE_KVC_IVAR_ACCESS;
 
 - (void)addUserScript:(WKUserScript *)userScript
 {
-    protectedUserContentControllerProxy(self)->addUserScript(Ref { *userScript->_userScript }, WebKit::InjectUserScriptImmediately::No);
+    protect(*_userContentControllerProxy)->addUserScript(Ref { *userScript->_userScript }, WebKit::InjectUserScriptImmediately::No);
 }
 
 - (void)removeAllUserScripts
 {
-    protectedUserContentControllerProxy(self)->removeAllUserScripts();
+    protect(*_userContentControllerProxy)->removeAllUserScripts();
 }
 
 - (void)addContentRuleList:(WKContentRuleList *)contentRuleList
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->addContentRuleList(Ref { *contentRuleList->_contentRuleList });
+    protect(*_userContentControllerProxy)->addContentRuleList(Ref { *contentRuleList->_contentRuleList });
 #endif
 }
 
 - (void)removeContentRuleList:(WKContentRuleList *)contentRuleList
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->removeContentRuleList(Ref { *contentRuleList->_contentRuleList }->name());
+    protect(*_userContentControllerProxy)->removeContentRuleList(Ref { *contentRuleList->_contentRuleList }->name());
 #endif
 }
 
 - (void)removeAllContentRuleLists
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->removeAllContentRuleLists();
+    protect(*_userContentControllerProxy)->removeAllContentRuleLists();
 #endif
 }
 
@@ -193,7 +188,7 @@ private:
 
 - (void)_addScriptMessageHandler:(WebKit::WebScriptMessageHandler&)scriptMessageHandler
 {
-    if (!protectedUserContentControllerProxy(self)->addUserScriptMessageHandler(scriptMessageHandler))
+    if (!protect(*_userContentControllerProxy)->addUserScriptMessageHandler(scriptMessageHandler))
         [NSException raise:NSInvalidArgumentException format:@"Attempt to add script message handler with name '%@' when one already exists.", scriptMessageHandler.name().createNSString().get()];
 }
 
@@ -217,22 +212,22 @@ private:
 
 - (void)removeScriptMessageHandlerForName:(NSString *)name
 {
-    protectedUserContentControllerProxy(self)->removeUserMessageHandlerForName(name, API::ContentWorld::pageContentWorldSingleton());
+    protect(*_userContentControllerProxy)->removeUserMessageHandlerForName(name, API::ContentWorld::pageContentWorldSingleton());
 }
 
 - (void)removeScriptMessageHandlerForName:(NSString *)name contentWorld:(WKContentWorld *)contentWorld
 {
-    protectedUserContentControllerProxy(self)->removeUserMessageHandlerForName(name, Ref { *contentWorld->_contentWorld });
+    protect(*_userContentControllerProxy)->removeUserMessageHandlerForName(name, Ref { *contentWorld->_contentWorld });
 }
 
 - (void)removeAllScriptMessageHandlersFromContentWorld:(WKContentWorld *)contentWorld
 {
-    protectedUserContentControllerProxy(self)->removeAllUserMessageHandlers(Ref { *contentWorld->_contentWorld });
+    protect(*_userContentControllerProxy)->removeAllUserMessageHandlers(Ref { *contentWorld->_contentWorld });
 }
 
 - (void)removeAllScriptMessageHandlers
 {
-    protectedUserContentControllerProxy(self)->removeAllUserMessageHandlers();
+    protect(*_userContentControllerProxy)->removeAllUserMessageHandlers();
 }
 
 #pragma mark WKObject protocol implementation
@@ -248,17 +243,17 @@ private:
 
 - (void)_removeUserScript:(WKUserScript *)userScript
 {
-    protectedUserContentControllerProxy(self)->removeUserScript(Ref { *userScript->_userScript });
+    protect(*_userContentControllerProxy)->removeUserScript(Ref { *userScript->_userScript });
 }
 
 - (void)_removeAllUserScriptsAssociatedWithContentWorld:(WKContentWorld *)contentWorld
 {
-    protectedUserContentControllerProxy(self)->removeAllUserScripts(Ref { *contentWorld->_contentWorld });
+    protect(*_userContentControllerProxy)->removeAllUserScripts(Ref { *contentWorld->_contentWorld });
 }
 
 - (void)_addUserScriptImmediately:(WKUserScript *)userScript
 {
-    protectedUserContentControllerProxy(self)->addUserScript(Ref { *userScript->_userScript }, WebKit::InjectUserScriptImmediately::Yes);
+    protect(*_userContentControllerProxy)->addUserScript(Ref { *userScript->_userScript }, WebKit::InjectUserScriptImmediately::Yes);
 }
 
 #pragma clang diagnostic push
@@ -267,28 +262,28 @@ private:
 #pragma clang diagnostic pop
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->addContentRuleList(Ref { *userContentFilter->_contentRuleList->_contentRuleList });
+    protect(*_userContentControllerProxy)->addContentRuleList(Ref { *userContentFilter->_contentRuleList->_contentRuleList });
 #endif
 }
 
 - (void)_addContentRuleList:(WKContentRuleList *)contentRuleList extensionBaseURL:(NSURL *)extensionBaseURL
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->addContentRuleList(Ref { *contentRuleList->_contentRuleList }, extensionBaseURL);
+    protect(*_userContentControllerProxy)->addContentRuleList(Ref { *contentRuleList->_contentRuleList }, extensionBaseURL);
 #endif
 }
 
 - (void)_removeUserContentFilter:(NSString *)userContentFilterName
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->removeContentRuleList(userContentFilterName);
+    protect(*_userContentControllerProxy)->removeContentRuleList(userContentFilterName);
 #endif
 }
 
 - (void)_removeAllUserContentFilters
 {
 #if ENABLE(CONTENT_EXTENSIONS)
-    protectedUserContentControllerProxy(self)->removeAllContentRuleLists();
+    protect(*_userContentControllerProxy)->removeAllContentRuleLists();
 #endif
 }
 
@@ -299,39 +294,39 @@ private:
 
 - (void)_addUserStyleSheet:(_WKUserStyleSheet *)userStyleSheet
 {
-    protectedUserContentControllerProxy(self)->addUserStyleSheet(Ref { *userStyleSheet->_userStyleSheet });
+    protect(*_userContentControllerProxy)->addUserStyleSheet(Ref { *userStyleSheet->_userStyleSheet });
 }
 
 - (void)_removeUserStyleSheet:(_WKUserStyleSheet *)userStyleSheet
 {
-    protectedUserContentControllerProxy(self)->removeUserStyleSheet(Ref { *userStyleSheet->_userStyleSheet });
+    protect(*_userContentControllerProxy)->removeUserStyleSheet(Ref { *userStyleSheet->_userStyleSheet });
 }
 
 - (void)_removeAllUserStyleSheets
 {
-    protectedUserContentControllerProxy(self)->removeAllUserStyleSheets();
+    protect(*_userContentControllerProxy)->removeAllUserStyleSheets();
 }
 
 - (void)_removeAllUserStyleSheetsAssociatedWithContentWorld:(WKContentWorld *)contentWorld
 {
-    protectedUserContentControllerProxy(self)->removeAllUserStyleSheets(Ref { *contentWorld->_contentWorld });
+    protect(*_userContentControllerProxy)->removeAllUserStyleSheets(Ref { *contentWorld->_contentWorld });
 }
 
 - (void)_addBuffer:(_WKJSBuffer *)buffer contentWorld:(WKContentWorld *)world name:(NSString *)name
 {
-    protectedUserContentControllerProxy(self)->addJSBuffer(Ref { *buffer->_buffer }, Ref { *world->_contentWorld }, name);
+    protect(*_userContentControllerProxy)->addJSBuffer(Ref { *buffer->_buffer }, Ref { *world->_contentWorld }, name);
 }
 
 - (void)_removeBufferWithName:(NSString *)name contentWorld:(WKContentWorld *)world
 {
-    protectedUserContentControllerProxy(self)->removeJSBuffer(Ref { *world->_contentWorld }, name);
+    protect(*_userContentControllerProxy)->removeJSBuffer(Ref { *world->_contentWorld }, name);
 }
 
 ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 - (void)_addScriptMessageHandler:(id <WKScriptMessageHandler>)scriptMessageHandler name:(NSString *)name userContentWorld:(_WKUserContentWorld *)userContentWorld
 {
     auto handler = WebKit::WebScriptMessageHandler::create(makeUnique<ScriptMessageHandlerDelegate>(self, scriptMessageHandler, name), name, Ref { *userContentWorld->_contentWorld->_contentWorld });
-    if (!protectedUserContentControllerProxy(self)->addUserScriptMessageHandler(handler.get()))
+    if (!protect(*_userContentControllerProxy)->addUserScriptMessageHandler(handler.get()))
         [NSException raise:NSInvalidArgumentException format:@"Attempt to add script message handler with name '%@' when one already exists.", name];
 }
 
@@ -342,12 +337,12 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 
 - (void)_removeScriptMessageHandlerForName:(NSString *)name userContentWorld:(_WKUserContentWorld *)userContentWorld
 {
-    protectedUserContentControllerProxy(self)->removeUserMessageHandlerForName(name, Ref { *userContentWorld->_contentWorld->_contentWorld });
+    protect(*_userContentControllerProxy)->removeUserMessageHandlerForName(name, Ref { *userContentWorld->_contentWorld->_contentWorld });
 }
 
 - (void)_removeAllScriptMessageHandlersAssociatedWithUserContentWorld:(_WKUserContentWorld *)userContentWorld
 {
-    protectedUserContentControllerProxy(self)->removeAllUserMessageHandlers(Ref { *userContentWorld->_contentWorld->_contentWorld });
+    protect(*_userContentControllerProxy)->removeAllUserMessageHandlers(Ref { *userContentWorld->_contentWorld->_contentWorld });
 }
 ALLOW_DEPRECATED_DECLARATIONS_END
 

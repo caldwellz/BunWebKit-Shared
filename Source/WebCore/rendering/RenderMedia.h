@@ -39,7 +39,6 @@ public:
     virtual ~RenderMedia();
 
     inline HTMLMediaElement& mediaElement() const; // Defined in RenderMediaInlines.h
-    inline Ref<HTMLMediaElement> protectedMediaElement() const; // Defined in RenderMediaInlines.h
 
     bool shouldDisplayBrokenImageIcon() const final { return false; }
 

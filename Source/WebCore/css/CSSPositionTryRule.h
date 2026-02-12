@@ -44,9 +44,7 @@ public:
     AtomString name() const { return m_name; }
 
     StyleProperties& properties() const { return m_properties; }
-    Ref<StyleProperties> protectedProperties() const { return m_properties; }
     MutableStyleProperties& mutableProperties();
-    Ref<MutableStyleProperties> protectedMutableProperties() { return mutableProperties(); }
 
 private:
     explicit StyleRulePositionTry(AtomString&& name, Ref<StyleProperties>&&);

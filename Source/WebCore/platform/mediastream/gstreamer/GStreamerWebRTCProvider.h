@@ -33,6 +33,8 @@ public:
     std::optional<RTCRtpCapabilities> receiverCapabilities(const String& kind) final;
     std::optional<RTCRtpCapabilities> senderCapabilities(const String& kind) final;
 
+    bool isWebCoreGStreamerWebRTCProvider() const final;
+
 private:
     void initializeAudioDecodingCapabilities() final;
     void initializeVideoDecodingCapabilities() final;
@@ -43,4 +45,8 @@ private:
 
 } // namespace WebCore
 
-#endif
+SPECIALIZE_TYPE_TRAITS_BEGIN(WebCore::GStreamerWebRTCProvider)
+static bool isType(const WebCore::WebRTCProvider& provider) { return provider.isWebCoreGStreamerWebRTCProvider(); }
+SPECIALIZE_TYPE_TRAITS_END()
+
+#endif // USE(GSTREAMER_WEBRTC)

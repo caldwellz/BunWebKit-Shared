@@ -311,7 +311,7 @@ ptrdiff_t Decoder::offsetOf(const void* ptr)
 {
     auto* addr = static_cast<const uint8_t*>(ptr);
     auto cachedBytecodeSpan = m_cachedBytecode->span();
-    ASSERT(addr >= cachedBytecodeSpan.data() && addr < cachedBytecodeSpan.data() + cachedBytecodeSpan.size());
+    ASSERT(addr >= cachedBytecodeSpan.data() && addr < std::to_address(cachedBytecodeSpan.end()));
     return addr - cachedBytecodeSpan.data();
 }
 

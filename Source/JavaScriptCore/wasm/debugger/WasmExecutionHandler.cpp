@@ -147,8 +147,6 @@ ExecutionHandler::ResumeMode ExecutionHandler::stopCode(Locker<Lock>& locker, St
 
     dataLogLnIf(Options::verboseWasmDebugger(), "[Code][Stop] Start with event:", event);
 
-    debuggeeState()->setStopped();
-
     auto notifyDebuggerOfStop = [&]() WTF_REQUIRES_LOCK(m_lock) {
         if (m_debuggerState == DebuggerState::ContinueRequested) {
             sendStopReply(locker);
@@ -189,8 +187,6 @@ ExecutionHandler::ResumeMode ExecutionHandler::stopCode(Locker<Lock>& locker, St
     if (m_debuggerState == DebuggerState::SwitchRequested)
         return ResumeMode::Switch;
 
-    debuggeeState()->clearStop();
-
     // Defer debugger notification until after VMs resume to prevent interrupt() race.
     if (m_debuggerState == DebuggerState::ContinueRequested)
         m_awaitingResumeNotification = true;
@@ -212,27 +208,21 @@ StopTheWorldStatus ExecutionHandler::handleStopTheWorld(VM& debuggee, StopTheWor
         return STW_CONTEXT_SWITCH(m_debuggee);
     }
 
-    // Mark VMs' states (debuggee running, others stopped).
-    markVMStates(m_debuggee);
-
     // Stop the code and let debugger decide resume mode.
     ExecutionHandler::ResumeMode mode = stopCode(locker, event);
     switch (mode) {
     case ExecutionHandler::ResumeMode::One:
-        RELEASE_ASSERT(m_debuggee->debugState()->isRunning());
         return STW_RESUME_ONE(m_debuggee);
     case ExecutionHandler::ResumeMode::All:
-        RELEASE_ASSERT(m_debuggee->debugState()->isRunning());
-        clearOtherVMStopData(m_debuggee);
+        m_debuggee = nullptr;
         return STW_RESUME_ALL();
     case ExecutionHandler::ResumeMode::Switch:
         RELEASE_ASSERT(m_debuggee != &debuggee);
         RELEASE_ASSERT(debuggee.debugState()->isStopped());
         RELEASE_ASSERT(m_debuggee->debugState()->isStopped());
-        debuggee.debugState()->setRunning();
-        m_debuggee->debugState()->setRunning();
         return STW_CONTEXT_SWITCH(m_debuggee);
     }
+    RELEASE_ASSERT_NOT_REACHED();
     return STW_RESUME_ALL();
 }
 
@@ -247,7 +237,7 @@ void ExecutionHandler::selectDebuggeeIfNeeded(VM& fallbackVM) WTF_REQUIRES_LOCK(
     VM* selectedVM = nullptr;
     VMManager::forEachVM([&](VM& vm) {
         auto* debugState = vm.debugState();
-        if (debugState && debugState->atPrologue()) {
+        if (vm.debugState()->isStopped() && debugState->atPrologue()) {
             selectedVM = &vm;
             return IterationStatus::Done;
         }
@@ -256,28 +246,6 @@ void ExecutionHandler::selectDebuggeeIfNeeded(VM& fallbackVM) WTF_REQUIRES_LOCK(
 
     m_debuggee = selectedVM ? selectedVM : &fallbackVM;
     dataLogLnIf(Options::verboseWasmDebugger(), "[STW] Selected debuggee VM:", RawPointer(m_debuggee));
-}
-
-void ExecutionHandler::markVMStates(VM* debuggee) WTF_REQUIRES_LOCK(m_lock)
-{
-    VMManager::forEachVM([&](VM& vm) {
-        if (&vm == debuggee)
-            vm.debugState()->setRunning();
-        else
-            vm.debugState()->setStopped();
-        return IterationStatus::Continue;
-    });
-}
-
-void ExecutionHandler::clearOtherVMStopData(VM* debuggee) WTF_REQUIRES_LOCK(m_lock)
-{
-    VMManager::forEachVM([&](VM& vm) {
-        if (&vm != debuggee) {
-            RELEASE_ASSERT(vm.debugState()->isStopped());
-            vm.debugState()->clearStop();
-        }
-        return IterationStatus::Continue;
-    });
 }
 
 // Called by VMManager when ALL VMs are stopped at safe points.
@@ -343,7 +311,7 @@ static inline VM* findVM(uint64_t threadId)
 {
     VM* result = nullptr;
     VMManager::forEachVM([&](VM& vm) {
-        if (threadId == ExecutionHandler::threadId(vm)) {
+        if (vm.debugState()->isStopped() && threadId == ExecutionHandler::threadId(vm)) {
             result = &vm;
             return IterationStatus::Done;
         }
@@ -386,9 +354,6 @@ void ExecutionHandler::interrupt()
     // no matter how many Ctrl+C the user types, LLDB will not send additional interrupt packets
     // until it receives a stop reply. This prevents packet flooding and ensures clean protocol behavior.
     // Our WebKit implementation handles each interrupt request by activating StopWorld via VM traps.
-
-    if (m_debuggee && debuggeeState()->isStopped())
-        return;
 
     {
         RELEASE_ASSERT(!m_debuggee || debuggeeState()->isRunning());
@@ -755,9 +720,10 @@ static Vector<ThreadInfo> collectAllStoppedThreads()
     Vector<ThreadInfo> threads;
     VMManager::forEachVM([&](VM& vm) {
         auto* state = vm.debugState();
-        RELEASE_ASSERT(state->isStopped());
-        uint64_t threadId = ExecutionHandler::threadId(vm);
+        if (!state->isStopped())
+            return IterationStatus::Continue;
 
+        uint64_t threadId = ExecutionHandler::threadId(vm);
         StopData::Code code = state->atSystemCall() ? StopData::Code::Stop : state->stopData->code;
         auto stopInfo = stopReasonCodeToInfo(code);
         threads.append({ threadId, getStopPC(*state), getThreadName(*state, threadId), stopInfo.reasonSuffix });

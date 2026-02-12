@@ -210,7 +210,7 @@ UITargetedDragPreview *DragDropInteractionState::finalDropPreview(UIDragItem *it
 
 void DragDropInteractionState::deliverDelayedDropPreview(UIView *contentView, UIView *previewContainer, RefPtr<WebCore::TextIndicator>&& textIndicator)
 {
-    auto textIndicatorImage = uiImageForImage(protect(textIndicator)->contentImage());
+    auto textIndicatorImage = uiImageForImage(protect(protect(textIndicator)->contentImage()));
     auto preview = createTargetedDragPreview(textIndicatorImage.get(), contentView, previewContainer, textIndicator->textBoundingRectInRootViewCoordinates(), textIndicator->textRectsInBoundingRectCoordinates(), cocoaColor(textIndicator->estimatedBackgroundColor()).get(), nil, AddPreviewViewToContainer::No);
     if (!preview)
         return;
@@ -298,7 +298,7 @@ RetainPtr<UITargetedDragPreview> DragDropInteractionState::createDragPreviewInte
         // If the context menu preview was created using the snapshot mechanism,
         // the drag preview should be created likewise, so that the size and position
         // of both previews match.
-        auto textIndicatorImage = uiImageForImage(protect(indicator)->contentImage());
+        auto textIndicatorImage = uiImageForImage(protect(protect(indicator)->contentImage()));
         return createTargetedDragPreview(textIndicatorImage.get(), contentView, previewContainer, indicator->textBoundingRectInRootViewCoordinates(), indicator->textRectsInBoundingRectCoordinates(), cocoaColor(indicator->estimatedBackgroundColor()).get(), nil, addPreviewViewToContainer).autorelease();
     }
 
@@ -307,7 +307,7 @@ RetainPtr<UITargetedDragPreview> DragDropInteractionState::createDragPreviewInte
         ASSERT(image);
         if (shouldUseVisiblePathToCreatePreviewForDragSource(source)) {
             auto path = source.visiblePath.value();
-            UIBezierPath *visiblePath = [UIBezierPath bezierPathWithCGPath:path.platformPath()];
+            RetainPtr visiblePath = [UIBezierPath bezierPathWithCGPath:protect<CGPathRef>(path.platformPath()).get()];
             return createTargetedDragPreview(image->get(), contentView, previewContainer, source.dragPreviewFrameInRootViewCoordinates, { }, nil, visiblePath, addPreviewViewToContainer).autorelease();
         }
         return createTargetedDragPreview(image->get(), contentView, previewContainer, source.dragPreviewFrameInRootViewCoordinates, { }, nil, nil, addPreviewViewToContainer).autorelease();
@@ -315,7 +315,7 @@ RetainPtr<UITargetedDragPreview> DragDropInteractionState::createDragPreviewInte
 
     if (shouldUseTextIndicatorToCreatePreviewForDragSource(source)) {
         RefPtr textIndicator = source.textIndicator;
-        RetainPtr textIndicatorImage = uiImageForImage(protect(textIndicator)->contentImage());
+        RetainPtr textIndicatorImage = uiImageForImage(protect(protect(textIndicator)->contentImage()));
         return createTargetedDragPreview(textIndicatorImage.get(), contentView, previewContainer, textIndicator->textBoundingRectInRootViewCoordinates(), textIndicator->textRectsInBoundingRectCoordinates(), cocoaColor(textIndicator->estimatedBackgroundColor()).get(), nil, addPreviewViewToContainer).autorelease();
     }
 

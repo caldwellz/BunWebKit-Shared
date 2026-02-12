@@ -58,11 +58,6 @@ HTMLIFrameElement& RenderIFrame::iframeElement() const
     return downcast<HTMLIFrameElement>(RenderFrameBase::frameOwnerElement());
 }
 
-Ref<HTMLIFrameElement> RenderIFrame::protectedIframeElement() const
-{
-    return iframeElement();
-}
-
 bool RenderIFrame::requiresLayer() const
 {
     return RenderFrameBase::requiresLayer() || style().resize() != Style::Resize::None;

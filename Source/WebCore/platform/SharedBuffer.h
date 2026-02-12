@@ -390,7 +390,6 @@ public:
         updateBufferIfNeeded();
         return m_buffer.get();
     }
-    RefPtr<FragmentedSharedBuffer> protectedBuffer() const { return buffer(); }
     Ref<FragmentedSharedBuffer> copyBuffer() const { return createBuffer(); }
 
     WEBCORE_EXPORT RefPtr<ArrayBuffer> tryCreateArrayBuffer() const;

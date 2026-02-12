@@ -72,7 +72,7 @@ private:
 
     Layout::LayoutState& layoutState() { return *m_layoutState; }
     const Layout::LayoutState& layoutState() const { return *m_layoutState; }
-    const Layout::ElementBox& rootLayoutBox() const;
+    const Layout::ElementBox& NODELETE rootLayoutBox() const;
     const RenderBlock& rootRenderer() const;
     inline WritingMode writingMode() const;
 

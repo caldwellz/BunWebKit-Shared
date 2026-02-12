@@ -259,7 +259,7 @@ void MediaControlTextTrackContainerElement::updateActiveCuesFontSize()
     if (!mediaElement)
         return;
 
-    float fontScale = document().page()->checkedGroup()->ensureProtectedCaptionPreferences()->captionFontSizeScaleAndImportance(m_fontSizeIsImportant);
+    float fontScale = protect(document().page()->group())->ensureProtectedCaptionPreferences()->captionFontSizeScaleAndImportance(m_fontSizeIsImportant);
 
     // Caption fonts are defined as |size vh| units, so there's no need to
     // scale by display size. Since |vh| is a decimal percentage, multiply
@@ -295,7 +295,7 @@ void MediaControlTextTrackContainerElement::updateTextStrokeStyle()
     bool important;
 
     // FIXME: find a way to set this property in the stylesheet like the other user style preferences, see <https://bugs.webkit.org/show_bug.cgi?id=169874>.
-    if (document().page()->checkedGroup()->ensureProtectedCaptionPreferences()->captionStrokeWidthForFont(m_fontSize, language, strokeWidth, important))
+    if (protect(document().page()->group())->ensureProtectedCaptionPreferences()->captionStrokeWidthForFont(m_fontSize, language, strokeWidth, important))
         setInlineStyleProperty(CSSPropertyStrokeWidth, strokeWidth, CSSUnitType::CSS_PX, important ? IsImportant::Yes : IsImportant::No);
 }
 
@@ -434,7 +434,7 @@ void MediaControlTextTrackContainerElement::captionPreferencesChanged()
 {
     if (RefPtr page = document().page()) {
         if (RefPtr previewCue = m_previewCue) {
-            previewCue->setText(page->checkedGroup()->ensureProtectedCaptionPreferences()->captionPreviewTitle());
+            previewCue->setText(protect(page->group())->ensureProtectedCaptionPreferences()->captionPreviewTitle());
             previewCue->updateDisplayTree(MediaTime::zeroTime());
         }
     }
@@ -461,7 +461,7 @@ void MediaControlTextTrackContainerElement::updateSizes(ForceUpdate force)
     for (auto& activeCue : currentlyActiveCues())
         activeCue.data()->recalculateStyles();
 
-    document->checkedEventLoop()->queueTask(TaskSource::MediaElement, [weakThis = WeakPtr { *this }] () {
+    protect(document->eventLoop())->queueTask(TaskSource::MediaElement, [weakThis = WeakPtr { *this }] () {
         if (weakThis)
             weakThis->updateDisplay();
     });
@@ -561,7 +561,7 @@ VTTCue& MediaControlTextTrackContainerElement::ensurePreviewCue() const
         m_previewCue->setIsActive(true);
 
         if (RefPtr page = document().page())
-            m_previewCue->setText(page->checkedGroup()->ensureProtectedCaptionPreferences()->captionPreviewTitle());
+            m_previewCue->setText(protect(page->group())->ensureProtectedCaptionPreferences()->captionPreviewTitle());
 
         m_previewTrack->addCue(*m_previewCue);
     }

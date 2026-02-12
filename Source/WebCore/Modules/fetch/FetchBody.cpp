@@ -53,37 +53,42 @@ FetchBody::~FetchBody() = default;
 
 ExceptionOr<FetchBody> FetchBody::extract(Init&& value, String& contentType)
 {
-    return WTF::switchOn(value, [&](RefPtr<Blob>& value) mutable -> ExceptionOr<FetchBody> {
-        Ref<const Blob> blob = value.releaseNonNull();
-        if (!blob->type().isEmpty())
-            contentType = blob->type();
-        return FetchBody(WTF::move(blob));
-    }, [&](RefPtr<DOMFormData>& value) mutable -> ExceptionOr<FetchBody> {
-        Ref<DOMFormData> domFormData = value.releaseNonNull();
-        auto formData = FormData::createMultiPart(domFormData.get());
-        contentType = makeString("multipart/form-data; boundary="_s, formData->boundary());
-        return FetchBody(WTF::move(formData));
-    }, [&](RefPtr<URLSearchParams>& value) mutable -> ExceptionOr<FetchBody> {
-        Ref<const URLSearchParams> params = value.releaseNonNull();
-        contentType = HTTPHeaderValues::formURLEncodedContentType();
-        return FetchBody(WTF::move(params));
-    }, [&](RefPtr<ArrayBuffer>& value) mutable -> ExceptionOr<FetchBody> {
-        Ref<const ArrayBuffer> buffer = value.releaseNonNull();
-        return FetchBody(WTF::move(buffer));
-    }, [&](RefPtr<ArrayBufferView>& value) mutable -> ExceptionOr<FetchBody> {
-        Ref<const ArrayBufferView> buffer = value.releaseNonNull();
-        return FetchBody(WTF::move(buffer));
-    }, [&](RefPtr<ReadableStream>& stream) mutable -> ExceptionOr<FetchBody> {
-        if (stream->isDisturbed())
-            return Exception { ExceptionCode::TypeError, "Input body is disturbed."_s };
-        if (stream->isLocked())
-            return Exception { ExceptionCode::TypeError, "Input body is locked."_s };
+    return WTF::switchOn(WTF::move(value),
+        [&](Ref<Blob>&& blob) -> ExceptionOr<FetchBody> {
+            if (!blob->type().isEmpty())
+                contentType = blob->type();
+            return FetchBody(WTF::move(blob));
+        },
+        [&](Ref<DOMFormData>&& domFormData) -> ExceptionOr<FetchBody> {
+            auto formData = FormData::createMultiPart(domFormData.get());
+            contentType = makeString("multipart/form-data; boundary="_s, formData->boundary());
+            return FetchBody(WTF::move(formData));
+        },
+        [&](Ref<URLSearchParams>&& params) -> ExceptionOr<FetchBody> {
+            contentType = HTTPHeaderValues::formURLEncodedContentType();
+            return FetchBody(WTF::move(params));
+        },
+        [&](RefPtr<ArrayBuffer>&& value) -> ExceptionOr<FetchBody> {
+            Ref<ArrayBuffer> buffer = value.releaseNonNull();
+            return FetchBody(WTF::move(buffer));
+        },
+        [&](RefPtr<ArrayBufferView>&& value) -> ExceptionOr<FetchBody> {
+            Ref<ArrayBufferView> buffer = value.releaseNonNull();
+            return FetchBody(WTF::move(buffer));
+        },
+        [&](Ref<ReadableStream>&& stream) -> ExceptionOr<FetchBody> {
+            if (stream->isDisturbed())
+                return Exception { ExceptionCode::TypeError, "Input body is disturbed."_s };
+            if (stream->isLocked())
+                return Exception { ExceptionCode::TypeError, "Input body is locked."_s };
 
-        return FetchBody(stream.releaseNonNull());
-    }, [&](String& value) -> ExceptionOr<FetchBody> {
-        contentType = HTTPHeaderValues::textPlainContentType();
-        return FetchBody(WTF::move(value));
-    });
+            return FetchBody(WTF::move(stream));
+        },
+        [&](String&& value) -> ExceptionOr<FetchBody> {
+            contentType = HTTPHeaderValues::textPlainContentType();
+            return FetchBody(WTF::move(value));
+        }
+    );
 }
 
 std::optional<FetchBody> FetchBody::fromFormData(ScriptExecutionContext& context, Ref<FormData>&& formData)
@@ -99,7 +104,7 @@ std::optional<FetchBody> FetchBody::fromFormData(ScriptExecutionContext& context
     auto url = formData->asBlobURL();
     if (!url.isNull()) {
         // FIXME: Properly set mime type and size of the blob.
-        Ref<const Blob> blob = Blob::deserialize(&context, url, { }, { }, 0, { });
+        Ref<Blob> blob = Blob::deserialize(&context, url, { }, { }, 0, { });
         return FetchBody { WTF::move(blob) };
     }
 
@@ -203,7 +208,7 @@ void FetchBody::consumeAsStream(FetchBodyOwner& owner, FetchBodySource& source)
     } else if (isBlob())
         owner.loadBlob(protect(blobBody()).get(), nullptr);
     else if (isFormData())
-        checkedConsumer()->consumeFormDataAsStream(protect(formDataBody()).get(), source, owner.protectedScriptExecutionContext().get());
+        checkedConsumer()->consumeFormDataAsStream(protect(formDataBody()).get(), source, protect(owner.scriptExecutionContext()).get());
     else if (CheckedRef consumer = this->consumer(); consumer->hasData())
         closeStream = source.enqueue(consumer->asArrayBuffer());
     else
@@ -243,7 +248,7 @@ void FetchBody::consumeBlob(FetchBodyOwner& owner, Ref<DeferredPromise>&& promis
 
 void FetchBody::consumeFormData(FetchBodyOwner& owner, Ref<DeferredPromise>&& promise)
 {
-    checkedConsumer()->resolveWithFormData(WTF::move(promise), owner.contentType(), protect(formDataBody()).get(), owner.protectedScriptExecutionContext().get());
+    checkedConsumer()->resolveWithFormData(WTF::move(promise), owner.contentType(), protect(formDataBody()).get(), protect(owner.scriptExecutionContext()).get());
     m_data = nullptr;
 }
 
@@ -286,17 +291,22 @@ void FetchBody::convertReadableStreamToArrayBuffer(FetchBodyOwner& owner, Comple
     ASSERT(hasReadableStream());
 
     checkedConsumer()->extract(*protect(readableStream()), [owner = Ref { owner }, data = SharedBufferBuilder(), completionHandler = WTF::move(completionHandler)](auto&& result) mutable {
-        WTF::switchOn(WTF::move(result), [&](std::nullptr_t) {
-            if (RefPtr arrayBuffer = data.takeBufferAsArrayBuffer())
-                owner->body().m_data = *arrayBuffer;
-            completionHandler({ });
-        }, [&](std::span<const uint8_t>&& chunk) {
-            data.append(chunk);
-        }, [&](JSC::JSValue) {
-            completionHandler(Exception { ExceptionCode::TypeError, "Load failed"_s });
-        }, [&](Exception&& error) {
-            completionHandler(WTF::move(error));
-        });
+        WTF::switchOn(WTF::move(result),
+            [&](std::nullptr_t) {
+                if (RefPtr arrayBuffer = data.takeBufferAsArrayBuffer())
+                    owner->body().m_data = *arrayBuffer;
+                completionHandler({ });
+            },
+            [&](std::span<const uint8_t>&& chunk) {
+                data.append(chunk);
+            },
+            [&](JSC::JSValue) {
+                completionHandler(Exception { ExceptionCode::TypeError, "Load failed"_s });
+            },
+            [&](Exception&& error) {
+                completionHandler(WTF::move(error));
+            }
+        );
     });
 }
 
@@ -349,7 +359,7 @@ FetchBody FetchBody::clone(JSDOMGlobalObject& globalObject)
     else if (isBlob())
         clone.m_data = protect(blobBody());
     else if (isFormData())
-        clone.m_data = Ref { const_cast<FormData&>(formDataBody()) };
+        clone.m_data = protect(formDataBody());
     else if (isText())
         clone.m_data = textBody();
     else if (isURLSearchParams())

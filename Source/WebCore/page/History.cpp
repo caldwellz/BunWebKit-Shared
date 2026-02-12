@@ -82,7 +82,7 @@ ExceptionOr<unsigned> History::length() const
     RefPtr page = frame->page();
     if (!page)
         return 0;
-    return page->checkedBackForward()->count();
+    return protect(page->backForward())->count();
 }
 
 ExceptionOr<History::ScrollRestoration> History::scrollRestoration() const
@@ -175,7 +175,7 @@ ExceptionOr<void> History::go(int distance)
     if (!isDocumentFullyActive(frame.get()))
         return documentNotFullyActive();
 
-    frame->protectedNavigationScheduler()->scheduleHistoryNavigation(distance);
+    protect(frame->navigationScheduler())->scheduleHistoryNavigation(distance);
     return { };
 }
 
@@ -192,7 +192,7 @@ ExceptionOr<void> History::go(Document& document, int distance)
     if (document.canNavigate(frame.get()) != CanNavigateState::Able)
         return { };
 
-    frame->protectedNavigationScheduler()->scheduleHistoryNavigation(distance);
+    protect(frame->navigationScheduler())->scheduleHistoryNavigation(distance);
     return { };
 }
 

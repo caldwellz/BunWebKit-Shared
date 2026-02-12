@@ -25,9 +25,7 @@
 
 #pragma once
 
-#include <WebCore/Document.h>
-#include <WebCore/Element.h>
-#include <WebCore/FloatPoint.h>
+#include <WebCore/FloatRect.h>
 #include <WebCore/ScrollTypes.h>
 #include <wtf/CheckedRef.h>
 #include <wtf/TZoneMalloc.h>
@@ -35,12 +33,23 @@
 
 namespace WebCore {
 
-class Element;
+class Document;
+class LocalFrameView;
+class RenderBox;
+class RenderElement;
+class RenderObject;
 class ScrollableArea;
 class WeakPtrImplWithEventTargetData;
 
-enum class CandidateExaminationResult {
-    Exclude, Select, Descend, Skip
+enum class AnchorSearchStatus : uint8_t {
+    // Exclude this node from anchoring.
+    Exclude,
+    // Check children; if no anchor found, keep traversing later siblings.
+    Continue,
+    // Check children; if no anchor found, choose this node.
+    Constrain,
+    // Choose this node.
+    Choose,
 };
 
 class ScrollAnchoringController : public CanMakeCheckedPtr<ScrollAnchoringController> {
@@ -50,36 +59,62 @@ public:
     explicit ScrollAnchoringController(ScrollableArea&);
     ~ScrollAnchoringController();
 
+    bool shouldMaintainScrollAnchor() const;
+
+    void scrollPositionDidChange();
+    void scrollerDidLayout();
+
+    void clearAnchor(bool includeAncestors = false);
+    void updateBeforeLayout();
     void adjustScrollPositionForAnchoring();
 
-    void invalidateAnchorElement();
-    void updateAnchorElement();
+    void willDispatchScrollEvent();
+    void didDispatchScrollEvent();
 
-    void notifyChildHadSuppressingStyleChange();
-    bool isInScrollAnchoringAncestorChain(const RenderObject&);
+    void notifyChildHadSuppressingStyleChange(RenderElement&);
 
-    bool hasAnchorElement() const { return !!m_anchorElement; }
-
-    CandidateExaminationResult examineAnchorCandidate(Element&);
-    Element* anchorElement() const { return m_anchorElement.get(); }
+    bool hasAnchorElement() const { return !!m_anchorObject; }
 
 private:
+    static bool isViableStatus(AnchorSearchStatus status)
+    {
+        return status == AnchorSearchStatus::Constrain || status == AnchorSearchStatus::Choose;
+    }
+
+    LocalFrameView& frameView() const;
+
+    bool findPriorityCandidate(Document&);
+
+    AnchorSearchStatus examineAnchorCandidate(RenderObject&) const;
+    AnchorSearchStatus examinePriorityCandidate(RenderElement&) const;
+
+    AnchorSearchStatus findAnchorInOutOfFlowObjects(RenderObject&);
+    AnchorSearchStatus findAnchorRecursive(RenderObject*);
+
+    RenderBox* scrollableAreaBox() const;
+
+    struct Rects {
+        FloatRect boundsRelativeToScrolledContent;
+        FloatRect scrollerContentsVisibleRect; // Takes scroll-padding into account.
+    };
+
+    Rects computeScrollerRelativeRects(RenderObject&) const;
+
+    FloatPoint computeOffsetFromOwningScroller(RenderObject&) const;
+
+    void invalidate();
     void chooseAnchorElement(Document&);
-
-    Element* findAnchorElementRecursive(Element*);
-    bool didFindPriorityCandidate(Document&);
-
-    FloatPoint computeOffsetFromOwningScroller(RenderObject&);
-
-    LocalFrameView& frameView();
+    bool anchoringSuppressedByStyleChange() const;
+    void updateScrollableAreaRegistration();
 
     CheckedRef<ScrollableArea> m_owningScrollableArea;
-    WeakPtr<Element, WeakPtrImplWithEventTargetData> m_anchorElement;
-    FloatPoint m_lastOffsetForAnchorElement;
+    SingleThreadWeakPtr<RenderObject> m_anchorObject;
+    FloatPoint m_lastAnchorOffset;
 
-    bool m_midUpdatingScrollPositionForAnchorElement { false };
+    bool m_isUpdatingScrollPositionForAnchoring { false };
     bool m_isQueuedForScrollPositionUpdate { false };
-    bool m_shouldSuppressScrollPositionUpdate { false };
+    bool m_anchoringSuppressedByStyleChange { false };
+    unsigned m_inScrollEventCount { 0 };
 };
 
 } // namespace WebCore

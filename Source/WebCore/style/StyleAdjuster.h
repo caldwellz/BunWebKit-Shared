@@ -40,6 +40,7 @@ class SVGElement;
 class Settings;
 
 enum class AnimationImpact : uint8_t;
+enum class PaginationMode : uint8_t;
 
 namespace Style {
 
@@ -58,6 +59,7 @@ public:
     static void adjustFirstLineStyle(RenderStyle&);
     static void adjustSVGElementStyle(RenderStyle&, const SVGElement&);
     static bool adjustEventListenerRegionTypesForRootStyle(RenderStyle&, const Document&);
+    static void adjustColumnStylesForPaginationMode(RenderStyle&, PaginationMode);
     static void propagateToDocumentElementAndInitialContainingBlock(Update&, const Document&);
     static std::unique_ptr<RenderStyle> restoreUsedDocumentElementStyleToComputed(const RenderStyle&);
 
@@ -78,6 +80,13 @@ private:
     void adjustForSiteSpecificQuirks(RenderStyle&) const;
 
     void adjustThemeStyle(RenderStyle&, const RenderStyle& parentStyle) const;
+
+    static void adjustAnimations(RenderStyle&);
+    static void adjustTransitions(RenderStyle&);
+    static void adjustBackgroundLayers(RenderStyle&);
+    static void adjustMaskLayers(RenderStyle&);
+    static void adjustScrollTimelines(RenderStyle&);
+    static void adjustViewTimelines(RenderStyle&);
 
     static OptionSet<EventListenerRegionType> computeEventListenerRegionTypes(const Document&, const RenderStyle&, const EventTarget&, OptionSet<EventListenerRegionType>);
 

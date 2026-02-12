@@ -1346,9 +1346,8 @@ void JIT::emit_op_switch_string(const JSInstruction* currentInstruction)
     m_switches.append(SwitchRecord(tableIndex, m_bytecodeIndex, defaultOffset, SwitchRecord::String));
     linkedTable.ensureCTITable(unlinkedTable);
 
-    using SlowOperation = decltype(operationSwitchStringWithUnknownKeyType);
-    constexpr GPRReg globalObjectGPR = preferredArgumentGPR<SlowOperation, 0>();
-    constexpr JSValueRegs scrutineeJSR = preferredArgumentJSR<SlowOperation, 1>();
+    using BaselineJITRegisters::SwitchString::globalObjectGPR;
+    using BaselineJITRegisters::SwitchString::scrutineeJSR;
 
     emitGetVirtualRegister(scrutinee, scrutineeJSR);
     loadGlobalObject(globalObjectGPR);

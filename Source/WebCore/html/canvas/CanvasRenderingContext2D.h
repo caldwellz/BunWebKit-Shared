@@ -41,7 +41,6 @@ public:
     virtual ~CanvasRenderingContext2D();
 
     HTMLCanvasElement& canvas() const { return downcast<HTMLCanvasElement>(canvasBase()); }
-    Ref<HTMLCanvasElement> protectedCanvas() const { return canvas(); }
 
     void drawFocusIfNeeded(Element&);
     void drawFocusIfNeeded(Path2D&, Element&);

@@ -1048,7 +1048,7 @@ void MediaPlayerPrivateRemote::load(const URL& url, const LoadOptions& options, 
             // MediaSource can only be re-opened after RemoteMediaPlayerProxy::LoadMediaSource has been called.
             client.reOpen();
         } else
-            m_mediaSourcePrivate = MediaSourcePrivateRemote::create(protect(manager()->gpuProcessConnection()), identifier, manager()->checkedTypeCache(m_remoteEngineIdentifier), *this, client);
+            m_mediaSourcePrivate = MediaSourcePrivateRemote::create(protect(manager()->gpuProcessConnection()), identifier, protect(manager()->typeCache(m_remoteEngineIdentifier)), *this, client);
         return;
     }
 

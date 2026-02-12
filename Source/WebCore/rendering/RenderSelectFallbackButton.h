@@ -30,6 +30,7 @@
 
 namespace WebCore {
 
+class HTMLOptionElement;
 class HTMLSelectElement;
 class RenderText;
 class SelectFallbackButtonElement;
@@ -50,13 +51,11 @@ public:
     void setDidBeginCheckedPtrDeletion() { CanMakeCheckedPtr::setDidBeginCheckedPtrDeletion(); }
 
     void setText(const String&);
-    void updateFromElement() final;
-#if !PLATFORM(COCOA)
-    void setTextFromOption(int optionIndex);
-#endif
+    void setTextFromOption(HTMLOptionElement*, int optionIndex);
 
 private:
     void insertedIntoTree() final;
+    void updateFromElement() final;
 
     ASCIILiteral renderName() const final { return "RenderSelectFallbackButton"_s; }
 

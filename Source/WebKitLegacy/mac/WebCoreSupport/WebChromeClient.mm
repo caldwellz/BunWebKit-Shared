@@ -52,12 +52,18 @@
 #import "WebSecurityOriginInternal.h"
 #import "WebSelectionServiceController.h"
 #import "WebUIDelegatePrivate.h"
+#if PLATFORM(IOS_FAMILY)
+#import "WebUIKitDelegate.h"
+#endif
 #import "WebView.h"
 #import "WebViewInternal.h"
 #import <Foundation/Foundation.h>
 #import <JavaScriptCore/ConsoleTypes.h>
 #import <WebCore/Chrome.h>
 #import <WebCore/ColorChooser.h>
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+#import <WebCore/ContentChangeObserver.h>
+#endif
 #import <WebCore/ContextMenu.h>
 #import <WebCore/ContextMenuController.h>
 #import <WebCore/Cursor.h>
@@ -93,6 +99,7 @@
 #import <WebCore/SerializedCryptoKeyWrap.h>
 #import <WebCore/StorageNamespaceProvider.h>
 #import <WebCore/UniversalAccessZoom.h>
+#import <WebCore/WKContentObservation.h>
 #import <WebCore/Widget.h>
 #import <WebCore/WindowFeatures.h>
 #import <pal/spi/mac/NSViewSPI.h>
@@ -313,7 +320,7 @@ RefPtr<Page> WebChromeClient::createWindow(LocalFrame& frame, const String& open
     RefPtr newPage = core(newWebView.get());
     if (newPage) {
         if (!features.wantsNoOpener()) {
-            m_webView.page->protectedStorageNamespaceProvider()->cloneSessionStorageNamespaceForPage(*m_webView.page, *newPage);
+            protect(m_webView.page->storageNamespaceProvider())->cloneSessionStorageNamespaceForPage(*m_webView.page, *newPage);
             newPage->mainFrame().setOpenerForWebKitLegacy(&frame);
             newPage->applyWindowFeatures(features);
         }
@@ -1155,3 +1162,31 @@ void WebChromeClient::registerBlobPathForTesting(const String&, CompletionHandle
 {
     completion();
 }
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+void WebChromeClient::didFinishContentChangeObserving(WebCore::LocalFrame& frame, WebCore::ContentChange observedContentChange)
+{
+#if PLATFORM(IOS_FAMILY)
+    if (!frame.document())
+        return;
+
+    auto toWKContentChange = [](WebCore::ContentChange change) {
+        using enum WebCore::ContentChange;
+        switch (change) {
+        case None:
+            return WKContentNoChange;
+        case Visibility:
+            return WKContentVisibilityChange;
+        case Indeterminate:
+            return WKContentIndeterminateChange;
+        }
+        ASSERT_NOT_REACHED();
+        return WKContentNoChange;
+    };
+
+    [[webView() _UIKitDelegateForwarder] webView:webView() didObserveDeferredContentChange:toWKContentChange(observedContentChange) forFrame:kit(&frame)];
+#else
+    notImplemented();
+#endif
+}
+#endif

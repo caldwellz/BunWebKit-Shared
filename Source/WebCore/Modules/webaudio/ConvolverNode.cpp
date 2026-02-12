@@ -68,7 +68,7 @@ ExceptionOr<Ref<ConvolverNode>> ConvolverNode::create(BaseAudioContext& context,
 
     node->setNormalizeForBindings(!options.disableNormalization);
 
-    result = node->setBufferForBindings(WTF::move(options.buffer).value_or(RefPtr<AudioBuffer> { }));
+    result = node->setBufferForBindings(WTF::move(options.buffer));
     if (result.hasException())
         return result.releaseException();
 

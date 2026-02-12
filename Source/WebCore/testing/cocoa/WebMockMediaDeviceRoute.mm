@@ -30,43 +30,41 @@
 
 #import "MockMediaDeviceRouteURLCallback.h"
 #import <WebCore/JSDOMPromise.h>
-#import <WebKitAdditions/WebMockMediaDeviceRouteAdditions.mm>
 #import <wtf/BlockPtr.h>
 #import <wtf/WeakObjCPtr.h>
 
 NS_ASSUME_NONNULL_BEGIN
 
-static NSErrorDomain const WebMockMediaDeviceRouteErrorDomain = @"WebMockMediaDeviceRouteErrorDomain";
-
-typedef NS_ENUM(NSInteger, WebMockMediaDeviceRouteErrorCode) {
-    WebMockMediaDeviceRouteErrorCodeInvalidState,
-    WebMockMediaDeviceRouteErrorCodeURLPromiseRejected,
-};
+NSErrorDomain const WebMockMediaDeviceRouteErrorDomain = @"WebMockMediaDeviceRouteErrorDomain";
 
 @implementation WebMockMediaDeviceRoute {
     RefPtr<WebCore::MockMediaDeviceRouteURLCallback> _urlCallback;
     RefPtr<WebCore::DOMPromise> _urlPromise;
 }
 
-@synthesize currentAudioOption;
-@synthesize currentSegment;
-@synthesize currentSubtitleOption;
+@synthesize timeRange;
 @synthesize currentValue;
-@synthesize hasAudio;
-@synthesize isAudioOnly;
-@synthesize isPlaying;
-@synthesize maxValue;
-@synthesize minValue;
-@synthesize muted;
-@synthesize options;
-@synthesize playbackError;
-@synthesize playbackSpeed;
-@synthesize playbackType;
-@synthesize scanSpeed;
 @synthesize segments;
+@synthesize currentSegment;
+@synthesize seekableTimeRanges;
+@synthesize ready;
+@synthesize playing;
+@synthesize buffering;
+@synthesize playbackSpeed;
+@synthesize scanSpeed;
 @synthesize state;
-@synthesize supportedModes;
+@synthesize supportedSeekCapabilities;
+@synthesize containsLiveStreamingContent;
+@synthesize playbackError;
+@synthesize currentAudioOption;
+@synthesize currentLegibleOption;
+@synthesize audioOptions;
+@synthesize legibleOptions;
+@synthesize hasAudio;
+@synthesize muted;
 @synthesize volume;
+@synthesize metadata;
+@synthesize routeDisplayName;
 
 - (WebCore::MockMediaDeviceRouteURLCallback* _Nullable)urlCallback
 {
@@ -78,22 +76,22 @@ typedef NS_ENUM(NSInteger, WebMockMediaDeviceRouteErrorCode) {
     _urlCallback = urlCallback;
 }
 
-- (void)startApplicationWithURL:(NSURL *)url launchType:(WebMediaDevicePlatformRouteLaunchType)launchType withCompletionHandler:(void (^)(NSError * _Nullable, WebMediaDevicePlatformRouteLaunchResult * _Nullable))completionHandler
+- (void)startWithURL:(NSURL *)url completionHandler:(void (^)(NSError * _Nullable, NSObject<AVMediaSource> * _Nullable))completionHandler
 {
     if (!_urlCallback)
         return completionHandler([NSError errorWithDomain:WebMockMediaDeviceRouteErrorDomain code:WebMockMediaDeviceRouteErrorCodeInvalidState userInfo:nil], nil);
 
     _urlPromise = _urlCallback->invoke(url.absoluteString).releaseReturnValue();
     _urlPromise->whenSettled([weakSelf = WeakObjCPtr { self }, completionHandler = makeBlockPtr(completionHandler)]() {
-        RetainPtr protectedSelf = weakSelf.get();
-        if (!protectedSelf)
+        RetainPtr strongSelf = weakSelf.get();
+        if (!strongSelf)
             return completionHandler([NSError errorWithDomain:WebMockMediaDeviceRouteErrorDomain code:WebMockMediaDeviceRouteErrorCodeInvalidState userInfo:nil], nil);
 
-        switch (std::exchange(protectedSelf->_urlPromise, nullptr)->status()) {
+        switch (std::exchange(strongSelf->_urlPromise, nullptr)->status()) {
         case WebCore::DOMPromise::Status::Fulfilled:
-            return completionHandler(nil, nil);
+            return completionHandler(nil, strongSelf.get());
         case WebCore::DOMPromise::Status::Rejected:
-            return completionHandler([NSError errorWithDomain:WebMockMediaDeviceRouteErrorDomain code:WebMockMediaDeviceRouteErrorCodeURLPromiseRejected userInfo:nil], nil);
+            return completionHandler([NSError errorWithDomain:WebMockMediaDeviceRouteErrorDomain code:WebMockMediaDeviceRouteErrorCodeUnsupportedURL userInfo:nil], nil);
         case WebCore::DOMPromise::Status::Pending:
             break;
         }

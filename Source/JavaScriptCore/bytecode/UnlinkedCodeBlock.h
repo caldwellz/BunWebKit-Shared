@@ -225,7 +225,7 @@ public:
     SuperBinding superBinding() const { return static_cast<SuperBinding>(m_superBinding); }
     JSParserScriptMode scriptMode() const { return static_cast<JSParserScriptMode>(m_scriptMode); }
 
-    const JSInstructionStream& instructions() const;
+    const JSInstructionStream& NODELETE instructions() const;
     const JSInstruction* instructionAt(BytecodeIndex index) const { return instructions().at(index).ptr(); }
     unsigned bytecodeOffset(const JSInstruction* instruction)
     {

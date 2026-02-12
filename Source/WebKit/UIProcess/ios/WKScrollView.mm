@@ -72,14 +72,12 @@
 - (NSMethodSignature *)methodSignatureForSelector:(SEL)aSelector
 {
     NSMethodSignature *signature = [super methodSignatureForSelector:aSelector];
-    if (!signature) {
-        RetainPtr internalDelegate = _internalDelegate.get();
-        signature = [static_cast<NSObject *>(internalDelegate.get()) methodSignatureForSelector:aSelector];
-    }
-    if (!signature) {
-        RetainPtr externalDelegate = _externalDelegate.get();
-        signature = [static_cast<NSObject *>(externalDelegate.get()) methodSignatureForSelector:aSelector];
-    }
+    if (!signature)
+        signature = [static_cast<NSObject *>(_internalDelegate.get().get()) methodSignatureForSelector:aSelector];
+
+    if (!signature)
+        signature = [static_cast<NSObject *>(_externalDelegate.get().get()) methodSignatureForSelector:aSelector];
+
     return signature;
 }
 
@@ -254,13 +252,14 @@ static BOOL shouldForwardScrollViewDelegateMethodToExternalDelegate(SEL selector
 - (void)_updateDelegate
 {
     auto oldForwarder = std::exchange(_delegateForwarder, nil);
-    auto externalDelegate = _externalDelegate.get();
+    RetainPtr internalDelegate = _internalDelegate.get();
+    RetainPtr externalDelegate = _externalDelegate.get();
     if (!externalDelegate)
-        [super setDelegate:_internalDelegate.get().get()];
-    else if (!_internalDelegate)
+        [super setDelegate:internalDelegate.get()];
+    else if (!internalDelegate)
         [super setDelegate:(id<WKBEScrollViewDelegate>)externalDelegate.get()];
     else {
-        _delegateForwarder = adoptNS([[WKScrollViewDelegateForwarder alloc] initWithInternalDelegate:_internalDelegate.get().get() externalDelegate:externalDelegate.get()]);
+        _delegateForwarder = adoptNS([[WKScrollViewDelegateForwarder alloc] initWithInternalDelegate:internalDelegate.get() externalDelegate:externalDelegate.get()]);
         [super setDelegate:_delegateForwarder.get()];
     }
 }

@@ -165,6 +165,108 @@ module WebKit_Internal [system] {
         export *
     }
 
+    module APIArray {
+        requires cplusplus20
+        header "../../Shared/API/APIArray.h"
+        export *
+    }
+
+    module LoadedWebArchive {
+        requires cplusplus20
+        header "../../Shared/LoadedWebArchive.h"
+        export *
+    }
+
+    module SessionState {
+        requires cplusplus20
+        header "../../Shared/SessionState.h"
+        export *
+    }
+
+    module WebBackForwardCache {
+        requires cplusplus20
+        header "../../UIProcess/WebBackForwardCache.h"
+        export *
+    }
+
+    module WebBackForwardListCounts {
+        requires cplusplus20
+        header "../../Shared/WebBackForwardListCounts.h"
+        export *
+    }
+
+    module WebBackForwardListFrameItem {
+        requires cplusplus20
+        header "../../Shared/WebBackForwardListFrameItem.h"
+        export *
+    }
+
+    module WebBackForwardListItem {
+        requires cplusplus20
+        header "../../Shared/WebBackForwardListItem.h"
+        export *
+    }
+
+    module APICustomProtocolManagerClient {
+        requires cplusplus20
+        header "../../UIProcess/API/APICustomProtocolManagerClient.h"
+        export *
+    }
+
+    module APIHistoryClient {
+        requires cplusplus20
+        header "../../UIProcess/API/APIHistoryClient.h"
+        export *
+    }
+
+    module APINavigationClient {
+        requires cplusplus20
+        header "../../UIProcess/API/APINavigationClient.h"
+        export *
+    }
+
+    module AuxiliaryProcessProxy {
+        requires cplusplus20
+        header "../../UIProcess/AuxiliaryProcessProxy.h"
+        export *
+    }
+
+    module SwiftDemoLogoConfirmation {
+        requires cplusplus20
+        header "../../UIProcess/SwiftDemoLogoConfirmation.h"
+        export *
+    }
+
+    module WebBackForwardCacheEntry {
+        requires cplusplus20
+        header "../../UIProcess/WebBackForwardCacheEntry.h"
+        export *
+    }
+
+    module WebBackForwardListSwiftUtilities {
+        requires cplusplus20
+        header "../../UIProcess/WebBackForwardListSwiftUtilities.h"
+        export *
+    }
+
+    module WebFrameProxy {
+        requires cplusplus20
+        header "../../UIProcess/WebFrameProxy.h"
+        export *
+    }
+
+    module WebPermissionControllerProxy {
+        requires cplusplus20
+        header "../../UIProcess/WebPermissionControllerProxy.h"
+        export *
+    }
+
+    module WebProcessProxy {
+        requires cplusplus20
+        header "../../UIProcess/WebProcessProxy.h"
+        export *
+    }
+
     // FIXME: These parts of the module map needs work as discussed in https://github.com/WebKit/WebKit/pull/54322
 
     module WebKit_Internal_Objc {

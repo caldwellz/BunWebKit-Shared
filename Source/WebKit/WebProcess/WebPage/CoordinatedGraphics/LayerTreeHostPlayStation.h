@@ -141,7 +141,7 @@ private:
 
     // CoordinatedPlatformLayer::Client
 #if USE(CAIRO)
-    WebCore::Cairo::PaintingEngine& paintingEngine() override;
+    WebCore::Cairo::PaintingEngine& NODELETE paintingEngine() override;
 #elif USE(SKIA)
     WebCore::SkiaPaintingEngine& paintingEngine() const override { return *m_skiaPaintingEngine.get(); }
 #endif

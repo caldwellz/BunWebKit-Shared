@@ -65,7 +65,7 @@ void CharacterData::setData(const String& data)
         Ref document = this->document();
         document->textRemoved(*this, 0, oldLength);
         if (RefPtr frame = document->frame())
-            frame->checkedSelection()->textWasReplaced(*this, 0, oldLength, oldLength);
+            protect(frame->selection())->textWasReplaced(*this, 0, oldLength, oldLength);
         return;
     }
 
@@ -205,7 +205,7 @@ void CharacterData::setDataAndUpdate(const String& newData, unsigned offsetOfRep
         processingIntruction->checkStyleSheet();
 
     if (RefPtr frame = document->frame())
-        frame->checkedSelection()->textWasReplaced(*this, offsetOfReplacedData, oldLength, newLength);
+        protect(frame->selection())->textWasReplaced(*this, offsetOfReplacedData, oldLength, newLength);
 
     notifyParentAfterChange(childChange);
 

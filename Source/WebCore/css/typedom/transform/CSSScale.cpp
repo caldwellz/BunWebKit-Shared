@@ -65,8 +65,8 @@ ExceptionOr<Ref<CSSScale>> CSSScale::create(CSSNumberish x, CSSNumberish y, std:
 
 ExceptionOr<Ref<CSSScale>> CSSScale::create(Ref<const CSSFunctionValue> cssFunctionValue, Document& document)
 {
-    auto makeScale = [&](NOESCAPE const Function<ExceptionOr<Ref<CSSScale>>(Vector<RefPtr<CSSNumericValue>>&&)>& create, size_t minNumberOfComponents, std::optional<size_t> maxNumberOfComponents = std::nullopt) -> ExceptionOr<Ref<CSSScale>> {
-        Vector<RefPtr<CSSNumericValue>> components;
+    auto makeScale = [&](NOESCAPE const Function<ExceptionOr<Ref<CSSScale>>(Vector<Ref<CSSNumericValue>>&&)>& create, size_t minNumberOfComponents, std::optional<size_t> maxNumberOfComponents = std::nullopt) -> ExceptionOr<Ref<CSSScale>> {
+        Vector<Ref<CSSNumericValue>> components;
         for (Ref componentCSSValue : cssFunctionValue.get()) {
             auto valueOrException = CSSStyleValueFactory::reifyValue(document, componentCSSValue, std::nullopt);
             if (valueOrException.hasException())
@@ -74,7 +74,7 @@ ExceptionOr<Ref<CSSScale>> CSSScale::create(Ref<const CSSFunctionValue> cssFunct
             RefPtr numericValue = dynamicDowncast<CSSNumericValue>(valueOrException.releaseReturnValue());
             if (!numericValue)
                 return Exception { ExceptionCode::TypeError, "Expected a CSSNumericValue."_s };
-            components.append(WTF::move(numericValue));
+            components.append(numericValue.releaseNonNull());
         }
         if (!maxNumberOfComponents)
             maxNumberOfComponents = minNumberOfComponents;
@@ -88,24 +88,26 @@ ExceptionOr<Ref<CSSScale>> CSSScale::create(Ref<const CSSFunctionValue> cssFunct
 
     switch (cssFunctionValue->name()) {
     case CSSValueScaleX:
-        return makeScale([](Vector<RefPtr<CSSNumericValue>>&& components) {
-            return CSSScale::create(components[0], CSSNumericFactory::number(1), std::nullopt);
+        return makeScale([](Vector<Ref<CSSNumericValue>>&& components) {
+            return CSSScale::create(WTF::move(components[0]), CSSNumericFactory::number(1), std::nullopt);
         }, 1);
     case CSSValueScaleY:
-        return makeScale([](Vector<RefPtr<CSSNumericValue>>&& components) {
-            return CSSScale::create(CSSNumericFactory::number(1), components[0], std::nullopt);
+        return makeScale([](Vector<Ref<CSSNumericValue>>&& components) {
+            return CSSScale::create(CSSNumericFactory::number(1), WTF::move(components[0]), std::nullopt);
         }, 1);
     case CSSValueScaleZ:
-        return makeScale([](Vector<RefPtr<CSSNumericValue>>&& components) {
-            return CSSScale::create(CSSNumericFactory::number(1), CSSNumericFactory::number(1), components[0]);
+        return makeScale([](Vector<Ref<CSSNumericValue>>&& components) {
+            return CSSScale::create(CSSNumericFactory::number(1), CSSNumericFactory::number(1), WTF::move(components[0]));
         }, 1);
     case CSSValueScale:
-        return makeScale([](Vector<RefPtr<CSSNumericValue>>&& components) {
-            return CSSScale::create(components[0], components.size() == 2 ? components[1] : components[0], std::nullopt);
+        return makeScale([](Vector<Ref<CSSNumericValue>>&& components) {
+            return components.size() == 2
+                ? CSSScale::create(WTF::move(components[0]), WTF::move(components[1]), std::nullopt)
+                : CSSScale::create(components[0], components[0], std::nullopt);
         }, 1, 2);
     case CSSValueScale3d:
-        return makeScale([](Vector<RefPtr<CSSNumericValue>>&& components) {
-            return CSSScale::create(components[0], components[1], components[2]);
+        return makeScale([](Vector<Ref<CSSNumericValue>>&& components) {
+            return CSSScale::create(WTF::move(components[0]), WTF::move(components[1]), WTF::move(components[2]));
         }, 3);
     default:
         ASSERT_NOT_REACHED();

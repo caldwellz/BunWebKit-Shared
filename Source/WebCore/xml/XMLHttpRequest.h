@@ -80,9 +80,8 @@ public:
 
     enum EventTargetInterfaceType eventTargetInterface() const final { return EventTargetInterfaceType::XMLHttpRequest; }
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using ActiveDOMObject::protectedScriptExecutionContext;
 
-    using SendTypes = Variant<RefPtr<Document>, RefPtr<Blob>, RefPtr<JSC::ArrayBufferView>, RefPtr<JSC::ArrayBuffer>, RefPtr<DOMFormData>, String, RefPtr<URLSearchParams>>;
+    using SendTypes = Variant<Ref<Document>, Ref<Blob>, RefPtr<JSC::ArrayBufferView>, RefPtr<JSC::ArrayBuffer>, Ref<DOMFormData>, String, Ref<URLSearchParams>>;
 
     const URL& url() const { return m_url; }
     String statusText() const;
@@ -177,11 +176,11 @@ private:
     void notifyIsDone(bool) final;
 
     std::optional<ExceptionOr<void>> prepareToSend();
-    ExceptionOr<void> send(const URLSearchParams&);
-    ExceptionOr<void> send(Document&);
-    ExceptionOr<void> send(const String& = { });
-    ExceptionOr<void> send(Blob&);
-    ExceptionOr<void> send(DOMFormData&);
+    ExceptionOr<void> send(Ref<URLSearchParams>&&);
+    ExceptionOr<void> send(Ref<Document>&&);
+    ExceptionOr<void> send(String&& = { });
+    ExceptionOr<void> send(Ref<Blob>&&);
+    ExceptionOr<void> send(Ref<DOMFormData>&&);
     ExceptionOr<void> send(JSC::ArrayBuffer&);
     ExceptionOr<void> send(JSC::ArrayBufferView&);
     ExceptionOr<void> sendBytesData(std::span<const uint8_t>);

@@ -127,7 +127,10 @@ enum {
 };
 
 enum OverflowScrollAction { DoNotPerformOverflowScroll, PerformOverflowScroll };
-using NodeQualifier = Function<Node* (const HitTestResult&, Node* terminationNode, IntRect* nodeBounds)>;
+#endif
+
+#if PLATFORM(COCOA)
+using NodeQualifier = Function<RefPtr<Node> (const HitTestResult&, Node* terminationNode, IntRect* nodeBounds)>;
 #endif
 
 class LocalFrame final : public Frame {
@@ -164,8 +167,6 @@ public:
 
     inline Editor& editor(); // Defined in LocalFrameInlines.h
     inline const Editor& editor() const; // Defined in LocalFrameInlines.h
-    inline Ref<Editor> protectedEditor(); // Defined in LocalFrameInlines.h
-    inline Ref<const Editor> protectedEditor() const; // Defined in LocalFrameInlines.h
 
     EventHandler& eventHandler() { return m_eventHandler; }
     const EventHandler& eventHandler() const { return m_eventHandler; }
@@ -175,11 +176,8 @@ public:
 
     inline FrameSelection& selection(); // Defined in LocalFrameInlines.h
     inline const FrameSelection& selection() const; // Defined in LocalFrameInlines.h
-    CheckedRef<FrameSelection> checkedSelection() const; // Defined in LocalFrameInlines.h
     ScriptController& script() { return m_script; }
     const ScriptController& script() const { return m_script; }
-    WEBCORE_EXPORT CheckedRef<ScriptController> checkedScript();
-    WEBCORE_EXPORT CheckedRef<const ScriptController> checkedScript() const;
     void resetScript();
 
     bool isRootFrame() const final { return m_rootFrame.get() == this; }
@@ -187,7 +185,6 @@ public:
     LocalFrame& rootFrame() { return *m_rootFrame; }
 
     WEBCORE_EXPORT RenderView* contentRenderer() const; // Root of the render tree for the document contained in this frame.
-    WEBCORE_EXPORT CheckedPtr<RenderView> checkedContentRenderer() const;
 
     bool documentIsBeingReplaced() const { return m_documentIsBeingReplaced; }
 
@@ -196,7 +193,7 @@ public:
 
     bool requestDOMPasteAccess(DOMPasteAccessCategory = DOMPasteAccessCategory::General);
 
-    String debugDescription() const;
+    String debugDescription() const override;
 
     WEBCORE_EXPORT static LocalFrame* fromJSContext(JSContextRef);
     WEBCORE_EXPORT static LocalFrame* contentFrameFromWindowOrFrameElement(JSContextRef, JSValueRef);
@@ -228,7 +225,8 @@ public:
     float pageZoomFactor() const { return m_pageZoomFactor; }
     float textZoomFactor() const { return m_textZoomFactor; }
 
-    float usedZoomForChild(const Frame&) const final;
+    // Scale factor of this frame with respect to the container.
+    WEBCORE_EXPORT float frameScaleFactor() const;
 
     void deviceOrPageScaleFactorChanged();
 
@@ -237,16 +235,29 @@ public:
     WEBCORE_EXPORT DataDetectionResultsStorage& dataDetectionResults();
 #endif
 
+#if PLATFORM(COCOA)
+    void betterApproximateNode(const IntPoint& testPoint, const NodeQualifier&, Node*& best, Node* failedNode, IntPoint& bestPoint, IntRect& bestRect, const IntRect& testRect);
+
+    WEBCORE_EXPORT RefPtr<Node> nodeRespondingToInteraction(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation);
+
+    enum class ShouldApproximate : bool { No, Yes };
+    enum class ShouldFindRootEditableElement : bool { No, Yes };
+    RefPtr<Node> qualifyingNodeAtViewportLocation(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation, const NodeQualifier&, ShouldApproximate, ShouldFindRootEditableElement = ShouldFindRootEditableElement::Yes);
+    bool hitTestResultAtViewportLocation(const FloatPoint& viewportLocation, HitTestResult&, IntPoint& center);
+
+    WEBCORE_EXPORT RefPtr<Node> nodeRespondingToClickEvents(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation, SecurityOrigin* = nullptr);
+    WEBCORE_EXPORT RefPtr<Node> nodeRespondingToDoubleClickEvent(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation);
+
+    static bool nodeWillRespondToMouseEvents(Node&);
+#endif // PLATFORM(COCOA)
+
 #if PLATFORM(IOS_FAMILY)
     const ViewportArguments& viewportArguments() const;
     WEBCORE_EXPORT void setViewportArguments(const ViewportArguments&);
 
     WEBCORE_EXPORT Node* deepestNodeAtLocation(const FloatPoint& viewportLocation);
-    WEBCORE_EXPORT Node* nodeRespondingToClickEvents(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation, SecurityOrigin* = nullptr);
-    WEBCORE_EXPORT Node* nodeRespondingToDoubleClickEvent(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation);
-    WEBCORE_EXPORT Node* nodeRespondingToInteraction(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation);
-    WEBCORE_EXPORT Node* nodeRespondingToScrollWheelEvents(const FloatPoint& viewportLocation);
-    WEBCORE_EXPORT Node* approximateNodeAtViewportLocationLegacy(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation);
+    WEBCORE_EXPORT RefPtr<Node> nodeRespondingToScrollWheelEvents(const FloatPoint& viewportLocation);
+    WEBCORE_EXPORT RefPtr<Node> approximateNodeAtViewportLocationLegacy(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation);
 
     WEBCORE_EXPORT NSArray *wordsInCurrentParagraph() const;
     WEBCORE_EXPORT CGRect renderRectForPoint(CGPoint, bool* isReplaced, float* fontSize) const;
@@ -358,7 +369,6 @@ public:
 
     FrameInspectorController& inspectorController() { return m_inspectorController.get(); }
     const FrameInspectorController& inspectorController() const { return m_inspectorController.get(); }
-    WEBCORE_EXPORT Ref<FrameInspectorController> protectedInspectorController() const;
     FrameConsoleClient& console() { return m_consoleClient.get(); }
     const FrameConsoleClient& console() const { return m_consoleClient.get(); }
 
@@ -401,13 +411,6 @@ private:
     std::unique_ptr<DataDetectionResultsStorage> m_dataDetectionResults;
 #endif
 #if PLATFORM(IOS_FAMILY)
-    void betterApproximateNode(const IntPoint& testPoint, const NodeQualifier&, Node*& best, Node* failedNode, IntPoint& bestPoint, IntRect& bestRect, const IntRect& testRect);
-    bool hitTestResultAtViewportLocation(const FloatPoint& viewportLocation, HitTestResult&, IntPoint& center);
-
-    enum class ShouldApproximate : bool { No, Yes };
-    enum class ShouldFindRootEditableElement : bool { No, Yes };
-    Node* qualifyingNodeAtViewportLocation(const FloatPoint& viewportLocation, FloatPoint& adjustedViewportLocation, const NodeQualifier&, ShouldApproximate, ShouldFindRootEditableElement = ShouldFindRootEditableElement::Yes);
-
     void setTimersPausedInternal(bool);
 
     const UniqueRef<ViewportArguments> m_viewportArguments;

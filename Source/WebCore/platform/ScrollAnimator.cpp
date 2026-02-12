@@ -248,7 +248,7 @@ bool ScrollAnimator::handleTouchEvent(const PlatformTouchEvent&)
 
 static void notifyScrollAnchoringControllerOfScroll(ScrollableArea& scrollableArea)
 {
-    scrollableArea.updateScrollAnchoringElement();
+    scrollableArea.clearScrollAnchor();
 }
 
 void ScrollAnimator::setCurrentPosition(const FloatPoint& position, NotifyScrollableArea notify)

@@ -45,6 +45,9 @@ private:
 
     bool commitStateBeforeChildren(const ScrollingStateNode&) final;
     void applyLayerPositions() final WTF_REQUIRES_LOCK(scrollingTree()->treeLock());
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    void willBeDestroyed() final;
+#endif
     FloatPoint layerTopLeft() const final;
     CALayer *layer() const final { return m_layer.get(); }
     bool hasViewportClippingLayer() const final;

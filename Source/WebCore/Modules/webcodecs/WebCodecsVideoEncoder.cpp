@@ -124,7 +124,7 @@ void WebCodecsVideoEncoder::updateRates(const WebCodecsVideoEncoderConfig& confi
     auto framerate = config.framerate.value_or(0);
 
     blockControlMessageQueue();
-    protectedScriptExecutionContext()->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->setRates(bitrate, framerate), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, bitrate, framerate] (auto&&) mutable {
+    protect(scriptExecutionContext())->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->setRates(bitrate, framerate), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, bitrate, framerate] (auto&&) mutable {
         auto protectedThis = weakThis.get();
         if (!protectedThis)
             return;
@@ -159,7 +159,7 @@ ExceptionOr<void> WebCodecsVideoEncoder::configure(ScriptExecutionContext& conte
             }
 
             blockControlMessageQueue();
-            protectedScriptExecutionContext()->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->flush(), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, config = WTF::move(config), pendingActivity = makePendingActivity(*this)] (auto&&) mutable {
+            protect(scriptExecutionContext())->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->flush(), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, config = WTF::move(config), pendingActivity = makePendingActivity(*this)] (auto&&) mutable {
                 RefPtr protectedThis = weakThis.get();
                 if (!protectedThis)
                     return;
@@ -222,7 +222,7 @@ ExceptionOr<void> WebCodecsVideoEncoder::configure(ScriptExecutionContext& conte
             });
         });
 
-        protectedScriptExecutionContext()->enqueueTaskWhenSettled(WTF::move(createEncoderPromise), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }](auto&& result) mutable {
+        protect(scriptExecutionContext())->enqueueTaskWhenSettled(WTF::move(createEncoderPromise), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }](auto&& result) mutable {
             auto protectedThis = weakThis.get();
             if (!protectedThis)
                 return;
@@ -290,7 +290,7 @@ ExceptionOr<void> WebCodecsVideoEncoder::encode(Ref<WebCodecsVideoFrame>&& frame
 
     queueCodecControlMessageAndProcess({ *this, [this, internalFrame = internalFrame.releaseNonNull(), timestamp = frame->timestamp(), duration = frame->duration(), options = WTF::move(options)]() mutable {
         incrementCodecOperationCount();
-        protectedScriptExecutionContext()->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->encode({ WTF::move(internalFrame), timestamp, duration }, options.keyFrame), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, pendingActivity = makePendingActivity(*this)] (auto&& result) {
+        protect(scriptExecutionContext())->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->encode({ WTF::move(internalFrame), timestamp, duration }, options.keyFrame), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, pendingActivity = makePendingActivity(*this)] (auto&& result) {
             RefPtr protectedThis = weakThis.get();
             if (!protectedThis)
                 return;
@@ -317,7 +317,7 @@ void WebCodecsVideoEncoder::flush(Ref<DeferredPromise>&& promise)
 
     m_pendingFlushPromises.append(promise);
     queueControlMessageAndProcess({ *this, [this, promise = WTF::move(promise)]() mutable {
-        protectedScriptExecutionContext()->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->flush(), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, pendingActivity = makePendingActivity(*this), promise = WTF::move(promise)] (auto&&) {
+        protect(scriptExecutionContext())->enqueueTaskWhenSettled(Ref { *m_internalEncoder }->flush(), TaskSource::MediaElement, [weakThis = ThreadSafeWeakPtr { *this }, pendingActivity = makePendingActivity(*this), promise = WTF::move(promise)] (auto&&) {
             promise->resolve();
             if (RefPtr protectedThis = weakThis.get())
                 protectedThis->m_pendingFlushPromises.removeFirstMatching([&](auto& flushPromise) { return promise.ptr() == flushPromise.ptr(); });

@@ -88,8 +88,8 @@ static bool isAllowedByContentSecurityPolicy(const URL& url, const Element* owne
 
     ASSERT(ownerElement->document().contentSecurityPolicy());
     if (is<HTMLPlugInElement>(ownerElement))
-        return protect(ownerElement->document())->checkedContentSecurityPolicy()->allowObjectFromSource(url, redirectResponseReceived);
-    return protect(ownerElement->document())->checkedContentSecurityPolicy()->allowChildFrameFromSource(url, redirectResponseReceived);
+        return protect(protect(ownerElement->document())->contentSecurityPolicy())->allowObjectFromSource(url, redirectResponseReceived);
+    return protect(protect(ownerElement->document())->contentSecurityPolicy())->allowChildFrameFromSource(url, redirectResponseReceived);
 }
 
 static bool shouldExecuteJavaScriptURLSynchronously(const URL& url)
@@ -294,7 +294,7 @@ void PolicyChecker::checkNavigationPolicy(ResourceRequest&& request, const Resou
         if (shouldExecuteJavaScriptURLSynchronously(request.url()))
             return decisionHandler(PolicyAction::Use);
 
-        document->checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }, decisionHandler = WTF::move(decisionHandler), identifier = m_javaScriptURLPolicyCheckIdentifier] () mutable {
+        protect(document->eventLoop())->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { *this }, decisionHandler = WTF::move(decisionHandler), identifier = m_javaScriptURLPolicyCheckIdentifier] () mutable {
             if (!weakThis)
                 return decisionHandler(PolicyAction::Ignore);
             // Don't proceed if PolicyChecker::stopCheck has been called between the call to queueTask and now.

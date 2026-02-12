@@ -48,7 +48,7 @@ public:
 
     // Document+Immersive.idl methods.
     static bool immersiveEnabled(Document&);
-    static Element* immersiveElement(Document&);
+    static Element* NODELETE immersiveElement(Document&);
     static void exitImmersive(Document&, Ref<DeferredPromise>&&);
 
     // Helpers.
@@ -56,7 +56,6 @@ public:
     const Document& document() const { return m_document; }
 
     HTMLModelElement* immersiveElement() const;
-    RefPtr<HTMLModelElement> protectedImmersiveElement() const { return immersiveElement(); }
 
     void requestImmersive(HTMLModelElement*, CompletionHandler<void(ExceptionOr<void>)>&&);
     void exitImmersive(CompletionHandler<void(ExceptionOr<void>)>&&);
@@ -96,7 +95,7 @@ private:
     void beginImmersiveRequest(Ref<HTMLModelElement>&&, CompletionHandler<void(ExceptionOr<void>)>&&);
     void createModelPlayerForImmersive(Ref<HTMLModelElement>&&, CompletionHandler<void(ExceptionOr<void>)>&&);
     void presentImmersiveElement(Ref<HTMLModelElement>&&, LayerHostingContextIdentifier, CompletionHandler<void(ExceptionOr<void>)>&&);
-    void dismissClientImmersivePresentation(HTMLModelElement*, CompletionHandler<void()>&&);
+    void dismissClientImmersivePresentation(CompletionHandler<void()>&&);
 
     enum class EmitErrorEvent : bool { No, Yes };
     void handleImmersiveError(HTMLModelElement*, const String& message, EmitErrorEvent, ExceptionCode, CompletionHandler<void(ExceptionOr<void>)>&&);

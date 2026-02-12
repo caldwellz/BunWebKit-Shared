@@ -185,7 +185,7 @@ SourceBuffer::SourceBuffer(Ref<SourceBufferPrivate>&& sourceBufferPrivate, Media
     , m_appendState(WaitingForSegment)
     , m_buffered(TimeRanges::create())
 #if !RELEASE_LOG_DISABLED
-    , m_logger(source.protectedScriptExecutionContext()->isWorkerGlobalScope() ? source.logger() : m_private->sourceBufferLogger())
+    , m_logger(protect(source.scriptExecutionContext())->isWorkerGlobalScope() ? source.logger() : m_private->sourceBufferLogger())
     , m_logIdentifier(m_private->sourceBufferLogIdentifier())
 #endif
 {
@@ -439,7 +439,7 @@ void SourceBuffer::rangeRemoval(const MediaTime& start, const MediaTime& end)
     m_removeCodedFramesPending = true;
 
     MediaPromise::AutoRejectProducer producer(PlatformMediaError::BufferRemoved);
-    protectedScriptExecutionContext()->enqueueTaskWhenSettled(producer.promise(), TaskSource::MediaElement, [weakThis = WeakPtr { *this }](auto&&) {
+    protect(scriptExecutionContext())->enqueueTaskWhenSettled(producer.promise(), TaskSource::MediaElement, [weakThis = WeakPtr { *this }](auto&&) {
         RefPtr protectedThis = weakThis.get();
         if (!protectedThis || protectedThis->isRemoved())
             return;
@@ -638,7 +638,7 @@ ExceptionOr<void> SourceBuffer::appendBufferInternal(std::span<const uint8_t> da
     m_appendBufferPending = true;
     // 6. Asynchronously run the buffer append algorithm.
     MediaPromise::AutoRejectProducer producer(PlatformMediaError::BufferRemoved);
-    protectedScriptExecutionContext()->enqueueTaskWhenSettled(producer.promise(), TaskSource::MediaElement, [weakThis = WeakPtr { *this }, id = ++m_appendBufferOperationId](MediaPromise::Result&& result) {
+    protect(scriptExecutionContext())->enqueueTaskWhenSettled(producer.promise(), TaskSource::MediaElement, [weakThis = WeakPtr { *this }, id = ++m_appendBufferOperationId](MediaPromise::Result&& result) {
         RefPtr protectedThis = weakThis.get();
         if (!protectedThis)
             return;
@@ -722,7 +722,7 @@ uint64_t SourceBuffer::maximumBufferSize() const
     const float bufferBudgetPercentageForVideo = .95;
     const float bufferBudgetPercentageForAudio = .05;
 
-    size_t maximum = protectedScriptExecutionContext()->settingsValues().maximumSourceBufferSize;
+    size_t maximum = protect(scriptExecutionContext())->settingsValues().maximumSourceBufferSize;
 
     // Allow a SourceBuffer to buffer as though it is audio-only even if it doesn't have any active tracks (yet).
     size_t bufferSize = static_cast<size_t>(maximum * bufferBudgetPercentageForAudio);
@@ -741,7 +741,7 @@ uint64_t SourceBuffer::maximumBufferSize() const
 VideoTrackList& SourceBuffer::videoTracks()
 {
     if (!m_videoTracks) {
-        Ref videoTracks = VideoTrackList::create(protectedScriptExecutionContext().get());
+        Ref videoTracks = VideoTrackList::create(protect(scriptExecutionContext()).get());
         m_videoTracks = videoTracks.copyRef();
         videoTracks->setOpaqueRootObserver(m_opaqueRootProvider);
     }
@@ -751,7 +751,7 @@ VideoTrackList& SourceBuffer::videoTracks()
 AudioTrackList& SourceBuffer::audioTracks()
 {
     if (!m_audioTracks) {
-        Ref audioTracks = AudioTrackList::create(protectedScriptExecutionContext().get());
+        Ref audioTracks = AudioTrackList::create(protect(scriptExecutionContext()).get());
         m_audioTracks = audioTracks.copyRef();
         audioTracks->setOpaqueRootObserver(m_opaqueRootProvider);
     }
@@ -761,7 +761,7 @@ AudioTrackList& SourceBuffer::audioTracks()
 TextTrackList& SourceBuffer::textTracks()
 {
     if (!m_textTracks) {
-        Ref textTracks = TextTrackList::create(protectedScriptExecutionContext().get());
+        Ref textTracks = TextTrackList::create(protect(scriptExecutionContext()).get());
         m_textTracks = textTracks.copyRef();
         textTracks->setOpaqueRootObserver(m_opaqueRootProvider);
     }
@@ -914,7 +914,7 @@ Ref<MediaPromise> SourceBuffer::sourceBufferPrivateDidReceiveInitializationSegme
             // FIXME: Implement steps 5.2.1-5.2.8.1 as per Editor's Draft 09 January 2015, and reorder this
             // 5.2.1 Let new audio track be a new AudioTrack object.
             // 5.2.2 Generate a unique ID and assign it to the id property on new video track.
-            Ref newAudioTrack = AudioTrack::create(protectedScriptExecutionContext().get(), Ref { *audioTrackInfo.track });
+            Ref newAudioTrack = AudioTrack::create(protect(scriptExecutionContext()).get(), Ref { *audioTrackInfo.track });
             newAudioTrack->addClient(*this);
             newAudioTrack->setSourceBuffer(this);
 
@@ -961,7 +961,7 @@ Ref<MediaPromise> SourceBuffer::sourceBufferPrivateDidReceiveInitializationSegme
             // FIXME: Implement steps 5.3.1-5.3.8.1 as per Editor's Draft 09 January 2015, and reorder this
             // 5.3.1 Let new video track be a new VideoTrack object.
             // 5.3.2 Generate a unique ID and assign it to the id property on new video track.
-            Ref newVideoTrack = VideoTrack::create(protectedScriptExecutionContext().get(), Ref { *videoTrackInfo.track });
+            Ref newVideoTrack = VideoTrack::create(protect(scriptExecutionContext()).get(), Ref { *videoTrackInfo.track });
             newVideoTrack->addClient(*this);
             newVideoTrack->setSourceBuffer(this);
 
@@ -1010,7 +1010,7 @@ Ref<MediaPromise> SourceBuffer::sourceBufferPrivateDidReceiveInitializationSegme
             // FIXME: Implement steps 5.4.1-5.4.8.1 as per Editor's Draft 09 January 2015, and reorder this
             // 5.4.1 Let new text track be a new TextTrack object with its properties populated with the
             // appropriate information from the initialization segment.
-            Ref newTextTrack = InbandTextTrack::create(*protectedScriptExecutionContext(), textTrackPrivate);
+            Ref newTextTrack = InbandTextTrack::create(*protect(scriptExecutionContext()), textTrackPrivate);
             newTextTrack->addClient(*this);
 
             // 5.4.2 If the mode property on new text track equals "showing" or "hidden", then set active
@@ -1282,7 +1282,7 @@ void SourceBuffer::reportExtraMemoryAllocated(uint64_t extraMemory)
     uint64_t extraMemoryCostDelta = extraMemoryCost - m_reportedExtraMemoryCost;
     m_reportedExtraMemoryCost = extraMemoryCost;
 
-    Ref vm = protectedScriptExecutionContext()->vm();
+    Ref vm = protect(scriptExecutionContext())->vm();
     JSC::JSLockHolder lock(vm);
     // FIXME: Adopt reportExtraMemoryVisited, and switch to reportExtraMemoryAllocated.
     // https://bugs.webkit.org/show_bug.cgi?id=142595

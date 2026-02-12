@@ -56,6 +56,7 @@
 #include "VMTrapsInlines.h"
 #if USE(BUN_JSC_ADDITIONS)
 #include "InternalFieldTuple.h"
+extern "C" __attribute__((weak)) void Bun__reportUnhandledError(JSC::JSGlobalObject*, JSC::EncodedJSValue);
 #endif
 #include <wtf/NoTailCalls.h>
 
@@ -1396,22 +1397,53 @@ void runInternalMicrotask(JSGlobalObject* globalObject, InternalMicrotask task, 
 
 #if USE(BUN_JSC_ADDITIONS)
     case InternalMicrotask::BunPerformMicrotaskJob: {
-        // Bun's performMicrotask function:
-        // arguments[0]: performMicrotask function
-        // arguments[1]: job function
-        // arguments[2]: async context
-        // arguments[3]: first argument to job (optional)
-        // arguments[4]: second argument to job (optional)
-        JSValue performMicrotaskFunction = arguments[0];
-        MarkedArgumentBuffer args;
-        // Add non-empty arguments only
-        for (size_t i = 1; i < maxMicrotaskArguments; ++i) {
-            if (!arguments[i].isEmpty())
-                args.append(arguments[i]);
+        // Inlined performMicrotask logic (no longer dispatched through a JS trampoline).
+        // arguments[0] = job function (callable)
+        // arguments[1] = async context to set
+        // arguments[2] = extra arg 0 (optional)
+        // arguments[3] = extra arg 1 (optional)
+        JSValue job = arguments[0];
+        if (job.isEmpty() || job.isUndefinedOrNull())
+            return;
+
+        auto callData = JSC::getCallData(job);
+        if (callData.type == CallData::Type::None)
+            return;
+
+        // Save and set async context
+        InternalFieldTuple* asyncContextData = nullptr;
+        JSValue restoreAsyncContext;
+        JSValue asyncContext = arguments[1];
+        if (!asyncContext.isEmpty() && !asyncContext.isUndefined()) {
+            asyncContextData = globalObject->m_asyncContextData.get();
+            if (asyncContextData) {
+                restoreAsyncContext = asyncContextData->getInternalField(0);
+                asyncContextData->putInternalField(vm, 0, asyncContext);
+            }
         }
-        ASSERT(!args.hasOverflowed());
-        scope.release();
-        call(globalObject, performMicrotaskFunction, jsUndefined(), args, "performMicrotask is not a function"_s);
+
+        {
+            auto catchScope = DECLARE_TOP_EXCEPTION_SCOPE(vm);
+
+            // Call job with extra arguments using optimized callMicrotask path
+            auto* jobCell = dynamicCastToCell(job);
+            if (!arguments[3].isEmpty())
+                callMicrotask(globalObject, job, jsUndefined(), jobCell, "performMicrotask is not a function"_s, arguments[2], arguments[3]);
+            else if (!arguments[2].isEmpty())
+                callMicrotask(globalObject, job, jsUndefined(), jobCell, "performMicrotask is not a function"_s, arguments[2]);
+            else
+                callMicrotask(globalObject, job, jsUndefined(), jobCell, "performMicrotask is not a function"_s);
+
+            // Restore async context before error reporting
+            if (asyncContextData)
+                asyncContextData->putInternalField(vm, 0, restoreAsyncContext);
+
+            if (auto* exception = catchScope.exception()) {
+                catchScope.clearException();
+                if (Bun__reportUnhandledError)
+                    Bun__reportUnhandledError(globalObject, JSValue::encode(exception));
+            }
+        }
         return;
     }
 

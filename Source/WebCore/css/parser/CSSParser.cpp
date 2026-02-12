@@ -1003,6 +1003,9 @@ RefPtr<StyleRuleKeyframes> CSSParser::consumeKeyframesRule(CSSParserTokenRange p
 
     auto name = nameToken.value().toAtomString();
 
+    if (name.isEmpty())
+        return nullptr; // Parse error: empty string consider invalid.
+
     if (RefPtr observerWrapper = m_observerWrapper.get()) {
         observerWrapper->observer().startRuleHeader(StyleRuleType::Keyframes, observerWrapper->startOffset(rangeCopy));
         observerWrapper->observer().endRuleHeader(observerWrapper->endOffset(prelude));

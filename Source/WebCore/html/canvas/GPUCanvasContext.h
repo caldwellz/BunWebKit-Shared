@@ -48,11 +48,12 @@ template<typename> class ExceptionOr;
 class GPUCanvasContext : public GPUBasedCanvasRenderingContext {
     WTF_MAKE_TZONE_ALLOCATED(GPUCanvasContext);
 public:
+    using CanvasType = Variant<
+          Ref<HTMLCanvasElement>
 #if ENABLE(OFFSCREEN_CANVAS)
-    using CanvasType = Variant<RefPtr<HTMLCanvasElement>, RefPtr<OffscreenCanvas>>;
-#else
-    using CanvasType = Variant<RefPtr<HTMLCanvasElement>>;
+        , Ref<OffscreenCanvas>
 #endif
+    >;
 
     static std::unique_ptr<GPUCanvasContext> create(CanvasBase&, GPU&, Document*);
 

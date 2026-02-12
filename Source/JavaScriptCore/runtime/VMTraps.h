@@ -332,6 +332,9 @@ private:
     // to increment their m_numberOfActiveVMs.
     bool m_hasBeenCountedAsActive { false };
 
+    // Prevents dispatching multiple idle stop handlers for a single stop cycle.
+    Atomic<bool> m_hasDispatchedIdleStopHandler { false };
+
     Box<Lock> m_trapSignalingLock;
     Box<Condition> m_condition;
 

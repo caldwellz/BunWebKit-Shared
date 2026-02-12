@@ -53,7 +53,7 @@ public:
     static void exitFullscreen(Document&, Ref<DeferredPromise>&&);
     static bool fullscreenEnabled(Document&);
     static bool webkitFullscreenEnabled(Document& document) { return protect(document.fullscreen())->enabledByPermissionsPolicy(); }
-    static Element* webkitFullscreenElement(Document& document) { return document.ancestorElementInThisScope(protect(document.fullscreen())->protectedFullscreenElement().get()); };
+    static Element* webkitFullscreenElement(Document& document) { return document.ancestorElementInThisScope(protect(protect(document.fullscreen())->fullscreenElement()).get()); };
     WEBCORE_EXPORT static void webkitExitFullscreen(Document&);
     static bool webkitIsFullScreen(Document& document) { return protect(document.fullscreen())->isFullscreen(); };
     static bool webkitFullScreenKeyboardInputAllowed(Document& document) { return protect(document.fullscreen())->isFullscreenKeyboardInputAllowed(); };
@@ -62,7 +62,6 @@ public:
     // Helpers.
     Document& document() { return m_document; }
     const Document& document() const { return m_document; }
-    Ref<Document> protectedDocument() const { return m_document; }
     LocalFrame* frame() const;
     Element* documentElement() const { return document().documentElement(); }
     bool isSimpleFullscreenDocument() const;
@@ -70,7 +69,6 @@ public:
 
     // WHATWG Fullscreen API.
     WEBCORE_EXPORT Element* fullscreenElement() const;
-    RefPtr<Element> protectedFullscreenElement() const { return fullscreenElement(); }
     WEBCORE_EXPORT bool enabledByPermissionsPolicy() const;
     WEBCORE_EXPORT void exitFullscreen(CompletionHandler<void(ExceptionOr<void>)>&&);
     WEBCORE_EXPORT void fullyExitFullscreen();
@@ -115,14 +113,14 @@ private:
     using CompletionHandlerScope = Document::CompletionHandlerScope;
 
 #if !RELEASE_LOG_DISABLED
-    const Logger& logger() const { return protectedDocument()->logger(); }
+    const Logger& logger() const { return protect(document())->logger(); }
     uint64_t logIdentifier() const { return m_logIdentifier; }
     ASCIILiteral logClassName() const { return "DocumentFullscreen"_s; }
     WTFLogChannel& logChannel() const;
 #endif
 
     Page* page() const;
-    Document* mainFrameDocument() { return protectedDocument()->mainFrameDocument(); }
+    Document* mainFrameDocument() { return protect(document())->mainFrameDocument(); }
 
     RefPtr<Element> fullscreenOrPendingElement() const { return m_fullscreenElement ? m_fullscreenElement : m_pendingFullscreenElement; }
 

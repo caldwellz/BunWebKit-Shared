@@ -456,7 +456,7 @@ Navigation::Result Navigation::performTraversal(const String& key, Navigation::O
         createErrorResult(WTF::move(committed), WTF::move(finished), ExceptionCode::AbortError, "Navigation aborted"_s);
 
     RefPtr frame = this->frame();
-    if (!frame->isMainFrame() && protect(window->document())->canNavigate(&protect(frame->page())->protectedMainFrame().get()) != CanNavigateState::Able)
+    if (!frame->isMainFrame() && protect(window->document())->canNavigate(protect(protect(frame->page())->mainFrame()).ptr()) != CanNavigateState::Able)
         return createErrorResult(WTF::move(committed), WTF::move(finished), ExceptionCode::SecurityError, "Invalid state"_s);
 
     RefPtr current = currentEntry();
@@ -475,7 +475,7 @@ Navigation::Result Navigation::performTraversal(const String& key, Navigation::O
     RefPtr apiMethodTracker = addUpcomingTraverseAPIMethodTracker(WTF::move(committed), WTF::move(finished), key, options.info);
 
     // FIXME: 11. Let sourceSnapshotParams be the result of snapshotting source snapshot params given document.
-    frame->protectedNavigationScheduler()->scheduleHistoryNavigationByKey(key, [apiMethodTracker] (ScheduleHistoryNavigationResult result) {
+    protect(frame->navigationScheduler())->scheduleHistoryNavigationByKey(key, [apiMethodTracker] (ScheduleHistoryNavigationResult result) {
         if (result == ScheduleHistoryNavigationResult::Aborted)
             createErrorResult(WTF::move(apiMethodTracker->committedPromise), WTF::move(apiMethodTracker->finishedPromise), ExceptionCode::AbortError, "Navigation aborted"_s);
     });
@@ -820,6 +820,14 @@ static bool documentCanHaveURLRewritten(const Document& document, const URL& tar
     if (!isSameSite && !isSameOrigin)
         return false;
 
+    // https://html.spec.whatwg.org/multipage/nav-history-apis.html#can-have-its-url-rewritten
+    if (documentURL.protocol() != targetURL.protocol()
+        || documentURL.user() != targetURL.user()
+        || documentURL.password() != targetURL.password()
+        || documentURL.host() != targetURL.host()
+        || documentURL.port() != targetURL.port())
+        return false;
+
     if (targetURL.protocolIsInHTTPFamily())
         return true;
 
@@ -961,7 +969,7 @@ struct AwaitingPromiseData : public RefCounted<AwaitingPromiseData> {
 static void waitForAllPromises(Document& document, const Vector<Ref<DOMPromise>>& promises, Function<void()>&& fulfilledCallback, Function<void(JSC::JSValue)>&& rejectionCallback)
 {
     if (promises.isEmpty()) {
-        document.checkedEventLoop()->queueMicrotask(WTF::move(fulfilledCallback));
+        protect(document.eventLoop())->queueMicrotask(WTF::move(fulfilledCallback));
         return;
     }
 
@@ -1184,7 +1192,7 @@ Navigation::DispatchResult Navigation::innerDispatchNavigateEvent(NavigationNavi
 
         // FIXME: this emulates the behavior of a Promise wrapped around waitForAll, but we may want the real
         // thing if the ordering-and-transition tests show timing related issues related to this.
-        scriptExecutionContext->checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { this }, promiseList, abortController, document, apiMethodTracker]() {
+        protect(scriptExecutionContext->eventLoop())->queueTask(TaskSource::DOMManipulation, [weakThis = WeakPtr { this }, promiseList, abortController, document, apiMethodTracker]() {
             waitForAllPromises(*document, promiseList, [abortController, document, apiMethodTracker, weakThis]() mutable {
                 RefPtr protectedThis = weakThis.get();
                 if (!protectedThis || abortController->signal().aborted() || !document->isFullyActive() || !protectedThis->m_ongoingNavigateEvent)

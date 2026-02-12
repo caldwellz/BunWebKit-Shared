@@ -76,6 +76,7 @@ bool isVisibilityHidden(const RenderStyle&);
 const RenderStyle* safeStyleFrom(Element&);
 
 WTF::TextStream& operator<<(WTF::TextStream&, AXNotification);
+WTF::TextStream& operator<<(WTF::TextStream&, const AXNotificationWithData&);
 
 void dumpAccessibilityTreeToStderr(Document&);
 

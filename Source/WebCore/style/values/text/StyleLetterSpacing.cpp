@@ -73,7 +73,7 @@ auto CSSValueConversion<LetterSpacing>::operator()(BuilderState& state, const CS
     if (primitiveValue->isCalculatedPercentageWithLength()) {
         return LetterSpacing {
             typename LetterSpacing::Calc {
-                primitiveValue->protectedCssCalcValue()->createCalculationValue(conversionData, CSSCalcSymbolTable { })
+                protect(primitiveValue->cssCalcValue())->createCalculationValue(conversionData, CSSCalcSymbolTable { })
             }
         };
     }

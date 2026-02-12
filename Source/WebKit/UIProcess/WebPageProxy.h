@@ -201,6 +201,7 @@ enum class HasInsecureContent : bool;
 enum class HighlightRequestOriginatedInApp : bool;
 enum class HighlightVisibility : bool;
 enum class InputMode : uint8_t;
+enum class InterruptScrollAnimation : bool;
 enum class NavigationUpgradeToHTTPSBehavior : uint8_t;
 enum class LayerTreeAsTextOptions : uint16_t;
 enum class LayoutViewportConstraint : bool;
@@ -657,6 +658,9 @@ enum class TextRecognitionUpdateResult : uint8_t;
 enum class MediaPlaybackState : uint8_t;
 enum class NavigatingToAppBoundDomain : bool;
 enum class NegotiatedLegacyTLS : bool;
+#if ENABLE(UNIFIED_PDF)
+enum class PDFDisplayMode : uint8_t;
+#endif
 enum class PasteboardAccessIntent : bool;
 enum class ProcessSwapRequestedByClient : bool;
 enum class ProcessTerminationReason : uint8_t;
@@ -770,7 +774,6 @@ public:
         
 #if PLATFORM(COCOA)
     RemoteScrollingCoordinatorProxy* scrollingCoordinatorProxy() const { return m_scrollingCoordinatorProxy.get(); }
-    CheckedPtr<RemoteScrollingCoordinatorProxy> checkedScrollingCoordinatorProxy() const;
 #endif
 
     WebBackForwardListWrapper& backForwardListWrapper() { return m_backForwardList; }
@@ -819,8 +822,6 @@ public:
     void hideInspectorIndication();
 #endif
 
-    void createInspectorTarget(IPC::Connection&, const String& targetId, Inspector::InspectorTargetType);
-    void destroyInspectorTarget(IPC::Connection&, const String& targetId);
     void sendMessageToInspectorFrontend(const String& targetId, const String& message);
 
     void getAllFrames(CompletionHandler<void(std::optional<FrameTreeNodeData>&&)>&&);
@@ -1078,7 +1079,7 @@ public:
     PageClient* pageClient() const;
 
     void setViewNeedsDisplay(const WebCore::Region&);
-    void requestScroll(const WebCore::FloatPoint& scrollPosition, const WebCore::IntPoint& scrollOrigin, WebCore::ScrollIsAnimated);
+    void requestScroll(const WebCore::FloatPoint& scrollPosition, const WebCore::IntPoint& scrollOrigin, WebCore::ScrollIsAnimated, WebCore::InterruptScrollAnimation);
     
     WebCore::FloatPoint viewScrollPosition() const;
 
@@ -1173,6 +1174,8 @@ public:
 
 #if PLATFORM(COCOA)
     void selectWithGesture(WebCore::IntPoint, GestureType, GestureRecognizerState, bool isInteractingWithFocusedElement, CompletionHandler<void(const WebCore::IntPoint&, GestureType, GestureRecognizerState, OptionSet<SelectionFlags>)>&&);
+    void didReceivePositionInformation(const InteractionInformationAtPosition&);
+    void requestPositionInformation(const InteractionInformationRequest&);
 #endif
 
 #if PLATFORM(IOS_FAMILY)
@@ -1241,8 +1244,6 @@ public:
     void didInsertFinalDictationResult();
     void replaceDictatedText(const String& oldText, const String& newText);
     void replaceSelectedText(const String& oldText, const String& newText);
-    void didReceivePositionInformation(const InteractionInformationAtPosition&);
-    void requestPositionInformation(const InteractionInformationRequest&);
     void startInteractionWithPositionInformation(const InteractionInformationAtPosition&);
     void stopInteraction();
     void performActionOnElement(uint32_t action);
@@ -1251,6 +1252,7 @@ public:
     void focusNextFocusedElement(bool isForward, CompletionHandler<void()>&&);
     void setFocusedElementValue(const WebCore::ElementContext&, const String&);
     void setFocusedElementSelectedIndex(const WebCore::ElementContext&, uint32_t index, bool allowMultipleSelection = false);
+    void setSelectElementIsOpen(const WebCore::ElementContext&, bool isOpen);
     void applicationDidEnterBackground();
     void applicationDidFinishSnapshottingAfterEnteringBackground();
     void applicationWillEnterForeground();
@@ -2482,6 +2484,13 @@ public:
     void removePDFPageNumberIndicator(PDFPluginIdentifier);
 #endif
 
+#if PLATFORM(IOS_FAMILY) && ENABLE(UNIFIED_PDF)
+    PDFDisplayMode pdfDisplayMode() const;
+    void setPDFDisplayMode(PDFDisplayMode);
+
+    void requestPDFDisplayMode(PDFDisplayMode);
+#endif
+
     Seconds mediaCaptureReportingDelay() const { return m_mediaCaptureReportingDelay; }
     void setMediaCaptureReportingDelay(Seconds captureReportingDelay) { m_mediaCaptureReportingDelay = captureReportingDelay; }
     size_t suspendMediaPlaybackCounter() { return m_suspendMediaPlaybackCounter; }
@@ -2669,10 +2678,8 @@ public:
 #endif
 
     WebColorPickerClient& colorPickerClient();
-    CheckedRef<WebColorPickerClient> checkedColorPickerClient();
 
     WebPopupMenuProxyClient& popupMenuClient();
-    CheckedRef<WebPopupMenuProxyClient> checkedPopupMenuClient();
 
 #if ENABLE(ADVANCED_PRIVACY_PROTECTIONS)
     OptionSet<WebCore::AdvancedPrivacyProtections> advancedPrivacyProtectionsPolicies() const { return m_advancedPrivacyProtectionsPolicies; }
@@ -3108,7 +3115,7 @@ private:
 #endif
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-    void allowImmersiveElementFromURL(const URL&, CompletionHandler<void(bool)>&&) const;
+    void allowImmersiveElement(CompletionHandler<void(bool)>&&);
     void presentImmersiveElement(const WebCore::LayerHostingContextIdentifier, CompletionHandler<void(bool)>&&);
     void dismissImmersiveElement(CompletionHandler<void()>&&);
 #endif
@@ -4128,6 +4135,7 @@ private:
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
     bool m_immersive { false };
+    std::optional<URL> m_allowedImmersiveElementFrameURL;
 #endif
 
 #if HAVE(AUDIT_TOKEN)

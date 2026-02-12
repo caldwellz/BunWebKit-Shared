@@ -104,7 +104,7 @@ IDBTransaction::IDBTransaction(IDBDatabase& database, const IDBTransactionInfo& 
         RefPtr context = scriptExecutionContext();
         ASSERT(context);
 
-        context->checkedEventLoop()->runAtEndOfMicrotaskCheckpoint([protectedThis = Ref { *this }] {
+        protect(context->eventLoop())->runAtEndOfMicrotaskCheckpoint([protectedThis = Ref { *this }] {
             protectedThis->deactivate();
         });
 
@@ -182,7 +182,7 @@ ExceptionOr<Ref<IDBObjectStore>> IDBTransaction::objectStore(const String& objec
     if (!info || (!found && !isVersionChange()))
         return Exception { ExceptionCode::NotFoundError, "Failed to execute 'objectStore' on 'IDBTransaction': The specified object store was not found."_s };
 
-    auto objectStore = IDBObjectStore::create(*protectedScriptExecutionContext(), *info, *this);
+    auto objectStore = IDBObjectStore::create(*protect(scriptExecutionContext()), *info, *this);
     Ref objectStoreRef { objectStore.get() };
     m_referencedObjectStores.set(objectStoreName, objectStore.moveToUniquePtr());
 
@@ -664,7 +664,7 @@ Ref<IDBObjectStore> IDBTransaction::createObjectStore(const IDBObjectStoreInfo& 
 
     Locker locker { m_referencedObjectStoreLock };
 
-    auto objectStore = IDBObjectStore::create(*protectedScriptExecutionContext(), info, *this);
+    auto objectStore = IDBObjectStore::create(*protect(scriptExecutionContext()), info, *this);
     Ref objectStoreRef { objectStore.get() };
     m_referencedObjectStores.set(info.name(), objectStore.moveToUniquePtr());
 
@@ -752,7 +752,7 @@ std::unique_ptr<IDBIndex> IDBTransaction::createIndex(IDBObjectStore& objectStor
         protectedThis->createIndexOnServer(operation, info);
     }), IsWriteOperation::Yes);
 
-    return IDBIndex::create(*protectedScriptExecutionContext(), info, objectStore).moveToUniquePtr();
+    return IDBIndex::create(*protect(scriptExecutionContext()), info, objectStore).moveToUniquePtr();
 }
 
 void IDBTransaction::createIndexOnServer(IDBClient::TransactionOperation& operation, const IDBIndexInfo& info)
@@ -851,7 +851,7 @@ Ref<IDBRequest> IDBTransaction::doRequestOpenCursor(Ref<IDBCursor>&& cursor)
     ASSERT(isActive());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), cursor.get(), *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), cursor.get(), *this);
     addRequest(request.get());
     addCursorRequest(request.get());
 
@@ -938,7 +938,7 @@ Ref<IDBRequest> IDBTransaction::requestGetAllObjectStoreRecords(IDBObjectStore& 
     ASSERT(isActive());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), objectStore, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), objectStore, *this);
     addRequest(request.get());
 
     IDBGetAllRecordsData getAllRecordsData { keyRangeData, getAllType, count, objectStore.info().identifier() };
@@ -960,7 +960,7 @@ Ref<IDBRequest> IDBTransaction::requestGetAllIndexRecords(IDBIndex& index, const
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), index, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), index, *this);
     addRequest(request.get());
 
     IDBGetAllRecordsData getAllRecordsData { keyRangeData, getAllType, count, index.objectStore().info().identifier(), index.info().identifier() };
@@ -1017,7 +1017,7 @@ Ref<IDBRequest> IDBTransaction::requestGetRecord(IDBObjectStore& objectStore, co
 
     IndexedDB::ObjectStoreRecordType type = getRecordData.type == IDBGetRecordDataType::KeyAndValue ? IndexedDB::ObjectStoreRecordType::ValueOnly : IndexedDB::ObjectStoreRecordType::KeyOnly;
 
-    auto request = IDBRequest::createObjectStoreGet(*protectedScriptExecutionContext(), objectStore, type, *this);
+    auto request = IDBRequest::createObjectStoreGet(*protect(scriptExecutionContext()), objectStore, type, *this);
     addRequest(request.get());
 
     LOG(IndexedDBOperations, "IDB get record operation: %s %s", objectStore.info().condensedLoggingString().utf8().data(), getRecordData.loggingString().utf8().data());
@@ -1053,7 +1053,7 @@ Ref<IDBRequest> IDBTransaction::requestIndexRecord(IDBIndex& index, IndexedDB::I
     ASSERT(!range.isNull());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::createIndexGet(*protectedScriptExecutionContext(), index, type, *this);
+    auto request = IDBRequest::createIndexGet(*protect(scriptExecutionContext()), index, type, *this);
     addRequest(request.get());
 
     IDBGetRecordData getRecordData = { range, IDBGetRecordDataType::KeyAndValue };
@@ -1116,7 +1116,7 @@ Ref<IDBRequest> IDBTransaction::requestCount(IDBObjectStore& objectStore, const 
     ASSERT(!range.isNull());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), objectStore, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), objectStore, *this);
     addRequest(request.get());
 
     LOG(IndexedDBOperations, "IDB object store count operation: %s, range %s", objectStore.info().condensedLoggingString().utf8().data(), range.loggingString().utf8().data());
@@ -1136,7 +1136,7 @@ Ref<IDBRequest> IDBTransaction::requestCount(IDBIndex& index, const IDBKeyRangeD
     ASSERT(!range.isNull());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), index, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), index, *this);
     addRequest(request.get());
 
     LOG(IndexedDBOperations, "IDB index count operation: %s, range %s", index.info().condensedLoggingString().utf8().data(), range.loggingString().utf8().data());
@@ -1173,7 +1173,7 @@ Ref<IDBRequest> IDBTransaction::requestDeleteRecord(IDBObjectStore& objectStore,
     ASSERT(!range.isNull());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), objectStore, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), objectStore, *this);
     addRequest(request.get());
 
     LOG(IndexedDBOperations, "IDB delete record operation: %s, range %s", objectStore.info().condensedLoggingString().utf8().data(), range.loggingString().utf8().data());
@@ -1208,7 +1208,7 @@ Ref<IDBRequest> IDBTransaction::requestClearObjectStore(IDBObjectStore& objectSt
     ASSERT(isActive());
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), objectStore, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), objectStore, *this);
     addRequest(request.get());
 
     auto objectStoreIdentifier = objectStore.info().identifier();
@@ -1248,7 +1248,7 @@ Ref<IDBRequest> IDBTransaction::requestPutOrAdd(IDBObjectStore& objectStore, Ref
     ASSERT(objectStore.info().autoIncrement() || key);
     ASSERT(canCurrentThreadAccessThreadLocalData(m_database->originThread()));
 
-    auto request = IDBRequest::create(*protectedScriptExecutionContext(), objectStore, *this);
+    auto request = IDBRequest::create(*protect(scriptExecutionContext()), objectStore, *this);
     addRequest(request.get());
 
     LOG(IndexedDBOperations, "IDB putOrAdd operation: %s key: %s", objectStore.info().condensedLoggingString().utf8().data(), key ? key->loggingString().utf8().data() : "<null key>");

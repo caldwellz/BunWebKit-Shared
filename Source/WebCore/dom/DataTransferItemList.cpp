@@ -124,7 +124,7 @@ ExceptionOr<void> DataTransferItemList::remove(unsigned index)
     removedItem->clearListAndPutIntoDisabledMode();
     items.removeAt(index);
     if (removedItem->isFile())
-        dataTransfer->updateFileList(protectedScriptExecutionContext().get());
+        dataTransfer->updateFileList(protect(scriptExecutionContext()).get());
 
     return { };
 }
@@ -143,7 +143,7 @@ void DataTransferItemList::clear()
     }
 
     if (removedItemContainingFile)
-        dataTransfer->updateFileList(protectedScriptExecutionContext().get());
+        dataTransfer->updateFileList(protect(scriptExecutionContext()).get());
 }
 
 Vector<Ref<DataTransferItem>>& DataTransferItemList::ensureItems() const

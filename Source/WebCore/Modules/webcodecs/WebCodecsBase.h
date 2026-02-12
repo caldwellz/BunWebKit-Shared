@@ -61,7 +61,6 @@ public:
 protected:
     WebCodecsBase(ScriptExecutionContext&);
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using ActiveDOMObject::protectedScriptExecutionContext;
 
     void setState(WebCodecsCodecState state) { m_state = state; }
 

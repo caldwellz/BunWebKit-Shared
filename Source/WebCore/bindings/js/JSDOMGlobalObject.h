@@ -77,7 +77,6 @@ public:
     inline JSDOMStructureMap& structures(NoLockingNecessaryTag);
     inline DOMGuardedObjectSet& guardedObjects(NoLockingNecessaryTag);
 
-    RefPtr<ScriptExecutionContext> protectedScriptExecutionContext() const;
     ScriptExecutionContext* scriptExecutionContext() const;
 
     static String codeForEval(JSC::JSGlobalObject*, JSC::JSValue);

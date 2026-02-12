@@ -133,7 +133,7 @@ void LoadableSpeculationRules::notifyFinished(CachedResource& resource, const Ne
         // 5. Let ruleSet be the result of parsing a speculation rule set string given bodyText, document, and response's URL. If this throws an exception, then abort these steps.
         // 6. Append ruleSet to document's speculation rule sets.
         // Header-based rules use the Document as the source node.
-        if (frame->checkedScript()->registerSpeculationRules(*document, sourceCode, m_url)) {
+        if (protect(frame->script())->registerSpeculationRules(*document, sourceCode, m_url)) {
             // 7. Consider speculative loads for document.
             document->considerSpeculationRules();
         }

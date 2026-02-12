@@ -146,6 +146,19 @@ void SimulatedXRDevice::stopTimer()
         m_frameTimer.stop();
 }
 
+#if ENABLE(WEBXR_HIT_TEST)
+static PlatformXR::FrameData::Pose rigidTransformToPose(TransformationMatrix matrix)
+{
+    TransformationMatrix::Decomposed4Type decomposed;
+    if (!matrix.decompose4(decomposed))
+        return { { }, { } };
+
+    FloatPoint3D position(decomposed.translateX, decomposed.translateY, decomposed.translateZ);
+    PlatformXR::FrameData::FloatQuaternion orientation(decomposed.quaternion.x, decomposed.quaternion.y, decomposed.quaternion.z, decomposed.quaternion.w);
+    return { position, orientation };
+};
+#endif
+
 void SimulatedXRDevice::frameTimerFired()
 {
     PlatformXR::FrameData data = m_frameData.copy();
@@ -194,44 +207,77 @@ void SimulatedXRDevice::frameTimerFired()
             .direction = mapPoint(transform, ray.direction, 0)
         };
     };
-    // Non-transient hit test
-    for (const auto& pair : m_hitTestSources) {
-        std::optional<PlatformXR::FrameData::Pose> origin;
-        WTF::switchOn(pair.value->nativeOrigin, [&](const PlatformXR::ReferenceSpaceType& referenceSpaceType) {
+    auto matrixFromPose = [](const PlatformXR::FrameData::Pose& pose) -> TransformationMatrix {
+        TransformationMatrix matrix;
+        matrix.translate3d(pose.position.x(), pose.position.y(), pose.position.z());
+        matrix.multiply(TransformationMatrix::fromQuaternion({ pose.orientation.x, pose.orientation.y, pose.orientation.z, pose.orientation.w }));
+        return matrix;
+    };
+
+    auto hitTestWorldToOrigin = [&matrixFromPose](const PlatformXR::FrameData::Pose& origin, Vector<PlatformXR::FrameData::HitTestResult> hitTestInWorld) -> Vector<PlatformXR::FrameData::HitTestResult> {
+        auto originTransform = matrixFromPose(origin);
+        if (!originTransform.isInvertible())
+            return { };
+
+        Vector<PlatformXR::FrameData::HitTestResult> results;
+        auto originToWorld = originTransform.inverse().value();
+        for (auto& hit : hitTestInWorld) {
+            auto hitInOrigin = originToWorld * matrixFromPose(hit.pose);
+            results.append(rigidTransformToPose(hitInOrigin));
+        }
+        return results;
+    };
+
+    auto computeOrigin = [&data](PlatformXR::NativeOriginInformation nativeOrigin) {
+        return WTF::switchOn(nativeOrigin, [&](const PlatformXR::ReferenceSpaceType& referenceSpaceType) -> std::optional<PlatformXR::FrameData::Pose> {
             switch (referenceSpaceType) {
             case PlatformXR::ReferenceSpaceType::Viewer:
-                origin = data.origin;
-                break;
+                return data.origin;
             case PlatformXR::ReferenceSpaceType::Local:
-                origin = PlatformXR::FrameData::Pose();
-                break;
+                return PlatformXR::FrameData::Pose();
             case PlatformXR::ReferenceSpaceType::LocalFloor:
-                origin = data.floorTransform;
-                break;
+                return data.floorTransform;
             default:
-                break;
+                return std::nullopt;
             }
-        }, [&](const PlatformXR::InputSourceSpaceInfo& inputSource) {
+        }, [&](const PlatformXR::InputSourceSpaceInfo& inputSource) -> std::optional<PlatformXR::FrameData::Pose> {
             auto i = data.inputSources.findIf([&](auto& item) { return item.handle == inputSource.handle; });
             if (i == notFound)
-                return;
+                return std::nullopt;
             if (inputSource.type == PlatformXR::InputSourceSpaceType::TargetRay)
-                origin = data.inputSources[i].pointerOrigin.pose;
+                return data.inputSources[i].pointerOrigin.pose;
             else
-                origin = data.inputSources[i].gripOrigin.value_or(PlatformXR::FrameData::InputSourcePose { }).pose;
+                return data.inputSources[i].gripOrigin.value_or(PlatformXR::FrameData::InputSourcePose { }).pose;
         });
+    };
+
+    // Non-transient hit test
+    for (const auto& pair : m_hitTestSources) {
+        auto origin = computeOrigin(pair.value->nativeOrigin);
         if (!origin)
             continue;
         PlatformXR::Ray ray = transformRay(*origin, pair.value->offsetRay);
-        data.hitTestResults.add(pair.key, hitTestWorld(ray, pair.value->entityTypes));
+        auto hitInWorld = hitTestWorld(ray, pair.value->entityTypes);
+        data.hitTestResults.add(pair.key, hitTestWorldToOrigin(origin.value(), hitInWorld));
     }
+
     // Transient hit test
     for (const auto& pair : m_transientInputHitTestSources) {
         Vector<PlatformXR::FrameData::TransientInputHitTestResult> results;
         for (const auto& source : data.inputSources) {
+            std::optional<PlatformXR::FrameData::Pose> origin;
+            auto i = data.inputSources.findIf([&](auto& item) {
+                return item.handle == source.handle;
+            });
+            if (i == notFound)
+                continue;
+            origin = data.inputSources[i].pointerOrigin.pose;
+            if (!origin)
+                continue;
             if (source.profiles.contains(pair.value->profile)) {
                 PlatformXR::Ray ray = transformRay(source.pointerOrigin.pose, pair.value->offsetRay);
-                results.append({ source.handle, hitTestWorld(ray, pair.value->entityTypes) });
+                auto hitInWorld = hitTestWorld(ray, pair.value->entityTypes);
+                results.append({ source.handle, hitTestWorldToOrigin(origin.value(), hitInWorld) });
             }
         }
         data.transientInputHitTestResults.add(pair.key, WTF::move(results));
@@ -392,14 +438,6 @@ Vector<PlatformXR::FrameData::HitTestResult> SimulatedXRDevice::hitTestWorld(con
                     previousPoint = currentPoint;
                 }
                 return true;
-            };
-            auto rigidTransformToPose = [](TransformationMatrix matrix) -> PlatformXR::FrameData::Pose {
-                TransformationMatrix::Decomposed4Type decomposed;
-                bool succeeded = matrix.decompose4(decomposed);
-                RELEASE_ASSERT(succeeded);
-                FloatPoint3D position(decomposed.translateX, decomposed.translateY, decomposed.translateZ);
-                PlatformXR::FrameData::FloatQuaternion orientation(decomposed.quaternion.x, decomposed.quaternion.y, decomposed.quaternion.z, decomposed.quaternion.w);
-                return { position, orientation };
             };
             constexpr double epsilon = 0.001;
 

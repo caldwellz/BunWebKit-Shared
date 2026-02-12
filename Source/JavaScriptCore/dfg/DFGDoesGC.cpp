@@ -276,6 +276,7 @@ bool doesGC(Graph& graph, Node* node)
     case PutByOffset:
     case WeakMapGet:
     case MapOrSetSize:
+    case GetRegExpFlag:
     case NumberIsNaN:
     case NumberIsFinite:
     case NumberIsSafeInteger:
@@ -482,6 +483,7 @@ bool doesGC(Graph& graph, Node* node)
     case DateSetTime:
     case StringIndexOf:
     case StringStartsWith:
+    case StringEndsWith:
     case ResolvePromiseFirstResolving:
     case RejectPromiseFirstResolving:
     case FulfillPromiseFirstResolving:

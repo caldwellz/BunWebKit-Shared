@@ -83,7 +83,7 @@ public:
     MemoryIndexCursor* maybeOpenCursor(const IDBCursorInfo&, MemoryBackingStoreTransaction&);
     IndexValueStore* valueStore() { return m_records.get(); }
 
-    MemoryObjectStore* objectStore();
+    MemoryObjectStore* NODELETE objectStore();
 
     void cursorDidBecomeClean(MemoryIndexCursor&);
     void cursorDidBecomeDirty(MemoryIndexCursor&);

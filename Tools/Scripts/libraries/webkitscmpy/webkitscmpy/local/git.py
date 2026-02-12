@@ -931,8 +931,25 @@ class Git(Scm):
         if branch_point and parsed_branch_point and branch_point != parsed_branch_point:
             raise ValueError("Provided 'branch_point' does not match branch point of specified branch")
 
+        # Parse git log output, handling both normal and merge commits (which have an extra 'Merge:' line)
+        log_lines = log.stdout.splitlines()
+        author_line = None
+        message_start_index = None
+        for i, line in enumerate(log_lines):
+            if line.startswith('Author:'):
+                author_line = line
+            # The message starts after the first blank line following the header
+            if message_start_index is None and not line.strip() and i > 0:
+                message_start_index = i + 1
+                break
+
+        if not author_line:
+            raise self.Exception("Failed to find Author line in git log output for '{}'".format(hash))
+        if message_start_index is None:
+            message_start_index = len(log_lines)
+
         # Check the commit log for a git-svn revision
-        logcontent = '\n'.join(line[4:] for line in log.stdout.splitlines()[4:])
+        logcontent = '\n'.join(line[4:] for line in log_lines[message_start_index:])
         matches = self.GIT_SVN_REVISION.findall(logcontent)
         revision = int(matches[-1].split('@')[0]) if matches else None
 
@@ -969,7 +986,7 @@ class Git(Scm):
             branch=branch,
             timestamp=timestamp,
             order=order,
-            author=Contributor.from_scm_log(log.stdout.splitlines()[1], self.contributors),
+            author=Contributor.from_scm_log(author_line, self.contributors),
             message=logcontent if include_log else None,
         )
 
@@ -977,15 +994,25 @@ class Git(Scm):
         author = None
         timestamp = None
 
-        for line in content.splitlines()[:4]:
+        # Parse header lines dynamically to handle merge commits (which have an extra 'Merge:' line)
+        lines = content.splitlines()
+        message_start_index = None
+        for i, line in enumerate(lines):
             split = line.split(': ')
             if split[0] == 'Author':
                 author = Contributor.from_scm_log(line.lstrip(), self.contributors)
             elif split[0] == 'CommitDate':
                 timestamp = int(line.split(' ')[-1])
+            # The message starts after the first blank line following the header
+            if message_start_index is None and not line.strip() and i > 0:
+                message_start_index = i + 1
+                break
+
+        if message_start_index is None:
+            message_start_index = len(lines)
 
         message = ''
-        for line in content.splitlines()[5:]:
+        for line in lines[message_start_index:]:
             message += line[4:] + '\n'
         matches = self.GIT_SVN_REVISION.findall(message)
 

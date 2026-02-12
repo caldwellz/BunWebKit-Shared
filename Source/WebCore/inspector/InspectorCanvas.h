@@ -109,21 +109,21 @@ private:
     void appendActionSnapshotIfNeeded();
 
     using DuplicateDataVariant = Variant<
-        RefPtr<CanvasGradient>,
-        RefPtr<CanvasPattern>,
-        RefPtr<HTMLCanvasElement>,
-        RefPtr<HTMLImageElement>,
+        Ref<CanvasGradient>,
+        Ref<CanvasPattern>,
+        Ref<HTMLCanvasElement>,
+        Ref<HTMLImageElement>,
 #if ENABLE(VIDEO)
-        RefPtr<HTMLVideoElement>,
+        Ref<HTMLVideoElement>,
 #endif
-        RefPtr<ImageData>,
-        RefPtr<ImageBitmap>,
-        RefPtr<Inspector::ScriptCallStack>,
-        RefPtr<Inspector::AsyncStackTrace>,
-        RefPtr<CSSStyleImageValue>,
+        Ref<ImageData>,
+        Ref<ImageBitmap>,
+        Ref<Inspector::ScriptCallStack>,
+        Ref<Inspector::AsyncStackTrace>,
+        Ref<CSSStyleImageValue>,
         Inspector::ScriptCallFrame,
 #if ENABLE(OFFSCREEN_CANVAS)
-        RefPtr<OffscreenCanvas>,
+        Ref<OffscreenCanvas>,
 #endif
         String
     >;

@@ -84,8 +84,8 @@ public:
 
     WEBCORE_EXPORT void openDatabaseConnection(IDBConnectionToClient&, const IDBOpenRequestData&);
 
-    const IDBDatabaseInfo& info() const;
-    UniqueIDBDatabaseManager* manager();
+    const IDBDatabaseInfo& NODELETE info() const;
+    UniqueIDBDatabaseManager* NODELETE manager();
     const IDBDatabaseIdentifier& identifier() const { return m_identifier; }
 
     enum class SpaceCheckResult : uint8_t {

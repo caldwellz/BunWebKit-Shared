@@ -40,7 +40,12 @@ class PixelBuffer;
 
 class VideoFrameCV : public VideoFrame {
 public:
-    WEBCORE_EXPORT static Ref<VideoFrameCV> create(MediaTime presentationTime, bool isMirrored, Rotation, RetainPtr<CVPixelBufferRef>&&, std::optional<PlatformVideoColorSpace>&& = { });
+    // Create a VideoFrameCV in specific color space with data from CVPixelBuffer. Intended for constructing VideoFrameCV from new pixel data.
+    WEBCORE_EXPORT static Ref<VideoFrameCV> create(MediaTime presentationTime, bool isMirrored, Rotation, RetainPtr<CVPixelBufferRef>&&, PlatformVideoColorSpace&&);
+    // Create a VideoFrameCV in with data data and color space from CVPixelBuffer. Intended for constructing VideoFrameCV from a buffer created by
+    // a component that already set the color space properties to the buffer.
+    WEBCORE_EXPORT static Ref<VideoFrameCV> create(MediaTime presentationTime, bool isMirrored, Rotation, RetainPtr<CVPixelBufferRef>&&);
+    // Create a VideoFrameCV in with data data and color space from CMSampleBufferRef.
     WEBCORE_EXPORT static Ref<VideoFrameCV> create(CMSampleBufferRef, bool isMirrored, Rotation);
     WEBCORE_EXPORT ~VideoFrameCV();
 

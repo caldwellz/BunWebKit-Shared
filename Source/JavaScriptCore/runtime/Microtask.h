@@ -69,7 +69,7 @@ enum class InternalMicrotask : uint8_t {
 };
 
 #if USE(BUN_JSC_ADDITIONS)
-constexpr unsigned maxMicrotaskArguments = 5;
+constexpr unsigned maxMicrotaskArguments = 4;
 #else
 constexpr unsigned maxMicrotaskArguments = 3;
 #endif

@@ -799,7 +799,7 @@ void RenderLayerCompositor::scheduleRenderingUpdate()
 {
     ASSERT(!m_flushingLayers);
 
-    protectedPage()->scheduleRenderingUpdate(RenderingUpdateStep::LayerFlush);
+    protect(page())->scheduleRenderingUpdate(RenderingUpdateStep::LayerFlush);
 }
 
 static inline ScrollableArea::VisibleContentRectIncludesScrollbars scrollbarInclusionForVisibleRect()
@@ -1163,7 +1163,7 @@ bool RenderLayerCompositor::updateCompositingLayers(CompositingUpdateType update
         scrollingTreeState.hasParent = true;
 
         if (!m_renderView.frame().isMainFrame()) {
-            scrollingTreeState.parentNodeID = frameHostingNodeForFrame(m_renderView.protectedFrame());
+            scrollingTreeState.parentNodeID = frameHostingNodeForFrame(protect(m_renderView.frame()));
             scrollingTreeState.hasParent = !!scrollingTreeState.parentNodeID;
         }
 
@@ -1213,7 +1213,7 @@ bool RenderLayerCompositor::updateCompositingLayers(CompositingUpdateType update
     }
 #endif
 
-    InspectorInstrumentation::layerTreeDidChange(protectedPage().ptr());
+    InspectorInstrumentation::layerTreeDidChange(protect(page()).ptr());
 
     if (m_renderView.needsRepaintHackAfterCompositingLayerUpdateForDebugOverlaysOnly()) {
         m_renderView.repaintRootContents();
@@ -2055,7 +2055,7 @@ void RenderLayerCompositor::layerBecameNonComposited(const RenderLayer& layer)
 {
     // Inform the inspector that the given RenderLayer was destroyed.
     // FIXME: "destroyed" is a misnomer.
-    InspectorInstrumentation::renderLayerDestroyed(protectedPage().ptr(), layer);
+    InspectorInstrumentation::renderLayerDestroyed(protect(page()).ptr(), layer);
 
     if (&layer != m_renderView.layer()) {
         ASSERT(m_contentLayersCount > 0);
@@ -2953,7 +2953,7 @@ void RenderLayerCompositor::updateCompositingForLayerTreeAsTextDump()
     flushPendingLayerChanges(true);
     // We need to trigger an update because the flushPendingLayerChanges() will have pushed changes to platform layers,
     // which may cause painting to happen in the current runloop.
-    protectedPage()->triggerRenderingUpdateForTesting();
+    protect(page())->triggerRenderingUpdateForTesting();
 }
 
 String RenderLayerCompositor::layerTreeAsText(OptionSet<LayerTreeAsTextOptions> options, uint32_t baseIndent)
@@ -3003,7 +3003,7 @@ std::optional<String> RenderLayerCompositor::platformLayerTreeAsText(Element& el
 
 static RenderView* frameContentsRenderView(RenderWidget& renderer)
 {
-    if (RefPtr contentDocument = renderer.protectedFrameOwnerElement()->contentDocument())
+    if (RefPtr contentDocument = protect(renderer.frameOwnerElement())->contentDocument())
         return contentDocument->renderView();
 
     return nullptr;
@@ -4426,7 +4426,7 @@ bool RenderLayerCompositor::isLayerForIFrameWithScrollCoordinatedContents(const 
     if (frame && is<RemoteFrame>(frame))
         return renderWidget->hasLayer() && renderWidget->layer()->isComposited();
 
-    RefPtr contentDocument = renderWidget->protectedFrameOwnerElement()->contentDocument();
+    RefPtr contentDocument = protect(renderWidget->frameOwnerElement())->contentDocument();
     if (!contentDocument)
         return false;
 
@@ -4855,7 +4855,7 @@ void RenderLayerCompositor::updateLayerForOverhangAreasBackgroundColor()
 
     if (m_renderView.settings().backgroundShouldExtendBeyondPage()) {
         backgroundColor = ([&] {
-            if (auto underPageBackgroundColorOverride = protectedPage()->underPageBackgroundColorOverride(); underPageBackgroundColorOverride.isValid())
+            if (auto underPageBackgroundColorOverride = protect(page())->underPageBackgroundColorOverride(); underPageBackgroundColorOverride.isValid())
                 return underPageBackgroundColorOverride;
 
             return m_rootExtendedBackgroundColor;
@@ -5245,7 +5245,7 @@ void RenderLayerCompositor::attachRootLayer(RootLayerAttachment attachment)
             ASSERT_NOT_REACHED();
             break;
         case RootLayerAttachedViaChromeClient: {
-            page().chrome().client().attachRootGraphicsLayer(m_renderView.frameView().protectedFrame(), RefPtr { rootGraphicsLayer() }.get());
+            page().chrome().client().attachRootGraphicsLayer(protect(m_renderView.frameView().frame()), RefPtr { rootGraphicsLayer() }.get());
             break;
         }
         case RootLayerAttachedViaEnclosingFrame: {
@@ -5300,7 +5300,7 @@ void RenderLayerCompositor::detachRootLayer()
     case RootLayerAttachedViaChromeClient: {
         if (RefPtr scrollingCoordinator = this->scrollingCoordinator())
             scrollingCoordinator->frameViewWillBeDetached(m_renderView.frameView());
-        page().chrome().client().attachRootGraphicsLayer(m_renderView.frameView().protectedFrame(), nullptr);
+        page().chrome().client().attachRootGraphicsLayer(protect(m_renderView.frameView().frame()), nullptr);
     }
     break;
     case RootLayerUnattached:
@@ -5829,7 +5829,7 @@ std::optional<ScrollingNodeID> RenderLayerCompositor::updateScrollingNodeForScro
             scrollingCoordinator->setScrollingNodeScrollableAreaGeometry(*newNodeID, frameView);
             scrollingCoordinator->setFrameScrollingNodeState(*newNodeID, frameView);
         }
-        page().chrome().client().ensureScrollbarsController(protectedPage(), frameView, true);
+        page().chrome().client().ensureScrollbarsController(protect(page()), frameView, true);
 
     } else {
         newNodeID = attachScrollingNode(layer, ScrollingNodeType::Overflow, treeState);
@@ -5850,7 +5850,7 @@ std::optional<ScrollingNodeID> RenderLayerCompositor::updateScrollingNodeForScro
                 scrollingCoordinator->setScrollingNodeScrollableAreaGeometry(*newNodeID, *scrollableArea);
         }
         if (CheckedPtr scrollableArea = layer.scrollableArea())
-            page().chrome().client().ensureScrollbarsController(protectedPage(), *scrollableArea, true);
+            page().chrome().client().ensureScrollbarsController(protect(page()), *scrollableArea, true);
     }
 
     return newNodeID;
@@ -6161,11 +6161,6 @@ void RenderLayerCompositor::updateScrollSnapPropertiesWithFrameView(const LocalF
 Page& RenderLayerCompositor::page() const
 {
     return m_renderView.page();
-}
-
-Ref<Page> RenderLayerCompositor::protectedPage() const
-{
-    return page();
 }
 
 TextStream& operator<<(TextStream& ts, CompositingUpdateType updateType)

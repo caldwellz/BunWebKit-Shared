@@ -232,15 +232,15 @@ private:
 ExceptionOr<Ref<FetchRequest>> DOMCache::requestFromInfo(RequestInfo&& info, bool ignoreMethod, bool* requestValidationFailed)
 {
     RefPtr<FetchRequest> request;
-    if (std::holds_alternative<RefPtr<FetchRequest>>(info)) {
-        request = std::get<RefPtr<FetchRequest>>(info).releaseNonNull();
+    if (std::holds_alternative<Ref<FetchRequest>>(info)) {
+        request = std::get<Ref<FetchRequest>>(info).ptr();
         if (request->method() != "GET"_s && !ignoreMethod) {
             if (requestValidationFailed)
                 *requestValidationFailed = true;
             return Exception { ExceptionCode::TypeError, "Request method is not GET"_s };
         }
     } else {
-        auto result = FetchRequest::create(*protectedScriptExecutionContext(), WTF::move(info), { });
+        auto result = FetchRequest::create(*protect(scriptExecutionContext()), WTF::move(info), { });
         if (result.hasException())
             return result.releaseException();
         request = result.releaseReturnValue();
@@ -401,7 +401,7 @@ void DOMCache::put(RequestInfo&& info, Ref<FetchResponse>&& response, DOMPromise
 
     // FIXME: for efficiency, we should load blobs/form data directly instead of going through the readableStream path.
     if (response->isBlobBody() || response->isBlobFormData()) {
-        auto streamOrException = response->readableStream(*protectedScriptExecutionContext()->globalObject());
+        auto streamOrException = response->readableStream(*protect(scriptExecutionContext())->globalObject());
         if (streamOrException.hasException()) [[unlikely]] {
             promise.reject(streamOrException.releaseException());
             return;

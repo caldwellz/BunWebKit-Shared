@@ -176,9 +176,7 @@ public:
 
     WEBCORE_EXPORT String stringValue() const;
     const CSSCalc::Value* cssCalcValue() const { return isCalculated() ? m_value.calc : nullptr; }
-    RefPtr<const CSSCalc::Value> protectedCssCalcValue() const { return cssCalcValue(); }
     const CSSAttrValue* cssAttrValue() const { return isAttr() ? m_value.attr : nullptr; }
-    RefPtr<const CSSAttrValue> protectedCssAttrValue() const { return cssAttrValue(); }
 
     String customCSSText(const CSS::SerializationContext&) const;
 

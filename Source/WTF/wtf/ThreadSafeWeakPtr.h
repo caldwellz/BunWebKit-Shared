@@ -780,6 +780,12 @@ private:
     };
 };
 
+template<typename T, typename TaggingTraits = NoTaggingTraits<T>>
+ALWAYS_INLINE RefPtr<T> protect(const ThreadSafeWeakPtr<T, TaggingTraits>& weakPtr)
+{
+    return weakPtr.get();
+}
+
 }
 
 using WTF::ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr;

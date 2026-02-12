@@ -195,7 +195,7 @@ void JSTestClassWithJSBuiltinConstructorOwner::finalize(JSC::Handle<JSC::Unknown
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestClassWithJSBuiltinConstructor = static_cast<JSTestClassWithJSBuiltinConstructor*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestClassWithJSBuiltinConstructor->protectedWrapped().ptr(), jsTestClassWithJSBuiltinConstructor);
+    uncacheWrapper(world, protect(jsTestClassWithJSBuiltinConstructor->wrapped()).ptr(), jsTestClassWithJSBuiltinConstructor);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

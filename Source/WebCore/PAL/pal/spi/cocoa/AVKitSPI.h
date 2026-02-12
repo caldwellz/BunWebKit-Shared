@@ -279,6 +279,10 @@ NS_ASSUME_NONNULL_END
 #endif // PLATFORM(IOS_FAMILY)
 
 #if PLATFORM(MAC)
+
+#import <AppKit/AppKit.h>
+
+#if !__has_feature(modules)
 #import <AVKit/AVPlayerView.h>
 
 @class AVPlayerController;
@@ -293,6 +297,11 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
+
+#else
+@class AVPlayerView;
+#endif // !__has_feature(modules)
+
 #endif // PLATFORM(MAC)
 
 #endif // USE(APPLE_INTERNAL_SDK)
@@ -483,11 +492,12 @@ NS_ASSUME_NONNULL_END
 
 
 #if ENABLE(WIRELESS_PLAYBACK_TARGET) && HAVE(AVROUTEPICKERVIEW)
-#if USE(APPLE_INTERNAL_SDK)
+#if USE(APPLE_INTERNAL_SDK) && !__has_feature(modules)
 #import <AVKit/AVRoutePickerView_Private.h>
 #import <AVKit/AVRoutePickerView_WebKitOnly.h>
 #else
 
+#if !__has_feature(modules)
 #import <AVKit/AVRoutePickerView.h>
 
 NS_ASSUME_NONNULL_BEGIN
@@ -501,7 +511,8 @@ NS_ASSUME_NONNULL_BEGIN
 @end
 
 NS_ASSUME_NONNULL_END
-#endif // USE(APPLE_INTERNAL_SDK)
+#endif // !__has_feature(modules)
+#endif // USE(APPLE_INTERNAL_SDK) && !__has_feature(modules)
 #endif // ENABLE(WIRELESS_PLAYBACK_TARGET) && HAVE(AVROUTEPICKERVIEW)
 
 // AVPictureInPicture SPI

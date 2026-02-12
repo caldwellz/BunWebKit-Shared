@@ -353,6 +353,19 @@ HistoryItem* HistoryItem::childItemWithDocumentSequenceNumber(long long number)
     return nullptr;
 }
 
+HistoryItem* HistoryItem::childItemForFrame(LocalFrame& frame)
+{
+    if (auto* childItem = childItemWithTarget(frame.tree().uniqueName()))
+        return childItem;
+
+    if (auto index = frame.indexInFrameTreeSiblings()) {
+        ASSERT(index.value() < m_children.size());
+        return m_children[index.value()].ptr();
+    }
+
+    return nullptr;
+}
+
 const Vector<Ref<HistoryItem>>& HistoryItem::children() const
 {
     return m_children;

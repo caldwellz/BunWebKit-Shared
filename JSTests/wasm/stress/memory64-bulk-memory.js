@@ -1,17 +1,17 @@
 //@ skip if $addressBits <= 32
-//@ runDefaultWasm("-m", "--useBBQJIT=0", "--useWasmMemory64=1")
+//@ runDefaultWasm("-m", "--useWasmMemory64=1", "--useOMGJIT=0")
 import { instantiate } from "../wabt-wrapper.js";
 import * as assert from "../assert.js";
 
 let wat = `
 (module
     (memory (export "memory") i64 2)
-    (data (i32.const 0) "hello")
-    (func $testInit (export "testInit") 
+    (data "hello")
+    (func $testInit (export "testInit")
       (memory.init 0
-        (i64.const 5)
+        (i64.const 0)
         (i32.const 0)
-        (i32.const 0))
+        (i32.const 5))
     )
     (func $testFill (export "testFill") (param $dest i64) (param $byte i32) (param $sz i64)
       (memory.fill 
@@ -29,12 +29,12 @@ let wat = `
 `;
 
 const helloBytes = "hello";
-async function test() {
-  const instance = await instantiate(wat, {}, {reference_types: true});
-  const {testInit, testFill, testCopy, memory} = instance.exports;
+const instance = await instantiate(wat, {}, {reference_types: true});
+const {testInit, testFill, testCopy, memory} = instance.exports;
+const len = helloBytes.length;
+const iterable = new DataView(memory.buffer);
 
-  const len = helloBytes.length;
-  const iterable = new DataView(memory.buffer);
+function test() {
   // Write "hello" to 0 and verify
   testInit();
   for (let i = 0; i < len * 2; i++) {
@@ -60,4 +60,5 @@ async function test() {
   }
 }
 
-await assert.asyncTest(test());
+for (let i = 0; i < wasmTestLoopCount; i++)
+    test();

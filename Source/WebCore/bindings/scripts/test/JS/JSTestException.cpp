@@ -206,7 +206,7 @@ void JSTestExceptionOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* cont
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestException = static_cast<JSTestException*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestException->protectedWrapped().ptr(), jsTestException);
+    uncacheWrapper(world, protect(jsTestException->wrapped()).ptr(), jsTestException);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

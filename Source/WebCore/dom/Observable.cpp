@@ -70,7 +70,7 @@ void Observable::subscribe(ScriptExecutionContext& context, ObserverUnion&& obse
 {
     WTF::switchOn(WTF::move(observer),
         [&](RefPtr<JSSubscriptionObserverCallback>&& next) {
-            subscribeInternal(context, InternalObserverFromScript::create(context, WTF::move(next)), WTF::move(options));
+            subscribeInternal(context, InternalObserverFromScript::create(context, next.releaseNonNull()), WTF::move(options));
         },
         [&](SubscriptionObserver&& subscription) {
             subscribeInternal(context, InternalObserverFromScript::create(context, WTF::move(subscription)), WTF::move(options));
@@ -127,7 +127,7 @@ Ref<Observable> Observable::inspect(ScriptExecutionContext& context, InspectorUn
 {
     return WTF::switchOn(WTF::move(inspectorUnion),
         [&](RefPtr<JSSubscriptionObserverCallback>&& next) {
-            return create(createSubscriberCallbackInspect(context, *this, WTF::move(next)));
+            return create(createSubscriberCallbackInspect(context, *this, next.releaseNonNull()));
         },
         [&](ObservableInspector&& inspector) {
             return create(createSubscriberCallbackInspect(context, *this, WTF::move(inspector)));

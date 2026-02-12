@@ -128,39 +128,39 @@ static NSString* const worldIdentifierLowBitsKey = @"h";
 #endif
     RELEASE_ASSERT(!isInAuxiliaryProcess());
 
-    uint64_t rawIdentifierObject = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:identifierObjectKey]) unsignedLongLongValue];
+    uint64_t rawIdentifierObject = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(identifierObjectKey).get()]) unsignedLongLongValue];
     if (!WebCore::WebProcessJSHandleIdentifier::isValidIdentifier(rawIdentifierObject)) {
         [self release];
         return nil;
     }
 
-    uint64_t rawIdentifierProcessIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:identifierProcessIdentifierKey]) unsignedLongLongValue];
+    uint64_t rawIdentifierProcessIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(identifierProcessIdentifierKey).get()]) unsignedLongLongValue];
     if (!WebCore::ProcessIdentifier::isValidIdentifier(rawIdentifierProcessIdentifier)) {
         [self release];
         return nil;
     }
 
-    uint64_t rawWorldIdentifierObject = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:worldIdentifierObjectKey]) unsignedLongLongValue];
+    uint64_t rawWorldIdentifierObject = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(worldIdentifierObjectKey).get()]) unsignedLongLongValue];
     if (!WebKit::NonProcessQualifiedContentWorldIdentifier::isValidIdentifier(rawWorldIdentifierObject)) {
         [self release];
         return nil;
     }
 
-    uint64_t rawWorldIdentifierProcessIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:worldIdentifierProcessIdentifierKey]) unsignedLongLongValue];
+    uint64_t rawWorldIdentifierProcessIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(worldIdentifierProcessIdentifierKey).get()]) unsignedLongLongValue];
     if (!WebCore::ProcessIdentifier::isValidIdentifier(rawWorldIdentifierProcessIdentifier)) {
         [self release];
         return nil;
     }
 
-    uint64_t frameIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:frameIdentifierKey]) unsignedLongLongValue];
+    uint64_t frameIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(frameIdentifierKey).get()]) unsignedLongLongValue];
     if (!WebCore::FrameIdentifier::isValidIdentifier(frameIdentifier)) {
         [self release];
         return nil;
     }
 
-    uint64_t documentIDProcessIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:documentIDProcessIdentifierKey]) unsignedLongLongValue];
-    uint64_t worldIdentifierHighBits = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:worldIdentifierHighBitsKey]) unsignedLongLongValue];
-    uint64_t worldIdentifierLowBits = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:worldIdentifierLowBitsKey]) unsignedLongLongValue];
+    uint64_t documentIDProcessIdentifier = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(documentIDProcessIdentifierKey).get()]) unsignedLongLongValue];
+    uint64_t worldIdentifierHighBits = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(worldIdentifierHighBitsKey).get()]) unsignedLongLongValue];
+    uint64_t worldIdentifierLowBits = [dynamic_objc_cast<NSNumber>([decoder decodeObjectOfClass:NSNumber.class forKey:protect(worldIdentifierLowBitsKey).get()]) unsignedLongLongValue];
 
     Markable<WebCore::ScriptExecutionContextIdentifier> documentID;
     if (WebCore::ProcessIdentifier::isValidIdentifier(documentIDProcessIdentifier) && WTF::UUID::isValid(worldIdentifierHighBits, worldIdentifierLowBits))
@@ -197,18 +197,18 @@ static NSString* const worldIdentifierLowBitsKey = @"h";
     const auto& info = _ref->info();
     WebCore::WebKitJSHandle::jsHandleSentToAnotherProcess(info.identifier);
 
-    [coder encodeObject:@(info.identifier.object().toUInt64()) forKey:identifierObjectKey];
-    [coder encodeObject:@(info.identifier.processIdentifier().toUInt64()) forKey:identifierProcessIdentifierKey];
+    [coder encodeObject:@(info.identifier.object().toUInt64()) forKey:protect(identifierObjectKey).get()];
+    [coder encodeObject:@(info.identifier.processIdentifier().toUInt64()) forKey:protect(identifierProcessIdentifierKey).get()];
 
-    [coder encodeObject:@(info.worldIdentifier.object().toUInt64()) forKey:worldIdentifierObjectKey];
-    [coder encodeObject:@(info.worldIdentifier.processIdentifier().toUInt64()) forKey:worldIdentifierProcessIdentifierKey];
+    [coder encodeObject:@(info.worldIdentifier.object().toUInt64()) forKey:protect(worldIdentifierObjectKey).get()];
+    [coder encodeObject:@(info.worldIdentifier.processIdentifier().toUInt64()) forKey:protect(worldIdentifierProcessIdentifierKey).get()];
 
-    [coder encodeObject:@(info.frameInfo.frameID.toUInt64()) forKey:frameIdentifierKey];
+    [coder encodeObject:@(info.frameInfo.frameID.toUInt64()) forKey:protect(frameIdentifierKey).get()];
 
     if (info.frameInfo.documentID) {
-        [coder encodeObject:@(info.frameInfo.documentID->processIdentifier().toUInt64()) forKey:documentIDProcessIdentifierKey];
-        [coder encodeObject:@(info.frameInfo.documentID->object().high()) forKey:worldIdentifierHighBitsKey];
-        [coder encodeObject:@(info.frameInfo.documentID->object().low()) forKey:worldIdentifierLowBitsKey];
+        [coder encodeObject:@(info.frameInfo.documentID->processIdentifier().toUInt64()) forKey:protect(documentIDProcessIdentifierKey).get()];
+        [coder encodeObject:@(info.frameInfo.documentID->object().high()) forKey:protect(worldIdentifierHighBitsKey).get()];
+        [coder encodeObject:@(info.frameInfo.documentID->object().low()) forKey:protect(worldIdentifierLowBitsKey).get()];
     }
 
     // Remaining information is currently not needed, and this is on its way to being removed so let's not add more here.

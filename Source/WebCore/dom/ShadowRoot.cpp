@@ -240,7 +240,7 @@ ExceptionOr<void> ShadowRoot::replaceChildrenWithMarkup(const String& markup, Op
     return result;
 }
 
-ExceptionOr<void> ShadowRoot::setHTMLUnsafe(Variant<RefPtr<TrustedHTML>, String>&& html)
+ExceptionOr<void> ShadowRoot::setHTMLUnsafe(Variant<Ref<TrustedHTML>, String>&& html)
 {
     auto stringValueHolder = trustedTypeCompliantString(document().contextDocument(), WTF::move(html), "ShadowRoot setHTMLUnsafe"_s);
 
@@ -260,7 +260,7 @@ String ShadowRoot::innerHTML() const
     return serializeFragment(*this, SerializedNodes::SubtreesOfChildren, nullptr, ResolveURLs::NoExcludingURLsForPrivacy);
 }
 
-ExceptionOr<void> ShadowRoot::setInnerHTML(Variant<RefPtr<TrustedHTML>, String>&& html)
+ExceptionOr<void> ShadowRoot::setInnerHTML(Variant<Ref<TrustedHTML>, String>&& html)
 {
     auto stringValueHolder = trustedTypeCompliantString(document().contextDocument(), WTF::move(html), "ShadowRoot innerHTML"_s);
 

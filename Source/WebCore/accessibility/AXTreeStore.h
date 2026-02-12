@@ -66,6 +66,7 @@ class AXTreeStore {
 public:
     AXID treeID() const { return m_id; }
     inline static WeakPtr<AXObjectCache> axObjectCacheForID(std::optional<AXID>);
+    inline static WeakPtr<AXObjectCache> axObjectCacheForID(AXID);
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)
     static RefPtr<AXIsolatedTree> isolatedTreeForID(std::optional<AXID>);
     static void applyPendingChangesForAllIsolatedTrees();

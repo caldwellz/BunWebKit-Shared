@@ -143,22 +143,26 @@ class WebGLShaderPrecisionFormat;
 class WebGLStencilTexturing;
 class WebGLUniformLocation;
 
+#if ENABLE(MEDIA_STREAM)
+class VideoFrame;
+#endif
+
 #if ENABLE(VIDEO)
 class HTMLVideoElement;
 #endif
 
 #if ENABLE(OFFSCREEN_CANVAS)
 class OffscreenCanvas;
-using WebGLCanvas = Variant<RefPtr<HTMLCanvasElement>, RefPtr<OffscreenCanvas>>;
-#else
-using WebGLCanvas = Variant<RefPtr<HTMLCanvasElement>>;
-#endif
-
-#if ENABLE(MEDIA_STREAM)
-class VideoFrame;
 #endif
 
 template<typename> class ExceptionOr;
+
+using WebGLCanvas = Variant<
+      Ref<HTMLCanvasElement>
+#if ENABLE(OFFSCREEN_CANVAS)
+    , Ref<OffscreenCanvas>
+#endif
+>;
 
 class WebGLRenderingContextBase : public GraphicsContextGL::Client, public GPUBasedCanvasRenderingContext {
     WTF_MAKE_TZONE_ALLOCATED(WebGLRenderingContextBase);
@@ -308,15 +312,19 @@ public:
     // These must be virtual so more validation can be added in WebGL 2.0.
     virtual void texImage2D(GCGLenum target, GCGLint level, GCGLenum internalformat, GCGLsizei width, GCGLsizei height, GCGLint border, GCGLenum format, GCGLenum type, RefPtr<ArrayBufferView>&&);
 
-    using TexImageSource = Variant<RefPtr<ImageBitmap>, RefPtr<ImageData>, RefPtr<HTMLImageElement>, RefPtr<HTMLCanvasElement>
+    using TexImageSource = Variant<
+          Ref<ImageBitmap>
+        , Ref<ImageData>
+        , Ref<HTMLImageElement>
+        , Ref<HTMLCanvasElement>
 #if ENABLE(VIDEO)
-        , RefPtr<HTMLVideoElement>
+        , Ref<HTMLVideoElement>
 #endif
 #if ENABLE(OFFSCREEN_CANVAS)
-        , RefPtr<OffscreenCanvas>
+        , Ref<OffscreenCanvas>
 #endif
 #if ENABLE(WEB_CODECS)
-        , RefPtr<WebCodecsVideoFrame>
+        , Ref<WebCodecsVideoFrame>
 #endif
     >;
 
@@ -1027,9 +1035,6 @@ private:
     // Helper for restoration after context lost.
     void maybeRestoreContextSoon(Seconds timeout = 0_s);
     void maybeRestoreContext();
-
-    RefPtr<WebGLVertexArrayObjectBase> protectedBoundVertexArrayObject() const { return m_boundVertexArrayObject; }
-    RefPtr<WebGLFramebuffer> protectedFramebufferBinding() const { return m_framebufferBinding; }
 
     ExceptionOr<void> texImageSource(TexImageFunctionID, GCGLenum target, GCGLint level, GCGLint internalformat, GCGLint border, GCGLenum format, GCGLenum type, GCGLint xoffset, GCGLint yoffset, GCGLint zoffset, const IntRect& inputSourceImageRect, GCGLsizei depth, GCGLint unpackImageHeight, ImageBitmap& source);
     ExceptionOr<void> texImageSource(TexImageFunctionID, GCGLenum target, GCGLint level, GCGLint internalformat, GCGLint border, GCGLenum format, GCGLenum type, GCGLint xoffset, GCGLint yoffset, GCGLint zoffset, const IntRect& inputSourceImageRect, GCGLsizei depth, GCGLint unpackImageHeight, ImageData& source);

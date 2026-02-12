@@ -26,7 +26,9 @@
 #include "config.h"
 #include "FastFloat.h"
 
+WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN
 #include "fast_float/fast_float.h"
+WTF_ALLOW_UNSAFE_BUFFER_USAGE_END
 
 namespace WTF {
 
@@ -34,7 +36,7 @@ double parseDouble(std::span<const Latin1Character> string, size_t& parsedLength
 {
     double doubleValue = 0;
     auto stringData = byteCast<char>(string);
-    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue);
+    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue, fast_float::chars_format::general | fast_float::chars_format::no_infnan | fast_float::chars_format::allow_leading_plus);
     parsedLength = result.ptr - stringData.data();
     return doubleValue;
 }
@@ -43,7 +45,7 @@ double parseDouble(std::span<const char16_t> string, size_t& parsedLength)
 {
     double doubleValue = 0;
     auto stringData = spanReinterpretCast<const char16_t>(string);
-    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue);
+    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue, fast_float::chars_format::general | fast_float::chars_format::no_infnan | fast_float::chars_format::allow_leading_plus);
     parsedLength = result.ptr - stringData.data();
     return doubleValue;
 }
@@ -52,7 +54,7 @@ double parseHexDouble(std::span<const Latin1Character> string, size_t& parsedLen
 {
     double doubleValue = 0;
     auto stringData = byteCast<char>(string);
-    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue, fast_float::chars_format::hex);
+    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue, fast_float::chars_format::hex | fast_float::chars_format::no_infnan | fast_float::chars_format::allow_leading_plus);
     parsedLength = result.ptr - stringData.data();
     return doubleValue;
 }
@@ -61,7 +63,7 @@ double parseHexDouble(std::span<const char16_t> string, size_t& parsedLength)
 {
     double doubleValue = 0;
     auto stringData = spanReinterpretCast<const char16_t>(string);
-    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue, fast_float::chars_format::hex);
+    auto result = fast_float::from_chars(std::to_address(stringData.begin()), std::to_address(stringData.end()), doubleValue, fast_float::chars_format::hex | fast_float::chars_format::no_infnan | fast_float::chars_format::allow_leading_plus);
     parsedLength = result.ptr - stringData.data();
     return doubleValue;
 }

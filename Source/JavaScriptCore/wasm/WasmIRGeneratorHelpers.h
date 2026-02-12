@@ -184,7 +184,7 @@ static inline void SYSV_ABI buildEntryBufferForCatch(Probe::Context& context)
     context.gpr(GPRInfo::argumentGPR2) = std::bit_cast<uintptr_t>(payload);
 
     context.gpr(GPRInfo::wasmContextInstancePointer) = std::bit_cast<uintptr_t>(instance);
-    if (!!instance->moduleInformation().memory) {
+    if (instance->moduleInformation().memoryCount()) {
         context.gpr(GPRInfo::wasmBaseMemoryPointer) = std::bit_cast<uintptr_t>(instance->cachedMemory());
         context.gpr(GPRInfo::wasmBoundsCheckingSizeRegister) = instance->cachedBoundsCheckingSize();
     }

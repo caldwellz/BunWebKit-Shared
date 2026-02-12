@@ -84,6 +84,10 @@ JSWebAssemblyInstance::JSWebAssemblyInstance(VM& vm, Structure* structure, JSWeb
     , m_vm(&vm)
     , m_jsModule(module, WriteBarrierEarlyInit)
     , m_moduleRecord(moduleRecord, WriteBarrierEarlyInit)
+    , m_memories(
+        // there must be space for a dummy memory, so if count is 0 make a FixedVector(1)
+        module->module().moduleInformation().memoryCount() ? module->module().moduleInformation().memoryCount() : 1
+    )
     , m_tables(module->module().moduleInformation().tableCount())
     , m_module(module->module())
     , m_moduleInformation(module->moduleInformation())
@@ -194,7 +198,8 @@ void JSWebAssemblyInstance::visitChildrenImpl(JSCell* cell, Visitor& visitor)
     Base::visitChildren(thisObject, visitor);
     visitor.append(thisObject->m_jsModule);
     visitor.append(thisObject->m_moduleRecord);
-    visitor.append(thisObject->m_memory);
+    for (auto& memory : thisObject->m_memories)
+        visitor.append(memory);
     for (auto& table : thisObject->m_tables)
         visitor.append(table);
     for (unsigned i = 0; i < thisObject->numImportFunctions(); ++i)
@@ -354,23 +359,30 @@ JSWebAssemblyInstance* JSWebAssemblyInstance::tryCreate(VM& vm, Structure* insta
         ASSERT(moduleRecord->importEntries().size() == moduleInformation.imports.size());
     }
 
-    bool hasMemoryImport = moduleInformation.memory.isImport();
-    if (moduleInformation.memory && !hasMemoryImport) {
-        // We create a memory when it's a memory definition.
-        auto* jsMemory = JSWebAssemblyMemory::create(vm, globalObject->webAssemblyMemoryStructure());
+    for (unsigned i = 0; i < moduleInformation.memoryCount(); i++) {
+        const auto& mem = moduleInformation.memory(i);
+        if (!mem.isImport()) {
+            // We create a memory when it's a memory definition.
+            auto* jsMemory = JSWebAssemblyMemory::create(vm, globalObject->webAssemblyMemoryStructure());
 
-        RefPtr<Memory> memory = Memory::tryCreate(vm, moduleInformation.memory.initial(), moduleInformation.memory.maximum(), moduleInformation.memory.isShared() ? MemorySharingMode::Shared: MemorySharingMode::Default, std::nullopt,
-            [&vm, jsMemory](Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) { jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount); }
-        );
-        if (!memory)
-            return exception(createOutOfMemoryError(globalObject));
+            RefPtr<Memory> memory = Memory::tryCreate(vm, mem.initial(), mem.maximum(), mem.isShared() ? MemorySharingMode::Shared : MemorySharingMode::Default, std::nullopt,
+                [&vm, jsMemory](Memory::GrowSuccess, PageCount oldPageCount, PageCount newPageCount) {
+                    jsMemory->growSuccessCallback(vm, oldPageCount, newPageCount);
+                }
+            );
+            if (!memory)
+                return exception(createOutOfMemoryError(globalObject));
 
-        jsMemory->adopt(memory.releaseNonNull());
-        jsInstance->setMemory(vm, jsMemory);
-        RETURN_IF_EXCEPTION(throwScope, nullptr);
+            jsMemory->adopt(memory.releaseNonNull());
+            jsInstance->setMemory(vm, i, jsMemory);
+            RETURN_IF_EXCEPTION(throwScope, nullptr);
+        }
     }
 
-    if (!jsInstance->memory()) {
+    // If there are no memories, there must be a dummy memory.
+    // If there is at least 1 memory but there are imports, it will crash if there is no dummy memory.
+    // Trying to access memory 0 will crash if memoryCount is 0.
+    if (!moduleInformation.memoryCount() || !jsInstance->memory(0)) {
         // Make sure we have a dummy memory, so that wasm -> wasm thunks avoid checking for a nullptr Memory when trying to set pinned registers.
         // When there is a memory import, this will be replaced later in the module record import initialization.
         auto* jsMemory = JSWebAssemblyMemory::create(vm, globalObject->webAssemblyMemoryStructure());

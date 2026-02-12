@@ -988,7 +988,7 @@ static NSURL *createUniqueWebDataURL();
         return;
     // FIXME: These are fake modifier keys here, but they should be real ones instead.
     WebCore::PlatformMouseEvent event(WebCore::IntPoint(windowLoc), WebCore::IntPoint(WebCore::globalPoint(windowLoc, [view->platformWidget() window])),
-        WebCore::MouseButton::Left, WebCore::PlatformEvent::Type::MouseMoved, 0, { }, MonotonicTime::now(), WebCore::ForceAtClick, WebCore::SyntheticClickType::NoTap);
+        WebCore::MouseButton::Left, WebCore::PlatformEvent::Type::MouseMoved, 0, { }, MonotonicTime::now(), WebCore::ForceAtClick, WebCore::SyntheticClickType::NoTap, WebCore::MouseEventInputSource::Hardware);
     _private->coreFrame->eventHandler().dragSourceEndedAt(event, coreDragOperationMask(dragOperationMask));
 }
 #endif // ENABLE(DRAG_SUPPORT) && PLATFORM(MAC)
@@ -1314,7 +1314,7 @@ static WebFrameLoadType toWebFrameLoadType(WebCore::FrameLoadType frameLoadType)
 - (DOMNode *)scrollableNodeAtViewportLocation:(CGPoint)aViewportLocation
 {
     WebCore::LocalFrame *frame = core(self);
-    WebCore::Node *node = frame->nodeRespondingToScrollWheelEvents(WebCore::FloatPoint(aViewportLocation));
+    RefPtr node = frame->nodeRespondingToScrollWheelEvents(WebCore::FloatPoint(aViewportLocation));
     return kit(node);
 }
 
@@ -1323,7 +1323,7 @@ static WebFrameLoadType toWebFrameLoadType(WebCore::FrameLoadType frameLoadType)
     WebCore::LocalFrame *frame = core(self);
     WebCore::FloatPoint viewportLocation(*aViewportLocation);
     WebCore::FloatPoint adjustedLocation;
-    WebCore::Node *node = frame->approximateNodeAtViewportLocationLegacy(viewportLocation, adjustedLocation);
+    RefPtr node = frame->approximateNodeAtViewportLocationLegacy(viewportLocation, adjustedLocation);
     *aViewportLocation = adjustedLocation;
     return kit(node);
 }

@@ -32,6 +32,7 @@
 #include "Error.h"
 #include "IntlNumberFormatInlines.h"
 #include "IntlObjectInlines.h"
+#include "IntlPartObject.h"
 #include "JSBoundFunction.h"
 #include "JSCInlines.h"
 #include "ObjectConstructor.h"
@@ -889,11 +890,7 @@ void IntlNumberFormat::formatRangeToPartsInternal(JSGlobalObject* globalObject, 
         };
 
         auto value = jsString(vm, resultStringView.substring(beginIndex, length));
-        JSObject* part = constructEmptyObject(globalObject);
-        part->putDirect(vm, vm.propertyNames->type, type);
-        part->putDirect(vm, vm.propertyNames->value, value);
-        part->putDirect(vm, vm.propertyNames->source, sourceType(beginIndex));
-        return part;
+        return createIntlPartObjectWithSource(globalObject, type, value, sourceType(beginIndex));
     };
 
     for (auto& field : flatten) {
@@ -1276,21 +1273,20 @@ void IntlNumberFormat::formatToPartsInternal(JSGlobalObject* globalObject, Style
     auto flatten = flattenFields(WTF::move(fields), stringLength);
 
     auto literalString = jsNontrivialString(vm, "literal"_s);
-    Identifier unitName;
-    if (unit)
-        unitName = Identifier::fromString(vm, "unit"_s);
 
     for (auto& field : flatten) {
         auto fieldType = field.m_field;
         auto partType = fieldType == literalField ? literalString : jsNontrivialString(vm, partTypeString(UNumberFormatFields(fieldType), style, sign, numberType));
         auto partValue = jsSubstring(vm, formatted, field.m_range.begin(), field.m_range.distance());
-        JSObject* part = constructEmptyObject(globalObject);
-        part->putDirect(vm, vm.propertyNames->type, partType);
-        part->putDirect(vm, vm.propertyNames->value, partValue);
-        if (unit)
-            part->putDirect(vm, unitName, unit);
-        if (sourceType)
-            part->putDirect(vm, vm.propertyNames->source, sourceType);
+        JSObject* part;
+        if (unit && sourceType)
+            part = createIntlPartObjectWithUnitAndSource(globalObject, partType, partValue, unit, sourceType);
+        else if (unit)
+            part = createIntlPartObjectWithUnit(globalObject, partType, partValue, unit);
+        else if (sourceType)
+            part = createIntlPartObjectWithSource(globalObject, partType, partValue, sourceType);
+        else
+            part = createIntlPartObject(globalObject, partType, partValue);
         parts->push(globalObject, part);
         RETURN_IF_EXCEPTION(scope, void());
     }

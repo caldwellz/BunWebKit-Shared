@@ -105,7 +105,7 @@ public:
     
     RenderingMode renderingMode() const final;
 
-    cairo_t* cr() const;
+    cairo_t* NODELETE cr() const;
     Vector<float>& layers();
     void pushImageMask(cairo_surface_t*, const FloatRect&);
 

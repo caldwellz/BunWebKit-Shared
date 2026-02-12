@@ -79,11 +79,6 @@ SVGSVGElement& LegacyRenderSVGRoot::svgSVGElement() const
     return downcast<SVGSVGElement>(nodeForNonAnonymous());
 }
 
-Ref<SVGSVGElement> LegacyRenderSVGRoot::protectedSVGSVGElement() const
-{
-    return svgSVGElement();
-}
-
 bool LegacyRenderSVGRoot::hasIntrinsicAspectRatio() const
 {
     return computeIntrinsicAspectRatio();
@@ -132,7 +127,7 @@ FloatSize LegacyRenderSVGRoot::preferredAspectRatio() const
 
 bool LegacyRenderSVGRoot::isEmbeddedThroughSVGImage() const
 {
-    return isInSVGImage(protectedSVGSVGElement().ptr());
+    return isInSVGImage(protect(svgSVGElement()).ptr());
 }
 
 bool LegacyRenderSVGRoot::isEmbeddedThroughFrameContainingSVGDocument() const
@@ -497,6 +492,14 @@ FloatRect LegacyRenderSVGRoot::strokeBoundingBox() const
 
 FloatRect LegacyRenderSVGRoot::repaintRectInLocalCoordinates(RepaintRectCalculation repaintRectCalculation) const
 {
+    if (hasNonScalingStrokeDescendant()) {
+        auto boundingBoxes = SVGRenderSupport::computeContainerBoundingBoxes(*this, repaintRectCalculation);
+        FloatRect repaintBoundingBox = boundingBoxes.repaintBoundingBox;
+        SVGRenderSupport::intersectRepaintRectWithResources(*this, repaintBoundingBox, repaintRectCalculation);
+        repaintBoundingBox.inflate(horizontalBorderAndPaddingExtent());
+        return repaintBoundingBox;
+    }
+
     if (repaintRectCalculation == RepaintRectCalculation::Fast)
         return m_repaintBoundingBox;
 
@@ -532,7 +535,7 @@ bool LegacyRenderSVGRoot::nodeAtPoint(const HitTestRequest& request, HitTestResu
             // FIXME: nodeAtFloatPoint() doesn't handle rect-based hit tests yet.
             if (child->nodeAtFloatPoint(request, result, localPoint, hitTestAction)) {
                 updateHitTestResult(result, pointInBorderBox);
-                if (result.addNodeToListBasedTestResult(child->protectedNode().get(), request, locationInContainer) == HitTestProgress::Stop)
+                if (result.addNodeToListBasedTestResult(protect(child->node()).get(), request, locationInContainer) == HitTestProgress::Stop)
                     return true;
             }
         }
@@ -542,12 +545,12 @@ bool LegacyRenderSVGRoot::nodeAtPoint(const HitTestRequest& request, HitTestResu
     if ((hitTestAction == HitTestBlockBackground || hitTestAction == HitTestChildBlockBackground) && visibleToHitTesting(request)) {
         // Only return true here, if the last hit testing phase 'BlockBackground' is executed. If we'd return true in the 'Foreground' phase,
         // hit testing would stop immediately. For SVG only trees this doesn't matter. Though when we have a <foreignObject> subtree we need
-        // to be able to detect hits on the background of a <div> element. If we'd return true here in the 'Foreground' phase, we are not able 
+        // to be able to detect hits on the background of a <div> element. If we'd return true here in the 'Foreground' phase, we are not able
         // to detect these hits anymore.
         LayoutRect boundsRect(accumulatedOffset + location(), size());
         if (locationInContainer.intersects(boundsRect)) {
             updateHitTestResult(result, pointInBorderBox);
-            if (result.addNodeToListBasedTestResult(protectedNodeForHitTest().get(), request, locationInContainer, boundsRect) == HitTestProgress::Stop)
+            if (result.addNodeToListBasedTestResult(protect(nodeForHitTest()).get(), request, locationInContainer, boundsRect) == HitTestProgress::Stop)
                 return true;
         }
     }

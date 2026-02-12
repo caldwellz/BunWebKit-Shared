@@ -66,7 +66,7 @@ public:
     void writeTransactionStarted(MemoryBackingStoreTransaction&);
     void writeTransactionFinished(MemoryBackingStoreTransaction&);
     void transactionAborted(MemoryBackingStoreTransaction&);
-    MemoryBackingStoreTransaction* writeTransaction();
+    MemoryBackingStoreTransaction* NODELETE writeTransaction();
 
     IDBError addIndex(MemoryBackingStoreTransaction&, const IDBIndexInfo&);
     void revertAddIndex(MemoryBackingStoreTransaction&, IDBIndexIdentifier);

@@ -27,9 +27,8 @@
 [
   JSGenerateToJSObject,
   EnabledBySetting=NavigatorUserAgentDataJavaScriptAPIEnabled,
-    LegacyNativeDictionaryRequiredInterfaceNullability,
 ] dictionary UALowEntropyJSON {
-  sequence<NavigatorUABrandVersion> brands;
-  boolean mobile;
-  DOMString platform;
+  [ImplementationRequired] sequence<NavigatorUABrandVersion> brands;
+  [ImplementationRequired] boolean mobile;
+  [ImplementationRequired] DOMString platform;
 };

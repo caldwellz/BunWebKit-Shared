@@ -70,7 +70,7 @@ public:
     bool isImage() const final;
 
     LayoutUnit lineLogicalOffsetForListItem() const { return m_lineLogicalOffsetForListItem; }
-    const RenderListItem* listItem() const;
+    const RenderListItem* NODELETE listItem() const;
 
     std::pair<float, float> layoutBounds() const { return m_layoutBounds; }
 

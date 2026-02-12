@@ -45,27 +45,6 @@ inline void ComputedStyle::inheritColumnPropertiesFrom(const ComputedStyle& pare
 
 // MARK: - Style adjustment utilities
 
-inline void ComputedStyle::addToTextDecorationLineInEffect(TextDecorationLine value)
-{
-    m_inheritedFlags.textDecorationLineInEffect = textDecorationLineInEffect().addOrReplaceIfNotNone(value);
-}
-
-inline void ComputedStyle::containIntrinsicWidthAddAuto()
-{
-    setContainIntrinsicWidth(containIntrinsicWidth().addingAuto());
-}
-
-inline void ComputedStyle::containIntrinsicHeightAddAuto()
-{
-    setContainIntrinsicHeight(containIntrinsicHeight().addingAuto());
-}
-
-inline void ComputedStyle::setGridAutoFlowDirection(GridAutoFlow::Direction direction)
-{
-    if (m_nonInheritedData->rareData->grid->gridAutoFlow.direction() != direction)
-        m_nonInheritedData.access().rareData.access().grid.access().gridAutoFlow.setDirection(direction);
-}
-
 inline void ComputedStyle::resetBorderBottom()
 {
     setBorderBottom(BorderValue { });

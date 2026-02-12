@@ -216,16 +216,11 @@ void SecurityContext::inheritPolicyContainerFrom(const PolicyContainer& policyCo
     if (!contentSecurityPolicy())
         setContentSecurityPolicy(makeUnique<ContentSecurityPolicy>(URL { }, nullptr, nullptr));
 
-    checkedContentSecurityPolicy()->inheritHeadersFrom(policyContainer.contentSecurityPolicyResponseHeaders);
+    protect(contentSecurityPolicy())->inheritHeadersFrom(policyContainer.contentSecurityPolicyResponseHeaders);
     setCrossOriginOpenerPolicy(policyContainer.crossOriginOpenerPolicy);
     setCrossOriginEmbedderPolicy(policyContainer.crossOriginEmbedderPolicy);
     setReferrerPolicy(policyContainer.referrerPolicy);
     setIPAddressSpace(policyContainer.ipAddressSpace);
-}
-
-CheckedPtr<ContentSecurityPolicy> SecurityContext::checkedContentSecurityPolicy()
-{
-    return contentSecurityPolicy();
 }
 
 const IntegrityPolicy* SecurityContext::integrityPolicy() const

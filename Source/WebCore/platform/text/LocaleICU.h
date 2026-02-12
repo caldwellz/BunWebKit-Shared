@@ -55,7 +55,7 @@ public:
     String shortTimeFormat() override;
     String dateTimeFormatWithSeconds() override;
     String dateTimeFormatWithoutSeconds() override;
-    const Vector<String>& monthLabels() override;
+    const Vector<String>& NODELETE monthLabels() override;
     const Vector<String>& shortMonthLabels() override;
     const Vector<String>& standAloneMonthLabels() override;
     const Vector<String>& shortStandAloneMonthLabels() override;

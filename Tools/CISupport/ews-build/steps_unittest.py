@@ -4557,7 +4557,7 @@ class TestCheckChangeRelevance(BuildStepMixinAdditions, unittest.TestCase):
         queues = ['Commit-Queue', 'Style-EWS', 'GTK-Build-EWS', 'GTK-WK2-Tests-EWS',
                   'iOS-13-Build-EWS', 'iOS-13-Simulator-Build-EWS', 'iOS-13-Simulator-WK2-Tests-EWS',
                   'macOS-Catalina-Release-Build-EWS', 'macOS-Catalina-Release-WK2-Tests-EWS', 'macOS-Catalina-Debug-Build-EWS',
-                  'PlayStation-Build-EWS', 'Win-Build-EWS', 'WPE-Build-EWS', 'WebKitPerl-Tests-EWS', 'WPE-LibWebRTC-Build-EWS']
+                  'PlayStation-Build-EWS', 'Win-Build-EWS', 'WPE-Build-EWS', 'WebKitPerl-Tests-EWS', 'GTK-GTK3-LibWebRTC-Build-EWS']
         for queue in queues:
             self.setup_step(CheckChangeRelevance())
             self.setProperty('buildername', queue)
@@ -4676,7 +4676,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: b'+++ LayoutTests/http/tests/events/device-orientation-motion-insecure-context.html'
         self.expect_outcome(result=SUCCESS, state_string='Patch contains relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', ['LayoutTests/http/tests/events/device-orientation-motion-insecure-context.html'])
@@ -4689,7 +4689,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: b'+++ LayoutTests/svg/filters/feConvolveMatrix-clipped.svg'
         self.expect_outcome(result=SUCCESS, state_string='Patch contains relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', ['LayoutTests/svg/filters/feConvolveMatrix-clipped.svg'])
@@ -4702,7 +4702,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: b'+++ LayoutTests/fast/table/037.xml'
         self.expect_outcome(result=SUCCESS, state_string='Patch contains relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', ['LayoutTests/fast/table/037.xml'])
@@ -4715,7 +4715,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: f'+++ LayoutTests/reference/test-name.html'.encode('utf-8')
         self.expect_outcome(result=SKIPPED, state_string='Patch doesn\'t have relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -4728,7 +4728,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: f'+++ LayoutTests/reference/test-name.svg'.encode('utf-8')
         self.expect_outcome(result=SKIPPED, state_string='Patch doesn\'t have relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -4741,7 +4741,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: f'+++ LayoutTests/reference/test-name.xml'.encode('utf-8')
         self.expect_outcome(result=SKIPPED, state_string='Patch doesn\'t have relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -4753,7 +4753,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: f'+++ LayoutTests/http/tests/events/device-motion-expected-mismatch.html'.encode('utf-8')
         self.expect_outcome(result=SKIPPED, state_string='Patch doesn\'t have relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -4765,7 +4765,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: '+++ LayoutTests/html/test.txt'.encode('utf-8')
         self.expect_outcome(result=SKIPPED, state_string='Patch doesn\'t have relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -4777,7 +4777,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: b'Sample patch which does not modify any layout test'
         self.expect_outcome(result=SKIPPED, state_string='Patch doesn\'t have relevant changes')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -4789,7 +4789,7 @@ class TestFindModifiedLayoutTests(BuildStepMixinAdditions, unittest.TestCase):
         FindModifiedLayoutTests._get_patch = lambda x: b''
         self.expect_outcome(result=WARNINGS, state_string='Patch could not be accessed')
         self.expectRemoteCommands(
-            ExpectShell(workdir='wkdir', log_environ=False, command=['diff', '-u', '-w', 'base-expectations.txt', 'new-expectations.txt']).exit(0)
+            ExpectShell(workdir='wkdir', log_environ=False, command=['bash', '-c', 'diff -u -w base-expectations.txt new-expectations.txt | grep "^+[^+]" | grep -v "\\[.SKIP.\\]" | head -n 1000 || true']).exit(0)
         )
         rc = self.run_step()
         self.expect_property('modified_tests', None)
@@ -10394,6 +10394,7 @@ class TestTrigger(BuildStepMixinAdditions, unittest.TestCase):
         self.assertIn('ews_revision', props)
         self.assertIn('parent_buildnumber', props)
         self.assertIn('parent_builderid', props)
+        self.assertIn('rebuild_without_change_on_builder', props)
         self.assertNotIn('github.number', props)
         self.assertNotIn('github.head.sha', props)
         self.assertNotIn('repository', props)

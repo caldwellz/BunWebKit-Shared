@@ -217,9 +217,13 @@ void AXObjectCache::frameLoadingEventPlatformNotification(RenderView* renderView
     }
 }
 
-void AXObjectCache::platformHandleFocusedUIElementChanged(Element*, Element* newElement)
+void AXObjectCache::platformHandleFocusedUIElementChanged(AccessibilityObject* oldFocus, AccessibilityObject* newFocus)
 {
-    postNotification(newElement, AXNotification::FocusedUIElementChanged);
+    RefPtr notificationTarget = newFocus;
+    if (!notificationTarget)
+        notificationTarget = oldFocus ? oldFocus : rootWebArea();
+
+    postNotification(notificationTarget.get(), AXNotification::FocusedUIElementChanged);
 }
 
 void AXObjectCache::handleScrolledToAnchor(const Node&)

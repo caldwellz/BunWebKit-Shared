@@ -478,6 +478,7 @@ function :ceil, {
 function :clamp, {
     must_use: true,
     const: true,
+    validate: true,
 
     [T < Number].(T, T, T) => T,
     [T < Number, N].(vec[N][T], vec[N][T], vec[N][T]) => vec[N][T],

@@ -162,7 +162,7 @@ RefPtr<VideoFrame> ImageRotationSessionVT::applyRotation(VideoFrame& videoFrame,
     if (!pixelBuffer)
         return nullptr;
 
-    return VideoFrameCV::create(videoFrame.presentationTime(), false, VideoFrameRotation::None, WTF::move(pixelBuffer), videoFrame.colorSpace());
+    return VideoFrameCV::create(videoFrame.presentationTime(), false, VideoFrameRotation::None, WTF::move(pixelBuffer), PlatformVideoColorSpace { videoFrame.colorSpace() });
 }
 
 }

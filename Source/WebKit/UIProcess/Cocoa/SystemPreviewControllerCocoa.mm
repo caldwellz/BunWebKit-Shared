@@ -113,7 +113,7 @@ static NSString * const _WKARQLWebsiteURLParameterKey = @"ARQLWebsiteURLParamete
 - (void)dealloc
 {
     [_completionHandler release];
-    [_mimeType release];
+    SUPPRESS_UNRETAINED_ARG [_mimeType release];
     [super dealloc];
 }
 
@@ -476,15 +476,15 @@ void SystemPreviewController::begin(const URL& url, const WebCore::SecurityOrigi
     m_allowPreviewCallback = makeBlockPtr([successHandler = WTF::move(successHandler)](bool success) mutable {
         successHandler(success);
     });
-    auto alert = WebKit::createUIAlertController(WEB_UI_NSSTRING(@"View in AR?", "View in AR?"), WEB_UI_NSSTRING(@"You can view this object in 3D and place it in your surroundings using augmented reality.", "You can view this object in 3D and place it in your surroundings using augmented reality."));
-    RetainPtr allowAction = [UIAlertAction actionWithTitle:WEB_UI_NSSTRING_KEY(@"View in AR", @"View in AR (usdz QuickLook Preview)", "Allow displaying QuickLook Preview of 3D model") style:UIAlertActionStyleDefault handler:[weakThis = WeakPtr { *this }](UIAlertAction *) mutable {
+    auto alert = WebKit::createUIAlertController(protect(WEB_UI_NSSTRING(@"View in AR?", "View in AR?")).get(), protect(WEB_UI_NSSTRING(@"You can view this object in 3D and place it in your surroundings using augmented reality.", "You can view this object in 3D and place it in your surroundings using augmented reality.")).get());
+    RetainPtr allowAction = [UIAlertAction actionWithTitle:protect(WEB_UI_NSSTRING_KEY(@"View in AR", @"View in AR (usdz QuickLook Preview)", "Allow displaying QuickLook Preview of 3D model")).get() style:UIAlertActionStyleDefault handler:[weakThis = WeakPtr { *this }](UIAlertAction *) mutable {
         if (!weakThis)
             return;
 
         std::exchange(weakThis->m_allowPreviewCallback, nullptr)(true);
     }];
 
-    RetainPtr doNotAllowAction = [UIAlertAction actionWithTitle:WEB_UI_NSSTRING_KEY(@"Cancel", @"Cancel (usdz QuickLook Preview)", "Cancel displaying QuickLook Preview of 3D model") style:UIAlertActionStyleCancel handler:[weakThis = WeakPtr { *this }](UIAlertAction *) mutable {
+    RetainPtr doNotAllowAction = [UIAlertAction actionWithTitle:protect(WEB_UI_NSSTRING_KEY(@"Cancel", @"Cancel (usdz QuickLook Preview)", "Cancel displaying QuickLook Preview of 3D model")).get() style:UIAlertActionStyleCancel handler:[weakThis = WeakPtr { *this }](UIAlertAction *) mutable {
         if (!weakThis)
             return;
 

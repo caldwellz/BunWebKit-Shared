@@ -417,7 +417,37 @@ public:
 
         return shouldSpeculateInt52ForAdd(left) && shouldSpeculateInt52ForAdd(right);
     }
-    
+
+    bool modShouldSpeculateInt52(Node* node)
+    {
+        // This is much more relaxed compared to addShouldSpeculateInt52.
+        // The reason is double mod is so costly, so it is worth trying with much more aggressively compared to addShouldSpeculateInt52.
+        if (!enableInt52())
+            return false;
+
+        Node* left = node->child1().node();
+        Node* right = node->child2().node();
+
+        if (hasExitSite(node, Int52Overflow))
+            return false;
+
+        if (hasExitSite(node, NegativeZero))
+            return false;
+
+        if (Node::shouldSpeculateInt52(left, right))
+            return true;
+
+        auto shouldSpeculateInt52ForMod = [](Node* node) {
+            // When DoubleConstant node appears, it means that users explicitly write a constant in their code with double form instead of integer form (1.0 instead of 1).
+            // In that case, we should honor this decision: using it as integer is not appropriate.
+            if (node->op() == DoubleConstant)
+                return false;
+            return isIntAnyFormat(node->prediction());
+        };
+
+        return shouldSpeculateInt52ForMod(left) && shouldSpeculateInt52ForMod(right);
+    }
+
     bool binaryArithShouldSpeculateInt32(Node* node, PredictionPass pass)
     {
         Node* left = node->child1().node();

@@ -78,7 +78,7 @@ static inline void logBackForwardCacheFailureDiagnosticMessage(Page* page, const
     if (!page)
         return;
 
-    logBackForwardCacheFailureDiagnosticMessage(page->checkedDiagnosticLoggingClient(), reason);
+    logBackForwardCacheFailureDiagnosticMessage(protect(page->diagnosticLoggingClient()), reason);
 }
 
 static bool canCacheFrame(LocalFrame& frame, DiagnosticLoggingClient& diagnosticLoggingClient, unsigned indentLevel)

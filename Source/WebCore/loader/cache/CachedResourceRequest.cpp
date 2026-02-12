@@ -112,7 +112,7 @@ void upgradeInsecureResourceRequestIfNeeded(ResourceRequest& request, Document& 
     URL url = request.url();
 
     ASSERT(document.contentSecurityPolicy());
-    document.checkedContentSecurityPolicy()->upgradeInsecureRequestIfNeeded(url, ContentSecurityPolicy::InsecureRequestType::Load, alwaysUpgradeRequest);
+    protect(document.contentSecurityPolicy())->upgradeInsecureRequestIfNeeded(url, ContentSecurityPolicy::InsecureRequestType::Load, alwaysUpgradeRequest);
 
     if (url == request.url())
         return;

@@ -59,12 +59,11 @@ using JSDedicatedWorkerGlobalScopeDOMConstructor = JSDOMConstructorNotConstructa
 
 /* Hash table */
 
-static const struct CompactHashIndex JSDedicatedWorkerGlobalScopeTableIndex[5] = {
+static const struct CompactHashIndex JSDedicatedWorkerGlobalScopeTableIndex[4] = {
     { -1, -1 },
-    { -1, -1 },
-    { -1, -1 },
-    { 0, 4 },
     { 1, -1 },
+    { -1, -1 },
+    { 0, -1 },
 };
 
 

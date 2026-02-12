@@ -43,6 +43,7 @@
 #include "ComputedStyleDependencies.h"
 #include "Document.h"
 #include "HTMLElement.h"
+#include "HTMLSelectElement.h"
 #include "PaintWorkletGlobalScope.h"
 #include "RenderStyle+GettersInlines.h"
 #include "RenderStyle+SettersInlines.h"
@@ -561,7 +562,7 @@ Ref<CSSValue> Builder::resolveInternalAutoBaseFunction(CSSValue& value)
         return value;
 
     // usedAppearance() is inaccurate at this stage of style resolution, check against both `appearance: base-select` & `appearance: base`.
-    bool isAppearanceBase = m_state->style().appearance() == StyleAppearance::Base || m_state->style().appearance() == StyleAppearance::BaseSelect;
+    bool isAppearanceBase = m_state->style().appearance() == StyleAppearance::Base || (is<HTMLSelectElement>(m_state->element()) && m_state->style().appearance() == StyleAppearance::BaseSelect);
     RefPtr result = const_cast<CSSValue*>(isAppearanceBase ? functionValue->item(1) : functionValue->item(0));
 
     if (!result)

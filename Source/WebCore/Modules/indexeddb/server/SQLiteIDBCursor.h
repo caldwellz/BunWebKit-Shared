@@ -60,7 +60,7 @@ public:
     ~SQLiteIDBCursor();
 
     const IDBResourceIdentifier& identifier() const { return m_cursorIdentifier; }
-    SQLiteIDBTransaction* transaction() const;
+    SQLiteIDBTransaction* NODELETE transaction() const;
 
     IDBObjectStoreIdentifier objectStoreID() const { return m_objectStoreID; }
     int64_t currentRecordRowID() const;

@@ -323,7 +323,7 @@ bool HistoryController::shouldStopLoadingForHistoryItem(HistoryItem& targetItem)
 
 // Main funnel for navigating to a previous location (back/forward, non-search snap-back)
 // This includes recursion to handle loading into framesets properly
-void HistoryController::goToItem(HistoryItem& targetItem, FrameLoadType frameLoadType, ShouldTreatAsContinuingLoad shouldTreatAsContinuingLoad, ProcessSwapDisposition processSwapDisposition)
+void HistoryController::goToItem(HistoryItem& targetItem, FrameLoadType frameLoadType, ShouldTreatAsContinuingLoad shouldTreatAsContinuingLoad)
 {
     RELEASE_LOG(History, "%p - HistoryController::goToItem: item %p, type=%d", this, &targetItem, static_cast<int>(frameLoadType));
 
@@ -369,7 +369,7 @@ void HistoryController::goToItem(HistoryItem& targetItem, FrameLoadType frameLoa
         protectedThis->recursiveGoToItem(targetItem, currentItem.get(), frameLoadType, shouldTreatAsContinuingLoad);
     };
 
-    goToItemShared(targetItem, WTF::move(finishGoToItem), processSwapDisposition);
+    goToItemShared(targetItem, WTF::move(finishGoToItem), shouldTreatAsContinuingLoad);
 }
 
 struct HistoryController::FrameToNavigate {
@@ -439,7 +439,7 @@ void HistoryController::goToItemForNavigationAPI(HistoryItem& targetItem, FrameL
     goToItemShared(targetItem, WTF::move(finishGoToItem));
 }
 
-void HistoryController::goToItemShared(HistoryItem& targetItem, CompletionHandler<void(ShouldGoToHistoryItem)>&& completionHandler, ProcessSwapDisposition processSwapDisposition)
+void HistoryController::goToItemShared(HistoryItem& targetItem, CompletionHandler<void(ShouldGoToHistoryItem)>&& completionHandler, ShouldTreatAsContinuingLoad shouldTreatAsContinuingLoad)
 {
     m_policyItem = targetItem;
 
@@ -449,11 +449,15 @@ void HistoryController::goToItemShared(HistoryItem& targetItem, CompletionHandle
     bool sameDocumentNavigation = current && targetItem.shouldDoSameDocumentNavigationTo(*current);
 
     Ref frame = m_frame.get();
-    // FIXME <rdar://148849772>: Remove processSwapDisposition check once we have a better solution for passing context to newly spawned processes regarding COOP headers,
-    // and go back to asynchronous path.
-    if (sameDocumentNavigation || !protect(frame->loader().client())->supportsAsyncShouldGoToHistoryItem() || processSwapDisposition == ProcessSwapDisposition::COOP) {
+    // There is no need to check policy for a continuing load.
+    if (shouldTreatAsContinuingLoad != ShouldTreatAsContinuingLoad::No) {
+        completionHandler(ShouldGoToHistoryItem::Yes);
+        return;
+    }
+
+    if (sameDocumentNavigation || !protect(frame->loader().client())->supportsAsyncShouldGoToHistoryItem()) {
         auto isSameDocumentNavigation = sameDocumentNavigation ? IsSameDocumentNavigation::Yes : IsSameDocumentNavigation::No;
-        auto result = protect(frame->loader().client())->shouldGoToHistoryItem(targetItem, isSameDocumentNavigation, processSwapDisposition);
+        auto result = protect(frame->loader().client())->shouldGoToHistoryItem(targetItem, isSameDocumentNavigation);
         completionHandler(result);
         return;
     }
@@ -609,7 +613,7 @@ void HistoryController::updateForRedirectWithLockedBackForwardList()
             if (RefPtr parentCurrentItem = parentFrame->loader().history().currentItem()) {
                 Ref item = createItem(page->historyItemClient(), parentCurrentItem->itemID());
                 parentCurrentItem->setChildItem(item.copyRef());
-                page->checkedBackForward()->setChildItem(parentCurrentItem->frameItemID(), WTF::move(item));
+                protect(page->backForward())->setChildItem(parentCurrentItem->frameItemID(), WTF::move(item));
             }
         }
     }
@@ -1004,7 +1008,7 @@ void HistoryController::updateBackForwardListClippedAtTarget(bool doClip)
     if (!item)
         return;
     LOG(History, "HistoryController %p updateBackForwardListClippedAtTarget: Adding backforward item %p in frame %p (main frame %d) %s", this, item.get(), m_frame.ptr(), m_frame->isMainFrame(), m_frame->loader().documentLoader()->url().string().utf8().data());
-    page->checkedBackForward()->addItem(item.releaseNonNull());
+    protect(page->backForward())->addItem(item.releaseNonNull());
 }
 
 void HistoryController::updateCurrentItem()
@@ -1067,7 +1071,7 @@ void HistoryController::pushState(RefPtr<SerializedScriptValue>&& stateObject, c
 
     LOG(History, "HistoryController %p pushState: Adding top item %p, setting url of current item %p to %s, scrollRestoration is %s", this, topItem.ptr(), m_currentItem.get(), urlString.ascii().data(), topItem->shouldRestoreScrollPosition() ? "auto" : "manual");
 
-    page->checkedBackForward()->addItem(WTF::move(topItem));
+    protect(page->backForward())->addItem(WTF::move(topItem));
 
     if (!canRecordHistoryForFrame(frame))
         return;

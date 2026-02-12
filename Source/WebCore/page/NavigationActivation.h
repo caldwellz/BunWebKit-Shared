@@ -25,8 +25,8 @@
 
 #pragma once
 
-#include "NavigationHistoryEntry.h"
-#include "ScriptWrappable.h"
+#include <WebCore/ScriptWrappable.h>
+#include <wtf/RefCounted.h>
 
 namespace WebCore {
 
@@ -41,7 +41,7 @@ public:
         return adoptRef(*new NavigationActivation(type, WTF::move(entry), WTF::move(fromEntry)));
     }
 
-    ~NavigationActivation();
+    WEBCORE_EXPORT ~NavigationActivation();
 
     NavigationNavigationType navigationType() { return m_navigationType; };
     NavigationHistoryEntry* from() const { return m_fromEntry.get(); };

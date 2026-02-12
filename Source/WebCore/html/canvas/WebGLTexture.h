@@ -27,7 +27,7 @@
 
 #if ENABLE(WEBGL)
 
-#include "WebGLObject.h"
+#include <WebCore/WebGLObject.h>
 #include <wtf/Vector.h>
 
 namespace WebCore {

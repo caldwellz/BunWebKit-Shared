@@ -146,6 +146,7 @@ void EntryPointRewriter::checkReturnType()
                     AST::Identifier::make(returnStructName)
                 );
                 returnType.m_inferredType = m_shaderModule.types().structType(returnStruct);
+                returnType.m_evaluation = namedTypeName->evaluation();
                 m_shaderModule.replace(*namedTypeName, returnType);
             };
 
@@ -189,6 +190,7 @@ void EntryPointRewriter::checkReturnType()
         AST::Identifier::make(returnStructName)
     );
     returnType.m_inferredType = m_shaderModule.types().structType(returnStruct);
+    returnType.m_evaluation = m_function.maybeReturnType()->evaluation();
 
     if (namedTypeName)
         m_shaderModule.replace(*namedTypeName, returnType);

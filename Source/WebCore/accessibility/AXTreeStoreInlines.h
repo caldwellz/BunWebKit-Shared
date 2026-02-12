@@ -89,9 +89,15 @@ inline bool AXTreeStore<T>::contains(AXID axID)
 }
 
 template<typename T>
-inline WeakPtr<AXObjectCache> AXTreeStore<T>::axObjectCacheForID(std::optional<AXID> axID)
+inline WeakPtr<AXObjectCache> AXTreeStore<T>::axObjectCacheForID(AXID treeID)
 {
-    return axID ? liveTreeMap().get(*axID) : nullptr;
+    return liveTreeMap().get(treeID);
+}
+
+template<typename T>
+inline WeakPtr<AXObjectCache> AXTreeStore<T>::axObjectCacheForID(std::optional<AXID> treeID)
+{
+    return treeID ? axObjectCacheForID(*treeID) : nullptr;
 }
 
 #if ENABLE(ACCESSIBILITY_ISOLATED_TREE)

@@ -140,7 +140,7 @@ void MediaSessionManageriOS::sessionWillBeginPlayback(PlatformMediaSessionInterf
             return;
         }
 
-#if PLATFORM(IOS_FAMILY) && !PLATFORM(IOS_FAMILY_SIMULATOR) && !PLATFORM(MACCATALYST) && !PLATFORM(WATCHOS)
+#if PLATFORM(IOS_FAMILY)
         auto playbackTargetSupportsAirPlayVideo = MediaSessionHelper::sharedHelper().activeVideoRouteSupportsAirPlayVideo();
         ALWAYS_LOG_WITH_THIS(protectedThis, logSiteIdentifier, "Playback Target Supports AirPlay Video = ", playbackTargetSupportsAirPlayVideo);
         if (auto target = MediaSessionHelper::sharedHelper().playbackTarget(); target && playbackTargetSupportsAirPlayVideo)

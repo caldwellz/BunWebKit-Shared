@@ -161,6 +161,66 @@ JSString* JSString::tryReplaceOneChar(JSGlobalObject* globalObject, char16_t sea
     return nullptr;
 }
 
+std::optional<size_t> JSString::tryFindOneChar(JSGlobalObject*, char16_t character, unsigned& startPosition) const
+{
+    ASSERT(isRope());
+
+    // Search for a single character in a rope without resolving it.
+    // If the root is a substring rope, scan it directly via its base's buffer.
+    // If the root is a non-substring rope, iterate its top-level fibers:
+    //   - Resolved string or substring rope: scan via StringView::find().
+    //   - Non-substring rope fiber: bail out (return nullopt).
+    // Returns position if found, WTF::notFound if definitively
+    // absent, or std::nullopt if the rope structure is too complex to walk.
+
+    auto scanSubstring = [&](const JSRopeString* substringRope, unsigned fiberLength, unsigned offset) -> std::optional<size_t> {
+        JSString* base = substringRope->substringBase();
+        ASSERT(!base->isRope());
+        unsigned localStart = startPosition > offset ? startPosition - offset : 0;
+        StringView view = StringView(base->valueInternal()).substring(substringRope->substringOffset(), fiberLength);
+        size_t result = view.find(character, localStart);
+        if (result != WTF::notFound)
+            return offset + result;
+        return std::nullopt;
+    };
+
+    if (isSubstring()) {
+        auto result = scanSubstring(static_cast<const JSRopeString*>(this), length(), 0);
+        return result ? result : std::optional<size_t>(WTF::notFound);
+    }
+
+    const JSRopeString* rope = static_cast<const JSRopeString*>(this);
+    unsigned offset = 0;
+    for (unsigned i = 0; i < JSRopeString::s_maxInternalRopeLength; ++i) {
+        JSString* fiber = rope->fiber(i);
+        if (!fiber)
+            break;
+
+        unsigned fiberLength = fiber->length();
+        if (startPosition >= offset + fiberLength) {
+            offset += fiberLength;
+            continue;
+        }
+
+        if (!fiber->isRope()) {
+            unsigned localStart = startPosition > offset ? startPosition - offset : 0;
+            size_t result = StringView(fiber->valueInternal()).find(character, localStart);
+            if (result != WTF::notFound)
+                return offset + result;
+        } else if (fiber->isSubstring()) {
+            if (auto result = scanSubstring(static_cast<const JSRopeString*>(fiber), fiberLength, offset))
+                return result;
+        } else {
+            startPosition = std::max(startPosition, offset);
+            return std::nullopt;
+        }
+
+        offset += fiberLength;
+    }
+
+    return WTF::notFound;
+}
+
 template<typename StringType>
 inline JSValue jsMakeNontrivialString(VM& vm, StringType&& string)
 {

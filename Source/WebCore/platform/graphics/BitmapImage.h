@@ -123,6 +123,7 @@ private:
 
 #if ENABLE(QUICKLOOK_FULLSCREEN)
     bool shouldUseQuickLookForFullscreen() const final { return m_source->shouldUseQuickLookForFullscreen(); }
+    bool isPanorama() const final { return m_source->isPanorama(); }
 #endif
 
 #if ENABLE(SPATIAL_IMAGE_DETECTION)

@@ -27,12 +27,14 @@
 
 #import <wtf/Platform.h>
 
+#import "ModelTypes.h" // NOLINT
 #import "UIWindowScene+Extras.h"
 #import "WKMaterialHostingSupport.h"
 #import "WKMouseDeviceObserver.h"
 #import "WKPreferencesInternal.h"
 #import "WKScrollGeometry.h"
 #import "WKSeparatedImageView.h"
+#import "WKSurroundingsEffect.h"
 #import "WKUIDelegateInternal.h"
 #import "WKWebViewConfigurationInternal.h"
 #import "WKWebViewInternal.h"

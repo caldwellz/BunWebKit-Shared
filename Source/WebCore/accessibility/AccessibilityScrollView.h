@@ -108,7 +108,6 @@ private:
     RefPtr<AccessibilityObject> protectedHorizontalScrollbar() const { return m_horizontalScrollbar; }
     RefPtr<AccessibilityObject> protectedVerticalScrollbar() const { return m_verticalScrollbar; }
     HTMLFrameOwnerElement* frameOwnerElement() const { return m_frameOwnerElement; }
-    RefPtr<HTMLFrameOwnerElement> protectedFrameOwnerElement() const { return m_frameOwnerElement; }
 
     AccessibilityObject* firstChild() const final { return webAreaObject(); }
     AccessibilityScrollbar* addChildScrollbar(Scrollbar*);

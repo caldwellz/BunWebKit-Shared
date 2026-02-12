@@ -31,6 +31,7 @@
 #include "RemoteVideoFrameIdentifier.h"
 #include <WebCore/IntSize.h>
 #include <WebCore/PixelBufferConformerCV.h>
+#include <WebCore/PlatformVideoColorSpace.h>
 #include <WebCore/ProcessIdentity.h>
 #include <WebCore/SharedMemory.h>
 #include <wtf/MediaTime.h>
@@ -61,6 +62,7 @@ struct SharedVideoFrame {
     MediaTime time;
     bool mirrored { false };
     WebCore::VideoFrameRotation rotation { };
+    WebCore::PlatformVideoColorSpace colorSpace;
     using Buffer = Variant<std::nullptr_t, RemoteVideoFrameReadReference, MachSendRight, WebCore::IntSize>;
     Buffer buffer;
 };

@@ -183,18 +183,15 @@ void HTMLSlotElement::assign(FixedVector<ElementOrText>&& nodes)
     }
 
     auto previous = std::exchange(m_manuallyAssignedNodes, { });
-    HashSet<RefPtr<Node>> seenNodes;
+    HashSet<Ref<Node>> seenNodes;
     m_manuallyAssignedNodes = WTF::compactMap(nodes, [&seenNodes](ElementOrText& node) -> std::optional<WeakPtr<Node, WeakPtrImplWithEventTargetData>> {
-        auto mapper = [&seenNodes]<typename T>(RefPtr<T>& node) -> std::optional<WeakPtr<Node, WeakPtrImplWithEventTargetData>> {
-            if (seenNodes.contains(node))
-                return std::nullopt;
-            seenNodes.add(node);
-            return WeakPtr { node };
-        };
-
         return WTF::switchOn(node,
-            [&mapper](RefPtr<Element>& node) { return mapper(node); },
-            [&mapper](RefPtr<Text>& node) { return mapper(node); }
+            [&seenNodes]<typename T>(Ref<T>& node) -> std::optional<WeakPtr<Node, WeakPtrImplWithEventTargetData>> {
+                if (seenNodes.contains(node))
+                    return std::nullopt;
+                seenNodes.add(node);
+                return WeakPtr { node };
+            }
         );
     });
 

@@ -190,7 +190,6 @@ public:
 
     // ContextDestructionObserver.
     ScriptExecutionContext* scriptExecutionContext() const final;
-    using ActiveDOMObject::protectedScriptExecutionContext;
     void contextDestroyed() final;
 
 protected:

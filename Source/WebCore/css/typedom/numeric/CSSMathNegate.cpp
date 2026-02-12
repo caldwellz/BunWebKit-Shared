@@ -38,10 +38,8 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(CSSMathNegate);
 static CSSNumericType copyType(const CSSNumberish& numberish)
 {
     return WTF::switchOn(numberish,
-        [] (double) { return CSSNumericType(); },
-        [] (const RefPtr<CSSNumericValue>& value) {
-            if (!value)
-                return CSSNumericType();
+        [](double) { return CSSNumericType(); },
+        [](const Ref<CSSNumericValue>& value) {
             return value->type();
         }
     );

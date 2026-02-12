@@ -85,7 +85,7 @@ public:
     WEBCORE_EXPORT void registerSimulatedXRDeviceForTesting(PlatformXR::Device&);
     WEBCORE_EXPORT void unregisterSimulatedXRDeviceForTesting(PlatformXR::Device&);
 
-    Navigator* navigator();
+    Navigator* NODELETE navigator();
 
 protected:
     // EventTarget

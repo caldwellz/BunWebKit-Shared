@@ -102,7 +102,7 @@ void RenderSlider::computePreferredLogicalWidths()
 
 bool RenderSlider::inDragMode() const
 {
-    return protect(element())->protectedSliderThumbElement()->active();
+    return protect(protect(element())->sliderThumbElement())->active();
 }
 
 double RenderSlider::valueRatio() const

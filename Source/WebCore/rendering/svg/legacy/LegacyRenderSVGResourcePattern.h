@@ -47,7 +47,6 @@ public:
     virtual ~LegacyRenderSVGResourcePattern();
 
     SVGPatternElement& patternElement() const;
-    Ref<SVGPatternElement> protectedPatternElement() const;
 
     void removeAllClientsFromCache() override;
     void removeAllClientsFromCacheAndMarkForInvalidationIfNeeded(bool markForInvalidation, SingleThreadWeakHashSet<RenderObject>* visitedRenderers) override;

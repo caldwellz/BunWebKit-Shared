@@ -127,6 +127,7 @@ class CommonIdentifiers;
 class CompactTDZEnvironmentMap;
 class ConservativeRoots;
 class ControlFlowProfiler;
+class EvacuatedStackSlice;
 class Exception;
 class ExceptionScope;
 class FuzzerAgent;
@@ -145,6 +146,7 @@ class MegamorphicCache;
 class NativeExecutable;
 class Debugger;
 class DeferredWorkTimer;
+class PinballCompletion;
 class RegExp;
 class RegExpCache;
 class Register;
@@ -237,6 +239,26 @@ public:
 
 private:
     ScratchBuffer* m_scratchBuffer;
+};
+
+// A record marking the top (in memory address terms) of the "interesting" stack span when
+// handling a JSPI suspension. A pointer to it is saved in the VM as the 'topJSPIContext' field.
+struct JSPIContext {
+    enum class Purpose {
+        Promising, // Started in a 'WebAssembly.promising()' wrapper function.
+        Completing // Started in a PinballCompletion fulfillment handler.
+    };
+
+    JSPIContext(Purpose, VM&, CallFrame*, JSPromise*);
+    ~JSPIContext();
+
+    void deactivate(VM&);
+
+    Purpose purpose;
+    JSPIContext* previousContext;
+    CallFrame* limitFrame; // scan up to this frame, and return from it after evacuating the stack
+    PinballCompletion* completion { nullptr };
+    JSPromise* resultPromise;
 };
 
 enum VMIdentifierType { };
@@ -402,6 +424,7 @@ public:
     CallFrame* topCallFrame { nullptr };
     EntryFrame* topEntryFrame { nullptr };
     void* maybeReturnPC { nullptr };
+    JSPIContext* topJSPIContext { nullptr };
 private:
 
     struct EntryScopeServicesBits {
@@ -530,6 +553,7 @@ public:
     WriteBarrier<Structure> programExecutableStructure;
     WriteBarrier<Structure> functionExecutableStructure;
 #if ENABLE(WEBASSEMBLY)
+    WriteBarrier<Structure> pinballCompletionStructure;
     WriteBarrier<Structure> webAssemblyCalleeGroupStructure;
 #endif
     WriteBarrier<Structure> moduleProgramExecutableStructure;
@@ -947,6 +971,11 @@ public:
     void clearScratchBuffers();
     bool isScratchBuffer(void*);
 
+    void addEvacuatedStackSlice(EvacuatedStackSlice*);
+    void removeEvacuatedStackSlice(EvacuatedStackSlice*);
+    void addEvacuatedCalleeSaves(std::span<CPURegister>);
+    void removeEvacuatedCalleeSaves(std::span<CPURegister>);
+
     EncodedJSValue* exceptionFuzzingBuffer(size_t size)
     {
         ASSERT(Options::useExceptionFuzz());
@@ -956,6 +985,7 @@ public:
     }
 
     void gatherScratchBufferRoots(ConservativeRoots&);
+    void gatherEvacuatedStackRoots(ConservativeRoots&);
 
     static constexpr unsigned expectedMaxActiveSideStateCount = 4;
     void pushCheckpointOSRSideState(std::unique_ptr<CheckpointOSRExitSideState>&&);
@@ -1305,6 +1335,9 @@ private:
     Lock m_scratchBufferLock;
     Vector<ScratchBuffer*> m_scratchBuffers;
     size_t m_sizeOfLastScratchBuffer { 0 };
+    Lock m_evacuatedStacksLock;
+    Vector<EvacuatedStackSlice*> m_evacuatedStackSlices;
+    Vector<std::span<CPURegister>> m_evacuatedCalleeSaves;
     Vector<std::unique_ptr<CheckpointOSRExitSideState>, expectedMaxActiveSideStateCount> m_checkpointSideState;
     InlineWatchpointSet m_primitiveGigacageEnabled { IsWatched };
     FunctionHasExecutedCache m_functionHasExecutedCache;
@@ -1401,6 +1434,22 @@ extern "C" void SYSV_ABI sanitizeStackForVMImpl(VM*);
 #endif
 
 JS_EXPORT_PRIVATE void sanitizeStackForVM(VM&);
+
+inline JSPIContext::JSPIContext(Purpose purpose, VM& vm, CallFrame* callFrame, JSPromise* resultPromise)
+    : purpose(purpose)
+    , previousContext(vm.topJSPIContext)
+    , limitFrame(callFrame)
+    , resultPromise(resultPromise)
+{
+    vm.topJSPIContext = this;
+}
+
+inline void JSPIContext::deactivate(VM& vm)
+{
+    vm.topJSPIContext = previousContext;
+    limitFrame = nullptr; // indicates that this has been deactivated
+}
+
 
 } // namespace JSC
 

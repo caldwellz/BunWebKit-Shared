@@ -112,8 +112,7 @@ ExceptionOr<Ref<WebXRWebGLLayer>> WebXRWebGLLayer::create(WebXRSession& session,
     // 4. If session is an immersive session and context’s XR compatible boolean is false, throw
     //    an InvalidStateError and abort these steps.
     return WTF::switchOn(context,
-        [&](const RefPtr<WebGLRenderingContextBase>& baseContext) -> ExceptionOr<Ref<WebXRWebGLLayer>>
-        {
+        [&](const Ref<WebGLRenderingContextBase>& baseContext) -> ExceptionOr<Ref<WebXRWebGLLayer>> {
             if (baseContext->isContextLost())
                 return Exception { ExceptionCode::InvalidStateError, "Cannot create an XRWebGLLayer with a lost WebGL context."_s };
 
@@ -139,7 +138,7 @@ ExceptionOr<Ref<WebXRWebGLLayer>> WebXRWebGLLayer::create(WebXRSession& session,
 
             // 9. If layer's composition enabled boolean is true: 
             if (isCompositionEnabled) {
-                auto createResult = createOpaqueFramebuffer(session, *baseContext, init);
+                auto createResult = createOpaqueFramebuffer(session, baseContext, init);
                 if (createResult.hasException())
                     return createResult.releaseException();
                 framebuffer = createResult.releaseReturnValue();
@@ -153,10 +152,6 @@ ExceptionOr<Ref<WebXRWebGLLayer>> WebXRWebGLLayer::create(WebXRSession& session,
 
             // 10. Return layer.
             return adoptRef(*new WebXRWebGLLayer(session, WTF::move(context), WTF::move(framebuffer), antialias, ignoreDepthValues, isCompositionEnabled));
-        },
-        [](std::monostate) {
-            ASSERT_NOT_REACHED();
-            return Exception { ExceptionCode::InvalidStateError };
         }
     );
 }
@@ -207,9 +202,10 @@ unsigned WebXRWebGLLayer::framebufferWidth() const
     }
 
     return WTF::switchOn(m_context,
-        [&](const RefPtr<WebGLRenderingContextBase>& baseContext) {
+        [&](const Ref<WebGLRenderingContextBase>& baseContext) {
             return std::max<unsigned>(1, baseContext->drawingBufferWidth());
-        });
+        }
+    );
 }
 
 unsigned WebXRWebGLLayer::framebufferHeight() const
@@ -222,9 +218,10 @@ unsigned WebXRWebGLLayer::framebufferHeight() const
     }
 
     return WTF::switchOn(m_context,
-        [&](const RefPtr<WebGLRenderingContextBase>& baseContext) {
+        [&](const Ref<WebGLRenderingContextBase>& baseContext) {
             return std::max<unsigned>(1, baseContext->drawingBufferHeight());
-        });
+        }
+    );
 }
 
 // https://immersive-web.github.io/webxr/#dom-xrwebgllayer-getviewport
@@ -271,15 +268,19 @@ double WebXRWebGLLayer::getNativeFramebufferScaleFactor(const WebXRSession& sess
 
 HTMLCanvasElement* WebXRWebGLLayer::canvas() const
 {
-    return WTF::switchOn(m_context, [](const RefPtr<WebGLRenderingContextBase>& baseContext) {
-        auto canvas = baseContext->canvas();
-        return WTF::switchOn(canvas, [](const RefPtr<HTMLCanvasElement>& canvas) {
-            return canvas.get();
-        }, [](const RefPtr<OffscreenCanvas>) -> HTMLCanvasElement* {
-            ASSERT_NOT_REACHED("baseLayer of a WebXRWebGLLayer must be an HTMLCanvasElement");
-            return nullptr;
-        });
-    });
+    return WTF::switchOn(m_context,
+        [](const Ref<WebGLRenderingContextBase>& baseContext) {
+            return WTF::switchOn(baseContext->canvas(),
+                [](const Ref<HTMLCanvasElement>& canvas) -> HTMLCanvasElement* {
+                    return canvas.ptr();
+                },
+                [](const Ref<OffscreenCanvas>&) -> HTMLCanvasElement* {
+                    ASSERT_NOT_REACHED("baseLayer of a WebXRWebGLLayer must be an HTMLCanvasElement");
+                    return nullptr;
+                }
+            );
+        }
+    );
 }
 
 void WebXRWebGLLayer::sessionEnded()

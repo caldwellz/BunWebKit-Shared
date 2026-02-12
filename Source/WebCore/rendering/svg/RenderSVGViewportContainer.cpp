@@ -63,11 +63,6 @@ SVGSVGElement& RenderSVGViewportContainer::svgSVGElement() const
     return downcast<SVGSVGElement>(RenderSVGContainer::element());
 }
 
-Ref<SVGSVGElement> RenderSVGViewportContainer::protectedSVGSVGElement() const
-{
-    return svgSVGElement();
-}
-
 FloatPoint RenderSVGViewportContainer::computeViewportLocation() const
 {
     if (isOutermostSVGViewportContainer())
@@ -161,7 +156,7 @@ void RenderSVGViewportContainer::updateLayerTransform()
 
 void RenderSVGViewportContainer::applyTransform(TransformationMatrix& transform, const RenderStyle& style, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption> options) const
 {
-    applySVGTransform(transform, protectedSVGSVGElement(), style, boundingBox, m_supplementalLayerTransform.isIdentity() ? std::nullopt : std::make_optional(m_supplementalLayerTransform), std::nullopt, options);
+    applySVGTransform(transform, protect(svgSVGElement()), style, boundingBox, m_supplementalLayerTransform.isIdentity() ? std::nullopt : std::make_optional(m_supplementalLayerTransform), std::nullopt, options);
 }
 
 LayoutRect RenderSVGViewportContainer::overflowClipRect(const LayoutPoint& location, OverlayScrollbarSizeRelevancy, PaintPhase) const

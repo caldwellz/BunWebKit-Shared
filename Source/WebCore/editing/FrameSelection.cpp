@@ -2310,6 +2310,9 @@ void FrameSelection::focusedOrActiveStateChanged()
     } else
         addCaretVisibilitySuppressionReason(CaretVisibilitySuppressionReason::IsNotFocusedOrActive);
 #endif
+
+    if (CheckedPtr cache = document->existingAXObjectCache())
+        cache->onFrameSelectionFocusedOrActiveStateChanged(*document);
 }
 
 static Vector<Style::PseudoClassChangeInvalidation> invalidateFocusedElementAndShadowIncludingAncestors(Element* focusedElement, bool activeAndFocused)

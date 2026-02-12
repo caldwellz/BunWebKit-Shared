@@ -161,7 +161,7 @@ public:
         if (!type)
             return nullptr;
 
-        if (m_tagId == TagId::Link && !LinkLoader::isSupportedType(type.value(), m_typeAttribute, protectedDocument()))
+        if (m_tagId == TagId::Link && !LinkLoader::isSupportedType(type.value(), m_typeAttribute, protect(m_document)))
             return nullptr;
 
         // Do not preload if lazyload is possible but metadata fetch is disabled.
@@ -393,7 +393,7 @@ private:
             if (m_linkIsStyleSheet)
                 return CachedResource::Type::CSSStyleSheet;
             if (m_linkIsPreload)
-                return LinkLoader::resourceTypeFromAsAttribute(m_asAttribute, protectedDocument());
+                return LinkLoader::resourceTypeFromAsAttribute(m_asAttribute, protect(m_document));
             break;
         case TagId::Meta:
         case TagId::Unknown:
@@ -423,8 +423,6 @@ private:
 
         return true;
     }
-
-    Ref<Document> protectedDocument() const { return m_document.get(); }
 
     WeakRef<Document, WeakPtrImplWithEventTargetData> m_document;
     TagId m_tagId;

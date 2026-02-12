@@ -32,6 +32,7 @@
 #import "PasteboardTypes.h"
 #import "WebPage.h"
 #import "WebPageProxyMessages.h"
+#import <CoreGraphics/CGContext.h>
 #import <WebCore/CachedImage.h>
 #import <WebCore/ContainerNodeInlines.h>
 #import <WebCore/DocumentPage.h>
@@ -70,7 +71,7 @@ using DragImage = CGImageRef;
 
 static RefPtr<ShareableBitmap> convertDragImageToBitmap(DragImage image, const IntSize& size, Frame& frame)
 {
-    auto bitmap = ShareableBitmap::create({ size, screenColorSpace(frame.protectedMainFrame()->protectedVirtualView().get()) });
+    auto bitmap = ShareableBitmap::create({ size, screenColorSpace(protect(frame.mainFrame())->protectedVirtualView().get()) });
     if (!bitmap)
         return nullptr;
 
@@ -82,7 +83,7 @@ static RefPtr<ShareableBitmap> convertDragImageToBitmap(DragImage image, const I
 #if USE(APPKIT)
     [image drawInRect:NSMakeRect(0, 0, bitmap->size().width(), bitmap->size().height()) fromRect:NSZeroRect operation:NSCompositingOperationSourceOver fraction:1 respectFlipped:YES hints:nil];
 #else
-    CGContextDrawImage(graphicsContext->platformContext(), CGRectMake(0, 0, size.width(), size.height()), image);
+    CGContextDrawImage(protect(graphicsContext->platformContext()).get(), CGRectMake(0, 0, size.width(), size.height()), image);
 #endif
 
     return bitmap;

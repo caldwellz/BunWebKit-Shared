@@ -140,7 +140,7 @@ ColorInputType::~ColorInputType()
 bool ColorInputType::isMouseFocusable() const
 {
     ASSERT(element());
-    return protectedElement()->isTextFormControlFocusable();
+    return protect(element())->isTextFormControlFocusable();
 }
 
 bool ColorInputType::isKeyboardFocusable(const FocusEventData&) const
@@ -171,7 +171,7 @@ bool ColorInputType::supportsRequired() const
 ValueOrReference<String> ColorInputType::fallbackValue() const
 {
     ASSERT(element());
-    return serializeColorValue(Color::black, *protectedElement());
+    return serializeColorValue(Color::black, *protect(element()));
 }
 
 ValueOrReference<String> ColorInputType::sanitizeValue(const String& proposedValue LIFETIME_BOUND) const
@@ -208,7 +208,7 @@ void ColorInputType::createShadowSubtree()
     Ref wrapperElement = HTMLDivElement::create(document);
     Ref colorSwatch = HTMLDivElement::create(document);
 
-    Ref shadowRoot = *protectedElement()->userAgentShadowRoot();
+    Ref shadowRoot = *protect(element())->userAgentShadowRoot();
     ScriptDisallowedScope::EventAllowedScope eventAllowedScope { shadowRoot };
     shadowRoot->appendChild(ContainerNode::ChildChange::Source::Parser, wrapperElement);
 
@@ -318,7 +318,7 @@ void ColorInputType::didChooseColor(const Color& color)
 void ColorInputType::didEndChooser()
 {
     m_chooser = nullptr;
-    if (CheckedPtr renderer = protectedElement()->renderer())
+    if (CheckedPtr renderer = protect(element())->renderer())
         renderer->repaint();
 }
 
@@ -340,7 +340,7 @@ void ColorInputType::updateColorSwatch()
 HTMLElement* ColorInputType::shadowColorSwatch() const
 {
     ASSERT(element());
-    RefPtr shadow = protectedElement()->userAgentShadowRoot();
+    RefPtr shadow = protect(element())->userAgentShadowRoot();
     if (!shadow)
         return nullptr;
 
@@ -366,7 +366,7 @@ std::optional<FrameIdentifier> ColorInputType::rootFrameID() const
 bool ColorInputType::supportsAlpha() const
 {
     ASSERT(element());
-    return protectedElement()->alpha();
+    return protect(element())->alpha();
 }
 
 Vector<Color> ColorInputType::suggestedColors() const
@@ -386,7 +386,7 @@ Vector<Color> ColorInputType::suggestedColors() const
 void ColorInputType::selectColor(StringView string)
 {
     ASSERT(element());
-    if (auto color = parseColorValue(string, *protectedElement()))
+    if (auto color = parseColorValue(string, *protect(element())))
         didChooseColor(*color);
 }
 

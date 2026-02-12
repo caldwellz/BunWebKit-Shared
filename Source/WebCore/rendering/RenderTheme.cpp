@@ -131,8 +131,14 @@ StyleAppearance RenderTheme::adjustAppearanceForElement(RenderStyle& style, cons
 
     auto appearance = style.usedAppearance();
     if (appearance == StyleAppearance::BaseSelect) {
-        style.setUsedAppearance(StyleAppearance::Base);
-        return StyleAppearance::Base;
+        if (is<HTMLSelectElement>(element)) [[likely]] {
+            style.setUsedAppearance(StyleAppearance::Base);
+            return StyleAppearance::Base;
+        }
+
+        // `appearance: base-select` behaves like `auto` on non-select elements.
+        style.setUsedAppearance(autoAppearance);
+        return autoAppearance;
     }
 
     if (appearance == autoAppearance)
@@ -286,9 +292,6 @@ void RenderTheme::adjustStyle(RenderStyle& style, const RenderStyle& parentStyle
         case StyleAppearance::MenulistButton:
             appearance = widgetMayDevolve ? StyleAppearance::MenulistButton : StyleAppearance::None;
             break;
-#if PLATFORM(IOS_FAMILY)
-        case StyleAppearance::ListButton:
-#endif
         default:
             appearance = StyleAppearance::None;
             break;
@@ -610,7 +613,7 @@ static void updateSliderTrackPartForRenderer(SliderTrackPart& sliderTrackPart, c
 
 static void updateSwitchThumbPartForRenderer(SwitchThumbPart& switchThumbPart, const RenderElement& renderer)
 {
-    Ref input = downcast<HTMLInputElement>(*renderer.protectedNode()->shadowHost());
+    Ref input = downcast<HTMLInputElement>(*protect(renderer.element())->shadowHost());
     ASSERT(input->isSwitch());
 
     switchThumbPart.setIsOn(input->isSwitchVisuallyOn());
@@ -619,7 +622,7 @@ static void updateSwitchThumbPartForRenderer(SwitchThumbPart& switchThumbPart, c
 
 static void updateSwitchTrackPartForRenderer(SwitchTrackPart& switchTrackPart, const RenderElement& renderer)
 {
-    Ref input = downcast<HTMLInputElement>(*renderer.protectedNode()->shadowHost());
+    Ref input = downcast<HTMLInputElement>(*protect(renderer.element())->shadowHost());
     ASSERT(input->isSwitch());
 
     switchTrackPart.setIsOn(input->isSwitchVisuallyOn());
@@ -1261,7 +1264,7 @@ bool RenderTheme::isFocused(const RenderElement& renderer) const
 
     Ref document = delegate->document();
     RefPtr frame = document->frame();
-    return delegate == document->focusedElement() && frame && frame->checkedSelection()->isFocusedAndActive();
+    return delegate == document->focusedElement() && frame && protect(frame->selection())->isFocusedAndActive();
 }
 
 bool RenderTheme::isPressed(const RenderElement& renderer) const

@@ -73,7 +73,7 @@ auto CSSValueConversion<LineHeight>::operator()(BuilderState& state, const CSSPr
         if (primitiveValue.isLength())
             fixedValue = primitiveValue.resolveAsLength(conversionData);
         else
-            fixedValue = primitiveValue.protectedCssCalcValue()->createCalculationValue(conversionData, CSSCalcSymbolTable { })->evaluate(state.style().fontDescription().computedSizeForRangeZoomOption(conversionData.rangeZoomOption()), zoomFactor());
+            fixedValue = protect(primitiveValue.cssCalcValue())->createCalculationValue(conversionData, CSSCalcSymbolTable { })->evaluate(state.style().fontDescription().computedSizeForRangeZoomOption(conversionData.rangeZoomOption()), zoomFactor());
 
         if (multiplier != 1.0f)
             fixedValue *= multiplier;

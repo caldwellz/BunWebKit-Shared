@@ -3808,19 +3808,19 @@ def check_safer_cpp(clean_lines, line_number, error):
 
     # FIXME: Remove protectedFoo() check once all protectedFoo() getters are removed from WebKit.
     # See: https://github.com/WebKit/WebKit/wiki/Safer-CPP-Guidelines#do-not-call-protect-free-function-to-initialize-local-variables
-    if search(r'= [a-zA-Z0-9_.(),\s\->]*protected[a-zA-Z0-9]+\(\)(;|\))(?!;)', line):
+    if search(r'= [a-zA-Z0-9_.(),\s\->]*(?<!\()protected[a-zA-Z0-9]+\(\)(;|\))(?!;)', line):
         error(line_number, 'safercpp/protected_getter_for_init', 4, "Use m_foo or foo() instead of protectedFoo() for variable initialization.")
 
     # FIXME: Remove checkedFoo() check once all checkedFoo() getters are removed from WebKit.
     # See: https://github.com/WebKit/WebKit/wiki/Safer-CPP-Guidelines#do-not-call-protect-free-function-to-initialize-local-variables
-    if search(r'= [a-zA-Z0-9_.(),\s\->]*checked[a-zA-Z0-9]+\(\)(;|\))(?!;)', line):
+    if search(r'= [a-zA-Z0-9_.(),\s\->]*(?<!\()checked[a-zA-Z0-9]+\(\)(;|\))(?!;)', line):
         error(line_number, 'safercpp/checked_getter_for_init', 4, "Use m_foo or foo() instead of checkedFoo() for variable initialization.")
 
     # Check for protect() free function used in variable initialization (violates SaferCPP guidelines).
     # Valid uses: protect(foo)->method(), protect(foo).method(), func(protect(foo)), return protect(foo), lambda captures
     # The regex handles one level of nested parentheses in the argument (e.g., protect(bar()) is correctly parsed).
     # Deeper nesting (e.g., protect(a(b()))) is not supported but is rare in practice.
-    if search(r'=\s*[a-zA-Z0-9_.(),\s\->]*protect\((?:[^()]|\([^()]*\))*\)\s*(;|\))(?!;)', line):
+    if search(r'=\s*[a-zA-Z0-9_<>,\s]*protect\((?:[^()]|\([^()]*\))*\)\s*(;|\))(?!;)', line):
         error(line_number, 'safercpp/protected_getter_for_init', 4,
               "Do not use protect() for variable initialization. Use the declared type (not auto) and remove the call to protect().")
 

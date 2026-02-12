@@ -59,6 +59,7 @@ void Page::platformInitialize()
     std::call_once(onceFlag, [] {
 #if ENABLE(TREE_DEBUGGING)
         PAL::registerNotifyCallback("com.apple.WebKit.dumpAccessibilityTreeToStderr"_s, printAccessibilityTreeForLiveDocuments);
+        PAL::registerNotifyCallback("com.apple.WebKit.dumpAccessibilityTreeToStderrAfterDelay"_s, printAccessibilityTreeForLiveDocumentsAfterDelay);
         PAL::registerNotifyCallback("com.apple.WebKit.showRenderTree"_s, printRenderTreeForLiveDocuments);
         PAL::registerNotifyCallback("com.apple.WebKit.showLayerTree"_s, printLayerTreeForLiveDocuments);
         PAL::registerNotifyCallback("com.apple.WebKit.showGraphicsLayerTree"_s, printGraphicsLayerTreeForLiveDocuments);

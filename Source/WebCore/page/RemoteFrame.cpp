@@ -39,6 +39,8 @@
 #include "RemoteFrameView.h"
 #include "SecurityOrigin.h"
 #include <wtf/CompletionHandler.h>
+#include <wtf/HexNumber.h>
+#include <wtf/text/StringBuilder.h>
 
 namespace WebCore {
 
@@ -218,10 +220,15 @@ AutoplayPolicy RemoteFrame::autoplayPolicy() const
     return m_autoplayPolicy;
 }
 
-float RemoteFrame::usedZoomForChild(const Frame& child) const
+String RemoteFrame::debugDescription() const
 {
-    auto maybeInfo = frameTreeSyncData().childrenFrameLayoutInfo.getOptional(child.frameID());
-    return maybeInfo.transform([] (auto& info) { return info.usedZoom; }).value_or(1.0);
+    StringBuilder builder;
+
+    builder.append("RemoteFrame 0x"_s, hex(reinterpret_cast<uintptr_t>(this), Lowercase));
+    if (isMainFrame())
+        builder.append(" (main frame)"_s);
+
+    return builder.toString();
 }
 
 } // namespace WebCore

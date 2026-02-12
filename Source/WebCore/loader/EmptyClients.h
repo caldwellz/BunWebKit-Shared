@@ -53,6 +53,7 @@ class EditorClient;
 class HTMLImageElement;
 class PageConfiguration;
 enum class BroadcastFocusedElement : bool;
+enum class ContentChange : uint8_t;
 struct FocusOptions;
 
 class EmptyChromeClient : public ChromeClient {
@@ -187,7 +188,6 @@ class EmptyChromeClient : public ChromeClient {
 #if PLATFORM(IOS_FAMILY)
     void didReceiveMobileDocType(bool) final { }
     void setNeedsScrollNotifications(LocalFrame&, bool) final { }
-    void didFinishContentChangeObserving(LocalFrame&, WKContentChange) final { }
     void notifyRevealedSelectionByScrollingFrame(LocalFrame&) final { }
     void didLayout(LayoutType) final { }
     void didStartOverflowScroll() final { }
@@ -204,6 +204,10 @@ class EmptyChromeClient : public ChromeClient {
 
     bool showDataDetectorsUIForElement(const Element&, const Event&) final { return false; }
 #endif // PLATFORM(IOS_FAMILY)
+
+#if ENABLE(CONTENT_CHANGE_OBSERVER)
+    void didFinishContentChangeObserving(LocalFrame&, ContentChange) final { }
+#endif
 
 #if ENABLE(ORIENTATION_EVENTS)
     IntDegrees deviceOrientation() const final { return 0; }

@@ -303,12 +303,12 @@ public:
             return;
 
         RefPtr page { localFrame->page() };
-        if (!page || !page->checkedBackForward()->containsItem(m_historyItem))
+        if (!page || !protect(page->backForward())->containsItem(m_historyItem))
             return;
 
         UserGestureIndicator gestureIndicator(userGestureToForward());
 
-        if (RefPtr currentItem = page->checkedBackForward()->currentItem(); currentItem && currentItem->itemID() == m_historyItem->itemID()) {
+        if (RefPtr currentItem = protect(page->backForward())->currentItem(); currentItem && currentItem->itemID() == m_historyItem->itemID()) {
             localFrame->loader().changeLocation(localFrame->document()->url(), selfTargetFrameName(), 0, ReferrerPolicy::EmptyString, shouldOpenExternalURLs(), std::nullopt, nullAtom(), std::nullopt, NavigationHistoryBehavior::Reload);
             return;
         }
@@ -324,7 +324,7 @@ public:
             return false;
 
         RefPtr page { localFrame->page() };
-        if (!page || !page->checkedBackForward()->containsItem(m_historyItem))
+        if (!page || !protect(page->backForward())->containsItem(m_historyItem))
             return false;
 
         URL url { m_historyItem->url() };
@@ -368,7 +368,7 @@ public:
         bool backwards = entry->index() < localFrame.window()->navigation().currentEntry()->index();
 
         RefPtr page { localFrame.page() };
-        auto items = page->checkedBackForward()->allItems();
+        auto items = protect(page->backForward())->allItems();
         for (size_t i = 0 ; i < items.size(); i++) {
             Ref item = items[backwards ? items.size() - 1 - i: i];
             auto index = item->children().findIf([&historyItem](const auto& child) {
@@ -399,7 +399,7 @@ public:
 
         UserGestureIndicator gestureIndicator(userGestureToForward());
 
-        if (RefPtr currentItem = page->checkedBackForward()->currentItem(); currentItem && currentItem->itemID() == (*historyItem)->itemID()) {
+        if (RefPtr currentItem = protect(page->backForward())->currentItem(); currentItem && currentItem->itemID() == (*historyItem)->itemID()) {
             if (RefPtr localFrame = dynamicDowncast<LocalFrame>(frame))
                 localFrame->loader().changeLocation(localFrame->document()->url(), selfTargetFrameName(), 0, ReferrerPolicy::EmptyString, shouldOpenExternalURLs(), std::nullopt, nullAtom(), std::nullopt, NavigationHistoryBehavior::Reload);
             return;

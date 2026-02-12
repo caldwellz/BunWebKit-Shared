@@ -47,7 +47,7 @@
 namespace WebKit {
     
 static constexpr Seconds processSuspensionTimeout { 20_s };
-static constexpr Seconds removeAllAssertionsTimeout { 8_min };
+static constexpr Seconds removeAllAssertionsTimeout { 4_min };
 static constexpr Seconds processAssertionCacheLifetime { 1_s };
 
 Ref<ProcessThrottlerActivity> ProcessThrottlerActivity::create(ProcessThrottler& throttler, ASCIILiteral name, ProcessThrottlerActivityType type, IsQuietActivity isQuietActivity)

@@ -91,6 +91,8 @@ public:
 
     void updateScrollingMode() final;
     void reportMixedContentViolation(bool blocked, const URL& target) const final;
+
+    String debugDescription() const final;
     const SecurityOrigin& frameDocumentSecurityOriginOrOpaque() const;
 
 private:
@@ -106,7 +108,6 @@ private:
     SecurityOrigin* frameDocumentSecurityOrigin() const final;
     std::optional<DocumentSecurityPolicy> frameDocumentSecurityPolicy() const final;
     String frameURLProtocol() const final;
-    float usedZoomForChild(const Frame&) const final;
 
     FrameView* virtualView() const final;
     void disconnectView() final;

@@ -25,6 +25,7 @@
 
 #pragma once
 
+#include "BackForwardItemIdentifier.h"
 #include "EventTarget.h"
 #include "EventTargetInterfaces.h"
 #include "JSDOMPromiseDeferred.h"

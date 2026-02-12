@@ -178,6 +178,27 @@ inline LayoutRect RenderBox::marginBoxRect() const
     return { -left, -top, size().width() + left + right, size().height() + top + bottom };
 }
 
+
+inline const LayoutRect RenderBox::scrollableContentAreaOverflowRect() const
+{
+    if (!m_overflow)
+        return flippedClientBoxRect();
+
+    return m_overflow->contentArea();
+}
+
+inline const LayoutRect RenderBox::scrollablePaddingAreaOverflowRect() const
+{
+    if (!m_overflow)
+        return flippedClientBoxRect();
+
+    auto overflowRect = m_overflow->contentArea();
+    flipForWritingMode(overflowRect);
+    overflowRect.expand(padding());
+    flipForWritingMode(overflowRect);
+    return overflowRect;
+}
+
 inline void RenderBox::setLogicalHeight(LayoutUnit size)
 {
     if (writingMode().isHorizontal())
@@ -244,7 +265,7 @@ inline LayoutUnit resolveHeightForRatio(LayoutUnit borderAndPaddingLogicalWidth,
 
 inline bool isSkippedContentRoot(const RenderBox& renderBox)
 {
-    return renderBox.element() && WebCore::isSkippedContentRoot(renderBox.style(), *renderBox.protectedElement());
+    return renderBox.element() && WebCore::isSkippedContentRoot(renderBox.style(), *protect(renderBox.element()));
 }
 
 inline bool RenderBox::backgroundIsKnownToBeObscured(const LayoutPoint& paintOffset)

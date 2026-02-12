@@ -142,6 +142,8 @@ public:
     void scrollbarVisibilityDidChange(ScrollbarOrientation, bool);
     void scrollbarMinimumThumbLengthDidChange(ScrollbarOrientation, int);
 
+    ScrollbarRevealBehavior takeScrollbarRevealBehaviorForNextScrollbarUpdate();
+
 protected:
     ScrollingTreeScrollingNode(ScrollingTree&, ScrollingNodeType, ScrollingNodeID);
 
@@ -221,6 +223,7 @@ private:
 #endif
     bool m_isFirstCommit { true };
     bool m_scrolledSinceLastCommit { false };
+    ScrollbarRevealBehavior m_scrollbarRevealBehaviorForNextScrollbarUpdate { ScrollbarRevealBehavior::Default };
 
     LayerRepresentation m_scrollContainerLayer;
     LayerRepresentation m_scrolledContentsLayer;

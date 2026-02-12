@@ -47,7 +47,8 @@ class RealtimeOutgoingVideoSourceGStreamer;
 class GStreamerPeerConnectionBackend final : public PeerConnectionBackend {
     WTF_MAKE_TZONE_ALLOCATED(GStreamerPeerConnectionBackend);
 public:
-    explicit GStreamerPeerConnectionBackend(RTCPeerConnection&);
+    using UDPPortsRange = std::optional<std::pair<int, int>>;
+    explicit GStreamerPeerConnectionBackend(RTCPeerConnection&, UDPPortsRange&&);
     ~GStreamerPeerConnectionBackend();
 
     GStreamerRtpSenderBackend& backendFromRTPSender(RTCRtpSender&);
@@ -116,6 +117,9 @@ private:
     bool isReconfiguring() const { return m_isReconfiguring; }
 
     void tearDown();
+
+    UDPPortsRange udpPortsRange() const { return m_udpPortsRange; }
+    UDPPortsRange m_udpPortsRange;
 
     Ref<GStreamerMediaEndpoint> m_endpoint;
     bool m_isLocalDescriptionSet { false };

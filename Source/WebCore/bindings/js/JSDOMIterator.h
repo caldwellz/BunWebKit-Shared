@@ -147,7 +147,7 @@ template<typename JSIterator, typename... ArgTypes> JSC::JSValue iteratorCreate(
     ASSERT(thisObject.globalObject());
     JSDOMGlobalObject& globalObject = *thisObject.globalObject();
 
-    auto result = thisObject.wrapped().createIterator(globalObject.protectedScriptExecutionContext().get(), std::forward<ArgTypes>(args)...);
+    auto result = thisObject.wrapped().createIterator(protect(globalObject.scriptExecutionContext()).get(), std::forward<ArgTypes>(args)...);
 
     if constexpr (IsExceptionOr<decltype(result)>) {
         if (result.hasException()) [[unlikely]] {
@@ -223,7 +223,7 @@ template<typename JSIterator> JSC::JSValue iteratorForEach(JSC::JSGlobalObject& 
     if (callData.type == JSC::CallData::Type::None)
         return throwTypeError(&lexicalGlobalObject, scope, "Cannot call callback"_s);
 
-    auto iterator = thisObject.wrapped().createIterator(JSC::jsCast<JSDOMGlobalObject*>(&lexicalGlobalObject)->protectedScriptExecutionContext().get());
+    auto iterator = thisObject.wrapped().createIterator(protect(JSC::jsCast<JSDOMGlobalObject*>(&lexicalGlobalObject)->scriptExecutionContext()).get());
     while (auto value = iterator.next()) {
         JSC::MarkedArgumentBuffer arguments;
         appendForEachArguments<JSIterator>(lexicalGlobalObject, *thisObject.globalObject(), arguments, value);

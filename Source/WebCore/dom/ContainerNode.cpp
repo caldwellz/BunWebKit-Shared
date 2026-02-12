@@ -2,7 +2,7 @@
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2001 Dirk Mueller (mueller@kde.org)
- * Copyright (C) 2004-2025 Apple Inc. All rights reserved.
+ * Copyright (C) 2004-2026 Apple Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -62,6 +62,7 @@
 #include "SVGElementTypeHelpers.h"
 #include "SVGNames.h"
 #include "SVGUseElement.h"
+#include "ScriptController.h"
 #include "ScriptDisallowedScope.h"
 #include "SelectorQuery.h"
 #include "SerializedNode.h"
@@ -561,7 +562,7 @@ ExceptionOr<void> ContainerNode::insertBefore(Node& newChild, RefPtr<Node>&& ref
     Ref<ContainerNode> protectedThis(*this);
     Ref next = refChild.releaseNonNull();
 
-    uint64_t domTreeVersion = document().domTreeVersion();
+    uint64_t beforeScriptExecutionCount = ScriptController::scriptExecutionCount();
 
     NodeVector targets;
     auto removeResult = removeSelfOrChildNodesForInsertion(newChild, targets);
@@ -570,8 +571,8 @@ ExceptionOr<void> ContainerNode::insertBefore(Node& newChild, RefPtr<Node>&& ref
     if (targets.isEmpty())
         return { };
 
-    if (document().domTreeVersion() != domTreeVersion) {
-        // Check conditions again when mutation events in removeSelfOrChildNodesForInsertion mutated DOM tree.
+    if (ScriptController::scriptExecutionCount() != beforeScriptExecutionCount) {
+        // Check conditions again when events in removeSelfOrChildNodesForInsertion executed js.
         for (auto& child : targets) {
             auto checkAcceptResult = checkAcceptChildGuaranteedNodeTypes(*this, child);
             if (checkAcceptResult.hasException())
@@ -669,12 +670,12 @@ ExceptionOr<void> ContainerNode::replaceChild(Node& newChild, Node& oldChild)
 
     Ref protectedThis { *this };
 
-    uint64_t domTreeVersion = document().domTreeVersion();
-
     // Make sure replacing the old child with the new is ok
     auto validityResult = checkPreReplacementValidity(*this, newChild, oldChild, ShouldValidateChildParent::Yes);
     if (validityResult.hasException())
         return validityResult.releaseException();
+
+    uint64_t beforeScriptExecutionCount = ScriptController::scriptExecutionCount();
 
     RefPtr refChild = oldChild.nextSibling();
     if (refChild.get() == &newChild)
@@ -688,13 +689,14 @@ ExceptionOr<void> ContainerNode::replaceChild(Node& newChild, Node& oldChild)
             return collectResult.releaseException();
     }
 
-    if (document().domTreeVersion() != domTreeVersion) {
-        // Check conditions again when mutation events in removeSelfOrChildNodesForInsertion mutated DOM tree.
+    if (ScriptController::scriptExecutionCount() != beforeScriptExecutionCount) {
+        // Check conditions again when events in removeSelfOrChildNodesForInsertion executed js.
         for (auto& child : targets) {
             validityResult = checkPreReplacementValidity(*this, child, oldChild, ShouldValidateChildParent::No);
             if (validityResult.hasException())
                 return validityResult.releaseException();
         }
+        beforeScriptExecutionCount = ScriptController::scriptExecutionCount();
     }
 
     // Remove the node we're replacing.
@@ -708,11 +710,13 @@ ExceptionOr<void> ContainerNode::replaceChild(Node& newChild, Node& oldChild)
         if (removeResult.hasException())
             return removeResult.releaseException();
 
-        // Check conditions again because removeChild fires a MutationEvent.
-        for (auto& child : targets) {
-            validityResult = checkPreReplacementValidity(*this, child, oldChild, ShouldValidateChildParent::No);
-            if (validityResult.hasException())
-                return validityResult.releaseException();
+        if (ScriptController::scriptExecutionCount() != beforeScriptExecutionCount) {
+            // Check conditions again because events in removeChildWithMutationStatus executed js.
+            for (auto& child : targets) {
+                validityResult = checkPreReplacementValidity(*this, child, oldChild, ShouldValidateChildParent::No);
+                if (validityResult.hasException())
+                    return validityResult.releaseException();
+            }
         }
     }
 
@@ -858,7 +862,7 @@ inline void ContainerNode::rebuildSVGExtensionsElementsIfNecessary()
 {
     Ref<Document> document = this->document();
     if (document->svgExtensionsIfExists() && !is<SVGUseElement>(shadowHost()))
-        document->checkedSVGExtensions()->rebuildElements();
+        protect(document->svgExtensions())->rebuildElements();
 }
 
 // this differs from other remove functions because it forcibly removes all the children,
@@ -894,7 +898,7 @@ ExceptionOr<void> ContainerNode::appendChildWithoutPreInsertionValidityCheck(Nod
 {
     Ref protectedThis { *this };
 
-    uint64_t domTreeVersion = document().domTreeVersion();
+    uint64_t beforeScriptExecutionCount = ScriptController::scriptExecutionCount();
 
     NodeVector targets;
     auto removeResult = removeSelfOrChildNodesForInsertion(newChild, targets);
@@ -904,8 +908,8 @@ ExceptionOr<void> ContainerNode::appendChildWithoutPreInsertionValidityCheck(Nod
     if (targets.isEmpty())
         return { };
 
-    if (document().domTreeVersion() != domTreeVersion) {
-        // Check conditions when mutation events in removeSelfOrChildNodesForInsertion mutated DOM tree.
+    if (ScriptController::scriptExecutionCount() != beforeScriptExecutionCount) {
+        // Check conditions when events in removeSelfOrChildNodesForInsertion executed js.
         for (auto& child : targets) {
             auto nodeTypeResult = checkAcceptChildGuaranteedNodeTypes(*this, child);
             if (nodeTypeResult.hasException())
@@ -937,7 +941,7 @@ ExceptionOr<void> ContainerNode::appendChildWithoutPreInsertionValidityCheck(Nod
 
 ExceptionOr<void> ContainerNode::insertChildrenBeforeWithoutPreInsertionValidityCheck(NodeVector&& newChildren, Node* nextChild)
 {
-    uint64_t domTreeVersion = document().domTreeVersion();
+    uint64_t beforeScriptExecutionCount = ScriptController::scriptExecutionCount();
 
     RefPtr refChild = nextChild;
     for (auto& child : newChildren) {
@@ -949,8 +953,9 @@ ExceptionOr<void> ContainerNode::insertChildrenBeforeWithoutPreInsertionValidity
         }
     }
 
-    if (document().domTreeVersion() != domTreeVersion) {
-        // Check conditions when mutation events in removeChild mutated DOM tree.
+
+    if (ScriptController::scriptExecutionCount() != beforeScriptExecutionCount) {
+        // Check conditions when events in removeChild executed js.
         for (auto& child : newChildren) {
             auto nodeTypeResult = checkAcceptChildGuaranteedNodeTypes(*this, child);
             if (nodeTypeResult.hasException())
@@ -1333,6 +1338,17 @@ ExceptionOr<void> ContainerNode::replaceChildren(FixedVector<NodeOrString>&& vec
     dispatchSubtreeModifiedEvent();
 
     return { };
+}
+
+void ContainerNode::replaceChildrenWithoutValidityCheck(NodeVector&& newChildren)
+{
+    ChildListMutationScope mutation(*this);
+    NodeVector removedChildren;
+    removeAllChildrenWithScriptAssertionMaybeAsync(ChildChange::Source::API, removedChildren, DeferChildrenChanged::No);
+    auto appendResult = insertChildrenBeforeWithoutPreInsertionValidityCheck(WTF::move(newChildren));
+    RELEASE_ASSERT(!appendResult.hasException());
+    rebuildSVGExtensionsElementsIfNecessary();
+    dispatchSubtreeModifiedEvent();
 }
 
 HTMLCollection* ContainerNode::cachedHTMLCollection(CollectionType type)

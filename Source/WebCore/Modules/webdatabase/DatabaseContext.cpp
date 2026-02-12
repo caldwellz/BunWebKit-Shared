@@ -213,7 +213,7 @@ const SecurityOriginData& DatabaseContext::securityOrigin() const
 
 bool DatabaseContext::isContextThread() const
 {
-    return protectedScriptExecutionContext()->isContextThread();
+    return protect(scriptExecutionContext())->isContextThread();
 }
 
 } // namespace WebCore

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2021-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -69,7 +69,6 @@ public:
     static std::optional<CaptureDevice> screenCaptureDeviceWithPersistentID(const String&);
     static std::optional<CaptureDevice> windowCaptureDeviceWithPersistentID(const String&);
 
-    using Content = Variant<RetainPtr<SCWindow>, RetainPtr<SCDisplay>>;
     void streamDidOutputVideoSampleBuffer(RetainPtr<CMSampleBufferRef>);
     void sessionFailedWithError(RetainPtr<NSError>&&, const String&);
     void outputVideoEffectDidStartForStream() { m_isVideoEffectEnabled = true; }
@@ -81,6 +80,10 @@ public:
     void incrementCheckedPtrCount() const final { CanMakeCheckedPtr::incrementCheckedPtrCount(); }
     void decrementCheckedPtrCount() const final { CanMakeCheckedPtr::decrementCheckedPtrCount(); }
     void setDidBeginCheckedPtrDeletion() final { CanMakeCheckedPtr::setDidBeginCheckedPtrDeletion(); }
+
+#if HAVE(WINDOW_CAPTURE)
+    using Content = Variant<RetainPtr<SCWindow>, RetainPtr<SCDisplay>>;
+#endif
 
 private:
     // DisplayCaptureSourceCocoa::Capturer
@@ -115,7 +118,9 @@ private:
 
     void clearSharingSession();
 
+#if HAVE(WINDOW_CAPTURE)
     std::optional<Content> m_content;
+#endif
     RetainPtr<WebCoreScreenCaptureKitHelper> m_captureHelper;
     RetainPtr<SCContentFilter> m_contentFilter;
     RetainPtr<CMSampleBufferRef> m_currentFrame;

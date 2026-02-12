@@ -39,6 +39,7 @@
 #include "WebBackForwardListItem.h"
 #include "WebBackForwardListMessages.h"
 #include "WebBackForwardListSwiftUtilities.h"
+#include "WebPageProxy.h"
 
 #ifdef __OBJC__
 #include "WKUIDelegatePrivate.h"

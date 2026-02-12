@@ -123,7 +123,6 @@ public:
     virtual void closePage() = 0;
 
     FrameConsoleClient* console() const;
-    CheckedPtr<FrameConsoleClient> checkedConsole() const;
 
     WindowProxy* opener() const;
     WEBCORE_EXPORT Document* documentIfLocal();

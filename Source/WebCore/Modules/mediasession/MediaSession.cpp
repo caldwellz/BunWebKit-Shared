@@ -163,7 +163,7 @@ MediaSession::MediaSession(Navigator& navigator)
     , m_navigator(navigator)
     , m_platformSession { PlatformMediaSession::create(*this) }
 #if ENABLE(MEDIA_SESSION_COORDINATOR)
-    , m_coordinator(MediaSessionCoordinator::create(navigator.protectedScriptExecutionContext().get()))
+    , m_coordinator(MediaSessionCoordinator::create(protect(navigator.scriptExecutionContext()).get()))
 #endif
 {
     m_logger = Document::sharedLogger();

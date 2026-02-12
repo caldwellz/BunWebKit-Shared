@@ -1139,20 +1139,20 @@ void InlineDisplayContentBuilder::collectInkOverflowForTextDecorations(InlineDis
             return inkOverflowForDecorations(parentStyle, { displayBox.height(), textRunLogicalOffsetFromLineBottom });
         }();
 
-        if (!decorationOverflow.isEmpty()) {
+        if (!decorationOverflow.isZero()) {
             m_contentHasInkOverflow = true;
             auto inflatedInkOverflowRect = [&] {
                 auto inkOverflowRect = displayBox.inkOverflow();
                 switch (writingMode.blockDirection()) {
                 case FlowDirection::TopToBottom:
                 case FlowDirection::BottomToTop:
-                    inkOverflowRect.inflate(decorationOverflow.left, decorationOverflow.top, decorationOverflow.right, decorationOverflow.bottom);
+                    inkOverflowRect.inflate(decorationOverflow.left(), decorationOverflow.top(), decorationOverflow.right(), decorationOverflow.bottom());
                     break;
                 case FlowDirection::LeftToRight:
-                    inkOverflowRect.inflate(decorationOverflow.bottom, decorationOverflow.right, decorationOverflow.top, decorationOverflow.left);
+                    inkOverflowRect.inflate(decorationOverflow.bottom(), decorationOverflow.right(), decorationOverflow.top(), decorationOverflow.left());
                     break;
                 case FlowDirection::RightToLeft:
-                    inkOverflowRect.inflate(decorationOverflow.top, decorationOverflow.right, decorationOverflow.bottom, decorationOverflow.left);
+                    inkOverflowRect.inflate(decorationOverflow.top(), decorationOverflow.right(), decorationOverflow.bottom(), decorationOverflow.left());
                     break;
                 default:
                     ASSERT_NOT_REACHED();

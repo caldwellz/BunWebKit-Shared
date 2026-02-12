@@ -380,5 +380,6 @@
     "web-platform-tests/workers": "import",
     "web-platform-tests/worklets": "import",
     "web-platform-tests/x-frame-options": "import",
-    "web-platform-tests/xhr": "import"
+    "web-platform-tests/xhr": "import",
+    "web-platform-tests/xml": "import"
 }

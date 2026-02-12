@@ -1,0 +1,34 @@
+
+      span three
+
+
+
+      option
+      option
+
+
+      two
+
+
+      option
+
+
+
+
+
+
+
+
+
+
+      one
+
+
+PASS MutationObserver records during parsing of <select> with <selectedcontent>: test1
+PASS MutationObserver records during parsing of <select> with <selectedcontent>: test2
+FAIL MutationObserver records during parsing of <select> with <selectedcontent>: test3 assert_equals: test3 expected "<select>\n    <button>\n      <selectedcontent>option</selectedcontent>\n      <selectedcontent>outer2\n        <selectedcontent>inner2</selectedcontent>\n      </selectedcontent>\n    </button>\n    <option>option</option>\n  </select>" but got "<select>\n    <button>\n      <selectedcontent>option</selectedcontent>\n      <selectedcontent>option</selectedcontent>\n    </button>\n    <option>option</option>\n  </select>"
+FAIL MutationObserver records during parsing of <select> with <selectedcontent>: test4 assert_array_equals: test4 lengths differ, expected array […, "Type: childList | Target: button | Added: [#text: \"\"]", "Type: childList | Target: button | Added: [selectedcontent] | After: #text: \"\"", "Type: childList | Target: button | Added: [#text: \"\"] | After: selectedcontent", "Type: childList | Target: select | Added: [#text: \"\"] | After: button", "Type: childList | Target: select | Added: [div] | After: #text: \"\"", "Type: childList | Target: div | Added: [#text: \"\"]", "Type: childList | Target: div | Added: [option] | After: #text: \"\"", "Type: childList | Target: option | Added: [#text: \"one\"]", "Type: childList | Target: selectedcontent | Added: [#text: \"one\"]", "Type: childList | Target: div | Added: [#text: \"\"] | After: option", "Type: childList | Target: select | Added: [#text: \"\"] | After: div", "Type: childList | Target: select | Added: [div] | After: #text: \"\"", "Type: childList | Target: div | Added: [#text: \"\"]", "Type: childList | Target: div | Added: [option] | After: #text: \"\"", "Type: childList | Target: selectedcontent | Removed: [#text: \"one\"]", "Type: childList | Target: option | Added: [#text: \"two\"]", "Type: childList | Target: selectedcontent | Added: [#text: \"two\"]", "Type: childList | Target: div | Added: [#text: \"\"] | After: option", "Type: childList | Target: select | Added: [#text: \"\"] | After: div", "Type: childList | Target: div#test4 | Added: [#text: \"\"] | After: select"] length 24, got […, "Type: childList | Target: select | Added: [button] | After: #text: \"\"", "Type: childList | Target: button | Added: [#text: \"\"]", "Type: childList | Target: button | Added: [selectedcontent] | After: #text: \"\"", "Type: childList | Target: button | Added: [#text: \"\"] | After: selectedcontent", "Type: childList | Target: select | Added: [#text: \"\"] | After: button", "Type: childList | Target: select | Added: [div] | After: #text: \"\"", "Type: childList | Target: div | Added: [#text: \"\"]", "Type: childList | Target: div | Added: [option] | After: #text: \"\"", "Type: childList | Target: option | Added: [#text: \"one\"]", "Type: childList | Target: selectedcontent | Added: [#text: \"one\"]", "Type: childList | Target: div | Added: [#text: \"\"] | After: option", "Type: childList | Target: select | Added: [#text: \"\"] | After: div", "Type: childList | Target: select | Added: [div] | After: #text: \"\"", "Type: childList | Target: div | Added: [#text: \"\"]", "Type: childList | Target: div | Added: [option] | After: #text: \"\"", "Type: childList | Target: option | Added: [#text: \"two\"]", "Type: childList | Target: selectedcontent | Added: [#text: \"two\"] | Removed: [#text: \"one\"]", "Type: childList | Target: div | Added: [#text: \"\"] | After: option", "Type: childList | Target: select | Added: [#text: \"\"] | After: div", "Type: childList | Target: div#test4 | Added: [#text: \"\"] | After: select"] length 23
+PASS MutationObserver records during parsing of <select> with <selectedcontent>: test5
+PASS MutationObserver records during parsing of <select> with <selectedcontent>: test6
+PASS MutationObserver records during parsing of <select> with <selectedcontent>: test7
+

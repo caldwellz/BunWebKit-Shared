@@ -33,6 +33,7 @@
 #include "RenderButton.h"
 #include "RenderDescendantIterator.h"
 #include "RenderTreeBuilderBlock.h"
+#include "RenderTreeUpdaterGeneratedContent.h"
 #include "Settings.h"
 #include <wtf/TZoneMallocInlines.h>
 
@@ -76,6 +77,9 @@ RenderBlock& RenderTreeBuilder::FormControls::findOrCreateParentForChild(RenderB
 
 void RenderTreeBuilder::FormControls::updateAfterDescendants(RenderElement& renderer)
 {
+    if (!renderer.document().settings().cssAppearanceBaseEnabled())
+        return;
+
     if (RefPtr inputElement = dynamicDowncast<HTMLInputElement>(renderer.element())) {
         RefPtr inputType = inputElement->inputType();
         if (!inputType)
@@ -99,22 +103,40 @@ void RenderTreeBuilder::FormControls::updateCheckmark(RenderElement& renderer)
         return renderer.style().appearance() == StyleAppearance::Base && pseudoStyle->display() != DisplayType::None;
     };
 
-    for (CheckedRef child : childrenOfType<RenderElement>(renderer)) {
-        if (child->style().pseudoElementType() == PseudoElementType::Checkmark) {
-            if (!shouldHaveCheckmarkRenderer())
-                m_builder.destroy(child);
-            return;
+    auto existingCheckmark = [&]() -> CheckedPtr<RenderBlockFlow> {
+        for (CheckedRef child : childrenOfType<RenderElement>(renderer)) {
+            if (child->style().pseudoElementType() == PseudoElementType::Checkmark)
+                return dynamicDowncast<RenderBlockFlow>(child);
         }
+        return nullptr;
+    }();
+
+    if (!shouldHaveCheckmarkRenderer()) {
+        if (existingCheckmark)
+            m_builder.destroy(*existingCheckmark);
+        return;
     }
 
-    if (!shouldHaveCheckmarkRenderer())
+    if (existingCheckmark && existingCheckmark->style().content() == pseudoStyle->content()) {
+        auto checkmarkStyle = RenderStyle::clone(*pseudoStyle);
+        existingCheckmark->setStyle(WTF::move(checkmarkStyle));
+        RenderTreeUpdater::GeneratedContent::updateStyleForContentRenderers(*existingCheckmark, existingCheckmark->style());
         return;
+    }
+
+    if (existingCheckmark) {
+        m_builder.destroy(*existingCheckmark);
+        existingCheckmark = nullptr;
+    }
 
     Ref document = renderer.document();
     auto checkmarkStyle = RenderStyle::clone(*pseudoStyle);
 
     RenderPtr<RenderBlockFlow> checkmark = createRenderer<RenderBlockFlow>(RenderObject::Type::BlockFlow, document, WTF::move(checkmarkStyle));
     checkmark->initializeStyle();
+
+    if (checkmark->style().hasContent())
+        RenderTreeUpdater::GeneratedContent::createContentRenderers(m_builder, *checkmark, checkmark->style(), PseudoElementType::Checkmark);
 
     m_builder.attach(renderer, WTF::move(checkmark));
 }

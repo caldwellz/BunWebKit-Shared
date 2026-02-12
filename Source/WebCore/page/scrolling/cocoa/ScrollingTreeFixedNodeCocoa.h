@@ -47,6 +47,9 @@ private:
 
     bool commitStateBeforeChildren(const ScrollingStateNode&) final;
     void applyLayerPositions() final WTF_REQUIRES_LOCK(scrollingTree()->treeLock());
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    void willBeDestroyed() final;
+#endif
 
     void dumpProperties(WTF::TextStream&, OptionSet<ScrollingStateTreeAsTextBehavior>) const final;
 

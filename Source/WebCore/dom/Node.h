@@ -111,7 +111,7 @@ using MutationRecordDeliveryOptions = OptionSet<MutationObserverOptionType>;
 
 enum class IsMutationBySetInnerHTML : uint8_t { No, Yes };
 
-using NodeOrString = Variant<RefPtr<Node>, String>;
+using NodeOrString = Variant<Ref<Node>, String>;
 
 const int initialNodeVectorSize = 11; // Covers 99.5%. See webkit.org/b/80706
 typedef Vector<Ref<Node>, initialNodeVectorSize> NodeVector;
@@ -278,6 +278,9 @@ public:
     bool hasShadowRootContainingSlots() const { return hasEventTargetFlag(EventTargetFlag::HasShadowRootContainingSlots); }
     void setHasShadowRootContainingSlots(bool flag) { setEventTargetFlag(EventTargetFlag::HasShadowRootContainingSlots, flag); }
 
+    bool hasShadowRoot() const { return hasStateFlag(StateFlag::HasShadowRoot); }
+    void setHasShadowRoot(bool flag) { setStateFlag(StateFlag::HasShadowRoot, flag); }
+
     bool needsSVGRendererUpdate() const { return hasStateFlag(StateFlag::NeedsSVGRendererUpdate); }
     void setNeedsSVGRendererUpdate(bool flag) { setStateFlag(StateFlag::NeedsSVGRendererUpdate, flag); }
 
@@ -324,8 +327,8 @@ public:
     WEBCORE_EXPORT Element* parentElementInComposedTree() const;
     Element* parentOrShadowHostElement() const;
     inline void setParentNode(ContainerNode*);
-    inline Node& rootNode() const;
-    WEBCORE_EXPORT Node& traverseToRootNode() const;
+    inline Node& NODELETE rootNode() const;
+    WEBCORE_EXPORT Node& NODELETE traverseToRootNode() const;
     Node& shadowIncludingRoot() const;
 
     struct GetRootNodeOptions {
@@ -499,12 +502,10 @@ public:
     // Integration with rendering tree
 
     RenderObject* renderer() const { return m_renderer; }
-    inline CheckedPtr<RenderObject> checkedRenderer() const; // Defined in NodeInlines.h
     void setRenderer(RenderObject*); // Defined in NodeInlines.h
 
     // Use these two methods with caution.
     inline RenderBox* renderBox() const; // Defined in NodeInlines.h
-    inline CheckedPtr<RenderBox> checkedRenderBox() const; // Defined in NodeInlines.h
     inline RenderBoxModelObject* renderBoxModelObject() const; // Defined in NodeInlines.h
 
     // Wrapper for nodes that don't have a renderer, but still cache the style (like HTMLOptionElement).
@@ -679,8 +680,9 @@ protected:
         IsShadowRootAttachedEventPending = 1 << 20,
         InLargestContentfulPaintTextContentSet = 1 << 21,
         DidMutateSubtreeAfterSetInnerHTML = 1 << 22,
-        WasParsedWithFastPath = 1 << 23
-        // 8 bits free.
+        WasParsedWithFastPath = 1 << 23,
+        HasShadowRoot = 1 << 24
+        // 7 bits free.
     };
 
     enum class TabIndexState : uint8_t {

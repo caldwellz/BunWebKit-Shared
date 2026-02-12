@@ -264,7 +264,7 @@ void JSTestOverloadedConstructorsWithSequenceOwner::finalize(JSC::Handle<JSC::Un
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestOverloadedConstructorsWithSequence = static_cast<JSTestOverloadedConstructorsWithSequence*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestOverloadedConstructorsWithSequence->protectedWrapped().ptr(), jsTestOverloadedConstructorsWithSequence);
+    uncacheWrapper(world, protect(jsTestOverloadedConstructorsWithSequence->wrapped()).ptr(), jsTestOverloadedConstructorsWithSequence);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

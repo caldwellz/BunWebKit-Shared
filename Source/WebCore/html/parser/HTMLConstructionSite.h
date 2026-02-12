@@ -75,10 +75,6 @@ struct HTMLConstructionSiteTask {
         return downcast<ContainerNode>(child.get());
     }
 
-    Ref<ContainerNode> protectedNonNullParent() const { return *parent; }
-    Ref<Node> protectedNonNullChild() const { return *child; }
-    Ref<Node> protectedNonNullNextChild() const { return *nextChild; }
-
     Operation operation;
     RefPtr<ContainerNode> parent;
     RefPtr<Node> nextChild;
@@ -166,13 +162,11 @@ public:
     bool isEmpty() const { return !m_openElements.stackDepth(); }
     Element& currentElement() const { return m_openElements.top(); }
     ContainerNode& currentNode() const { return m_openElements.topNode(); }
-    Ref<ContainerNode> protectedCurrentNode() const { return m_openElements.topNode(); }
     ElementName currentElementName() const { return m_openElements.topElementName(); }
     HTMLStackItem& currentStackItem() const { return m_openElements.topStackItem(); }
     HTMLStackItem* oneBelowTop() const { return m_openElements.oneBelowTop(); }
     TreeScope& treeScopeForCurrentNode();
     Document& ownerDocumentForCurrentNode();
-    Ref<Document> protectedOwnerDocumentForCurrentNode() { return ownerDocumentForCurrentNode(); }
     HTMLElementStack& openElements() const { return m_openElements; }
     HTMLFormattingElementList& activeFormattingElements() const { return m_activeFormattingElements; }
     bool currentIsRootNode() { return &m_openElements.topNode() == &m_openElements.rootNode(); }

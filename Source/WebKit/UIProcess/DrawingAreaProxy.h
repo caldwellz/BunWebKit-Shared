@@ -62,7 +62,7 @@ class RemotePageDrawingAreaProxy;
 class WebPageProxy;
 class WebProcessProxy;
 
-#if USE(COORDINATED_GRAPHICS) || USE(TEXTURE_MAPPER)
+#if !PLATFORM(WPE) && !PLATFORM(GTK) && (USE(COORDINATED_GRAPHICS) || USE(TEXTURE_MAPPER))
 struct UpdateInfo;
 #endif
 
@@ -168,7 +168,7 @@ private:
     virtual void updateAcceleratedCompositingMode(uint64_t /* backingStoreStateID */, const LayerTreeContext&) { }
     virtual void didFirstLayerFlush(uint64_t /* backingStoreStateID */, const LayerTreeContext&) { }
 
-#if USE(COORDINATED_GRAPHICS) || USE(TEXTURE_MAPPER)
+#if !PLATFORM(WPE) && !PLATFORM(GTK) && (USE(COORDINATED_GRAPHICS) || USE(TEXTURE_MAPPER))
     virtual void update(uint64_t /* backingStoreStateID */, UpdateInfo&&) { }
     virtual void exitAcceleratedCompositingMode(uint64_t /* backingStoreStateID */, UpdateInfo&&) { }
 #endif

@@ -257,7 +257,9 @@ void ScrollerPairMac::updateValues()
     auto offset = node->currentScrollOffset();
 
     if (offset != m_lastScrollOffset) {
-        if (m_lastScrollOffset) {
+        auto scrollbarRevealBehavior = node->takeScrollbarRevealBehaviorForNextScrollbarUpdate();
+
+        if (m_lastScrollOffset && scrollbarRevealBehavior == ScrollbarRevealBehavior::Default) {
             ensureOnMainThreadWithProtectedThis([delta = offset - *m_lastScrollOffset](auto& scrollerPair) {
                 [scrollerPair.m_scrollerImpPair contentAreaScrolledInDirection:NSMakePoint(delta.width(), delta.height())];
             });

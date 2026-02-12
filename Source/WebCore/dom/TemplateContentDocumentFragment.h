@@ -42,7 +42,7 @@ public:
         return adoptRef(*new TemplateContentDocumentFragment(document, host));
     }
 
-    const HTMLTemplateElement* host() const;
+    const HTMLTemplateElement* NODELETE host() const;
     void clearHost();
 
 private:

@@ -51,6 +51,7 @@
 #include "TopExceptionScope.h"
 #include "WebAssemblyCompileOptions.h"
 #include "WebAssemblyModuleRecord.h"
+#include "WebAssemblyPromising.h"
 
 namespace JSC {
 
@@ -71,8 +72,11 @@ FOR_EACH_WEBASSEMBLY_CONSTRUCTOR_TYPE(DEFINE_CALLBACK_FOR_CONSTRUCTOR)
 
 static JSC_DECLARE_HOST_FUNCTION(webAssemblyCompileFunc);
 static JSC_DECLARE_HOST_FUNCTION(webAssemblyInstantiateFunc);
+static JSC_DECLARE_HOST_FUNCTION(webAssemblyPromisingFunc);
 static JSC_DECLARE_HOST_FUNCTION(webAssemblyValidateFunc);
 static JSC_DECLARE_HOST_FUNCTION(webAssemblyGetterJSTag);
+static JSC_DECLARE_HOST_FUNCTION(webAssemblyGetterSuspending);
+static JSC_DECLARE_HOST_FUNCTION(webAssemblyGetterSuspendError);
 
 }
 
@@ -122,6 +126,11 @@ void JSWebAssembly::finishCreation(VM& vm, JSGlobalObject* globalObject)
     if (globalObject->globalObjectMethodTable()->instantiateStreaming)
         JSC_BUILTIN_FUNCTION_WITHOUT_TRANSITION("instantiateStreaming"_s, webAssemblyInstantiateStreamingCodeGenerator, static_cast<unsigned>(0));
     JSC_NATIVE_GETTER_WITHOUT_TRANSITION("JSTag"_s, webAssemblyGetterJSTag, PropertyAttribute::ReadOnly);
+    if (Options::useJSPI()) {
+        JSC_NATIVE_GETTER_WITHOUT_TRANSITION("Suspending"_s, webAssemblyGetterSuspending, PropertyAttribute::DontEnum);
+        JSC_NATIVE_GETTER_WITHOUT_TRANSITION("SuspendError"_s, webAssemblyGetterSuspendError, PropertyAttribute::DontEnum);
+        JSC_NATIVE_FUNCTION_WITHOUT_TRANSITION("promising"_s, webAssemblyPromisingFunc, static_cast<unsigned>(PropertyAttribute::None), 0, ImplementationVisibility::Public);
+    }
 }
 
 JSWebAssembly::JSWebAssembly(VM& vm, Structure* structure)
@@ -377,6 +386,21 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyInstantiateFunc, (JSGlobalObject* globalObje
     RELEASE_AND_RETURN(scope, JSValue::encode(promise));
 }
 
+JSC_DEFINE_HOST_FUNCTION(webAssemblyPromisingFunc, (JSGlobalObject* globalObject, CallFrame* callFrame))
+{
+    VM& vm = globalObject->vm();
+    auto scope = DECLARE_THROW_SCOPE(vm);
+
+    JSValue arg = callFrame->argument(0);
+
+    auto* wrapped = jsDynamicCast<WebAssemblyFunctionBase*>(arg);
+    if (!wrapped) [[unlikely]]
+        return JSValue::encode(throwTypeError(globalObject, scope, "Argument 0 must be a WebAssembly exported function"_s));
+
+    auto* wrapper = createWebAssemblyPromisingFunction(vm, globalObject, wrapped);
+    RELEASE_AND_RETURN(scope, JSValue::encode(wrapper));
+}
+
 /**
  * namespace WebAssembly {
  *     boolean validate(BufferSource bytes, optional WebAssemblyCompileOptions options);
@@ -440,6 +464,16 @@ JSC_DEFINE_HOST_FUNCTION(webAssemblyGetterJSTag, (JSGlobalObject* globalObject, 
 {
     // https://webassembly.github.io/exception-handling/js-api/#dom-webassembly-jstag
     return JSValue::encode(globalObject->webAssemblyJSTag());
+}
+
+JSC_DEFINE_HOST_FUNCTION(webAssemblyGetterSuspending, (JSGlobalObject* globalObject, CallFrame*))
+{
+    return JSValue::encode(globalObject->webAssemblySuspendingConstructor());
+}
+
+JSC_DEFINE_HOST_FUNCTION(webAssemblyGetterSuspendError, (JSGlobalObject* globalObject, CallFrame*))
+{
+    return JSValue::encode(globalObject->webAssemblySuspendErrorConstructor());
 }
 
 } // namespace JSC

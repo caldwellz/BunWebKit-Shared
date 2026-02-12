@@ -144,14 +144,14 @@ static void reportSpeculationRulesError(LocalFrame& frame, const String& errorMe
     JSC::VM& vm = world.vm();
     JSC::JSLockHolder lock(vm);
 
-    if (auto* jsGlobalObject = frame.checkedScript()->globalObject(world)) {
+    if (auto* jsGlobalObject = protect(frame.script())->globalObject(world)) {
         auto* error = JSC::createTypeError(jsGlobalObject, errorMessage);
         LoadableScript::Error scriptError {
             LoadableScriptErrorType::Script,
             std::nullopt,
             JSC::Strong<JSC::Unknown>(vm, error)
         };
-        frame.checkedScript()->reportExceptionFromScriptError(scriptError, false);
+        protect(frame.script())->reportExceptionFromScriptError(scriptError, false);
     }
 }
 
@@ -297,7 +297,7 @@ bool ScriptElement::prepareScript(const TextPosition& scriptStartPosition)
     case ScriptType::SpeculationRules: {
         // If the element has a source attribute, queue a task to fire an event named error at the element, and return.
         if (hasSourceAttribute()) {
-            protect(element->document())->checkedEventLoop()->queueTask(TaskSource::DOMManipulation, [protectedThis = Ref { *this }] {
+            protect(protect(element->document())->eventLoop())->queueTask(TaskSource::DOMManipulation, [protectedThis = Ref { *this }] {
                 protectedThis->dispatchErrorEvent();
             });
             return false;
@@ -375,7 +375,7 @@ bool ScriptElement::requestClassicScript(const String& sourceURL)
         auto scriptURL = document->completeURL(sourceURL);
         document->willLoadScriptElement(scriptURL);
 
-        if (!document->checkedContentSecurityPolicy()->allowNonParserInsertedScripts(scriptURL, URL(), m_startLineNumber, element->nonce(), script->integrity(), String(), m_parserInserted))
+        if (!protect(document->contentSecurityPolicy())->allowNonParserInsertedScripts(scriptURL, URL(), m_startLineNumber, element->nonce(), script->integrity(), String(), m_parserInserted))
             return false;
 
         if (script->load(document, scriptURL)) {
@@ -427,7 +427,7 @@ bool ScriptElement::requestModuleScript(const String& sourceText, const TextPosi
             scriptCharset(), element->localName(), element->isInUserAgentShadowTree());
         m_loadableScript = script.copyRef();
         if (RefPtr frame = element->document().frame())
-            frame->checkedScript()->loadModuleScript(script, moduleScriptRootURL, script->parameters());
+            protect(frame->script())->loadModuleScript(script, moduleScriptRootURL, script->parameters());
         return true;
     }
 
@@ -448,7 +448,7 @@ bool ScriptElement::requestModuleScript(const String& sourceText, const TextPosi
 
     m_loadableScript = script.copyRef();
     if (RefPtr frame = document->frame())
-        frame->checkedScript()->loadModuleScript(script, sourceCode);
+        protect(frame->script())->loadModuleScript(script, sourceCode);
     return true;
 }
 
@@ -480,7 +480,7 @@ void ScriptElement::executeClassicScript(const ScriptSourceCode& sourceCode)
     CurrentScriptIncrementer currentScriptIncrementer(document, *this);
 
     WTFBeginSignpost(this, ExecuteScriptElement, "executing classic script from URL: %" PRIVATE_LOG_STRING " async: %d defer: %d", m_isExternalScript ? sourceCode.url().string().utf8().data() : "inline", hasAsyncAttribute(), hasDeferAttribute());
-    frame->checkedScript()->evaluateIgnoringException(sourceCode);
+    protect(frame->script())->evaluateIgnoringException(sourceCode);
     WTFEndSignpost(this, ExecuteScriptElement);
 }
 
@@ -514,7 +514,7 @@ void ScriptElement::registerImportMap(const ScriptSourceCode& sourceCode)
         return;
 
     WTFBeginSignpost(this, RegisterImportMap, "registering import-map from URL: %" PRIVATE_LOG_STRING " async: %d defer: %d", m_isExternalScript ? sourceCode.url().string().utf8().data() : "inline", hasAsyncAttribute(), hasDeferAttribute());
-    frame->checkedScript()->registerImportMap(sourceCode, document->baseURL());
+    protect(frame->script())->registerImportMap(sourceCode, document->baseURL());
     WTFEndSignpost(this, RegisterImportMap);
 }
 
@@ -575,7 +575,7 @@ void ScriptElement::executeScriptAndDispatchEvent(LoadableScript& loadableScript
         // Parse error
         case LoadableScript::ErrorType::Resolve: {
             if (RefPtr frame = element().document().frame())
-                frame->checkedScript()->reportExceptionFromScriptError(error.value(), loadableScript.isModuleScript());
+                protect(frame->script())->reportExceptionFromScriptError(error.value(), loadableScript.isModuleScript());
             if (!loadableScript.isInlineModule())
                 dispatchLoadEventRespectingUserGestureIndicator();
             break;
@@ -588,7 +588,7 @@ void ScriptElement::executeScriptAndDispatchEvent(LoadableScript& loadableScript
             // not triggered during fetching. In this case, we need to report
             // the exception to the global object.
             if (RefPtr frame = element().document().frame())
-                frame->checkedScript()->reportExceptionFromScriptError(error.value(), loadableScript.isModuleScript());
+                protect(frame->script())->reportExceptionFromScriptError(error.value(), loadableScript.isModuleScript());
             break;
         }
         }
@@ -696,7 +696,7 @@ void ScriptElement::registerSpeculationRules(const ScriptSourceCode& sourceCode)
     if (!frame)
         return;
 
-    if (frame->checkedScript()->registerSpeculationRules(element.get(), sourceCode, document->baseURL()))
+    if (protect(frame->script())->registerSpeculationRules(element.get(), sourceCode, document->baseURL()))
         document->considerSpeculationRules();
     else {
         dispatchErrorEvent();

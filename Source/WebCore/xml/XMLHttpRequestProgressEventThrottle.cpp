@@ -67,7 +67,7 @@ void XMLHttpRequestProgressEventThrottle::updateProgress(bool isAsync, bool leng
         ASSERT(!m_hasPendingThrottledProgressEvent);
 
         dispatchEventWhenPossible(XMLHttpRequestProgressEvent::create(eventNames().progressEvent, lengthComputable, loaded, total));
-        m_dispatchThrottledProgressEventTimer = target->protectedScriptExecutionContext()->checkedEventLoop()->scheduleRepeatingTask(
+        m_dispatchThrottledProgressEventTimer = protect(protect(target->scriptExecutionContext())->eventLoop())->scheduleRepeatingTask(
             minimumProgressEventDispatchingInterval, minimumProgressEventDispatchingInterval, TaskSource::Networking, [weakTarget = WeakPtr { m_target.get() }] {
             if (RefPtr protectedTarget = weakTarget.get())
                 protectedTarget->dispatchThrottledProgressEventIfNeeded();

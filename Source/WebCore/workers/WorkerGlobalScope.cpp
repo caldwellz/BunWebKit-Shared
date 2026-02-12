@@ -204,7 +204,7 @@ bool WorkerGlobalScope::isSecureContext() const
 
 void WorkerGlobalScope::applyContentSecurityPolicyResponseHeaders(const ContentSecurityPolicyResponseHeaders& contentSecurityPolicyResponseHeaders)
 {
-    checkedContentSecurityPolicy()->didReceiveHeaders(contentSecurityPolicyResponseHeaders, String { });
+    protect(contentSecurityPolicy())->didReceiveHeaders(contentSecurityPolicyResponseHeaders, String { });
 }
 
 URL WorkerGlobalScope::completeURL(const String& url, ForceUTF8) const
@@ -340,7 +340,7 @@ ExceptionOr<int> WorkerGlobalScope::setTimeout(std::unique_ptr<ScheduledAction> 
 {
     // FIXME: Should this check really happen here? Or should it happen when code is about to eval?
     if (action->type() == ScheduledAction::Type::Code) {
-        if (!checkedContentSecurityPolicy()->allowEval(globalObject(), LogToConsole::Yes, action->code()))
+        if (!protect(contentSecurityPolicy())->allowEval(globalObject(), LogToConsole::Yes, action->code()))
             return 0;
     }
 
@@ -358,7 +358,7 @@ ExceptionOr<int> WorkerGlobalScope::setInterval(std::unique_ptr<ScheduledAction>
 {
     // FIXME: Should this check really happen here? Or should it happen when code is about to eval?
     if (action->type() == ScheduledAction::Type::Code) {
-        if (!checkedContentSecurityPolicy()->allowEval(globalObject(), LogToConsole::Yes, action->code()))
+        if (!protect(contentSecurityPolicy())->allowEval(globalObject(), LogToConsole::Yes, action->code()))
             return 0;
     }
 
@@ -372,7 +372,7 @@ void WorkerGlobalScope::clearInterval(int timeoutId)
     DOMTimer::removeById(*this, timeoutId);
 }
 
-ExceptionOr<void> WorkerGlobalScope::importScripts(const FixedVector<Variant<RefPtr<TrustedScriptURL>, String>>& urls)
+ExceptionOr<void> WorkerGlobalScope::importScripts(const FixedVector<Variant<Ref<TrustedScriptURL>, String>>& urls)
 {
     ASSERT(contentSecurityPolicy());
 
@@ -383,7 +383,7 @@ ExceptionOr<void> WorkerGlobalScope::importScripts(const FixedVector<Variant<Ref
             [this](const String& str) -> ExceptionOr<String> {
                 return trustedTypeCompliantString(TrustedType::TrustedScriptURL, *this, str, "WorkerGlobalScope importScripts"_s);
             },
-            [](const RefPtr<TrustedScriptURL>& trustedScriptURL) -> ExceptionOr<String> {
+            [](const Ref<TrustedScriptURL>& trustedScriptURL) -> ExceptionOr<String> {
                 return trustedScriptURL->toString();
             }
         );
@@ -421,7 +421,7 @@ ExceptionOr<void> WorkerGlobalScope::importScripts(const FixedVector<Variant<Ref
     for (auto& url : completedURLs) {
         // FIXME: Convert this to check the isolated world's Content Security Policy once webkit.org/b/104520 is solved.
         bool shouldBypassMainWorldContentSecurityPolicy = this->shouldBypassMainWorldContentSecurityPolicy();
-        if (!shouldBypassMainWorldContentSecurityPolicy && !checkedContentSecurityPolicy()->allowScriptFromSource(url))
+        if (!shouldBypassMainWorldContentSecurityPolicy && !protect(contentSecurityPolicy())->allowScriptFromSource(url))
             return Exception { ExceptionCode::NetworkError };
 
         auto scriptLoader = WorkerScriptLoader::create();

@@ -110,7 +110,6 @@ public:
         }
     }
 
-private:
     // CheckedPtr interface
     uint32_t checkedPtrCount() const final { return CanMakeCheckedPtr::checkedPtrCount(); }
     uint32_t checkedPtrCountWithoutThreadCheck() const final { return CanMakeCheckedPtr::checkedPtrCountWithoutThreadCheck(); }
@@ -118,6 +117,7 @@ private:
     void decrementCheckedPtrCount() const final { CanMakeCheckedPtr::decrementCheckedPtrCount(); }
     void setDidBeginCheckedPtrDeletion() final { CanMakeCheckedPtr::setDidBeginCheckedPtrDeletion(); }
 
+private:
     WeakObjCPtr<WKFullScreenViewController> m_parent;
     RefPtr<WebCore::PlaybackSessionInterfaceIOS> m_interface;
 };
@@ -170,7 +170,7 @@ private:
     RetainPtr<NSLayoutConstraint> _topConstraint;
     String _location;
     WebKit::FullscreenTouchSecheuristic _secheuristic;
-    WKFullScreenViewControllerPlaybackSessionModelClient _playbackClient;
+    std::unique_ptr<WKFullScreenViewControllerPlaybackSessionModelClient> _playbackClient;
     CGFloat _nonZeroStatusBarHeight;
     std::optional<UIInterfaceOrientationMask> _supportedOrientations;
     BOOL _isShowingMenu;
@@ -221,7 +221,8 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     _secheuristic.setParameters(WebKit::FullscreenTouchSecheuristicParameters::iosParameters());
     self._webView = webView;
 
-    _playbackClient.setParent(self);
+    _playbackClient = makeUniqueWithoutFastMallocCheck<WKFullScreenViewControllerPlaybackSessionModelClient>();
+    protect(_playbackClient.get())->setParent(self);
     _valid = YES;
     _isShowingMenu = NO;
 #if ENABLE(VIDEO_USES_ELEMENT_FULLSCREEN)
@@ -255,8 +256,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 #endif
 
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    _playbackClient.setParent(nullptr);
-    _playbackClient.setInterface(nullptr);
+    CheckedRef playbackClient = *_playbackClient;
+    playbackClient->setParent(nullptr);
+    playbackClient->setInterface(nullptr);
     [self.delegate fullScreenViewControllerDidInvalidate:self];
 }
 
@@ -408,13 +410,13 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     ASSERT(_valid);
     RefPtr playbackSessionInterface = [self _playbackSessionInterface];
 
-    _playbackClient.setInterface(playbackSessionInterface.get());
+    protect(_playbackClient.get())->setInterface(playbackSessionInterface.get());
 
     CheckedPtr playbackSessionModel = playbackSessionInterface ? playbackSessionInterface->playbackSessionModel() : nullptr;
     self.playing = playbackSessionModel ? playbackSessionModel->isPlaying() : NO;
     bool isPiPEnabled = false;
     if (RefPtr page = [self._webView _page].get())
-        isPiPEnabled = page->preferences().pictureInPictureAPIEnabled() && page->preferences().allowsPictureInPictureMediaPlayback();
+        isPiPEnabled = protect(page->preferences())->pictureInPictureAPIEnabled() && protect(page->preferences())->allowsPictureInPictureMediaPlayback();
     bool isPiPSupported = playbackSessionModel && playbackSessionModel->isPictureInPictureSupported();
 #if ENABLE(VIDEO_USES_ELEMENT_FULLSCREEN)
     [_cancelButton setHidden:_shouldHideCustomControls];
@@ -456,7 +458,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (!videoPresentationManager)
         return nullptr;
 
-    if (page->preferences().videoFullsceenPrefersMostVisibleHeuristic())
+    if (protect(page->preferences())->videoFullsceenPrefersMostVisibleHeuristic())
         return videoPresentationManager->bestVideoForElementFullscreen();
     return videoPresentationManager->controlsManagerInterface();
 }
@@ -749,7 +751,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     UIImage *doneImage;
 
     // FIXME: Rename `alternateFullScreenControlDesignEnabled` to something that explains it is for visionOS.
-    auto alternateFullScreenControlDesignEnabled = protect(*self._webView._page)->preferences().alternateFullScreenControlDesignEnabled();
+    auto alternateFullScreenControlDesignEnabled = protect(protect(*self._webView._page)->preferences())->alternateFullScreenControlDesignEnabled();
     
     if (alternateFullScreenControlDesignEnabled) {
         buttonSize = CGSizeMake(44.0, 44.0);
@@ -1026,7 +1028,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (!page)
         return nullptr;
 
-    WebKit::PlaybackSessionManagerProxy* playbackSessionManager = page->playbackSessionManager();
+    RefPtr playbackSessionManager = page->playbackSessionManager();
     if (!playbackSessionManager)
         return nullptr;
 
@@ -1039,7 +1041,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (!page)
         return;
 
-    if (page->preferences().fullScreenEnabled())
+    if (protect(page->preferences())->fullScreenEnabled())
         return;
 
     // When only VideoFullscreenRequiresElementFullscreen is enabled,
@@ -1131,7 +1133,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     ASSERT(_valid);
 
     RefPtr page = self._webView._page.get();
-    if (page && !page->preferences().fullScreenEnabled()) {
+    if (page && !protect(page->preferences())->fullScreenEnabled()) {
         ASSERT(page->preferences().videoFullscreenRequiresElementFullscreen());
         _secheuristic.reset();
         return;

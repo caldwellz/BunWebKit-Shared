@@ -8,6 +8,7 @@ $(BUILT_PRODUCTS_DIR)/usr/local/include/WebKitAdditions/AdditionalFeatureDefines
 $(BUILT_PRODUCTS_DIR)/usr/local/include/WebKitAdditions/AdditionalPlatform.h
 $(BUILT_PRODUCTS_DIR)/usr/local/include/WebKitAdditions/AdditionalPlatformHave.h
 $(BUILT_PRODUCTS_DIR)/usr/local/include/WebKitAdditions/WKWebView+SystemTextExtraction.swift.in
+$(BUILT_PRODUCTS_DIR)/usr/local/include/WebKitAdditions/WKWebView+WKBannerViewOverlay.swift.in
 $(BUILT_PRODUCTS_DIR)/usr/local/include/wtf/Compiler.h
 $(BUILT_PRODUCTS_DIR)/usr/local/include/wtf/Platform.h
 $(BUILT_PRODUCTS_DIR)/usr/local/include/wtf/PlatformCPU.h
@@ -268,9 +269,12 @@ $(PROJECT_DIR)/Shared/Cocoa/CoreIPCNSURLRequest.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCNSValue.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCNull.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKDateComponentsRange.serialization.in
+$(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKPayment.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKPaymentMerchantSession.serialization.in
+$(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKPaymentMethod.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKPaymentSetupFeature.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKPaymentToken.serialization.in
+$(PROJECT_DIR)/Shared/Cocoa/CoreIPCPKShippingMethod.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPassKit.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPersonNameComponents.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCPlist.serialization.in
@@ -279,9 +283,12 @@ $(PROJECT_DIR)/Shared/Cocoa/CoreIPCSecureCoding.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCString.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCStringSet.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/CoreIPCURL.serialization.in
+$(PROJECT_DIR)/Shared/Cocoa/CursorContext.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/DataDetectionResult.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/GestureTypes.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/InsertTextOptions.serialization.in
+$(PROJECT_DIR)/Shared/Cocoa/InteractionInformationAtPosition.serialization.in
+$(PROJECT_DIR)/Shared/Cocoa/InteractionInformationRequest.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/MachSendRightAnnotated.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/RemoteObjectInvocation.serialization.in
 $(PROJECT_DIR)/Shared/Cocoa/RevealItem.serialization.in
@@ -354,6 +361,7 @@ $(PROJECT_DIR)/Shared/NodeHitTestResult.serialization.in
 $(PROJECT_DIR)/Shared/Notifications/NotificationManagerMessageHandler.messages.in
 $(PROJECT_DIR)/Shared/Notifications/NotificationManagerProxy.messages.in
 $(PROJECT_DIR)/Shared/PALArgumentCoders.serialization.in
+$(PROJECT_DIR)/Shared/PDFDisplayMode.serialization.in
 $(PROJECT_DIR)/Shared/Pasteboard.serialization.in
 $(PROJECT_DIR)/Shared/PlatformPopupMenuData.serialization.in
 $(PROJECT_DIR)/Shared/PolicyDecision.serialization.in

@@ -122,6 +122,8 @@ struct OverloadCandidate {
     AbstractType result;
 };
 
+using ValidationFunction = std::optional<String>(*)(const FixedVector<std::optional<ConstantValue>>&);
+
 struct OverloadedDeclaration {
     enum Kind : uint8_t {
         Operator,
@@ -133,6 +135,7 @@ struct OverloadedDeclaration {
     bool mustUse;
 
     Expected<ConstantValue, String> (*constantFunction)(const Type*, const FixedVector<ConstantValue>&);
+    ValidationFunction validationFunction;
     OptionSet<ShaderStage> visibility;
     Vector<OverloadCandidate> overloads;
 };

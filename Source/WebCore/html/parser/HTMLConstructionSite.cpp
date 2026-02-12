@@ -139,9 +139,9 @@ static inline void insert(HTMLConstructionSiteTask& task)
 
     ASSERT(!task.child->parentNode());
     if (task.nextChild)
-        task.parent->parserInsertBefore(task.protectedNonNullChild(), task.protectedNonNullNextChild());
+        task.parent->parserInsertBefore(protect(*task.child), protect(*task.nextChild));
     else
-        task.parent->parserAppendChild(task.protectedNonNullChild());
+        task.parent->parserAppendChild(protect(*task.child));
 }
 
 static inline void executeInsertTask(HTMLConstructionSiteTask& task)
@@ -170,7 +170,7 @@ static inline void executeReparentTask(HTMLConstructionSiteTask& task)
     if (task.child->parentNode() || task.child->contains(task.parent.get()))
         return;
 
-    task.parent->parserAppendChild(task.protectedNonNullChild());
+    task.parent->parserAppendChild(protect(*task.child));
 }
 
 static inline void executeInsertAlreadyParsedChildTask(HTMLConstructionSiteTask& task)
@@ -198,7 +198,7 @@ static inline void executeTakeAllChildrenAndReparentTask(HTMLConstructionSiteTas
     task.parent->takeAllChildrenFrom(furthestBlock.get());
 
     RELEASE_ASSERT(!task.parent->parentNode());
-    furthestBlock->parserAppendChild(task.protectedNonNullParent());
+    furthestBlock->parserAppendChild(protect(*task.parent));
 }
 
 static inline void executeTask(HTMLConstructionSiteTask& task)
@@ -502,7 +502,7 @@ void HTMLConstructionSite::insertDoctype(AtomHTMLToken&& token)
 void HTMLConstructionSite::insertComment(AtomHTMLToken&& token)
 {
     ASSERT(token.type() == HTMLToken::Type::Comment);
-    attachLater(protectedCurrentNode(), Comment::create(protectedOwnerDocumentForCurrentNode(), WTF::move(token.comment())));
+    attachLater(protect(currentNode()), Comment::create(protect(ownerDocumentForCurrentNode()), WTF::move(token.comment())));
 }
 
 void HTMLConstructionSite::insertCommentOnDocument(AtomHTMLToken&& token)
@@ -523,7 +523,7 @@ void HTMLConstructionSite::insertHTMLHeadElement(AtomHTMLToken&& token)
 {
     ASSERT(!shouldFosterParent());
     m_head = HTMLStackItem(createHTMLElement(token), WTF::move(token));
-    attachLater(protectedCurrentNode(), m_head.element());
+    attachLater(protect(currentNode()), m_head.element());
     m_openElements.pushHTMLHeadElement(HTMLStackItem(m_head));
 }
 
@@ -531,7 +531,7 @@ void HTMLConstructionSite::insertHTMLBodyElement(AtomHTMLToken&& token)
 {
     ASSERT(!shouldFosterParent());
     auto body = createHTMLElement(token);
-    attachLater(protectedCurrentNode(), body.copyRef());
+    attachLater(protect(currentNode()), body.copyRef());
     m_openElements.pushHTMLBodyElement(HTMLStackItem(WTF::move(body), WTF::move(token)));
 }
 
@@ -542,14 +542,14 @@ void HTMLConstructionSite::insertHTMLFormElement(AtomHTMLToken&& token)
     // form element pointer to point to the element created.
     if (!openElements().hasTemplateInHTMLScope())
         m_form = formElement.ptr();
-    attachLater(protectedCurrentNode(), formElement.copyRef());
+    attachLater(protect(currentNode()), formElement.copyRef());
     m_openElements.push(HTMLStackItem(WTF::move(formElement), WTF::move(token)));
 }
 
 void HTMLConstructionSite::insertHTMLElement(AtomHTMLToken&& token)
 {
     auto element = createHTMLElement(token);
-    attachLater(protectedCurrentNode(), element.copyRef());
+    attachLater(protect(currentNode()), element.copyRef());
     m_openElements.push(HTMLStackItem(WTF::move(element), WTF::move(token)));
 }
 
@@ -600,7 +600,7 @@ std::unique_ptr<CustomElementConstructionData> HTMLConstructionSite::insertHTMLE
         RELEASE_ASSERT(registry);
         return makeUnique<CustomElementConstructionData>(elementInterface.releaseNonNull(), registry.releaseNonNull(), token.name(), WTF::move(token.attributes()));
     }
-    attachLater(protectedCurrentNode(), *element);
+    attachLater(protect(currentNode()), *element);
     m_openElements.push(HTMLStackItem(element.releaseNonNull(), WTF::move(token)));
     return nullptr;
 }
@@ -608,7 +608,7 @@ std::unique_ptr<CustomElementConstructionData> HTMLConstructionSite::insertHTMLE
 void HTMLConstructionSite::insertCustomElement(Ref<Element>&& element, Vector<Attribute>&& attributes)
 {
     setAttributes(element, attributes, HasDuplicateAttribute::No, m_parserContentPolicy);
-    attachLater(protectedCurrentNode(), element.copyRef());
+    attachLater(protect(currentNode()), element.copyRef());
     m_openElements.push(HTMLStackItem(WTF::move(element), WTF::move(attributes)));
     executeQueuedTasks();
 }
@@ -619,7 +619,7 @@ void HTMLConstructionSite::insertSelfClosingHTMLElement(AtomHTMLToken&& token)
     // Normally HTMLElementStack is responsible for calling finishParsingChildren,
     // but self-closing elements are never in the element stack so the stack
     // doesn't get a chance to tell them that we're done parsing their children.
-    attachLater(protectedCurrentNode(), createHTMLElement(token), true);
+    attachLater(protect(currentNode()), createHTMLElement(token), true);
     // FIXME: Do we want to acknowledge the token's self-closing flag?
     // http://www.whatwg.org/specs/web-apps/current-work/multipage/tokenization.html#acknowledge-self-closing-flag
 }
@@ -646,7 +646,7 @@ void HTMLConstructionSite::insertScriptElement(AtomHTMLToken&& token)
     auto element = HTMLScriptElement::create(scriptTag, ownerDocumentForCurrentNode(), parserInserted, alreadyStarted);
     setAttributes(element, token, m_parserContentPolicy);
     if (scriptingContentIsAllowed(m_parserContentPolicy))
-        attachLater(protectedCurrentNode(), element.copyRef());
+        attachLater(protect(currentNode()), element.copyRef());
     m_openElements.push(HTMLStackItem(WTF::move(element), WTF::move(token)));
 }
 
@@ -657,7 +657,7 @@ void HTMLConstructionSite::insertForeignElement(AtomHTMLToken&& token, const Ato
 
     auto element = createElement(token, namespaceURI);
     if (scriptingContentIsAllowed(m_parserContentPolicy) || !isScriptElement(element.get()))
-        attachLater(protectedCurrentNode(), element.copyRef(), token.selfClosing());
+        attachLater(protect(currentNode()), element.copyRef(), token.selfClosing());
     if (!token.selfClosing())
         m_openElements.push(HTMLStackItem(WTF::move(element), WTF::move(token)));
 }
@@ -925,7 +925,7 @@ void HTMLConstructionSite::reconstructTheActiveFormattingElements()
         auto& unopenedEntry = m_activeFormattingElements.at(unopenEntryIndex);
         ASSERT(!unopenedEntry.stackItem().isNull());
         auto reconstructed = createElementFromSavedToken(unopenedEntry.stackItem());
-        attachLater(protectedCurrentNode(), reconstructed.node());
+        attachLater(protect(currentNode()), reconstructed.node());
         m_openElements.push(HTMLStackItem(reconstructed));
         unopenedEntry.replaceElement(WTF::move(reconstructed));
     }

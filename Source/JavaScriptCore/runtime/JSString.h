@@ -134,6 +134,9 @@ public:
     static constexpr unsigned MaxLength = std::numeric_limits<int32_t>::max();
     static_assert(MaxLength == String::MaxLength);
 
+    // Minimum rope length for rope-walk optimizations (tryFindOneChar, tryReplaceOneChar).
+    static constexpr unsigned minLengthForRopeWalk = 0x128;
+
     static constexpr uintptr_t isRopeInPointer = 0x1;
 
     static constexpr unsigned maxLengthForOnStackResolve = 2048;
@@ -286,6 +289,7 @@ public:
 #endif
 
     ALWAYS_INLINE JSString* tryReplaceOneChar(JSGlobalObject*, char16_t, JSString* replacement);
+    inline std::optional<size_t> tryFindOneChar(JSGlobalObject*, char16_t character, unsigned& startPosition) const;
 
     bool isSubstring() const;
 protected:
@@ -321,7 +325,7 @@ private:
     friend JSString* jsNontrivialString(VM&, String&&);
     friend JSString* jsSubstring(VM&, const String&, unsigned, unsigned);
     friend JSString* jsSubstring(JSGlobalObject*, VM&, JSString*, unsigned, unsigned);
-    friend JSString* tryJSSubstringImpl(VM&, JSGlobalObject*, JSString*, unsigned, unsigned);
+    friend JSString* tryJSSubstringImpl(VM&, JSString*, unsigned, unsigned);
     friend JSString* jsSubstringOfResolved(VM&, GCDeferralContext*, JSString*, unsigned, unsigned);
     friend JSString* jsOwnedString(VM&, const String&);
     friend JSString* jsAtomString(JSGlobalObject*, VM&, JSString*);
@@ -759,7 +763,7 @@ private:
     void iterRopeInternalNoSubstring(jsstring_iterator*) const;
 #endif
 
-    friend JSString* tryJSSubstringImpl(VM&, JSGlobalObject*, JSString*, unsigned, unsigned);
+    friend JSString* tryJSSubstringImpl(VM&, JSString*, unsigned, unsigned);
     friend JSString* jsAtomString(JSGlobalObject*, VM&, JSString*);
     friend JSString* jsAtomString(JSGlobalObject*, VM&, JSString*, JSString*);
     friend JSString* jsAtomString(JSGlobalObject*, VM&, JSString*, JSString*, JSString*);
@@ -1030,60 +1034,73 @@ ALWAYS_INLINE JSString* jsString(VM& vm, Ref<StringImpl>&& s)
     return jsString(vm, String { WTF::move(s) });
 }
 
-inline JSString* tryJSSubstringImpl(VM& vm, JSGlobalObject* globalObject, JSString* base, unsigned offset, unsigned length)
+inline JSString* tryJSSubstringImpl(VM& vm, JSString* base, unsigned offset, unsigned length)
 {
-    ASSERT(offset <= base->length());
-    ASSERT(length <= base->length());
-    ASSERT(offset + length <= base->length());
-    if (!length)
-        return vm.smallStrings.emptyString();
-    if (!offset && length == base->length())
-        return base;
+    // Cap traversal depth to avoid O(n^2) slicing on deep ropes (e.g. repeated s += 'A').
+    // Exceeding the limit returns nullptr, letting jsSubstring flatten via resolveRope.
+    static constexpr unsigned maxTraversalDepth = 8;
 
-    // For now, let's not allow substrings with a rope base.
-    // Resolve non-substring rope bases so we don't have to deal with it.
-    // FIXME: Evaluate if this would be worth adding more branches.
-    if (base->isSubstring()) {
-        JSRopeString* baseRope = jsCast<JSRopeString*>(base);
-        ASSERT(!baseRope->substringBase()->isRope());
-        return jsSubstringOfResolved(vm, nullptr, baseRope->substringBase(), baseRope->substringOffset() + offset, length);
-    }
+    for (unsigned depth = 0; ; ++depth) {
+        ASSERT(offset <= base->length());
+        ASSERT(length <= base->length());
+        ASSERT(offset + length <= base->length());
+        if (!length)
+            return vm.smallStrings.emptyString();
+        if (!offset && length == base->length())
+            return base;
 
-    if (!base->isRope())
-        return jsSubstringOfResolved(vm, nullptr, base, offset, length);
+        // For now, let's not allow substrings with a rope base.
+        // Resolve non-substring rope bases so we don't have to deal with it.
+        // FIXME: Evaluate if this would be worth adding more branches.
+        if (base->isSubstring()) {
+            JSRopeString* baseRope = jsCast<JSRopeString*>(base);
+            ASSERT(!baseRope->substringBase()->isRope());
+            return jsSubstringOfResolved(vm, nullptr, baseRope->substringBase(), baseRope->substringOffset() + offset, length);
+        }
 
-    auto* rope = jsCast<JSRopeString*>(base);
-    auto* fiber0 = rope->fiber0();
-    ASSERT(fiber0);
-    if (offset < fiber0->length()) {
-        if ((offset + length) <= fiber0->length())
-            MUST_TAIL_CALL return tryJSSubstringImpl(vm, globalObject, fiber0, offset, length);
-        // Crossing multiple fibers. Giving up and resolving the rope.
-    } else {
+        if (!base->isRope())
+            return jsSubstringOfResolved(vm, nullptr, base, offset, length);
+
+        if (depth >= maxTraversalDepth)
+            return nullptr;
+
+        auto* rope = jsCast<JSRopeString*>(base);
+        auto* fiber0 = rope->fiber0();
+        ASSERT(fiber0);
+        if (offset < fiber0->length()) {
+            if ((offset + length) <= fiber0->length()) {
+                base = fiber0;
+                continue;
+            }
+            return nullptr; // Crossing multiple fibers.
+        }
+
         unsigned adjustedOffset = offset - fiber0->length();
         auto* fiber1 = rope->fiber1();
         ASSERT(fiber1);
         if (adjustedOffset < fiber1->length()) {
-            if ((adjustedOffset + length) <= fiber1->length())
-                MUST_TAIL_CALL return tryJSSubstringImpl(vm, globalObject, fiber1, adjustedOffset, length);
-            // Crossing multiple fibers. Giving up and resolving the rope.
-        } else {
-            adjustedOffset -= fiber1->length();
-            auto* fiber2 = rope->fiber2();
-            ASSERT(fiber2);
-            ASSERT(adjustedOffset < fiber2->length());
-            ASSERT((adjustedOffset + length) <= fiber2->length());
-            MUST_TAIL_CALL return tryJSSubstringImpl(vm, globalObject, fiber2, adjustedOffset, length);
+            if ((adjustedOffset + length) <= fiber1->length()) {
+                base = fiber1;
+                offset = adjustedOffset;
+                continue;
+            }
+            return nullptr; // Crossing multiple fibers.
         }
-    }
 
-    return nullptr;
+        adjustedOffset -= fiber1->length();
+        auto* fiber2 = rope->fiber2();
+        ASSERT(fiber2);
+        ASSERT(adjustedOffset < fiber2->length());
+        ASSERT((adjustedOffset + length) <= fiber2->length());
+        base = fiber2;
+        offset = adjustedOffset;
+    }
 }
 
 inline JSString* jsSubstring(JSGlobalObject* globalObject, VM& vm, JSString* base, unsigned offset, unsigned length)
 {
     auto scope = DECLARE_THROW_SCOPE(vm);
-    JSString* result = tryJSSubstringImpl(vm, globalObject, base, offset, length);
+    JSString* result = tryJSSubstringImpl(vm, base, offset, length);
     RETURN_IF_EXCEPTION(scope, nullptr);
 
     if (!result) {

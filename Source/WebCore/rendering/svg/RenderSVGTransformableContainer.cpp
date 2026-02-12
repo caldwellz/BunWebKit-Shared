@@ -48,11 +48,6 @@ SVGGraphicsElement& RenderSVGTransformableContainer::graphicsElement() const
     return downcast<SVGGraphicsElement>(RenderSVGContainer::element());
 }
 
-Ref<SVGGraphicsElement> RenderSVGTransformableContainer::protectedGraphicsElement() const
-{
-    return graphicsElement();
-}
-
 inline SVGUseElement* associatedUseElement(SVGGraphicsElement& element)
 {
     // If we're either the renderer for a <use> element, or for any <g> element inside the shadow
@@ -98,7 +93,7 @@ void RenderSVGTransformableContainer::updateLayerTransform()
 void RenderSVGTransformableContainer::applyTransform(TransformationMatrix& transform, const RenderStyle& style, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption> options) const
 {
     auto postTransform = m_supplementalLayerTransform.isIdentity() ? std::nullopt : std::make_optional(m_supplementalLayerTransform);
-    applySVGTransform(transform, protectedGraphicsElement(), style, boundingBox, std::nullopt, postTransform, options);
+    applySVGTransform(transform, protect(graphicsElement()), style, boundingBox, std::nullopt, postTransform, options);
 }
 
 }

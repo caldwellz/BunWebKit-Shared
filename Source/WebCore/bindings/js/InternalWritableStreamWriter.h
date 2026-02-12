@@ -53,7 +53,6 @@ private:
 };
 
 ExceptionOr<Ref<InternalWritableStreamWriter>> acquireWritableStreamDefaultWriter(JSDOMGlobalObject&, WritableStream&);
-int writableStreamDefaultWriterGetDesiredSize(InternalWritableStreamWriter&);
 RefPtr<DOMPromise> writableStreamDefaultWriterCloseWithErrorPropagation(InternalWritableStreamWriter&);
 void writableStreamDefaultWriterRelease(InternalWritableStreamWriter&);
 RefPtr<DOMPromise> writableStreamDefaultWriterWrite(InternalWritableStreamWriter&, JSC::JSValue);

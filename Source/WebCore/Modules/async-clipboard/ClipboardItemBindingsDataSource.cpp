@@ -33,6 +33,7 @@
 #include "CommonAtomStrings.h"
 #include "ContextDestructionObserverInlines.h"
 #include "Document.h"
+#include "DocumentPage.h"
 #include "ExceptionCode.h"
 #include "FileReaderLoader.h"
 #include "GraphicsContext.h"
@@ -109,7 +110,7 @@ void ClipboardItemBindingsDataSource::getType(const String& type, Ref<DeferredPr
         String string;
         result.getString(globalObject, string);
         if (!string.isNull()) {
-            promise->resolve<IDLInterface<Blob>>(ClipboardItem::blobFromString(promise->protectedScriptExecutionContext().get(), string, type));
+            promise->resolve<IDLInterface<Blob>>(ClipboardItem::blobFromString(protect(promise->scriptExecutionContext()).get(), string, type));
             return;
         }
 

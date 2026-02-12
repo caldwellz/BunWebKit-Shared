@@ -68,19 +68,9 @@ MediaDeviceRoute* MediaPlaybackTargetWirelessPlayback::route() const
 
 String MediaPlaybackTargetWirelessPlayback::deviceName() const
 {
-    // FIXME: provide a real device name
-    if (auto identifier = this->identifier())
-        return identifier->toString();
+    if (RefPtr route = m_route)
+        return m_route->deviceName();
     return { };
-}
-
-void MediaPlaybackTargetWirelessPlayback::loadURL(const URL& url, CompletionHandler<void(const MediaDeviceRouteLoadURLResult&)>&& completionHandler)
-{
-    RefPtr route = m_route;
-    if (!route)
-        return completionHandler(makeUnexpected(MediaDeviceRouteLoadURLError::NoRoute));
-
-    route->loadURL(url, WTF::move(completionHandler));
 }
 
 } // namespace WebCore

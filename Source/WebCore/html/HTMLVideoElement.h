@@ -161,7 +161,7 @@ private:
     bool hasPresentationalHintsForAttribute(const QualifiedName&) const final;
     void collectPresentationalHintsForAttribute(const QualifiedName&, const AtomString&, MutableStyleProperties&) final;
     bool isVideo() const final { return true; }
-    bool hasVideo() const final { return player() && protectedPlayer()->hasVideo(); }
+    bool hasVideo() const final { return player() && protect(player())->hasVideo(); }
     bool supportsFullscreen(HTMLMediaElementEnums::VideoFullscreenMode) const final;
     bool isURLAttribute(const Attribute&) const final;
     const AtomString& imageSourceURL() const final;

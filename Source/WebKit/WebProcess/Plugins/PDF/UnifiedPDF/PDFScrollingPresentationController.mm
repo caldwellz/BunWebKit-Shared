@@ -80,11 +80,6 @@ bool PDFScrollingPresentationController::handleKeyboardEvent(const WebKeyboardEv
 }
 
 #if PLATFORM(MAC)
-CheckedPtr<WebCore::KeyboardScrollingAnimator> PDFScrollingPresentationController::checkedKeyboardScrollingAnimator() const
-{
-    return m_plugin->scrollAnimator().keyboardScrollingAnimator();
-}
-
 bool PDFScrollingPresentationController::handleKeyboardCommand(const WebKeyboardEvent& event)
 {
     auto& commands = event.commands();
@@ -93,10 +88,10 @@ bool PDFScrollingPresentationController::handleKeyboardCommand(const WebKeyboard
 
     auto commandName = commands[0].commandName;
     if (commandName == "scrollToBeginningOfDocument:"_s)
-        return checkedKeyboardScrollingAnimator()->beginKeyboardScrollGesture(ScrollDirection::ScrollUp, ScrollGranularity::Document, false);
+        return protect(m_plugin->scrollAnimator().keyboardScrollingAnimator())->beginKeyboardScrollGesture(ScrollDirection::ScrollUp, ScrollGranularity::Document, false);
 
     if (commandName == "scrollToEndOfDocument:"_s)
-        return checkedKeyboardScrollingAnimator()->beginKeyboardScrollGesture(ScrollDirection::ScrollDown, ScrollGranularity::Document, false);
+        return protect(m_plugin->scrollAnimator().keyboardScrollingAnimator())->beginKeyboardScrollGesture(ScrollDirection::ScrollDown, ScrollGranularity::Document, false);
 
     return false;
 }
@@ -462,7 +457,7 @@ void PDFScrollingPresentationController::setSelectionLayerEnabled(bool enabled)
     if (!enabled)
         selectionLayer->removeFromParent();
     else
-        m_contentsLayer->protectedParent()->addChild(WTF::move(selectionLayer));
+        protect(m_contentsLayer->parent())->addChild(WTF::move(selectionLayer));
 #endif
 }
 

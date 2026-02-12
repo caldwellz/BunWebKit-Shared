@@ -64,11 +64,6 @@ inline ExtensionStyleSheets& Document::extensionStyleSheets()
     return *m_extensionStyleSheets;
 }
 
-inline CheckedRef<ExtensionStyleSheets> Document::checkedExtensionStyleSheets()
-{
-    return extensionStyleSheets();
-}
-
 inline VisitedLinkState& Document::visitedLinkState() const
 {
     if (!m_visitedLinkState)

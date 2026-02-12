@@ -423,12 +423,12 @@ enum class ClonedDocumentType : uint8_t { XMLDocument, XHTMLDocument, HTMLDocume
 
 using RenderingContext = Variant<
 #if ENABLE(WEBGL)
-    RefPtr<WebGLRenderingContext>,
-    RefPtr<WebGL2RenderingContext>,
+    Ref<WebGLRenderingContext>,
+    Ref<WebGL2RenderingContext>,
 #endif
-    RefPtr<GPUCanvasContext>,
-    RefPtr<ImageBitmapRenderingContext>,
-    RefPtr<CanvasRenderingContext2D>
+    Ref<GPUCanvasContext>,
+    Ref<ImageBitmapRenderingContext>,
+    Ref<CanvasRenderingContext2D>
 >;
 
 class DocumentParserYieldToken {
@@ -538,7 +538,7 @@ public:
     void setShouldNotFireMutationEvents(bool fire) { m_shouldNotFireMutationEvents = fire; }
 
     void setMarkupUnsafe(const String&, OptionSet<ParserContentPolicy>);
-    static ExceptionOr<Ref<Document>> parseHTMLUnsafe(Document&, Variant<RefPtr<TrustedHTML>, String>&&);
+    static ExceptionOr<Ref<Document>> parseHTMLUnsafe(Document&, Variant<Ref<TrustedHTML>, String>&&);
 
     Element* elementForAccessKey(const String& key);
     inline void invalidateAccessKeyCache(); // Defined in DocumentInlines.h
@@ -724,7 +724,6 @@ public:
 
     ExtensionStyleSheets* extensionStyleSheetsIfExists() { return m_extensionStyleSheets.get(); }
     inline ExtensionStyleSheets& extensionStyleSheets(); // Defined in DocumentInlines.h.
-    inline CheckedRef<ExtensionStyleSheets> checkedExtensionStyleSheets(); // Defined in DocumentInlines.h.
 
     const Style::CustomPropertyRegistry& customPropertyRegistry() const;
     const CSSCounterStyleRegistry& counterStyleRegistry() const;
@@ -752,7 +751,7 @@ public:
     inline Quirks& quirks(); // Defined in DocumentQuirks.h
     inline const Quirks& quirks() const; // Defined in DocumentQuirks.h
 
-    float deviceScaleFactor() const;
+    WEBCORE_EXPORT float deviceScaleFactor() const;
 
     WEBCORE_EXPORT bool useElevatedUserInterfaceLevel() const;
     WEBCORE_EXPORT bool useDarkAppearance(const RenderStyle*) const;
@@ -827,7 +826,6 @@ public:
     void suspendFontLoading();
 
     RenderView* renderView() const { return m_renderView.get(); }
-    CheckedPtr<RenderView> checkedRenderView() const;
     const RenderStyle* initialContainingBlockStyle() const { return m_initialContainingBlockStyle.get(); } // This may end up differing from renderView()->style() due to adjustments.
 
     bool renderTreeBeingDestroyed() const { return m_renderTreeBeingDestroyed; }
@@ -838,7 +836,6 @@ public:
 
     inline AXObjectCache* existingAXObjectCache() const;
     WEBCORE_EXPORT AXObjectCache* axObjectCache() const;
-    WEBCORE_EXPORT CheckedPtr<AXObjectCache> checkedAXObjectCache() const;
     void clearAXObjectCache();
 
     WEBCORE_EXPORT std::optional<PageIdentifier> pageID() const;
@@ -871,8 +868,8 @@ public:
     void cancelParsing();
 
     ExceptionOr<void> write(Document* entryDocument, SegmentedString&&);
-    ExceptionOr<void> write(Document* entryDocument, FixedVector<Variant<RefPtr<TrustedHTML>, String>>&&);
-    ExceptionOr<void> writeln(Document* entryDocument, FixedVector<Variant<RefPtr<TrustedHTML>, String>>&&);
+    ExceptionOr<void> write(Document* entryDocument, FixedVector<Variant<Ref<TrustedHTML>, String>>&&);
+    ExceptionOr<void> writeln(Document* entryDocument, FixedVector<Variant<Ref<TrustedHTML>, String>>&&);
     WEBCORE_EXPORT ExceptionOr<void> write(Document* entryDocument, FixedVector<String>&&);
     WEBCORE_EXPORT ExceptionOr<void> writeln(Document* entryDocument, FixedVector<String>&&);
 
@@ -893,7 +890,7 @@ public:
     const URL& baseURLOverride() const { return m_baseURLOverride; }
     const URL& baseElementURL() const { return m_baseElementURL; }
     const AtomString& baseTarget() const { return m_baseTarget; }
-    HTMLBaseElement* firstBaseElement() const;
+    HTMLBaseElement* NODELETE firstBaseElement() const;
     void processBaseElement();
 
     // https://wicg.github.io/nav-speculation/speculation-rules.html#consider-speculation
@@ -1147,10 +1144,10 @@ public:
 
 #if ENABLE(CONTENT_CHANGE_OBSERVER)
     ContentChangeObserver* contentChangeObserverIfExists() { return m_contentChangeObserver.get(); }
-    WEBCORE_EXPORT ContentChangeObserver& contentChangeObserver();
+    WEBCORE_EXPORT ContentChangeObserver& NODELETE contentChangeObserver();
 
     DOMTimerHoldingTank* domTimerHoldingTankIfExists() { return m_domTimerHoldingTank.get(); }
-    DOMTimerHoldingTank& domTimerHoldingTank();
+    DOMTimerHoldingTank& NODELETE domTimerHoldingTank();
 #endif
     void processViewport(const String& features, ViewportArguments::Type origin);
     WEBCORE_EXPORT bool isViewportDocument() const;
@@ -1273,10 +1270,8 @@ public:
     inline DocumentMarkerController* markersIfExists() { return m_markers.get(); }
     inline DocumentMarkerController& markers(); // Defined in DocumentMarkers.h.
     inline const DocumentMarkerController& markers() const; // Defined in DocumentMarkers.h.
-    inline CheckedRef<DocumentMarkerController> checkedMarkers(); // Defined in DocumentMarkers.h.
-    inline CheckedRef<const DocumentMarkerController> checkedMarkers() const; // Defined in DocumentMarkers.h.
 
-    WEBCORE_EXPORT ExceptionOr<bool> execCommand(const String& command, bool userInterface = false, const Variant<String, RefPtr<TrustedHTML>>& value = String());
+    WEBCORE_EXPORT ExceptionOr<bool> execCommand(const String& command, bool userInterface = false, const Variant<String, Ref<TrustedHTML>>& value = String());
     WEBCORE_EXPORT ExceptionOr<bool> queryCommandEnabled(const String& command);
     WEBCORE_EXPORT ExceptionOr<bool> queryCommandIndeterm(const String& command);
     WEBCORE_EXPORT ExceptionOr<bool> queryCommandState(const String& command);
@@ -1343,7 +1338,6 @@ public:
     WEBCORE_EXPORT void postTask(Task&&) final; // Executes the task on context's thread asynchronously.
 
     WEBCORE_EXPORT EventLoopTaskGroup& eventLoop() final;
-    inline CheckedRef<EventLoopTaskGroup> checkedEventLoop(); // Defined in DocumentEventLoop.h
     WindowEventLoop& windowEventLoop();
 
     ScriptedAnimationController* scriptedAnimationController() { return m_scriptedAnimationController.get(); }
@@ -1421,7 +1415,6 @@ public:
 
     SVGDocumentExtensions* svgExtensionsIfExists() { return m_svgExtensions.get(); }
     WEBCORE_EXPORT SVGDocumentExtensions& svgExtensions();
-    WEBCORE_EXPORT CheckedRef<SVGDocumentExtensions> checkedSVGExtensions();
 
     void initSecurityContext();
     void initContentSecurityPolicy();
@@ -1442,7 +1435,7 @@ public:
     void queueTaskToDispatchEventOnWindow(TaskSource, Ref<Event>&&);
     void dispatchPageshowEvent(PageshowEventPersistence);
     void dispatchPagehideEvent(PageshowEventPersistence);
-    void dispatchPageswapEvent(bool canTriggerCrossDocumentViewTransition, RefPtr<NavigationActivation>&&);
+    WEBCORE_EXPORT void dispatchPageswapEvent(CanTriggerCrossDocumentViewTransition, RefPtr<NavigationActivation>&&);
     void transferViewTransitionParams(Document&);
     WEBCORE_EXPORT void enqueueSecurityPolicyViolationEvent(SecurityPolicyViolationEventInit&&);
     void enqueueHashchangeEvent(const String& oldURL, const String& newURL);
@@ -1479,8 +1472,8 @@ public:
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
     DocumentImmersive* immersiveIfExists() { return m_immersive.get(); }
     const DocumentImmersive* immersiveIfExists() const { return m_immersive.get(); }
-    WEBCORE_EXPORT DocumentImmersive& immersive();
-    WEBCORE_EXPORT const DocumentImmersive& immersive() const;
+    WEBCORE_EXPORT DocumentImmersive& NODELETE immersive();
+    WEBCORE_EXPORT const DocumentImmersive& NODELETE immersive() const;
 #endif
 
 #if ENABLE(POINTER_LOCK)
@@ -1507,16 +1500,15 @@ public:
 #endif
 
 #if ENABLE(DEVICE_ORIENTATION) && PLATFORM(IOS_FAMILY)
-    DeviceMotionController& deviceMotionController() const;
+    DeviceMotionController& NODELETE deviceMotionController() const;
     WEBCORE_EXPORT void simulateDeviceMotionChange(double xAcceleration, double yAcceleration, double zAcceleration, double xAccelerationIncludingGravity, double yAccelerationIncludingGravity, double zAccelerationIncludingGravity, double xRotationRate, double yRotationRate, double zRotationRate);
 
-    DeviceOrientationController& deviceOrientationController() const;
+    DeviceOrientationController& NODELETE deviceOrientationController() const;
     WEBCORE_EXPORT void simulateDeviceOrientationChange(double alpha, double beta, double gamma);
 #endif
 
 #if ENABLE(DEVICE_ORIENTATION)
     DeviceOrientationAndMotionAccessController& deviceOrientationAndMotionAccessController();
-    CheckedRef<DeviceOrientationAndMotionAccessController> checkedDeviceOrientationAndMotionAccessController();
 #endif
 
     WEBCORE_EXPORT double monotonicTimestamp() const;
@@ -1671,7 +1663,7 @@ public:
     inline bool isSameOriginAsTopDocument() const; // Defined in DocumentSecurityOrigin
     bool shouldForceNoOpenerBasedOnCOOP() const;
 
-    WEBCORE_EXPORT const CrossOriginOpenerPolicy& crossOriginOpenerPolicy() const final;
+    WEBCORE_EXPORT CrossOriginOpenerPolicy crossOriginOpenerPolicy() const final;
 
     void willLoadScriptElement(const URL&);
     void willLoadFrameElement(const URL&);
@@ -1777,7 +1769,7 @@ public:
 
     using StartViewTransitionCallbackOptions = Variant<RefPtr<JSViewTransitionUpdateCallback>, StartViewTransitionOptions>;
     RefPtr<ViewTransition> startViewTransition(StartViewTransitionCallbackOptions&&);
-    ViewTransition* activeViewTransition() const;
+    ViewTransition* NODELETE activeViewTransition() const;
     bool activeViewTransitionCapturedDocumentElement() const;
     void setActiveViewTransition(RefPtr<ViewTransition>&&);
 
@@ -1945,7 +1937,6 @@ public:
 #endif
 
     WEBCORE_EXPORT TextManipulationController& textManipulationController();
-    WEBCORE_EXPORT CheckedRef<TextManipulationController> checkedTextManipulationController();
     TextManipulationController* textManipulationControllerIfExists() { return m_textManipulationController.get(); }
 
     bool hasHighlight() const;
@@ -2054,7 +2045,7 @@ public:
     WEBCORE_EXPORT FrameMemoryMonitor& frameMemoryMonitor();
 
 #if ENABLE(CONTENT_EXTENSIONS)
-    ResourceMonitor* resourceMonitorIfExists();
+    ResourceMonitor* NODELETE resourceMonitorIfExists();
     ResourceMonitor& resourceMonitor();
     ResourceMonitor* parentResourceMonitorIfExists();
 
@@ -2105,7 +2096,7 @@ private:
 
     void commonTeardown();
 
-    ExceptionOr<void> write(Document* entryDocument, FixedVector<Variant<RefPtr<TrustedHTML>, String>>&&, ASCIILiteral lineFeed);
+    ExceptionOr<void> write(Document* entryDocument, FixedVector<Variant<Ref<TrustedHTML>, String>>&&, ASCIILiteral lineFeed);
 
     WEBCORE_EXPORT Quirks& ensureQuirks();
     WEBCORE_EXPORT CachedResourceLoader& ensureCachedResourceLoader();
@@ -2116,7 +2107,7 @@ private:
     ScriptModuleLoader& ensureModuleLoader();
     WEBCORE_EXPORT DocumentFullscreen& ensureFullscreen();
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-    WEBCORE_EXPORT DocumentImmersive& ensureImmersive();
+    WEBCORE_EXPORT DocumentImmersive& NODELETE ensureImmersive();
 #endif
     inline DocumentFontLoader& fontLoader();
     DocumentFontLoader& ensureFontLoader();

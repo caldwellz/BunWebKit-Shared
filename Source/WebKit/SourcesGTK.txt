@@ -245,6 +245,7 @@ UIProcess/geoclue/GeoclueGeolocationProvider.cpp
 
 UIProcess/Inspector/glib/RemoteInspectorClient.cpp
 UIProcess/Inspector/glib/RemoteInspectorHTTPServer.cpp
+UIProcess/Inspector/glib/WebInspectorUIProxyGLib.cpp
 
 UIProcess/Inspector/gtk/RemoteWebInspectorUIProxyGtk.cpp
 UIProcess/Inspector/gtk/WebInspectorUIProxyGtk.cpp
@@ -261,8 +262,6 @@ UIProcess/linux/MemoryPressureMonitor.cpp
 
 UIProcess/WebsiteData/glib/WebsiteDataStoreGLib.cpp
 UIProcess/WebsiteData/soup/WebsiteDataStoreSoup.cpp
-
-UIProcess/cairo/BackingStoreCairo.cpp
 
 UIProcess/glib/DRMMainDevice.cpp @no-unify
 UIProcess/glib/DisplayLinkGLib.cpp

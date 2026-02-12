@@ -106,7 +106,7 @@ NetworkDataTask::NetworkDataTask(NetworkSession& session, NetworkDataTaskClient&
         return;
     }
 
-    checkedNetworkSession()->registerNetworkDataTask(*this);
+    protect(networkSession())->registerNetworkDataTask(*this);
 }
 
 NetworkDataTask::~NetworkDataTask()

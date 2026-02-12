@@ -108,6 +108,13 @@ enum class WebCoreProfileTag { };
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(ScriptController);
 
+static uint64_t s_scriptExecutionCount = 0;
+
+uint64_t ScriptController::scriptExecutionCount()
+{
+    return s_scriptExecutionCount;
+}
+
 void ScriptController::initializeMainThread()
 {
 #if !PLATFORM(IOS_FAMILY)
@@ -244,7 +251,7 @@ JSC::JSValue ScriptController::linkAndEvaluateModuleScriptInWorld(LoadableModule
     Ref protectedFrame { m_frame.get() };
 
     NakedPtr<JSC::Exception> evaluationException;
-    auto returnValue = JSExecState::linkAndEvaluateModule(lexicalGlobalObject, Identifier::fromUid(vm, moduleScript.protectedModuleKey().get()), jsUndefined(), evaluationException);
+    auto returnValue = JSExecState::linkAndEvaluateModule(lexicalGlobalObject, Identifier::fromUid(vm, protect(moduleScript.moduleKey()).get()), jsUndefined(), evaluationException);
     if (evaluationException) {
         // FIXME: Give a chance to dump the stack trace if the "crossorigin" attribute allows.
         // https://bugs.webkit.org/show_bug.cgi?id=164539
@@ -319,7 +326,7 @@ void ScriptController::initScriptForWindowProxy(JSWindowProxy& windowProxy)
     windowProxy.window()->setConsoleClient(m_frame->console());
 
     if (RefPtr document = m_frame->document())
-        document->checkedContentSecurityPolicy()->didCreateWindowProxy(windowProxy);
+        protect(document->contentSecurityPolicy())->didCreateWindowProxy(windowProxy);
 
     if (RefPtr page = m_frame->page()) {
         windowProxy.attachDebugger(page->debugger());
@@ -523,11 +530,6 @@ Bindings::RootObject* ScriptController::bindingRootObject()
     return m_bindingRootObject.get();
 }
 
-RefPtr<JSC::Bindings::RootObject> ScriptController::protectedBindingRootObject()
-{
-    return bindingRootObject();
-}
-
 Ref<Bindings::RootObject> ScriptController::createRootObject(void* nativeHandle)
 {
     auto it = m_rootObjects.find(nativeHandle);
@@ -544,7 +546,7 @@ void ScriptController::collectIsolatedContexts(Vector<std::pair<JSC::JSGlobalObj
 {
     for (auto& jsWindowProxy : protect(windowProxy())->jsWindowProxiesAsVector()) {
         auto* lexicalGlobalObject = jsWindowProxy->window();
-        RefPtr origin = downcast<LocalDOMWindow>(jsWindowProxy->protectedWrapped())->protectedDocument()->securityOrigin();
+        RefPtr origin = protect(downcast<LocalDOMWindow>(protect(jsWindowProxy->wrapped()))->document())->securityOrigin();
         result.append(std::make_pair(lexicalGlobalObject, WTF::move(origin)));
     }
 }
@@ -824,8 +826,10 @@ void ScriptController::executeAsynchronousUserAgentScriptInWorld(DOMWrapperWorld
 
 bool ScriptController::canExecuteScripts(ReasonForCallingCanExecuteScripts reason, DOMWrapperWorld* world)
 {
-    if (reason == ReasonForCallingCanExecuteScripts::AboutToExecuteScript)
+    if (reason == ReasonForCallingCanExecuteScripts::AboutToExecuteScript) {
         RELEASE_ASSERT_WITH_SECURITY_IMPLICATION(ScriptDisallowedScope::InMainThread::isScriptAllowed());
+        s_scriptExecutionCount++;
+    }
 
     if (world && !world->isNormal())
         return true;
@@ -878,7 +882,7 @@ void ScriptController::executeJavaScriptURL(const URL& url, const NavigationActi
     if (preNavigationCheckURLString.isNull())
         return;
 
-    if (!ownerDocument->checkedContentSecurityPolicy()->allowJavaScriptURLs(ownerDocument->url().string(), eventHandlerPosition().m_line, preNavigationCheckURLString, nullptr))
+    if (!protect(ownerDocument->contentSecurityPolicy())->allowJavaScriptURLs(ownerDocument->url().string(), eventHandlerPosition().m_line, preNavigationCheckURLString, nullptr))
         return;
 
     const int javascriptSchemeLength = sizeof("javascript:") - 1;
@@ -957,12 +961,12 @@ public:
 
     void reportWarning(const String& message) const final
     {
-        m_globalObject->protectedScriptExecutionContext()->addConsoleMessage(MessageSource::JS, MessageLevel::Warning, message);
+        protect(m_globalObject->scriptExecutionContext())->addConsoleMessage(MessageSource::JS, MessageLevel::Warning, message);
     }
 
     void reportError(const String& message) const final
     {
-        m_globalObject->protectedScriptExecutionContext()->addConsoleMessage(MessageSource::JS, MessageLevel::Error, message);
+        protect(m_globalObject->scriptExecutionContext())->addConsoleMessage(MessageSource::JS, MessageLevel::Error, message);
     }
 
 private:

@@ -91,18 +91,26 @@ extension WKPreviewWindowController {
 
     weak var delegate: WKPreviewWindowControllerDelegate?
 
-    @objc(initWithURL:sceneID:)
-    init(url: URL, sceneID: String) {
+    @objc(initWithURL:sceneID:launchInImmersive:)
+    init(url: URL, sceneID: String, launchInImmersive: Bool) {
         let item = PreviewItem(url: url, displayName: nil, editingMode: .disabled)
 
         var configuration = PreviewApplication.PreviewConfiguration()
         configuration.hideDocumentMenu = true
         configuration.showCloseButton = true
         configuration.matchScenePlacementID = sceneID
+        #if canImport(QuickLook, _version: 1023)
+        configuration.launchInImmersiveMode = launchInImmersive
+        #endif
 
         self.base = Base(item: item, configuration: configuration)
 
         super.init()
+    }
+
+    @objc(initWithURL:sceneID:)
+    convenience init(url: URL, sceneID: String) {
+        self.init(url: url, sceneID: sceneID, launchInImmersive: false)
     }
 
     func presentWindow() async {

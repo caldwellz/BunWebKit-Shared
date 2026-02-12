@@ -61,7 +61,6 @@ public:
 
 private:
     void fireDeviceEvent();
-    CheckedRef<DeviceClient> checkedClient();
 
     HashCountedSet<RefPtr<LocalDOMWindow>> m_listeners;
     HashCountedSet<RefPtr<LocalDOMWindow>> m_lastEventListeners;

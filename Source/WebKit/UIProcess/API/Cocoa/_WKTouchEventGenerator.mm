@@ -127,7 +127,7 @@ static void delayBetweenMove(int eventIndex, double elapsed)
 
 - (void)dealloc
 {
-    [_eventCallbacks release];
+    SUPPRESS_UNRETAINED_ARG [_eventCallbacks release];
     [super dealloc];
 }
 
@@ -221,7 +221,7 @@ static void delayBetweenMove(int eventIndex, double elapsed)
 - (BOOL)_sendMarkerHIDEventInWindow:(UIWindow *)window completionBlock:(void (^)(void))completionBlock
 {
     auto callbackID = [_WKTouchEventGenerator nextEventCallbackID];
-    [_eventCallbacks setObject:Block_copy(completionBlock) forKey:@(callbackID)];
+    SUPPRESS_UNRETAINED_ARG [protect(_eventCallbacks) setObject:Block_copy(completionBlock) forKey:@(callbackID)];
 
     auto markerEvent = adoptCF(IOHIDEventCreateVendorDefinedEvent(kCFAllocatorDefault,
         mach_absolute_time(),
@@ -387,9 +387,10 @@ static void delayBetweenMove(int eventIndex, double elapsed)
 
     CFIndex callbackID = IOHIDEventGetIntegerValue(event, kIOHIDEventFieldVendorDefinedData);
     RetainPtr key = @(callbackID);
-    void (^completionBlock)() = [_eventCallbacks objectForKey:key.get()];
+    RetainPtr eventCallbacks = _eventCallbacks;
+    void (^completionBlock)() = [eventCallbacks objectForKey:key.get()];
     if (completionBlock) {
-        [_eventCallbacks removeObjectForKey:key.get()];
+        [eventCallbacks removeObjectForKey:key.get()];
         completionBlock();
         Block_release(completionBlock);
     }

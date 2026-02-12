@@ -567,7 +567,7 @@ bool RenderElement::repaintBeforeStyleChange(Style::Difference diff, const Rende
 
 void RenderElement::initializeStyle()
 {
-    Style::loadPendingResources(m_style, protect(document()), protectedElement().get());
+    Style::loadPendingResources(m_style, protect(document()), protect(element()).get());
 
     styleWillChange(Style::DifferenceResult::NewStyle, style());
     m_hasInitializedStyle = true;
@@ -615,7 +615,7 @@ void RenderElement::setStyle(RenderStyle&& style, Style::DifferenceResult minima
     diff.result = std::max(diff.result, minimalStyleDifference);
     diff = adjustStyleDifference(diff);
 
-    Style::loadPendingResources(style, protect(document()), protectedElement().get());
+    Style::loadPendingResources(style, protect(document()), protect(element()).get());
 
     auto didRepaint = repaintBeforeStyleChange(diff, m_style, style);
     styleWillChange(diff, style);
@@ -823,9 +823,9 @@ void RenderElement::moveLayers(RenderLayer& newParent)
 
 RenderLayer* RenderElement::layerParent() const
 {
-    ASSERT_IMPLIES(isInTopLayerOrBackdrop(style(), protectedElement().get()), hasLayer());
+    ASSERT_IMPLIES(isInTopLayerOrBackdrop(style(), protect(element()).get()), hasLayer());
 
-    if (hasLayer() && isInTopLayerOrBackdrop(style(), protectedElement().get()))
+    if (hasLayer() && isInTopLayerOrBackdrop(style(), protect(element()).get()))
         return view().layer();
 
     return parent()->enclosingLayer();
@@ -919,13 +919,13 @@ void RenderElement::styleWillChange(Style::Difference diff, const RenderStyle& n
         bool contentVisibilityChanged = oldStyle && oldStyle->contentVisibility() != newStyle.contentVisibility();
         if (contentVisibilityChanged) {
             if (oldStyle->contentVisibility() == ContentVisibility::Auto)
-                ContentVisibilityDocumentState::unobserve(*protectedElement());
+                ContentVisibilityDocumentState::unobserve(*protect(element()));
             auto wasSkippedContent = oldStyle->contentVisibility() == ContentVisibility::Hidden ? IsSkippedContent::Yes : IsSkippedContent::No;
             auto isSkippedContent = newStyle.contentVisibility() == ContentVisibility::Hidden ? IsSkippedContent::Yes : IsSkippedContent::No;
             ContentVisibilityDocumentState::updateAnimations(*element(), wasSkippedContent, isSkippedContent);
         }
         if ((contentVisibilityChanged || !oldStyle) && newStyle.contentVisibility() == ContentVisibility::Auto)
-            ContentVisibilityDocumentState::observe(*protectedElement());
+            ContentVisibilityDocumentState::observe(*protect(element()));
     };
 
     if (oldStyle) {
@@ -1119,7 +1119,7 @@ void RenderElement::styleDidChange(Style::Difference diff, const RenderStyle* ol
 
 #if !PLATFORM(IOS_FAMILY)
     if (oldStyle && oldStyle->cursor() != style().cursor())
-        protectedFrame()->eventHandler().scheduleCursorUpdate();
+        protect(frame())->eventHandler().scheduleCursorUpdate();
 #endif
 
     bool hadOutlineAuto = oldStyle && oldStyle->outlineStyle() == OutlineStyle::Auto;
@@ -1129,12 +1129,32 @@ void RenderElement::styleDidChange(Style::Difference diff, const RenderStyle* ol
         issueRepaintForOutlineAuto(hasOutlineAuto ? outlineStyleForRepaint().usedOutlineSize() : oldStyle->usedOutlineSize());
     }
 
-    bool shouldCheckIfInAncestorChain = false;
-    if (settings().cssScrollAnchoringEnabled() && (style().outOfFlowPositionStyleDidChange(oldStyle) || (shouldCheckIfInAncestorChain = style().scrollAnchoringSuppressionStyleDidChange(oldStyle)))) {
-        LOG_WITH_STREAM(ScrollAnchoring, stream << "RenderElement::styleDidChange() " << diff << " found node with style change: " << *this << " from: " << oldStyle->position() <<" to: " << style().position());
-        auto* controller = searchParentChainForScrollAnchoringController(*this);
-        if (controller && (!shouldCheckIfInAncestorChain || (shouldCheckIfInAncestorChain && controller->isInScrollAnchoringAncestorChain(*this))))
-            controller->notifyChildHadSuppressingStyleChange();
+    if (settings().cssScrollAnchoringEnabled() && style().scrollAnchoringSuppressionStyleDidChange(oldStyle)) {
+        auto findNearestScrollAnchoringController = [](const RenderElement& renderer) -> CheckedPtr<ScrollAnchoringController> {
+            // At this point we can't find the appropriate enclosing ScrollAnchoringController, because we haven't done layout.
+            // We will, however, have created a ScrollAnchoringController for potentially scrollable ancestors, so store
+            // the bit there. It will be propagated later. FIXME: Propagation not implemented yet.
+            // Note that this doesn't do a containing block walk; the spec talks about "element within the scrollable element".
+            for (CheckedPtr ancestor = renderer.parent(); ancestor; ancestor = ancestor->parent()) {
+                if (ancestor->hasLayer()) {
+                    if (CheckedPtr scrollableArea = downcast<RenderLayerModelObject>(*ancestor).layer()->scrollableArea()) {
+                        if (CheckedPtr controller = scrollableArea->scrollAnchoringController())
+                            return controller;
+                    }
+                }
+            }
+            return renderer.view().frameView().scrollAnchoringController();
+        };
+
+        // https://drafts.csswg.org/css-scroll-anchoring/#suppression-triggers
+        // Any change to the computed value of the position property...
+        if (style().outOfFlowPositionStyleDidChange(oldStyle)) {
+            if (CheckedPtr controller = findNearestScrollAnchoringController(*this))
+                controller->notifyChildHadSuppressingStyleChange(*this);
+        }
+
+        LOG_WITH_STREAM(ScrollAnchoring, stream << "RenderElement::styleDidChange: scroll anchoring suppression style change on " << *this);
+        setScrollAnchoringSuppressionStyleChanged(true);
     }
 
     // FIXME: First line change on the block comes in as equal on inline boxes.
@@ -1242,7 +1262,7 @@ void RenderElement::willBeDestroyed()
         checkedView()->removeRendererWithPausedImageAnimations(*this);
 
     if (style().contentVisibility() == ContentVisibility::Auto && element())
-        ContentVisibilityDocumentState::unobserve(*protectedElement());
+        ContentVisibilityDocumentState::unobserve(*protect(element()));
 }
 
 void RenderElement::setNeedsOutOfFlowMovementLayout(const RenderStyle* oldStyle)
@@ -1717,7 +1737,7 @@ VisibleInViewportState RenderElement::imageFrameAvailable(CachedImage& image, Im
         imageChanged(&image, changeRect);
 
     if (element() && image.image()->isBitmapImage())
-        protectedElement()->dispatchWebKitImageReadyEventForTesting();
+        protect(element())->dispatchWebKitImageReadyEventForTesting();
 
     return isVisible ? VisibleInViewportState::Yes : VisibleInViewportState::No;
 }

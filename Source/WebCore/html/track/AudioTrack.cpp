@@ -98,7 +98,7 @@ void AudioTrack::setPrivate(AudioTrackPrivate& trackPrivate)
     addClientToTrackPrivateBase(*this, trackPrivate);
 
 #if !RELEASE_LOG_DISABLED
-    trackPrivate.setLogger(protectedLogger(), logIdentifier());
+    trackPrivate.setLogger(protect(logger()), logIdentifier());
 #endif
 
     updateKindFromPrivate();

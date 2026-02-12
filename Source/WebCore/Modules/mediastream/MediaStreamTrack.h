@@ -194,9 +194,17 @@ public:
 
     class Keeper : public ThreadSafeRefCountedAndCanMakeThreadSafeWeakPtr<Keeper> {
     public:
-        static Ref<Keeper> create() { return adoptRef(*new Keeper);}
+        static Ref<Keeper> create(bool isEnabled) { return adoptRef(*new Keeper(isEnabled)); }
+        bool isTrackEnabled() const { return m_isEnabled; }
+        void setEnabled(bool isEnabled) { m_isEnabled = isEnabled; }
+
     private:
-        Keeper() = default;
+        explicit Keeper(bool isEnabled)
+            : m_isEnabled(isEnabled)
+        {
+        }
+
+        std::atomic<bool> m_isEnabled;
     };
 
     Ref<Keeper> keeper();
@@ -204,7 +212,6 @@ public:
 protected:
     MediaStreamTrack(ScriptExecutionContext&, Ref<MediaStreamTrackPrivate>&&);
 
-    using ActiveDOMObject::protectedScriptExecutionContext;
 
 private:
     explicit MediaStreamTrack(MediaStreamTrack&);

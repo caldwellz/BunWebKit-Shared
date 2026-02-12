@@ -67,6 +67,7 @@ struct TextExtractionTestOptions {
     bool includeEventListeners { false };
     bool includeAccessibilityAttributes { false };
     bool includeTextInAutoFilledControls { false };
+    bool includeOffscreenPasswordFields { false };
     bool mergeParagraphs { false };
     bool skipNearlyTransparentContent { false };
     JSRetainPtr<JSStringRef> outputFormat;

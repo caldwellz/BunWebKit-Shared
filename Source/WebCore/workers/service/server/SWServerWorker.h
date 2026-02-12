@@ -134,7 +134,7 @@ public:
     WEBCORE_EXPORT std::optional<RouterSource> getRouterSource(const FetchOptions&, const ResourceRequest&) const;
     WEBCORE_EXPORT RouterSource defaultRouterSource() const;
 
-    WEBCORE_EXPORT SWServerRegistration* registration() const;
+    WEBCORE_EXPORT SWServerRegistration* NODELETE registration() const;
 
     void setHasTimedOutAnyFetchTasks() { m_hasTimedOutAnyFetchTasks = true; }
     bool hasTimedOutAnyFetchTasks() const { return m_hasTimedOutAnyFetchTasks; }

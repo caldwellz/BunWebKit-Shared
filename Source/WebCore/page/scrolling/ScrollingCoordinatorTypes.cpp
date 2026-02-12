@@ -57,6 +57,11 @@ void RequestedScrollData::merge(RequestedScrollData&& other)
             break;
         }
     }
+
+    // Don't let `DontReveal` clobber `Default`.
+    if (scrollbarRevealBehavior == ScrollbarRevealBehavior::Default)
+        other.scrollbarRevealBehavior = ScrollbarRevealBehavior::Default;
+
     *this = WTF::move(other);
 }
 
@@ -235,6 +240,9 @@ TextStream& operator<<(TextStream& ts, const RequestedScrollData& requestedScrol
 
     if (requestedScrollData.animated == ScrollIsAnimated::Yes)
         ts.dumpProperty("animated"_s, requestedScrollData.animated == ScrollIsAnimated::Yes);
+
+    if (requestedScrollData.scrollbarRevealBehavior == ScrollbarRevealBehavior::DontReveal)
+        ts.dumpProperty("scrollbar-reveal"_s, requestedScrollData.scrollbarRevealBehavior);
 
     if (requestedScrollData.requestedDataBeforeAnimatedScroll) {
         auto oldType = std::get<0>(*requestedScrollData.requestedDataBeforeAnimatedScroll);

@@ -68,7 +68,7 @@ private:
 class RenderRangeIterator {
 public:
     RenderRangeIterator(RenderObject* start);
-    RenderObject* current() const;
+    RenderObject* NODELETE current() const;
     RenderObject* next();
 
 private:

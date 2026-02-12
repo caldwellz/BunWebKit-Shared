@@ -399,6 +399,7 @@ static inline bool canAdjustBorderRadiusForAppearance(StyleAppearance appearance
 #if ENABLE(APPLE_PAY)
     case StyleAppearance::ApplePayButton:
 #endif
+    case StyleAppearance::Base:
     case StyleAppearance::None:
     case StyleAppearance::SearchField:
         return false;

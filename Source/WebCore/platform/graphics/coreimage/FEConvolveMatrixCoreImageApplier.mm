@@ -33,6 +33,7 @@
 #import "FilterImage.h"
 #import <CoreImage/CIFilterBuiltins.h>
 #import <CoreImage/CoreImage.h>
+#import <simd/simd.h>
 #import <wtf/MathExtras.h>
 #import <wtf/TZoneMallocInlines.h>
 

@@ -59,6 +59,12 @@ public:
 
         PromiseAnyContext = 0,
         PromiseAnyReject = 1,
+
+#if ENABLE(WEBASSEMBLY)
+        WebAssemblySuspendingWrappedCallable = 0,
+        WebAssemblyPromisingWrappedFunction = 0,
+        PromiseHandlerPinballCompletion = 0,
+#endif
     };
 
     DECLARE_INFO;

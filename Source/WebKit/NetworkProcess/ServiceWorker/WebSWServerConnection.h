@@ -92,7 +92,6 @@ public:
     std::optional<SharedPreferencesForWebProcess> sharedPreferencesForWebProcess() const;
 
     NetworkSession* session();
-    CheckedPtr<NetworkSession> checkedSession();
     PAL::SessionID sessionID() const;
 
     RefPtr<ServiceWorkerFetchTask> createFetchTask(NetworkResourceLoader&, const WebCore::ResourceRequest&);

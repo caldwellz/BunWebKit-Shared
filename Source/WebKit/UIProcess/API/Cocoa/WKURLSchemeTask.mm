@@ -73,11 +73,6 @@ static void raiseExceptionIfNecessary(WebKit::WebURLSchemeTask::ExceptionType ex
     }
 }
 
-static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl *urlSchemeTaskImpl)
-{
-    return *urlSchemeTaskImpl->_urlSchemeTask;
-}
-
 @implementation WKURLSchemeTaskImpl
 
 - (instancetype)init
@@ -95,18 +90,18 @@ static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl 
 
 - (NSURLRequest *)request
 {
-    return protectedURLSchemeTask(self)->nsRequest();
+    return protect(*_urlSchemeTask)->nsRequest();
 }
 
 - (BOOL)_requestOnlyIfCached
 {
-    return protect(protectedURLSchemeTask(self)->nsRequest()).get().cachePolicy == NSURLRequestReturnCacheDataDontLoad;
+    return protect(protect(*_urlSchemeTask)->nsRequest()).get().cachePolicy == NSURLRequestReturnCacheDataDontLoad;
 }
 
 - (void)_willPerformRedirection:(NSURLResponse *)response newRequest:(NSURLRequest *)request completionHandler:(void (^)(NSURLRequest *))completionHandler
 {
     auto function = [strongSelf = retainPtr(self), self, response = retainPtr(response), request = retainPtr(request), handler = makeBlockPtr(completionHandler)] () mutable {
-        return protectedURLSchemeTask(self)->willPerformRedirection(response.get(), request.get(), [handler = WTF::move(handler)] (WebCore::ResourceRequest&& actualNewRequest) {
+        return protect(*_urlSchemeTask)->willPerformRedirection(response.get(), request.get(), [handler = WTF::move(handler)] (WebCore::ResourceRequest&& actualNewRequest) {
             handler.get()(actualNewRequest.protectedNSURLRequest(WebCore::HTTPBodyUpdatePolicy::UpdateHTTPBody).get());
         });
     };
@@ -118,7 +113,7 @@ static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl 
 - (void)didReceiveResponse:(NSURLResponse *)response
 {
     auto function = [strongSelf = retainPtr(self), self, response = retainPtr(response)] {
-        return protectedURLSchemeTask(self)->didReceiveResponse(response.get());
+        return protect(*_urlSchemeTask)->didReceiveResponse(response.get());
     };
 
     auto result = getExceptionTypeFromMainRunLoop(WTF::move(function));
@@ -128,7 +123,7 @@ static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl 
 - (void)didReceiveData:(NSData *)data
 {
     auto function = [strongSelf = retainPtr(self), self, data = retainPtr(data)] () mutable {
-        return protectedURLSchemeTask(self)->didReceiveData(WebCore::SharedBuffer::create(data.get()));
+        return protect(*_urlSchemeTask)->didReceiveData(WebCore::SharedBuffer::create(data.get()));
     };
 
     auto result = getExceptionTypeFromMainRunLoop(WTF::move(function));
@@ -138,7 +133,7 @@ static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl 
 - (void)didFinish
 {
     auto function = [strongSelf = retainPtr(self), self] {
-        return protectedURLSchemeTask(self)->didComplete({ });
+        return protect(*_urlSchemeTask)->didComplete({ });
     };
 
     auto result = getExceptionTypeFromMainRunLoop(WTF::move(function));
@@ -148,7 +143,7 @@ static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl 
 - (void)didFailWithError:(NSError *)error
 {
     auto function = [strongSelf = retainPtr(self), self, error = retainPtr(error)] {
-        return protectedURLSchemeTask(self)->didComplete(error.get());
+        return protect(*_urlSchemeTask)->didComplete(error.get());
     };
 
     auto result = getExceptionTypeFromMainRunLoop(WTF::move(function));
@@ -158,7 +153,7 @@ static Ref<WebKit::WebURLSchemeTask> protectedURLSchemeTask(WKURLSchemeTaskImpl 
 - (void)_didPerformRedirection:(NSURLResponse *)response newRequest:(NSURLRequest *)request
 {
     auto function = [strongSelf = retainPtr(self), self, response = retainPtr(response), request = retainPtr(request)] {
-        return protectedURLSchemeTask(self)->didPerformRedirection(response.get(), request.get());
+        return protect(*_urlSchemeTask)->didPerformRedirection(response.get(), request.get());
     };
 
     auto result = getExceptionTypeFromMainRunLoop(WTF::move(function));

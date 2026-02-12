@@ -215,8 +215,8 @@ Ref<MediaSource> MediaSource::create(ScriptExecutionContext& context, MediaSourc
 MediaSource::MediaSource(ScriptExecutionContext& context, MediaSourceInit&& options)
     : ActiveDOMObject(&context)
     , m_detachable(context.settingsValues().detachableMediaSourceEnabled ? options.detachable : false)
-    , m_sourceBuffers(SourceBufferList::create(protectedScriptExecutionContext().get()))
-    , m_activeSourceBuffers(SourceBufferList::create(protectedScriptExecutionContext().get()))
+    , m_sourceBuffers(SourceBufferList::create(protect(scriptExecutionContext()).get()))
+    , m_activeSourceBuffers(SourceBufferList::create(protect(scriptExecutionContext()).get()))
 #if !RELEASE_LOG_DISABLED
     , m_logger(logger(context))
 #endif
@@ -436,7 +436,7 @@ void MediaSource::completeSeek()
     MediaTimePromise::AutoRejectProducer producer(PlatformMediaError::SourceRemoved);
     Ref promise = producer.promise();
 
-    protectedScriptExecutionContext()->enqueueTaskWhenSettled(SourceBuffer::ComputeSeekPromise::all(WTF::map(m_activeSourceBuffers.get(), [&](auto&& sourceBuffer) {
+    protect(scriptExecutionContext())->enqueueTaskWhenSettled(SourceBuffer::ComputeSeekPromise::all(WTF::map(m_activeSourceBuffers.get(), [&](auto&& sourceBuffer) {
         return sourceBuffer->computeSeekTime(seekTarget);
     })), TaskSource::MediaElement, [producer = WTF::move(producer), weakThis = WeakPtr { *this }, time = seekTarget.time](auto&& results) {
         RefPtr protectedThis = weakThis.get();
@@ -745,7 +745,7 @@ ExceptionOr<void> MediaSource::endOfStream(std::optional<EndOfStreamError> error
 
     // 2. If the updating attribute equals true on any SourceBuffer in sourceBuffers, then throw an
     // InvalidStateError exception and abort these steps.
-    if (std::any_of(m_sourceBuffers->begin(), m_sourceBuffers->end(), [](auto& sourceBuffer) { return sourceBuffer->updating(); }))
+    if (std::ranges::any_of(m_sourceBuffers.get(), [](auto& sourceBuffer) { return sourceBuffer->updating(); }))
         return Exception { ExceptionCode::InvalidStateError };
 
     // 3. Run the end of stream algorithm with the error parameter set to error.
@@ -1425,12 +1425,12 @@ ExceptionOr<Ref<SourceBufferPrivate>> MediaSource::createSourceBufferPrivate(con
 
     RefPtr<SourceBufferPrivate> sourceBufferPrivate;
     MediaSourceConfiguration configuration = {
-        .textTracksEnabled = protectedScriptExecutionContext()->settingsValues().textTracksInMSEEnabled,
+        .textTracksEnabled = protect(scriptExecutionContext())->settingsValues().textTracksInMSEEnabled,
 #if USE(MEDIAPARSERD)
-        .demuxInProcess = protectedScriptExecutionContext()->settingsValues().mediaSourceUseRemoteAudioVideoRenderer,
+        .demuxInProcess = protect(scriptExecutionContext())->settingsValues().mediaSourceUseRemoteAudioVideoRenderer,
 #endif
 #if ENABLE(MEDIA_RECORDER_WEBM)
-        .supportsLimitedMatroska = (document && document->quirks().needsLimitedMatroskaSupport()) || protectedScriptExecutionContext()->settingsValues().limitedMatroskaSupportEnabled
+        .supportsLimitedMatroska = (document && document->quirks().needsLimitedMatroskaSupport()) || protect(scriptExecutionContext())->settingsValues().limitedMatroskaSupportEnabled
 #endif
     };
     switch (msp->addSourceBuffer(type, configuration, sourceBufferPrivate)) {
@@ -1656,7 +1656,7 @@ void MediaSource::addVideoTrackToElement(Ref<VideoTrack>&& track)
 void MediaSource::addAudioTrackMirrorToElement(Ref<AudioTrackPrivate>&& track, bool enabled)
 {
     ensureWeakOnHTMLMediaElementContext([track = WTF::move(track), enabled](HTMLMediaElement& mediaElement) mutable {
-        Ref audioTrack = AudioTrack::create(mediaElement.protectedScriptExecutionContext().get(), track);
+        Ref audioTrack = AudioTrack::create(protect(mediaElement.scriptExecutionContext()).get(), track);
         audioTrack->setEnabled(enabled);
         mediaElement.addAudioTrack(WTF::move(audioTrack));
     });
@@ -1667,14 +1667,14 @@ void MediaSource::addTextTrackMirrorToElement(Ref<InbandTextTrackPrivate>&& trac
     ensureWeakOnHTMLMediaElementContext([track = WTF::move(track)](HTMLMediaElement& mediaElement) mutable {
         if (!mediaElement.scriptExecutionContext())
             return;
-        mediaElement.addTextTrack(InbandTextTrack::create(*mediaElement.protectedScriptExecutionContext(), track));
+        mediaElement.addTextTrack(InbandTextTrack::create(*protect(mediaElement.scriptExecutionContext()), track));
     });
 }
 
 void MediaSource::addVideoTrackMirrorToElement(Ref<VideoTrackPrivate>&& track, bool selected)
 {
     ensureWeakOnHTMLMediaElementContext([track = WTF::move(track), selected](HTMLMediaElement& mediaElement) mutable {
-        auto videoTrack = VideoTrack::create(mediaElement.protectedScriptExecutionContext().get(), track);
+        auto videoTrack = VideoTrack::create(protect(mediaElement.scriptExecutionContext()).get(), track);
         videoTrack->setSelected(selected);
         mediaElement.addVideoTrack(WTF::move(videoTrack));
     });

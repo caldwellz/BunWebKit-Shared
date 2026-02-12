@@ -563,11 +563,6 @@ Frame& FrameTree::top() const
     return m_thisFrame->mainFrame();
 }
 
-Ref<Frame> FrameTree::protectedTop() const
-{
-    return top();
-}
-
 unsigned FrameTree::depth() const
 {
     unsigned depth = 0;
@@ -676,7 +671,7 @@ void showFrameTree(const WebCore::Frame* frame)
         return;
     }
 
-    printFrames(frame->tree().protectedTop(), frame, 0);
+    printFrames(protect(frame->tree().top()), frame, 0);
 }
 
 #endif

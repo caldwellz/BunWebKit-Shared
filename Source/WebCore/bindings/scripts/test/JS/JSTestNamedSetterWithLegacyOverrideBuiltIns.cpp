@@ -357,7 +357,7 @@ void JSTestNamedSetterWithLegacyOverrideBuiltInsOwner::finalize(JSC::Handle<JSC:
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestNamedSetterWithLegacyOverrideBuiltIns = static_cast<JSTestNamedSetterWithLegacyOverrideBuiltIns*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestNamedSetterWithLegacyOverrideBuiltIns->protectedWrapped().ptr(), jsTestNamedSetterWithLegacyOverrideBuiltIns);
+    uncacheWrapper(world, protect(jsTestNamedSetterWithLegacyOverrideBuiltIns->wrapped()).ptr(), jsTestNamedSetterWithLegacyOverrideBuiltIns);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

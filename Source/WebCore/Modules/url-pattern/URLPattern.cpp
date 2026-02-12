@@ -276,15 +276,19 @@ ExceptionOr<Ref<URLPattern>> URLPattern::create(ScriptExecutionContext& context,
 // https://urlpattern.spec.whatwg.org/#build-a-url-pattern-from-a-web-idl-value
 ExceptionOr<Ref<URLPattern>> URLPattern::create(ScriptExecutionContext& context, Compatible&& value, const String& baseURL)
 {
-    return switchOn(WTF::move(value), [&](RefPtr<URLPattern>&& pattern) -> ExceptionOr<Ref<URLPattern>> {
-        return pattern.releaseNonNull();
-    }, [&](URLPatternInit&& init) -> ExceptionOr<Ref<URLPattern>> {
-        if (init.baseURL.isNull())
-            init.baseURL = baseURL;
-        return URLPattern::create(context, WTF::move(init), { }, { });
-    }, [&](String&& string) -> ExceptionOr<Ref<URLPattern>> {
-        return URLPattern::create(context, WTF::move(string), String { baseURL }, { });
-    });
+    return switchOn(WTF::move(value),
+        [&](Ref<URLPattern>&& pattern) -> ExceptionOr<Ref<URLPattern>> {
+            return WTF::move(pattern);
+        },
+        [&](URLPatternInit&& init) -> ExceptionOr<Ref<URLPattern>> {
+            if (init.baseURL.isNull())
+                init.baseURL = baseURL;
+            return URLPattern::create(context, WTF::move(init), { }, { });
+        },
+        [&](String&& string) -> ExceptionOr<Ref<URLPattern>> {
+            return URLPattern::create(context, WTF::move(string), String { baseURL }, { });
+        }
+    );
 }
 
 URLPattern::~URLPattern() = default;

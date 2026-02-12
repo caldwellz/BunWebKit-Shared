@@ -1,5 +1,5 @@
 
 
-FAIL select should support :open pseudo selector. assert_true: This test requires appearance:base-select in order to run. expected true got false
-FAIL select :open and :not(:open) should invalidate correctly. assert_true: This test requires appearance:base-select in order to run. expected true got false
+FAIL select should support :open pseudo selector. assert_true: select should match :open while it is open. expected true got false
+FAIL select :open and :not(:open) should invalidate correctly. assert_equals: The style rules from :open should apply when the select is open. expected "rgb(0, 128, 0)" but got "rgb(255, 0, 0)"
 

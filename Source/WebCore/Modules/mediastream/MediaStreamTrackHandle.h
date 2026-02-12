@@ -42,22 +42,30 @@ public:
         ScriptExecutionContextIdentifier contextIdentifier;
         WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData> track;
         Ref<MediaStreamTrack::Keeper> trackKeeper;
+        Ref<MediaStreamTrackPrivateSourceObserver> trackSourceObserver;
     };
 
     static ExceptionOr<Ref<MediaStreamTrackHandle>> create(MediaStreamTrack&);
     static Ref<MediaStreamTrackHandle> create(DataHolder&&);
-    static Ref<MediaStreamTrackHandle> create(ScriptExecutionContextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&&, Ref<MediaStreamTrack::Keeper>&&);
+    static Ref<MediaStreamTrackHandle> create(ScriptExecutionContextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&&, Ref<MediaStreamTrack::Keeper>&&, Ref<MediaStreamTrackPrivateSourceObserver>&&);
 
     bool isDetached() const { return m_isDetached; }
     UniqueRef<DataHolder> detach();
 
+    ScriptExecutionContextIdentifier trackContextIdentifier() const { return m_contextIdentifier; }
+    WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData> track() const { return m_track; }
+    Ref<MediaStreamTrackPrivateSourceObserver> protectedTrackSourceObserver() const { return m_trackSourceObserver; }
+
+    const MediaStreamTrack::Keeper& trackKeeper() const { return m_trackKeeper.get(); }
+
 private:
-    MediaStreamTrackHandle(ScriptExecutionContextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&&, Ref<MediaStreamTrack::Keeper>&&);
+    MediaStreamTrackHandle(ScriptExecutionContextIdentifier, WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData>&&, Ref<MediaStreamTrack::Keeper>&&, Ref<MediaStreamTrackPrivateSourceObserver>&&);
 
     bool m_isDetached { false };
-    ScriptExecutionContextIdentifier m_contextIdentifier;
-    WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData> m_track;
-    Ref<MediaStreamTrack::Keeper> m_trackKeeper;
+    const ScriptExecutionContextIdentifier m_contextIdentifier;
+    const WeakPtr<MediaStreamTrack, WeakPtrImplWithEventTargetData> m_track;
+    const Ref<MediaStreamTrack::Keeper> m_trackKeeper;
+    const Ref<MediaStreamTrackPrivateSourceObserver> m_trackSourceObserver;
 };
 
 } // namespace WebCore

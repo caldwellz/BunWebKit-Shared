@@ -79,7 +79,7 @@ public:
     void invalidate();
 
     WebCoreOpaqueRoot opaqueRootConcurrently() const;
-    Node* ownerNode() const;
+    Node* NODELETE ownerNode() const;
 
 private:
     explicit RemotePlayback(HTMLMediaElement&);

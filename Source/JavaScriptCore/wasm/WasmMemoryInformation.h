@@ -33,6 +33,7 @@
 #include "PageCount.h"
 #include "RegisterSet.h"
 #include "WasmMemory.h"
+#include "WasmOps.h"
 
 #include <wtf/Forward.h>
 #include <wtf/Ref.h>
@@ -59,6 +60,8 @@ public:
     bool isShared() const { return m_isShared; }
     bool isImport() const { return m_isImport; }
     bool isMemory64() const { return m_isMemory64; }
+
+    Wasm::TypeKind addressType() const { return isMemory64() ? TypeKind::I64 : TypeKind::I32; }
 
     explicit operator bool() const { return !!m_initial; }
 

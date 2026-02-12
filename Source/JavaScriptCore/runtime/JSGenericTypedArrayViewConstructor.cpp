@@ -145,11 +145,11 @@ template<typename CharacterType>
     };
 
     const auto* begin = span.data();
-    const auto* end = span.data() + span.size();
+    const auto* end = std::to_address(span.end());
     const auto* cursor = begin;
 
     auto* output = result.data();
-    auto* outputEnd = result.data() + result.size();
+    auto* outputEnd = std::to_address(result.end());
 
     constexpr size_t stride = 16;
     constexpr size_t halfStride = stride / 2;

@@ -580,6 +580,11 @@ webkit.org/b/213717 fast/scrolling/overflow-scrollable-after-back.html [ Timeout
 webkit.org/b/219465 [ Debug ] imported/w3c/web-platform-tests/html/browsers/browsing-the-web/history-traversal/persisted-user-state-restoration/resume-timer-on-history-back.html [ Failure Pass ]
 webkit.org/b/235277 [ Debug ] imported/w3c/web-platform-tests/html/canvas/offscreen/text/2d.text.drawing.style.measure.rtl.text.worker.html [ Failure Pass ]
 
+webkit.org/b/307139 imported/w3c/web-platform-tests/html/canvas/offscreen/text/canvas.2d.fontStretch.normal.html [ ImageOnlyFailure Pass ]
+webkit.org/b/307139 imported/w3c/web-platform-tests/html/canvas/element/manual/text/canvas.2d.fontStretch.normal.html [ Pass ImageOnlyFailure ]
+
+webkit.org/b/307143 imported/w3c/web-platform-tests/preload/preload-in-data-doc.html [ Pass ImageOnlyFailure ]
+
 # Flaky tests detected from 29Jan2023 to 23Feb2023
 webkit.org/b/252878 fast/hidpi/filters-and-image-buffer-resolution.html [ Timeout Pass ]
 webkit.org/b/252878 fast/hidpi/filters-morphology.html [ Timeout Pass ]
@@ -874,7 +879,6 @@ webkit.org/b/251107 webgl/2.0.y/conformance/textures/video/tex-2d-alpha-alpha-un
 webkit.org/b/251107 webgl/2.0.y/conformance2/reading/read-pixels-from-fbo-test.html [ Failure ]
 webkit.org/b/251107 webgl/2.0.y/conformance2/rendering/blitframebuffer-filter-outofbounds.html [ Failure ]
 webkit.org/b/251107 webgl/2.0.y/conformance/context/premultiplyalpha-test.html [ Failure ]
-webkit.org/b/251107 webgl/2.0.y/conformance2/extensions/ext-render-snorm.html [ Failure ]
 webkit.org/b/251107 webgl/2.0.y/conformance2/extensions/ext-texture-norm16.html [ Failure ]
 webgl/1.0.x/conformance/textures/misc/texture-corner-case-videos.html [ Crash Pass ]
 
@@ -1013,7 +1017,6 @@ imported/w3c/web-platform-tests/css/filter-effects/backdrop-filter-plus-filter.h
 # Flaky tests Nov2023
 webkit.org/b/264680 fast/dom/access-key-iframe.html [ Failure Pass ]
 webkit.org/b/264680 fast/hidpi/image-set-cross-fade.html [ ImageOnlyFailure Pass ]
-webkit.org/b/264680 imported/w3c/web-platform-tests/content-security-policy/inheritance/history.sub.html [ Failure Pass ]
 webkit.org/b/264680 imported/w3c/web-platform-tests/webcodecs/videoFrame-construction.crossOriginSource.sub.html [ Failure Pass ]
 
 # Also webkit.org/b/266573
@@ -1072,6 +1075,7 @@ http/tests/login-status/login-status-api-getter-setter-functions.html [ Failure 
 
 imported/w3c/web-platform-tests/css/css-overflow/scrollbar-gutter-root-both-edges.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-overflow/scrollbar-gutter-root.html [ ImageOnlyFailure ]
+imported/w3c/web-platform-tests/css/css-overflow/overflow-auto-scrolling-with-margin-and-transform.html [ Skip ]
 
 imported/w3c/web-platform-tests/css/css-scrollbars/scrollbar-width-paint-001.html [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/css/css-scrollbars/scrollbar-width-paint-002.html [ ImageOnlyFailure ]
@@ -1272,6 +1276,7 @@ webkit.org/b/304265 fast/events/mouse-event-buttons.html [ Failure ]
 
 webkit.org/b/303859 imported/w3c/web-platform-tests/html/canvas/element/manual/text/canvas.2d.disconnected.html [ Pass ImageOnlyFailure ]
 webkit.org/b/303861 imported/w3c/web-platform-tests/svg/path/property/mpath.svg [ Pass ImageOnlyFailure ]
+webkit.org/b/303866 imported/w3c/web-platform-tests/css/css-anchor-position/scroll-to-anchored-fixed-003.html [ Pass ImageOnlyFailure ]
 webkit.org/b/303866 imported/w3c/web-platform-tests/css/css-anchor-position/scroll-to-anchored-fixed-004.html [ Pass ImageOnlyFailure ]
 
 # Flaky soup_session_get_feature crash
@@ -1289,7 +1294,6 @@ webkit.org/b/227085 imported/w3c/web-platform-tests/css/css-scroll-snap/scroll-t
 
 webkit.org/b/305201 fast/forms/datalist/data-list-search-input-with-appearance-none.html [ Crash ]
 
-webkit.org/b/305501 platform/glib/non-compositing/simple-dom.html [ Pass ImageOnlyFailure ]
 webkit.org/b/305511 imported/w3c/web-platform-tests/event-timing/crossiframe.html [ Failure Pass ]
 webkit.org/b/305512 imported/w3c/web-platform-tests/focus/focus-large-element-in-overflow-hidden-container.html [ ImageOnlyFailure Pass ]
 
@@ -1324,3 +1328,5 @@ webkit.org/b/307098 imported/w3c/web-platform-tests/html/canvas/offscreen/text/c
 webkit.org/b/307098 imported/w3c/web-platform-tests/html/canvas/offscreen/text/canvas.2d.fontStretch.semi-expanded.html [ ImageOnlyFailure Pass ]
 webkit.org/b/307098 imported/w3c/web-platform-tests/html/canvas/offscreen/text/canvas.2d.fontStretch.ultra-condensed.html [ ImageOnlyFailure Pass ]
 webkit.org/b/307098 imported/w3c/web-platform-tests/html/canvas/offscreen/text/canvas.2d.fontStretch.ultra-expanded.html [ ImageOnlyFailure Pass ]
+
+webkit.org/b/307588 streams/blob-and-tee.html [ Crash ]

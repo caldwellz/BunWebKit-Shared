@@ -901,11 +901,6 @@ Vector<String> HitTestResult::dictationAlternatives() const
     return frame->editor().dictationAlternativesForMarker(*marker);
 }
 
-RefPtr<Node> HitTestResult::protectedTargetNode() const
-{
-    return innerNode();
-}
-
 Element* HitTestResult::targetElement() const
 {
     for (RefPtr node = m_innerNode.get(); node; node = node->parentInComposedTree()) {
@@ -913,11 +908,6 @@ Element* HitTestResult::targetElement() const
             return element;
     }
     return nullptr;
-}
-
-RefPtr<Element> HitTestResult::protectedTargetElement() const
-{
-    return targetElement();
 }
 
 Element* HitTestResult::innerNonSharedElement() const
@@ -970,16 +960,6 @@ void HitTestResult::toggleEnhancedFullscreenForVideo() const
     else
         videoElement->webkitSetPresentationMode(HTMLVideoElement::VideoPresentationMode::PictureInPicture);
 #endif
-}
-
-RefPtr<Node> HitTestResult::protectedInnerNonSharedNode() const
-{
-    return innerNonSharedNode();
-}
-
-RefPtr<Element> HitTestResult::protectedURLElement() const
-{
-    return URLElement();
 }
 
 #if ENABLE(ACCESSIBILITY_ANIMATION_CONTROL)

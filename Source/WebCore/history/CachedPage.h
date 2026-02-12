@@ -50,10 +50,8 @@ public:
     void clear();
 
     Page& page() const { return m_page; }
-    Ref<Page> protectedPage() const { return page(); }
     Document* document() const { return m_cachedMainFrame->document(); }
     DocumentLoader* documentLoader() const { return m_cachedMainFrame->documentLoader(); }
-    RefPtr<DocumentLoader> protectedDocumentLoader() const;
 
     bool hasExpired() const;
     

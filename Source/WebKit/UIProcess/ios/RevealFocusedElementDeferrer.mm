@@ -50,8 +50,8 @@ void RevealFocusedElementDeferrer::fulfill(RevealFocusedElementDeferralReason re
     if (!m_reasons.isEmpty())
         return;
 
-    Ref protectedThis = *this;
-    [std::exchange(m_view, nil) _zoomToRevealFocusedElement];
+    [m_view.get() _zoomToRevealFocusedElement];
+    m_view = nil;
 }
 
 } // namespace WebKit

@@ -358,7 +358,8 @@ private:
             break;
         }
 
-        case StringStartsWith: {
+        case StringStartsWith:
+        case StringEndsWith: {
             node->child1()->mergeFlags(NodeBytecodeUsesAsValue);
             node->child2()->mergeFlags(NodeBytecodeUsesAsValue);
             if (node->child3())
@@ -518,6 +519,21 @@ private:
 
             node->child1()->mergeFlags(flags);
             node->child2()->mergeFlags(flags & ~NodeBytecodeNeedsNegZero);
+            break;
+        }
+
+        case LogicalNot: {
+            switch (node->child1()->op()) {
+            case ValueMod:
+            case ArithMod:
+                // We can clear this flag since Mod and Div never produces Infinity. It is only NaN.
+                flags &= ~NodeBytecodeNeedsNaNOrInfinity;
+                break;
+            default:
+                break;
+            }
+            flags &= ~NodeBytecodeNeedsNegZero;
+            node->child1()->mergeFlags(flags);
             break;
         }
 

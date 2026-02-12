@@ -144,9 +144,9 @@ RefPtr<ImageBuffer> ImageBitmap::createImageBuffer(ScriptExecutionContext& scrip
 
 void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, ImageBitmap::Source&& source, ImageBitmapOptions&& options, ImageBitmapCompletionHandler&& completionHandler)
 {
-    WTF::switchOn(source,
-        [&] (auto& specificSource) {
-            createCompletionHandler(scriptExecutionContext, specificSource, WTF::move(options), std::nullopt, WTF::move(completionHandler));
+    WTF::switchOn(WTF::move(source),
+        [&](auto&& specificSource) {
+            createCompletionHandler(scriptExecutionContext, WTF::move(specificSource), WTF::move(options), std::nullopt, WTF::move(completionHandler));
         }
     );
 }
@@ -205,9 +205,9 @@ void ImageBitmap::createPromise(ScriptExecutionContext& scriptExecutionContext, 
     auto width = std::abs(sw);
     auto height = std::abs(sh);
 
-    WTF::switchOn(source,
-        [&] (auto& specificSource) {
-            createCompletionHandler(scriptExecutionContext, specificSource, WTF::move(options), IntRect { left, top, width, height }, [promise = WTF::move(promise)](ExceptionOr<Ref<ImageBitmap>> result) mutable {
+    WTF::switchOn(WTF::move(source),
+        [&](auto&& specificSource) {
+            createCompletionHandler(scriptExecutionContext, WTF::move(specificSource), WTF::move(options), IntRect { left, top, width, height }, [promise = WTF::move(promise)](ExceptionOr<Ref<ImageBitmap>> result) mutable {
                 if (result.hasException())
                     promise.reject(result.releaseException());
                 else
@@ -370,7 +370,7 @@ Ref<ImageBitmap> ImageBitmap::createBlankImageBuffer(ScriptExecutionContext& scr
 
 // 13. Return output.
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<HTMLImageElement>& imageElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<HTMLImageElement>&& imageElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     // 2. If image is not completely available, then return a promise rejected with
     // an "InvalidStateError" DOMException and abort these steps.
@@ -383,7 +383,7 @@ void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutio
     createCompletionHandler(scriptExecutionContext, imageElement->cachedImage(), imageElement->renderer(), WTF::move(options), rect, WTF::move(completionHandler));
 }
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<SVGImageElement>& imageElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<SVGImageElement>&& imageElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     createCompletionHandler(scriptExecutionContext, imageElement->cachedImage(), imageElement->renderer(), WTF::move(options), rect, WTF::move(completionHandler));
 }
@@ -479,20 +479,20 @@ void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutio
     completionHandler(WTF::move(imageBitmap));
 }
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<HTMLCanvasElement>& canvasElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<HTMLCanvasElement>&& canvasElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
-    createCompletionHandler(scriptExecutionContext, *canvasElement, WTF::move(options), WTF::move(rect), WTF::move(completionHandler));
+    createCompletionHandler(scriptExecutionContext, canvasElement.get(), WTF::move(options), WTF::move(rect), WTF::move(completionHandler));
 }
 
 #if ENABLE(OFFSCREEN_CANVAS)
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<OffscreenCanvas>& canvasElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<OffscreenCanvas>&& canvasElement, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
-    createCompletionHandler(scriptExecutionContext, *canvasElement, WTF::move(options), WTF::move(rect), WTF::move(completionHandler));
+    createCompletionHandler(scriptExecutionContext, canvasElement.get(), WTF::move(options), WTF::move(rect), WTF::move(completionHandler));
 }
 #endif
 
 #if ENABLE(WEB_CODECS)
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<WebCodecsVideoFrame>& videoFrame, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<WebCodecsVideoFrame>&& videoFrame, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     if (videoFrame->isDetached()) {
         completionHandler(Exception { ExceptionCode::InvalidStateError, "Cannot create ImageBitmap from a detached video frame"_s });
@@ -584,7 +584,7 @@ void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutio
 }
 
 #if ENABLE(VIDEO)
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<HTMLVideoElement>& video, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<HTMLVideoElement>&& video, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     // https://html.spec.whatwg.org/multipage/#dom-createimagebitmap
     // WHATWG HTML 2102913b313078cd8eeac7e81e6a8756cbd3e773
@@ -624,7 +624,7 @@ void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutio
     if (!colorSpace)
         colorSpace = DestinationColorSpace::SRGB();
 
-    const bool originClean = !taintsOrigin(scriptExecutionContext.securityOrigin(), *video);
+    const bool originClean = !taintsOrigin(scriptExecutionContext.securityOrigin(), video);
 
     // FIXME: Add support for pixel formats to ImageBitmap.
     auto bitmapData = video->createBufferForPainting(outputSize, bufferRenderingMode(scriptExecutionContext), *colorSpace, { PixelFormat::BGRA8 });
@@ -661,12 +661,12 @@ void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutio
 }
 #endif
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext&, RefPtr<CSSStyleImageValue>&, ImageBitmapOptions&&, std::optional<IntRect>, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext&, Ref<CSSStyleImageValue>&&, ImageBitmapOptions&&, std::optional<IntRect>, ImageBitmapCompletionHandler&& completionHandler)
 {
     completionHandler(Exception { ExceptionCode::InvalidStateError, "Not implemented"_s });
 }
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<ImageBitmap>& existingImageBitmap, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<ImageBitmap>&& existingImageBitmap, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     // 2. If image's [[Detached]] internal slot value is true, return a promise
     //    rejected with an "InvalidStateError" DOMException and abort these steps.
@@ -811,7 +811,7 @@ private:
     void createImageBitmapAndCallCompletionHandlerSoon(RefPtr<ArrayBuffer>&& arrayBuffer)
     {
         m_arrayBufferToProcess = WTF::move(arrayBuffer);
-        protectedScriptExecutionContext()->checkedEventLoop()->queueTask(TaskSource::InternalAsyncTask, [weakThis = WeakPtr { *this }] {
+        protect(protect(scriptExecutionContext())->eventLoop())->queueTask(TaskSource::InternalAsyncTask, [weakThis = WeakPtr { *this }] {
             if (RefPtr protectedThis = weakThis.get())
                 protectedThis->createImageBitmapAndCallCompletionHandler();
         });
@@ -883,13 +883,13 @@ void ImageBitmap::createFromBuffer(ScriptExecutionContext& scriptExecutionContex
     completionHandler(WTF::move(imageBitmap));
 }
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<Blob>& blob, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<Blob>&& blob, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     // 2. Return a new promise, but continue running these steps in parallel.
     PendingImageBitmap::fetch(scriptExecutionContext, WTF::move(blob), WTF::move(options), WTF::move(rect), WTF::move(completionHandler));
 }
 
-void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, RefPtr<ImageData>& imageData, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
+void ImageBitmap::createCompletionHandler(ScriptExecutionContext& scriptExecutionContext, Ref<ImageData>&& imageData, ImageBitmapOptions&& options, std::optional<IntRect> rect, ImageBitmapCompletionHandler&& completionHandler)
 {
     // 6.1. Let buffer be image's data attribute value's [[ViewedArrayBuffer]]
     //      internal slot.

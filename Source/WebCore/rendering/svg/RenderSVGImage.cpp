@@ -73,11 +73,6 @@ SVGImageElement& RenderSVGImage::imageElement() const
     return downcast<SVGImageElement>(RenderSVGModelObject::element());
 }
 
-Ref<SVGImageElement> RenderSVGImage::protectedImageElement() const
-{
-    return imageElement();
-}
-
 FloatRect RenderSVGImage::calculateObjectBoundingBox() const
 {
     LayoutSize intrinsicSize;
@@ -213,7 +208,7 @@ void RenderSVGImage::paintForeground(PaintInfo& paintInfo, const LayoutPoint& pa
 
     FloatRect contentBoxRect = borderBoxRectEquivalent();
     FloatRect replacedContentRect(0, 0, image->width(), image->height());
-    protectedImageElement()->preserveAspectRatio().transformRect(contentBoxRect, replacedContentRect);
+    protect(imageElement())->preserveAspectRatio().transformRect(contentBoxRect, replacedContentRect);
 
     contentBoxRect.moveBy(paintOffset);
 
@@ -231,7 +226,7 @@ void RenderSVGImage::paintForeground(PaintInfo& paintInfo, const LayoutPoint& pa
 
         auto localVisibleRect = visibleRect;
         localVisibleRect.moveBy(-paintOffset);
-        protect(document())->didPaintImage(protectedImageElement().get(), cachedImage(), localVisibleRect);
+        protect(document())->didPaintImage(protect(imageElement()).get(), cachedImage(), localVisibleRect);
     }
 }
 
@@ -268,7 +263,7 @@ bool RenderSVGImage::nodeAtPoint(const HitTestRequest& request, HitTestResult& r
         if (hitRules.canHitFill) {
             if (m_objectBoundingBox.contains(localPoint)) {
                 updateHitTestResult(result, locationInContainer.point() - toLayoutSize(adjustedLocation));
-                if (result.addNodeToListBasedTestResult(protectedNodeForHitTest().get(), request, locationInContainer, visualOverflowRect) == HitTestProgress::Stop)
+                if (result.addNodeToListBasedTestResult(protect(nodeForHitTest()).get(), request, locationInContainer, visualOverflowRect) == HitTestProgress::Stop)
                     return true;
             }
         }
@@ -365,11 +360,11 @@ void RenderSVGImage::imageChanged(WrappedImagePtr newImage, const IntRect* rect)
     repaintOrMarkForLayout(rect);
 
     if (CheckedPtr cache = document().existingAXObjectCache())
-        cache->deferRecomputeIsIgnoredIfNeeded(protectedImageElement().ptr());
+        cache->deferRecomputeIsIgnoredIfNeeded(protect(imageElement()).ptr());
 
     if (auto* image = imageResource().cachedImage(); image && image->currentFrameIsComplete(this)) {
         if (auto styleable = Styleable::fromRenderer(*this))
-            protect(document())->didLoadImage(styleable->protectedElement().get(), image);
+            protect(document())->didLoadImage(protect(styleable->element).get(), image);
     }
 }
 
@@ -418,12 +413,12 @@ bool RenderSVGImage::bufferForeground(PaintInfo& paintInfo, const LayoutPoint& p
 
 bool RenderSVGImage::needsHasSVGTransformFlags() const
 {
-    return protectedImageElement()->hasTransformRelatedAttributes();
+    return protect(imageElement())->hasTransformRelatedAttributes();
 }
 
 void RenderSVGImage::applyTransform(TransformationMatrix& transform, const RenderStyle& style, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption> options) const
 {
-    applySVGTransform(transform, protectedImageElement(), style, boundingBox, std::nullopt, std::nullopt, options);
+    applySVGTransform(transform, protect(imageElement()), style, boundingBox, std::nullopt, std::nullopt, options);
 }
 
 } // namespace WebCore

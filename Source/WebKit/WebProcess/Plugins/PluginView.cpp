@@ -899,7 +899,7 @@ void PluginView::viewGeometryDidChange()
 
         float pageScaleFactor = frame->page() ? frame->page()->pageScaleFactor() : 1;
         IntPoint scaledFrameRectLocation { frameRect().location().scaled(pageScaleFactor) };
-        IntPoint scaledLocationInRootViewCoordinates { protectedParent()->contentsToRootView(scaledFrameRectLocation) };
+        IntPoint scaledLocationInRootViewCoordinates { protect(parent())->contentsToRootView(scaledFrameRectLocation) };
 
         transform.translate(scaledLocationInRootViewCoordinates);
         transform.scale(pageScaleFactor);
@@ -929,7 +929,7 @@ void PluginView::viewVisibilityDidChange()
 IntRect PluginView::clipRectInWindowCoordinates() const
 {
     // Get the frame rect in window coordinates.
-    IntRect frameRectInWindowCoordinates = protectedParent()->contentsToWindow(frameRect());
+    IntRect frameRectInWindowCoordinates = protect(parent())->contentsToWindow(frameRect());
 
     RefPtr frame = this->frame();
 
@@ -1144,6 +1144,11 @@ void PluginView::registerPDFTestCallback(RefPtr<VoidCallback>&& callback)
 PDFPluginIdentifier PluginView::pdfPluginIdentifier() const
 {
     return m_plugin->identifier();
+}
+
+void PluginView::setPDFDisplayMode(PDFDisplayMode mode)
+{
+    m_plugin->setDisplayModeAndUpdateLayout(mode);
 }
 
 void PluginView::openWithPreview(CompletionHandler<void(const String&, std::optional<FrameInfoData>&&, std::span<const uint8_t>)>&& completionHandler)

@@ -81,7 +81,7 @@ void NotificationResourcesLoader::start(CompletionHandler<void(RefPtr<Notificati
         Ref notification = m_notification.get();
         const URL& iconURL = notification->icon();
         if (!iconURL.isEmpty()) {
-            Ref loader = ResourceLoader::create(*notification->protectedScriptExecutionContext(), iconURL, [this](ResourceLoader* loader, RefPtr<BitmapImage>&& image) {
+            Ref loader = ResourceLoader::create(*protect(notification->scriptExecutionContext()), iconURL, [this](ResourceLoader* loader, RefPtr<BitmapImage>&& image) {
                 if (m_stopped)
                     return;
 

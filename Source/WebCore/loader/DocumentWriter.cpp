@@ -201,7 +201,7 @@ bool DocumentWriter::begin(const URL& urlReference, bool dispatch, Document* own
         return false;
 
     if (!shouldReuseDefaultView)
-        frame->checkedScript()->updatePlatformScriptObjects();
+        protect(frame->script())->updatePlatformScriptObjects();
 
     frameLoader->setOutgoingReferrer(url);
     frame->setDocument(document.copyRef());
@@ -235,11 +235,11 @@ bool DocumentWriter::begin(const URL& urlReference, bool dispatch, Document* own
             RefPtr parentFrame = dynamicDowncast<LocalFrame>(frame->tree().parent());
             if (parentFrame && parentFrame->document()) {
                 document->inheritPolicyContainerFrom(parentFrame->document()->policyContainer());
-                document->checkedContentSecurityPolicy()->updateSourceSelf(protect(protect(parentFrame->document())->securityOrigin()));
+                protect(document->contentSecurityPolicy())->updateSourceSelf(protect(protect(parentFrame->document())->securityOrigin()));
             }
         } else if (triggeringAction && triggeringAction->requester() && !isLoadingBrowserControlledHTML()) {
             document->inheritPolicyContainerFrom(triggeringAction->requester()->policyContainer);
-            document->checkedContentSecurityPolicy()->updateSourceSelf(triggeringAction->requester()->securityOrigin);
+            protect(document->contentSecurityPolicy())->updateSourceSelf(triggeringAction->requester()->securityOrigin);
         }
 
         // https://html.spec.whatwg.org/multipage/origin.html#requires-storing-the-policy-container-in-history
@@ -248,7 +248,7 @@ bool DocumentWriter::begin(const URL& urlReference, bool dispatch, Document* own
     }
 
     if (existingDocument && existingDocument->contentSecurityPolicy() && document->contentSecurityPolicy())
-        document->checkedContentSecurityPolicy()->setInsecureNavigationRequestsToUpgrade(existingDocument->checkedContentSecurityPolicy()->takeNavigationRequestsToUpgrade());
+        protect(document->contentSecurityPolicy())->setInsecureNavigationRequestsToUpgrade(protect(existingDocument->contentSecurityPolicy())->takeNavigationRequestsToUpgrade());
 
     frameLoader->didBeginDocument(dispatch, previousWindow.get());
 

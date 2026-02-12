@@ -255,7 +255,7 @@ void PageSerializer::serializeCSSStyleSheet(CSSStyleSheet* styleSheet, const URL
             auto importURL = document->completeURL(importRule->href());
             if (m_resourceURLs.contains(importURL))
                 continue;
-            serializeCSSStyleSheet(importRule->protectedStyleSheet().get(), importURL);
+            serializeCSSStyleSheet(protect(importRule->styleSheet()).get(), importURL);
         } else if (is<CSSFontFaceRule>(*rule)) {
             // FIXME: Add support for font face rule. It is not clear to me at this point if the actual otf/eot file can
             // be retrieved from the CSSFontFaceRule object.
@@ -295,7 +295,7 @@ void PageSerializer::addImageToResources(CachedImage* image, RenderElement* imag
 
 void PageSerializer::retrieveResourcesForRule(StyleRule& rule, Document* document)
 {
-    retrieveResourcesForProperties(rule.protectedProperties().ptr(), document);
+    retrieveResourcesForProperties(protect(rule.properties()).ptr(), document);
 }
 
 void PageSerializer::retrieveResourcesForProperties(const StyleProperties* styleDeclaration, Document* document)

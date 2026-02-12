@@ -133,7 +133,7 @@ bool NetworkProcessConnection::dispatchMessage(IPC::Connection& connection, IPC:
         protect(WebProcess::singleton().fileSystemStorageConnection())->didReceiveMessage(connection, decoder);
         return true;
     }
-    if (decoder.messageReceiverName() == Messages::WebTransportSession::messageReceiverName() && WebProcess::singleton().isWebTransportEnabled()) {
+    if (decoder.messageReceiverName() == Messages::WebTransportSession::messageReceiverName()) {
         if (RefPtr webTransportSession = WebProcess::singleton().webTransportSession(WebTransportSessionIdentifier(decoder.destinationID())))
             webTransportSession->didReceiveMessage(connection, decoder);
         return true;

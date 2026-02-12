@@ -65,7 +65,7 @@ static RefPtr<CSSValue> cssValueFromStyleValues(CSSPropertyID propertyID, Vector
 }
 
 // https://drafts.css-houdini.org/css-typed-om/#dom-stylepropertymap-set
-ExceptionOr<void> StylePropertyMap::set(Document& document, const AtomString& property, FixedVector<Variant<RefPtr<CSSStyleValue>, String>>&& values)
+ExceptionOr<void> StylePropertyMap::set(Document& document, const AtomString& property, FixedVector<Variant<Ref<CSSStyleValue>, String>>&& values)
 {
     if (isCustomPropertyName(property)) {
         auto styleValuesOrException = CSSStyleValueFactory::vectorFromStyleValuesOrStrings(document, property, WTF::move(values));
@@ -91,12 +91,14 @@ ExceptionOr<void> StylePropertyMap::set(Document& document, const AtomString& pr
     if (isShorthand(propertyID)) {
         if (values.size() != 1)
             return Exception { ExceptionCode::TypeError, "Wrong number of values for shorthand CSS property"_s };
-        String value;
-        switchOn(values[0], [&](const RefPtr<CSSStyleValue>& styleValue) {
-            value = styleValue->toString();
-        }, [&](const String& string) {
-            value = string;
-        });
+        auto value = WTF::switchOn(values[0],
+            [](const Ref<CSSStyleValue>& styleValue) {
+                return styleValue->toString();
+            },
+            [](const String& string) {
+                return string;
+            }
+        );
         if (value.isEmpty() || !setShorthandProperty(propertyID, value))
             return Exception { ExceptionCode::TypeError, "Bad value for shorthand CSS property"_s };
         return { };
@@ -144,7 +146,7 @@ ExceptionOr<void> StylePropertyMap::set(Document& document, const AtomString& pr
 }
 
 // https://drafts.css-houdini.org/css-typed-om/#dom-stylepropertymap-append
-ExceptionOr<void> StylePropertyMap::append(Document& document, const AtomString& property, FixedVector<Variant<RefPtr<CSSStyleValue>, String>>&& values)
+ExceptionOr<void> StylePropertyMap::append(Document& document, const AtomString& property, FixedVector<Variant<Ref<CSSStyleValue>, String>>&& values)
 {
     if (values.isEmpty())
         return { };

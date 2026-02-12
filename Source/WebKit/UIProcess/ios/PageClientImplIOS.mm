@@ -73,6 +73,7 @@
 #import "WebProcessProxy.h"
 #import "_WKDownloadInternal.h"
 #import <WebCore/AXObjectCache.h>
+#import <WebCore/Color.h>
 #import <WebCore/Cursor.h>
 #import <WebCore/DOMPasteAccess.h>
 #import <WebCore/DictionaryLookup.h>
@@ -130,9 +131,9 @@ void PageClientImpl::setViewNeedsDisplay(const Region&)
     ASSERT_NOT_REACHED();
 }
 
-void PageClientImpl::requestScroll(const FloatPoint& scrollPosition, const IntPoint& scrollOrigin, ScrollIsAnimated animated)
+void PageClientImpl::requestScroll(const FloatPoint& scrollPosition, const IntPoint& scrollOrigin, ScrollIsAnimated animated, InterruptScrollAnimation interrupt)
 {
-    [webView() _scrollToContentScrollPosition:scrollPosition scrollOrigin:scrollOrigin animated:animated == ScrollIsAnimated::Yes];
+    [webView() _scrollToContentScrollPosition:scrollPosition scrollOrigin:scrollOrigin animated:animated == ScrollIsAnimated::Yes interruptAnimation:interrupt == InterruptScrollAnimation::Yes];
 }
 
 WebCore::FloatPoint PageClientImpl::viewScrollPosition()
@@ -360,7 +361,7 @@ void PageClientImpl::didCompleteSyntheticClick()
 void PageClientImpl::decidePolicyForGeolocationPermissionRequest(WebFrameProxy& frame, const FrameInfoData& frameInfo, Function<void(bool)>& completionHandler)
 {
     if (auto webView = this->webView()) {
-        auto* geolocationProvider = [wrapper(webView->_page->configuration().processPool()) _geolocationProvider];
+        RetainPtr geolocationProvider = [protect(wrapper(webView->_page->configuration().processPool())) _geolocationProvider];
         [geolocationProvider decidePolicyForGeolocationRequestFromOrigin:FrameInfoData { frameInfo } completionHandler:std::exchange(completionHandler, nullptr) view:webView.get()];
     }
 }
@@ -471,7 +472,7 @@ void PageClientImpl::accessibilityWebProcessTokenReceived(std::span<const uint8_
 
 bool PageClientImpl::interpretKeyEvent(const NativeWebKeyboardEvent& event, KeyEventInterpretationContext&& context)
 {
-    return [contentView() _interpretKeyEvent:event.nativeEvent() withContext:WTF::move(context)];
+    return [contentView() _interpretKeyEvent:protect(event.nativeEvent()).get() withContext:WTF::move(context)];
 }
 
 void PageClientImpl::positionInformationDidChange(const InteractionInformationAtPosition& info)
@@ -607,7 +608,7 @@ IntRect PageClientImpl::rootViewToAccessibilityScreen(const IntRect& rect)
     
 void PageClientImpl::doneWithKeyEvent(const NativeWebKeyboardEvent& event, bool eventWasHandled)
 {
-    [contentView() _didHandleKeyEvent:event.nativeEvent() eventWasHandled:eventWasHandled];
+    [contentView() _didHandleKeyEvent:protect(event.nativeEvent()).get() eventWasHandled:eventWasHandled];
 }
 
 #if ENABLE(TOUCH_EVENTS)
@@ -692,6 +693,11 @@ void PageClientImpl::clearBrowsingWarningIfForMainFrameNavigation()
     [webView() _clearBrowsingWarningIfForMainFrameNavigation];
 }
 
+bool PageClientImpl::hasBrowsingWarning() const
+{
+    return !![webView() _safeBrowsingWarning];
+}
+
 void PageClientImpl::exitAcceleratedCompositingMode()
 {
     notImplemented();
@@ -704,7 +710,7 @@ void PageClientImpl::updateAcceleratedCompositingMode(const LayerTreeContext&)
 void PageClientImpl::didPerformDictionaryLookup(const DictionaryPopupInfo& dictionaryPopupInfo)
 {
 #if ENABLE(REVEAL)
-    DictionaryLookup::showPopup(dictionaryPopupInfo, m_contentView.getAutoreleased(), nullptr);
+    DictionaryLookup::showPopup(dictionaryPopupInfo, protect(m_contentView.getAutoreleased()), nullptr);
 #else
     UNUSED_PARAM(dictionaryPopupInfo);
 #endif // ENABLE(REVEAL)
@@ -722,7 +728,7 @@ bool PageClientImpl::effectiveUserInterfaceLevelIsElevated() const
 
 void PageClientImpl::setRemoteLayerTreeRootNode(RemoteLayerTreeNode* rootNode)
 {
-    [contentView() _setAcceleratedCompositingRootView:rootNode ? rootNode->uiView() : nil];
+    [contentView() _setAcceleratedCompositingRootView:rootNode ? protect(rootNode->uiView()).get() : nil];
 }
 
 CALayer *PageClientImpl::acceleratedCompositingRootLayer() const
@@ -1122,14 +1128,14 @@ void PageClientImpl::videosInElementFullscreenChanged()
 
 void PageClientImpl::refView()
 {
-    [m_contentView retain];
-    [m_webView retain];
+    SUPPRESS_UNRETAINED_ARG [m_contentView retain];
+    SUPPRESS_UNRETAINED_ARG [m_webView retain];
 }
 
 void PageClientImpl::derefView()
 {
-    [m_contentView release];
-    [m_webView release];
+    SUPPRESS_UNRETAINED_ARG [m_contentView release];
+    SUPPRESS_UNRETAINED_ARG [m_webView release];
 }
 
 void PageClientImpl::didRestoreScrollPosition()
@@ -1145,12 +1151,12 @@ WebCore::UserInterfaceLayoutDirection PageClientImpl::userInterfaceLayoutDirecti
 
 Ref<ValidationBubble> PageClientImpl::createValidationBubble(String&& message, const ValidationBubble::Settings& settings)
 {
-    return ValidationBubble::create(m_contentView.getAutoreleased(), WTF::move(message), settings);
+    return ValidationBubble::create(protect(m_contentView.getAutoreleased()), WTF::move(message), settings);
 }
 
 RefPtr<WebDataListSuggestionsDropdown> PageClientImpl::createDataListSuggestionsDropdown(WebPageProxy& page)
 {
-    return WebDataListSuggestionsDropdownIOS::create(page, m_contentView.getAutoreleased());
+    return WebDataListSuggestionsDropdownIOS::create(page, protect(m_contentView.getAutoreleased()));
 }
 
 #if ENABLE(DRAG_SUPPORT)
@@ -1305,10 +1311,10 @@ WebCore::Color PageClientImpl::contentViewBackgroundColor()
 {
     WebCore::Color color;
     [[webView() traitCollection] performAsCurrentTraitCollection:[&, protectedThis = Ref { *this }]() {
-        color = WebCore::roundAndClampToSRGBALossy([protectedThis->contentView() backgroundColor].CGColor);
+        color = WebCore::roundAndClampToSRGBALossy(protect(protect([protectedThis->contentView() backgroundColor]).get().CGColor));
         if (color.isValid())
             return;
-        color = WebCore::roundAndClampToSRGBALossy(UIColor.systemBackgroundColor.CGColor);
+        color = WebCore::roundAndClampToSRGBALossy(protect(protect(UIColor.systemBackgroundColor).get().CGColor));
     }];
 
     return color;
@@ -1316,7 +1322,7 @@ WebCore::Color PageClientImpl::contentViewBackgroundColor()
 
 Color PageClientImpl::insertionPointColor()
 {
-    return roundAndClampToSRGBALossy([webView() _insertionPointColor].CGColor);
+    return roundAndClampToSRGBALossy(protect([webView() _insertionPointColor]).get().CGColor);
 }
 
 bool PageClientImpl::isScreenBeingCaptured()
@@ -1423,12 +1429,12 @@ void PageClientImpl::scheduleVisibleContentRectUpdate()
 
 bool PageClientImpl::isPotentialTapInProgress() const
 {
-    return [m_contentView isPotentialTapInProgress];
+    return [m_contentView.get() isPotentialTapInProgress];
 }
 
 bool PageClientImpl::canStartNavigationSwipeAtLastInteractionLocation() const
 {
-    return [m_contentView _canStartNavigationSwipeAtLastInteractionLocation];
+    return [m_contentView.get() _canStartNavigationSwipeAtLastInteractionLocation];
 }
 
 #if ENABLE(PDF_PAGE_NUMBER_INDICATOR)

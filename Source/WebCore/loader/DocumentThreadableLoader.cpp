@@ -167,7 +167,7 @@ DocumentThreadableLoader::DocumentThreadableLoader(Document& document, Threadabl
         m_responsesCanBeOpaque = false;
     }
 
-    m_options.cspResponseHeaders = m_options.contentSecurityPolicyEnforcement != ContentSecurityPolicyEnforcement::DoNotEnforce ? checkedContentSecurityPolicy()->responseHeaders() : ContentSecurityPolicyResponseHeaders { };
+    m_options.cspResponseHeaders = m_options.contentSecurityPolicyEnforcement != ContentSecurityPolicyEnforcement::DoNotEnforce ? protect(this->contentSecurityPolicy())->responseHeaders() : ContentSecurityPolicyResponseHeaders { };
     m_options.crossOriginEmbedderPolicy = this->crossOriginEmbedderPolicy();
 
     // As per step 11 of https://fetch.spec.whatwg.org/#main-fetch, data scheme (if same-origin data-URL flag is set) and about scheme are considered same-origin.
@@ -692,7 +692,7 @@ void DocumentThreadableLoader::loadRequest(ResourceRequest&& request, SecurityCh
         finishedTimingForWorkerLoad(resourceTiming);
     else {
         if (RefPtr window = document().window())
-            window->protectedPerformance()->addResourceTiming(WTF::move(resourceTiming));
+            protect(window->performance())->addResourceTiming(WTF::move(resourceTiming));
     }
 
     didFinishLoading(identifier, { });
@@ -704,11 +704,11 @@ bool DocumentThreadableLoader::isAllowedByContentSecurityPolicy(const URL& url, 
     case ContentSecurityPolicyEnforcement::DoNotEnforce:
         return true;
     case ContentSecurityPolicyEnforcement::EnforceWorkerSrcDirective:
-        return checkedContentSecurityPolicy()->allowWorkerFromSource(url, redirectResponseReceived, preRedirectURL);
+        return protect(contentSecurityPolicy())->allowWorkerFromSource(url, redirectResponseReceived, preRedirectURL);
     case ContentSecurityPolicyEnforcement::EnforceConnectSrcDirective:
-        return checkedContentSecurityPolicy()->allowConnectToSource(url, redirectResponseReceived, preRedirectURL);
+        return protect(contentSecurityPolicy())->allowConnectToSource(url, redirectResponseReceived, preRedirectURL);
     case ContentSecurityPolicyEnforcement::EnforceScriptSrcDirective:
-        return checkedContentSecurityPolicy()->allowScriptFromSource(url, redirectResponseReceived, preRedirectURL, m_options.integrity, m_options.nonce);
+        return protect(contentSecurityPolicy())->allowScriptFromSource(url, redirectResponseReceived, preRedirectURL, m_options.integrity, m_options.nonce);
     }
     ASSERT_NOT_REACHED();
     return false;
@@ -743,11 +743,6 @@ const ContentSecurityPolicy& DocumentThreadableLoader::contentSecurityPolicy() c
         return *m_contentSecurityPolicy.get();
     ASSERT(m_document->contentSecurityPolicy());
     return *m_document->contentSecurityPolicy();
-}
-
-CheckedRef<const ContentSecurityPolicy> DocumentThreadableLoader::checkedContentSecurityPolicy() const
-{
-    return contentSecurityPolicy();
 }
 
 const CrossOriginEmbedderPolicy& DocumentThreadableLoader::crossOriginEmbedderPolicy() const

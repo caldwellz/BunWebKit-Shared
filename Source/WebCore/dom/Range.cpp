@@ -523,14 +523,15 @@ static ExceptionOr<RefPtr<Node>> processContentsBetweenOffsets(Range::ActionType
                 result = container->cloneNode(false);
         }
         Vector<Ref<Node>> nodes;
-        CheckedPtr n = container->firstChild();
-        for (unsigned i = startOffset; n && i; i--)
-            n = n->nextSibling();
-        for (unsigned i = startOffset; n && i < endOffset; i++, n = n->nextSibling()) {
-            if (action != Range::Delete && n->isDocumentTypeNode()) {
-                return Exception { ExceptionCode::HierarchyRequestError };
+        {
+            CheckedPtr n = container->firstChild();
+            for (unsigned i = startOffset; n && i; i--)
+                n = n->nextSibling();
+            for (unsigned i = startOffset; n && i < endOffset; i++, n = n->nextSibling()) {
+                if (action != Range::Delete && n->isDocumentTypeNode())
+                    return Exception { ExceptionCode::HierarchyRequestError };
+                nodes.append(*n);
             }
-            nodes.append(*n);
         }
         auto processResult = processNodes(action, nodes, container.get(), result);
         if (processResult.hasException())
@@ -725,7 +726,7 @@ String Range::toString() const
 }
 
 // https://w3c.github.io/DOM-Parsing/#widl-Range-createContextualFragment-DocumentFragment-DOMString-fragment
-ExceptionOr<Ref<DocumentFragment>> Range::createContextualFragment(Variant<RefPtr<TrustedHTML>, String>&& markup)
+ExceptionOr<Ref<DocumentFragment>> Range::createContextualFragment(Variant<Ref<TrustedHTML>, String>&& markup)
 {
     Ref node = startContainer();
     auto stringValueHolder = trustedTypeCompliantString(node->document().contextDocument(), WTF::move(markup), "Range createContextualFragment"_s);

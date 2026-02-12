@@ -43,7 +43,7 @@ class HTMLFormElement;
 
 class DOMFormData : public RefCounted<DOMFormData>, public ContextDestructionObserver {
 public:
-    using FormDataEntryValue = Variant<RefPtr<File>, String>;
+    using FormDataEntryValue = Variant<Ref<File>, String>;
 
     struct Item {
         String name;

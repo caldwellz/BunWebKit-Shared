@@ -900,7 +900,12 @@ UNARY_OPERATION(Abs, Number, [&]<typename T>(T n) -> T {
 
 BINARY_OPERATION(Atan2, Float, WRAP_STD(atan2))
 UNARY_OPERATION(Ceil, Float, WRAP_STD(ceil))
-TERNARY_OPERATION(Clamp, Number, [&](auto e, auto low, auto high) { return std::min(std::max(e, low), high); })
+
+TERNARY_OPERATION(Clamp, Number, [&]<typename T>(T e, T low, T high) -> ConstantResult {
+    if (low > high)
+        return makeUnexpected(makeString("clamp called with low ("_s, String::number(low), ") greater than high ("_s, String::number(high), ")"_s));
+    return { { std::min(std::max(e, low), high) } };
+})
 
 UNARY_OPERATION(CountLeadingZeros, ConcreteInteger, [&]<typename T>(T arg) -> T {
     return std::countl_zero(static_cast<unsigned>(arg));
@@ -1773,5 +1778,33 @@ CONSTANT_FUNCTION(Bitcast)
 #undef CALL_MOVE_
 #undef CALL_MOVE
 #undef CONSTANT_FUNCTION
+
+#define VALIDATION_FUNCTION(name) \
+    [[maybe_unused]] static std::optional<String>(validate ## name)(const FixedVector<std::optional<ConstantValue>>& arguments)
+
+#define CALL_(__tmp, __variable, __fnName, ...) \
+    auto __tmp = constant##__fnName(__VA_ARGS__); \
+    if (!__tmp) \
+        return { __tmp.error() }; \
+    auto __variable = WTF::move(*__tmp)
+
+#define CALL(__variable, __fnName, ...) \
+    CALL_(WTF_LAZY_JOIN(tmp, __COUNTER__), __variable, __fnName, __VA_ARGS__)
+
+VALIDATION_FUNCTION(Clamp)
+{
+    if (arguments[1] && arguments[2]) {
+        CALL(gt, Gt, nullptr, { *arguments[1], *arguments[2] });
+        CALL(any, Any, nullptr, { gt });
+        if (any.toBool())
+            return { makeString("clamp called with low ("_s, *arguments[1], ") greater than high ("_s, *arguments[2], ")"_s) };
+    }
+
+    return std::nullopt;
+}
+
+#undef VALIDATION_FUNCTION
+#undef CALL_
+#undef CALL
 
 } // namespace WGSL

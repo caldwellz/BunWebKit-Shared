@@ -36,21 +36,25 @@ namespace Layout {
 class IntegrationUtils;
 
 struct GridItemSizingFunctions {
-    GridItemSizingFunctions(Function<LayoutUnit(const ElementBox& gridItem, const IntegrationUtils&)> minContentContributionFunction, Function<LayoutUnit(const ElementBox& gridItem, const IntegrationUtils&)> maxContentContributionFunction)
-        : minContentContribution(WTF::move(minContentContributionFunction))
-        , maxContentContribution(WTF::move(maxContentContributionFunction))
+    GridItemSizingFunctions(Function<LayoutUnit(const PlacedGridItem&, LayoutUnit oppositeAxisConstraint)> minContentContributionFunction, Function<LayoutUnit(const PlacedGridItem&, LayoutUnit oppositeAxisConstraint)> maxContentContributionFunction,
+        Function<LayoutUnit(const PlacedGridItem&, const TrackSizingFunctionsList&, LayoutUnit borderAndPadding, LayoutUnit availableSpace)> usedMinimumSizeFunction)
+            : minContentContribution(WTF::move(minContentContributionFunction))
+            , maxContentContribution(WTF::move(maxContentContributionFunction))
+            , usedMinimumSize(WTF::move(usedMinimumSizeFunction))
     {
     }
 
-    Function<LayoutUnit(const ElementBox& gridItem, const IntegrationUtils&)> minContentContribution;
-    Function<LayoutUnit(const ElementBox& gridItem, const IntegrationUtils&)> maxContentContribution;
+    Function<LayoutUnit(const PlacedGridItem&, LayoutUnit oppositeAxisConstraint)> minContentContribution;
+    Function<LayoutUnit(const PlacedGridItem&, LayoutUnit oppositeAxisConstraint)> maxContentContribution;
+    Function<LayoutUnit(const PlacedGridItem&, const TrackSizingFunctionsList&, LayoutUnit borderAndPadding, LayoutUnit availableSpace)> usedMinimumSize;
 };
 
 class TrackSizingAlgorithm {
 public:
-    static TrackSizes sizeTracks(const PlacedGridItems&, const ComputedSizesList&, const PlacedGridItemSpanList&,
-    const TrackSizingFunctionsList&, std::optional<LayoutUnit> availableSpace,
-    const GridItemSizingFunctions&, const IntegrationUtils&, const FreeSpaceScenario&, const LayoutUnit& gapSize);
+    static TrackSizes sizeTracks(const PlacedGridItems&, const ComputedSizesList&, const UsedBorderAndPaddingList&,
+        const PlacedGridItemSpanList&, const TrackSizingFunctionsList&, std::optional<LayoutUnit> availableGridSpace,
+        const TrackSizingGridItemConstraintList& oppositeAxisConstraints, const GridItemSizingFunctions&,
+        const FreeSpaceScenario&, const LayoutUnit& gapSize, const StyleContentAlignmentData& usedContentAlignment);
 
 private:
 
@@ -61,6 +65,12 @@ private:
     static bool hasFlexTracks(const UnsizedTracks&);
     static double flexFactorSum(const FlexTracks&);
     static LayoutUnit findSizeOfFr(const UnsizedTracks&, const LayoutUnit& availableSpace, const LayoutUnit& gapSize);
+
+    // Expand Flexible Tracks (spec section 11.7)
+    static void expandFlexibleTracks(UnsizedTracks&, const FreeSpaceScenario&, std::optional<LayoutUnit> availableGridSpace, const LayoutUnit& gapSize);
+    static void expandFlexibleTracksForMinContent(UnsizedTracks&);
+    static void expandFlexibleTracksForMaxContent(UnsizedTracks&, const FlexTracks&, double totalFlex);
+    static void expandFlexibleTracksForDefiniteLength(UnsizedTracks&, const FlexTracks&, std::optional<LayoutUnit> availableGridSpace, const LayoutUnit& gapSize);
 };
 
 } // namespace WebCore

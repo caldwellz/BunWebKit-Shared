@@ -208,6 +208,7 @@ Awaitable<bool> WebFullScreenManagerProxy::enterFullScreen(IPC::Connection& conn
             m_imageBuffer = sharedMemoryBuffer->createSharedBuffer(sharedMemoryBuffer->size());
     }
     m_imageMIMEType = mediaDetails.mimeType;
+    m_launchInImmersive = mediaDetails.launchInImmersive;
 #endif // ENABLE(QUICKLOOK_FULLSCREEN)
 #endif // PLATFORM(IOS_FAMILY)
 

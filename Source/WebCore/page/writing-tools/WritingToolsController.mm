@@ -383,21 +383,27 @@ void WritingToolsController::proofreadingSessionDidReceiveSuggestions(const Writ
 
         auto resolvedRange = resolveCharacterRange(sessionRange, { locationWithOffset, suggestion.originalRange.length });
 
-        replaceContentsOfRangeInSession(*state, resolvedRange, suggestion.replacement);
-
-        // After replacement, the session range is "stale", so it needs to be re-computed before being used again.
-
-        sessionRange = makeSimpleRange(state->contextRange);
-
-        auto newRangeWithOffset = CharacterRange { locationWithOffset, suggestion.replacement.length() };
-        auto newResolvedRange = resolveCharacterRange(sessionRange, newRangeWithOffset);
-
         auto originalString = attributedTextString.substring(suggestion.originalRange.location, suggestion.originalRange.length);
 
-        auto markerData = DocumentMarker::WritingToolsTextSuggestionData { originalString, suggestion.identifier, DocumentMarker::WritingToolsTextSuggestionData::State::Accepted, DocumentMarker::WritingToolsTextSuggestionData::Decoration::None };
-        addMarker(newResolvedRange, DocumentMarkerType::WritingToolsTextSuggestion, markerData);
+        if (state->session.isForProofreadingReview == WritingTools::IsForProofreadingReview::Yes) {
+            // In the proofreading review case, do not immediately replace, but do add a document marker.
+            auto markerData = DocumentMarker::WritingToolsTextSuggestionData { originalString, suggestion.identifier, DocumentMarker::WritingToolsTextSuggestionData::State::Rejected, DocumentMarker::WritingToolsTextSuggestionData::Decoration::None };
+            addMarker(resolvedRange, DocumentMarkerType::WritingToolsTextSuggestion, markerData);
+        } else {
+            replaceContentsOfRangeInSession(*state, resolvedRange, suggestion.replacement);
 
-        state->replacementLocationOffset += static_cast<int>(suggestion.replacement.length()) - static_cast<int>(suggestion.originalRange.length);
+            // After replacement, the session range is "stale", so it needs to be re-computed before being used again.
+
+            sessionRange = makeSimpleRange(state->contextRange);
+
+            auto newRangeWithOffset = CharacterRange { locationWithOffset, suggestion.replacement.length() };
+            auto newResolvedRange = resolveCharacterRange(sessionRange, newRangeWithOffset);
+
+            auto markerData = DocumentMarker::WritingToolsTextSuggestionData { originalString, suggestion.identifier, DocumentMarker::WritingToolsTextSuggestionData::State::Accepted, DocumentMarker::WritingToolsTextSuggestionData::Decoration::None };
+            addMarker(newResolvedRange, DocumentMarkerType::WritingToolsTextSuggestion, markerData);
+
+            state->replacementLocationOffset += static_cast<int>(suggestion.replacement.length()) - static_cast<int>(suggestion.originalRange.length);
+        }
     }
 
     for (auto& transparentContentMarkerIdentifier : transparentContentMarkerIdentifiers) {
@@ -433,6 +439,8 @@ void WritingToolsController::proofreadingSessionDidUpdateStateForSuggestion(cons
         return;
     }
 
+    auto forProofreadingReview = state->session.isForProofreadingReview;
+
     auto sessionRange = makeSimpleRange(state->contextRange);
 
     auto nodeAndMarker = findTextSuggestionMarkerByID(sessionRange, textSuggestion.identifier);
@@ -442,6 +450,25 @@ void WritingToolsController::proofreadingSessionDidUpdateStateForSuggestion(cons
     auto& [node, marker] = *nodeAndMarker;
 
     auto rangeToReplace = makeSimpleRange(node, marker);
+
+    auto replaceMarkerWithType = [&](const String& replacementText, DocumentMarker::WritingToolsTextSuggestionData::State newState) {
+        auto data = std::get<DocumentMarker::WritingToolsTextSuggestionData>(marker.data());
+
+        auto offsetRange = OffsetRange { marker.startOffset(), marker.endOffset() };
+        document->markers().removeMarkers(node, offsetRange, { DocumentMarkerType::WritingToolsTextSuggestion });
+
+        auto resolvedCharacterRange = characterRange(sessionRange, rangeToReplace);
+
+        replaceContentsOfRangeInSession(*state, rangeToReplace, replacementText);
+
+        sessionRange = makeSimpleRange(state->contextRange);
+
+        auto newRangeWithOffset = CharacterRange { resolvedCharacterRange.location, replacementText.length() };
+        auto newResolvedRange = resolveCharacterRange(sessionRange, newRangeWithOffset);
+
+        auto markerData = DocumentMarker::WritingToolsTextSuggestionData { data.originalText, textSuggestion.identifier, newState, DocumentMarker::WritingToolsTextSuggestionData::Decoration::None };
+        addMarker(newResolvedRange, DocumentMarkerType::WritingToolsTextSuggestion, markerData);
+    };
 
     switch (newTextSuggestionState) {
     case WritingTools::TextSuggestion::State::Reviewing: {
@@ -478,6 +505,28 @@ void WritingToolsController::proofreadingSessionDidUpdateStateForSuggestion(cons
 
         replaceContentsOfRangeInSession(*state, rangeToReplace, data.originalText);
 
+        return;
+    }
+
+    case WritingTools::TextSuggestion::State::Pending: {
+        if (forProofreadingReview == WritingTools::IsForProofreadingReview::Yes) {
+            // In the proofreading review case, return to the default state which has the original text.
+            // Need to replace the marker as well, so that further updates can continue to be applied.
+
+            auto data = std::get<DocumentMarker::WritingToolsTextSuggestionData>(marker.data());
+            replaceMarkerWithType(data.originalText, DocumentMarker::WritingToolsTextSuggestionData::State::Rejected);
+        }
+        return;
+    }
+
+    case WritingTools::TextSuggestion::State::Accepted: {
+        if (forProofreadingReview == WritingTools::IsForProofreadingReview::Yes) {
+            // In the proofreading review case, when a given suggestion is accepted, remove the marker
+            // and replace the original text with the replacement text. Need to replace the marker
+            // as well, so that further updates can continue to be applied.
+
+            replaceMarkerWithType(textSuggestion.replacement, DocumentMarker::WritingToolsTextSuggestionData::State::Accepted);
+        }
         return;
     }
 

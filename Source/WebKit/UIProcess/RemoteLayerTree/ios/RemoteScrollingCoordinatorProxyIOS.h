@@ -93,7 +93,17 @@ private:
 
 #if ENABLE(OVERLAY_REGIONS_IN_EVENT_REGION)
     void selectOverlayRegionScrollViewIfNeeded();
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    void updateAllFixedAndStickyOverlayRegions();
+    void updateOverlayRegionForNode(WebCore::ScrollingNodeID);
+    bool nodeQualifiesForOverlayRegionExclusions(const RemoteLayerTreeNode&, bool) const;
+
+    void stickyScrollingTreeNodeBeganSticking(WebCore::ScrollingNodeID) override;
+    void stickyScrollingTreeNodeEndedSticking(WebCore::ScrollingNodeID) override;
+    void scrollingTreeNodeWillBeRemoved(WebCore::ScrollingNodeID) override;
+#else
     void updateOverlayRegionLayers();
+#endif
 #endif
 
     WebCore::FloatRect currentLayoutViewport() const;
@@ -110,11 +120,15 @@ private:
     HashMap<unsigned, OptionSet<WebCore::TouchAction>> m_touchActionsByTouchIdentifier;
 
 #if ENABLE(OVERLAY_REGIONS_IN_EVENT_REGION)
-    HashMap<WebCore::PlatformLayerIdentifier, WebCore::ScrollingNodeID> m_fixedScrollingNodesByLayerID;
     HashMap<WebCore::PlatformLayerIdentifier, WebCore::ScrollingNodeID> m_scrollingNodesByLayerID;
+    HashMap<WebCore::PlatformLayerIdentifier, WebCore::ScrollingNodeID> m_fixedAndStickyScrollingNodesByLayerID;
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    HashMap<WebCore::ScrollingNodeID, WebCore::PlatformLayerIdentifier> m_layerIDsByFixedAndStickyScrollingNodeID;
+#else
+    HashSet<WebCore::IntRect> m_lastOverlayRegionRects;
+#endif
 
     bool m_needsOverlayRegionScrollViewSelection { false };
-    HashSet<WebCore::IntRect> m_lastOverlayRegionRects;
     RetainPtr<WKBaseScrollView> m_selectedOverlayRegionScrollView;
 #endif
 

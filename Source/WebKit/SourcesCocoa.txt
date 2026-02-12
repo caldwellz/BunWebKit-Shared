@@ -71,6 +71,8 @@ NetworkProcess/webrtc/NetworkRTCUDPSocketCocoa.mm @nonARC
 GPUProcess/EntryPoint/Cocoa/XPCService/GPUServiceEntryPoint.mm @nonARC
 GPUProcess/cocoa/GPUConnectionToWebProcessCocoa.mm @nonARC
 GPUProcess/cocoa/GPUProcessCocoa.mm @nonARC
+GPUProcess/graphics/Model/MeshImpl.cpp
+GPUProcess/graphics/Model/WebKitMesh.mm
 GPUProcess/graphics/RemoteGraphicsContextGLCocoa.cpp
 GPUProcess/graphics/ScopedRenderingResourcesRequestCocoa.mm @nonARC @no-unify
 GPUProcess/ios/GPUProcessIOS.mm @nonARC
@@ -180,6 +182,8 @@ Shared/Cocoa/AuxiliaryProcessCocoa.mm @nonARC
 Shared/Cocoa/CodeSigning.mm @nonARC
 Shared/Cocoa/CompletionHandlerCallChecker.mm @nonARC
 Shared/Cocoa/DefaultWebBrowserChecks.mm @nonARC
+Shared/Cocoa/InteractionInformationAtPosition.mm @nonARC
+Shared/Cocoa/InteractionInformationRequest.cpp
 Shared/Cocoa/LoadParametersCocoa.mm @nonARC
 Shared/Cocoa/PDFKitSoftLink.mm @nonARC
 Shared/Cocoa/RevealItem.mm @nonARC
@@ -211,8 +215,6 @@ Shared/EntryPointUtilities/Cocoa/XPCService/XPCServiceMain.mm @nonARC
 
 Shared/ios/AuxiliaryProcessIOS.mm @nonARC
 Shared/ios/HardwareKeyboardState.cpp
-Shared/ios/InteractionInformationAtPosition.mm @nonARC
-Shared/ios/InteractionInformationRequest.cpp
 Shared/ios/NativeWebKeyboardEventIOS.mm @nonARC
 Shared/ios/NativeWebMouseEventIOS.mm @nonARC
 Shared/ios/NativeWebTouchEventIOS.mm @nonARC
@@ -247,6 +249,7 @@ Shared/RemoteLayerTree/RemoteLayerTreeTransaction.mm @nonARC
 Shared/RemoteLayerTree/RemoteScrollingCoordinatorTransaction.cpp
 Shared/RemoteLayerTree/RemoteScrollingUIState.cpp
 
+WebProcess/Model/WebModelPlayer.mm
 WebProcess/GPU/webrtc/SharedVideoFrame.cpp
 
 UIProcess/_WKWebViewPrintFormatter.mm @nonARC

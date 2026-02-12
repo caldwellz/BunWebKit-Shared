@@ -290,7 +290,6 @@ imported/w3c/web-platform-tests/svg/shapes/reftests/pathlength-004b.svg         
 imported/w3c/web-platform-tests/svg/styling/invalidation/nth-child-of-class.svg                        [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/svg/styling/invalidation/nth-last-child-of-class.svg                   [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/svg/text/reftests/dominant-baseline-hanging-small-font-size.svg        [ ImageOnlyFailure ]
-imported/w3c/web-platform-tests/svg/text/reftests/opacity.svg                                          [ ImageOnlyFailure ]
 imported/w3c/web-platform-tests/svg/text/reftests/text-path-transformed-002.html                       [ ImageOnlyFailure ]
 
 # <foreignObject> issues
@@ -306,7 +305,6 @@ svg/custom/focus-ring.svg [ ImageOnlyFailure ]
 
 # Text rendering visually different
 svg/W3C-SVG-1.1/text-text-05-t.svg                 [ ImageOnlyFailure ]
-svg/W3C-SVG-1.1/text-text-08-b.svg                 [ ImageOnlyFailure ]
 svg/hittest/text-multiple-dx-values.svg            [ ImageOnlyFailure ]
 svg/hittest/text-with-multiple-tspans.svg          [ ImageOnlyFailure ]
 svg/hittest/text-with-text-path.svg                [ ImageOnlyFailure ]
@@ -327,10 +325,6 @@ svg/css/mix-blend-mode-opacity-root.svg    [ ImageOnlyFailure ]
 # Non-scaling stroke issues
 svg/zoom/page/non-scaling-stroke-textRendering-default.svg            [ ImageOnlyFailure ]
 svg/zoom/page/non-scaling-stroke-textRendering-geometricPrecision.svg [ ImageOnlyFailure ]
-
-# Opacity issues
-svg/custom/text-image-opacity.svg [ ImageOnlyFailure ]
-svg/text/text-text-08-b.svg       [ ImageOnlyFailure ]
 
 # <use> issues
 svg/W3C-SVG-1.2-Tiny/struct-use-recursion-01-t.svg [ ImageOnlyFailure ]

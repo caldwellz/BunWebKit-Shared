@@ -153,12 +153,6 @@ public:
     const NetworkSession* networkSession() const { return m_session.get(); }
     NetworkSession* networkSession() { return m_session.get(); }
 
-    CheckedPtr<NetworkSession> checkedNetworkSession()
-    {
-        ASSERT(m_session);
-        return m_session.get();
-    }
-
     virtual void setTimingAllowFailedFlag() { }
 
     size_t bytesTransferredOverNetwork() const { return m_bytesTransferredOverNetwork; }

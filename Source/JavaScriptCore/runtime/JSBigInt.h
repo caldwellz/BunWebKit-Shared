@@ -52,18 +52,19 @@ public:
     static constexpr unsigned StructureFlags = Base::StructureFlags | StructureIsImmortal | OverridesPut;
     friend class CachedBigInt;
 
-    DECLARE_VISIT_CHILDREN;
-
-    template<typename CellType, SubspaceAccess>
-    static GCClient::IsoSubspace* subspaceFor(VM& vm)
+    template<typename CellType, SubspaceAccess mode>
+    static CompleteSubspace* subspaceFor(VM& vm)
     {
-        return &vm.bigIntSpace();
+        return &vm.heap.cellSpace;
+    }
+
+    static constexpr size_t allocationSize(unsigned length)
+    {
+        return offsetOfData() + length * sizeof(Digit);
     }
 
     enum class InitializationType { None, WithZero };
     void initialize(InitializationType);
-
-    static size_t estimatedSize(JSCell*, VM&);
 
     static Structure* createStructure(VM&, JSGlobalObject*, JSValue prototype);
     JS_EXPORT_PRIVATE static JSBigInt* createZero(JSGlobalObject*);
@@ -79,7 +80,8 @@ public:
     JS_EXPORT_PRIVATE static JSBigInt* createFrom(JSGlobalObject*, Int128 value);
     static JSBigInt* createFrom(JSGlobalObject*, bool value);
     static JSBigInt* createFrom(JSGlobalObject*, double value);
-    static JSBigInt* createFrom(JSGlobalObject*, VM&, bool sign, std::span<const Digit>);
+
+    JS_EXPORT_PRIVATE static JSBigInt* tryCreateFrom(JSGlobalObject*, VM&, bool sign, std::span<const Digit>);
 
     static JSBigInt* createFrom(JSGlobalObject*, VM&, int32_t value);
 
@@ -98,7 +100,7 @@ public:
 
     static constexpr size_t offsetOfData()
     {
-        return OBJECT_OFFSETOF(JSBigInt, m_data);
+        return WTF::roundUpToMultipleOf<alignof(Digit)>(sizeof(JSBigInt));
     }
 
     DECLARE_EXPORT_INFO;
@@ -197,6 +199,8 @@ public:
     static ComparisonResult compareToDouble(double x, JSValue y) { return flip(compareToDouble(y, x)); }
 
 private:
+    static JSBigInt* tryCreateFromImpl(JSGlobalObject*, VM&, bool sign, std::span<const Digit>);
+
     ALWAYS_INLINE static ComparisonResult flip(ComparisonResult result)
     {
         switch (result) {
@@ -461,8 +465,6 @@ public:
 
     Digit digit(unsigned);
     void setDigit(unsigned, Digit); // Use only when initializing.
-    JS_EXPORT_PRIVATE JSBigInt* rightTrim(JSGlobalObject*);
-    JS_EXPORT_PRIVATE JSBigInt* tryRightTrim(VM&);
     std::span<const Digit> digits() const
     {
         return { dataStorage(), length() };
@@ -503,18 +505,16 @@ public:
 
 
 private:
-    JSBigInt(VM&, Structure*, Digit*, unsigned length);
+    JSBigInt(VM&, Structure*, unsigned length);
 
     std::span<Digit> digits()
     {
         return { dataStorage(), length() };
     }
 
-    JSBigInt* rightTrim(JSGlobalObject*, VM&);
-
     JS_EXPORT_PRIVATE unsigned hashSlow();
 
-    static JSBigInt* createFromImpl(JSGlobalObject*, uint64_t value, bool sign);
+    static JSBigInt* tryCreateFromImpl(JSGlobalObject*, uint64_t value, bool sign);
 
     static constexpr int maxInt = 0x7FFFFFFF;
 
@@ -623,14 +623,13 @@ private:
 
     JS_EXPORT_PRIVATE static uint64_t toBigUInt64Heap(JSBigInt*);
 
-    inline Digit* dataStorage() { return m_data.get(); }
-    inline const Digit* dataStorage() const { return m_data.get(); }
-    inline Digit* dataStorageUnsafe() { return m_data.getUnsafe(); }
+    inline Digit* dataStorage() { return std::bit_cast<Digit*>(std::bit_cast<uint8_t*>(this) + offsetOfData()); }
+    inline const Digit* dataStorage() const { return std::bit_cast<const Digit*>(std::bit_cast<const uint8_t*>(this) + offsetOfData()); }
+    inline Digit* dataStorageUnsafe() { return dataStorage(); }
 
     const unsigned m_length;
     unsigned m_hash { 0 };
     uint8_t m_sign { false };
-    CagedBarrierPtr<Gigacage::Primitive, Digit> m_data;
 };
 
 inline JSBigInt* asHeapBigInt(JSValue value)

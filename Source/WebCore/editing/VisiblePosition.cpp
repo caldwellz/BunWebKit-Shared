@@ -253,7 +253,7 @@ Position VisiblePosition::leftVisuallyDistinctCandidate() const
             break;
         }
 
-        p = makeDeprecatedLegacyPosition(renderer->protectedNode().get(), offset);
+        p = makeDeprecatedLegacyPosition(protect(renderer->node()).get(), offset);
 
         if ((p.isCandidate() && p.downstream() != downstreamStart) || p.atStartOfTree() || p.atEndOfTree())
             return p;
@@ -422,7 +422,7 @@ Position VisiblePosition::rightVisuallyDistinctCandidate() const
             break;
         }
 
-        p = makeDeprecatedLegacyPosition(renderer->protectedNode().get(), offset);
+        p = makeDeprecatedLegacyPosition(protect(renderer->node()).get(), offset);
 
         if ((p.isCandidate() && p.downstream() != downstreamStart) || p.atStartOfTree() || p.atEndOfTree())
             return p;

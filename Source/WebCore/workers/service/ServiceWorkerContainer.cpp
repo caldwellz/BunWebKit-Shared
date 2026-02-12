@@ -159,9 +159,9 @@ ServiceWorker* ServiceWorkerContainer::controller() const
     return context ? context->activeServiceWorker() : nullptr;
 }
 
-void ServiceWorkerContainer::addRegistration(Variant<RefPtr<TrustedScriptURL>, String>&& relativeScriptURL, const RegistrationOptions& options, Ref<DeferredPromise>&& promise)
+void ServiceWorkerContainer::addRegistration(Variant<Ref<TrustedScriptURL>, String>&& relativeScriptURL, const RegistrationOptions& options, Ref<DeferredPromise>&& promise)
 {
-    auto stringValueHolder = trustedTypeCompliantString(*protectedScriptExecutionContext(), WTF::move(relativeScriptURL), "ServiceWorkerContainer register"_s);
+    auto stringValueHolder = trustedTypeCompliantString(*protect(scriptExecutionContext()), WTF::move(relativeScriptURL), "ServiceWorkerContainer register"_s);
 
     if (stringValueHolder.hasException()) {
         promise->reject(stringValueHolder.releaseException());
@@ -335,7 +335,7 @@ void ServiceWorkerContainer::getRegistration(const String& clientURL, Ref<Deferr
                 promise->resolve();
                 return;
             }
-            promise->resolve<IDLInterface<ServiceWorkerRegistration>>(ServiceWorkerRegistration::getOrCreate(*container.protectedScriptExecutionContext(), container, WTF::move(result.value())));
+            promise->resolve<IDLInterface<ServiceWorkerRegistration>>(ServiceWorkerRegistration::getOrCreate(*protect(container.scriptExecutionContext()), container, WTF::move(result.value())));
         });
     });
 }
@@ -348,7 +348,7 @@ void ServiceWorkerContainer::updateRegistrationState(ServiceWorkerRegistrationId
     queueTaskKeepingObjectAlive(*this, TaskSource::DOMManipulation, [identifier, state, serviceWorkerData = std::optional<ServiceWorkerData> { serviceWorkerData }](ServiceWorkerContainer& container) mutable {
         RefPtr<ServiceWorker> serviceWorker;
         if (serviceWorkerData)
-            serviceWorker = ServiceWorker::getOrCreate(*container.protectedScriptExecutionContext(), WTF::move(*serviceWorkerData));
+            serviceWorker = ServiceWorker::getOrCreate(*protect(container.scriptExecutionContext()), WTF::move(*serviceWorkerData));
 
         if (RefPtr registration = container.m_registrations.get(identifier))
             registration->updateStateFromServer(state, WTF::move(serviceWorker));
@@ -377,7 +377,7 @@ void ServiceWorkerContainer::getRegistrations(Ref<DeferredPromise>&& promise)
     ensureProtectedSWClientConnection()->getRegistrations(SecurityOriginData { context->topOrigin().data() }, context->url(), [this, protectedThis = Ref { *this }, promise = WTF::move(promise)] (Vector<ServiceWorkerRegistrationData>&& registrationDatas) mutable {
         queueTaskKeepingObjectAlive(*this, TaskSource::DOMManipulation, [promise = WTF::move(promise), registrationDatas = WTF::move(registrationDatas)](ServiceWorkerContainer& container) mutable {
             auto registrations = WTF::map(WTF::move(registrationDatas), [&](auto&& registrationData) {
-                return ServiceWorkerRegistration::getOrCreate(*container.protectedScriptExecutionContext(), container, WTF::move(registrationData));
+                return ServiceWorkerRegistration::getOrCreate(*protect(container.scriptExecutionContext()), container, WTF::move(registrationData));
             });
             promise->resolve<IDLSequence<IDLInterface<ServiceWorkerRegistration>>>(WTF::move(registrations));
         });
@@ -453,7 +453,7 @@ void ServiceWorkerContainer::jobResolvedWithRegistration(ServiceWorkerJob& job, 
     queueTaskKeepingObjectAlive(*this, TaskSource::DOMManipulation, [promise = job.takePromise(), jobIdentifier = job.identifier(), data = WTF::move(data), shouldNotifyWhenResolved, notifyIfExitEarly = WTF::move(notifyIfExitEarly)](ServiceWorkerContainer& container) mutable {
         notifyIfExitEarly.release();
 
-        Ref registration = ServiceWorkerRegistration::getOrCreate(*container.protectedScriptExecutionContext(), container, WTF::move(data));
+        Ref registration = ServiceWorkerRegistration::getOrCreate(*protect(container.scriptExecutionContext()), container, WTF::move(data));
 
         CONTAINER_RELEASE_LOG_WITH_THIS(&container, "jobResolvedWithRegistration: Resolving promise for job %" PRIu64 ". registrationID=%" PRIu64, jobIdentifier.toUInt64(), registration->identifier().toUInt64());
 
@@ -487,7 +487,7 @@ void ServiceWorkerContainer::postMessage(MessageWithMessagePorts&& message, Serv
     auto& vm = globalObject->vm();
     auto scope = DECLARE_TOP_EXCEPTION_SCOPE(vm);
 
-    MessageEventSource source = RefPtr<ServiceWorker> { ServiceWorker::getOrCreate(context.get(), WTF::move(sourceData)) };
+    MessageEventSource source = ServiceWorker::getOrCreate(context.get(), WTF::move(sourceData));
 
     auto messageEvent = MessageEvent::create(*globalObject, message.message.releaseNonNull(), WTF::move(sourceOrigin), { }, WTF::move(source), MessagePort::entanglePorts(context.get(), WTF::move(message.transferredPorts)));
     if (scope.exception()) [[unlikely]] {

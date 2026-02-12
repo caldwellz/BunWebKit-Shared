@@ -131,6 +131,12 @@ WK_CLASS_AVAILABLE(macos(WK_MAC_TBA), ios(WK_IOS_TBA), visionos(WK_XROS_TBA))
 @property (nonatomic) BOOL includeTextInAutoFilledControls;
 
 /*!
+ Include context around password fields, including those outside of `targetRect`.
+ The default value is `false`.
+ */
+@property (nonatomic) BOOL includeOffscreenPasswordFields;
+
+/*!
  Max number of words to include per paragraph; remaining text is truncated with an ellipsis (…).
  The default value is `NSUIntegerMax`.
  */

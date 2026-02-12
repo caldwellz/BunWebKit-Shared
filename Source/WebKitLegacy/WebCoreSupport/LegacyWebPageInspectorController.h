@@ -64,7 +64,7 @@ public:
 private:
     explicit LegacyWebPageInspectorController(WebCore::Page&);
 
-    CheckedPtr<Inspector::InspectorTargetAgent> checkedTargetAgent() { return m_targetAgent; }
+    Inspector::InspectorTargetAgent* targetAgent() const { return m_targetAgent; }
 
     void addTarget(std::unique_ptr<Inspector::InspectorTarget>&&);
     void removeTarget(const String& targetID);

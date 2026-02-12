@@ -253,7 +253,7 @@ void DocumentStorageAccess::requestStorageAccess(Ref<DeferredPromise>&& promise)
 
         Ref document = protectedThis->m_document.get();
         if (shouldPreserveUserGesture) {
-            document->checkedEventLoop()->queueMicrotask([weakThis] {
+            protect(document->eventLoop())->queueMicrotask([weakThis] {
                 if (RefPtr protectedThis = weakThis.get())
                     protectedThis->enableTemporaryTimeUserGesture();
             });
@@ -278,7 +278,7 @@ void DocumentStorageAccess::requestStorageAccess(Ref<DeferredPromise>&& promise)
         }
 
         if (shouldPreserveUserGesture) {
-            document->checkedEventLoop()->queueMicrotask([weakThis] {
+            protect(document->eventLoop())->queueMicrotask([weakThis] {
                 if (RefPtr protectedThis = weakThis.get())
                     protectedThis->consumeTemporaryTimeUserGesture();
             });
@@ -358,7 +358,7 @@ void DocumentStorageAccess::requestStorageAccessQuirk(RegistrableDomain&& reques
         bool shouldPreserveUserGesture = result.wasGranted == StorageAccessWasGranted::Yes || result.promptWasShown == StorageAccessPromptWasShown::No;
 
         if (shouldPreserveUserGesture) {
-            protectedThis->protectedDocument()->checkedEventLoop()->queueMicrotask([weakThis] {
+            protect(protectedThis->protectedDocument()->eventLoop())->queueMicrotask([weakThis] {
                 if (RefPtr protectedThis = weakThis.get())
                     protectedThis->enableTemporaryTimeUserGesture();
             });
@@ -376,7 +376,7 @@ void DocumentStorageAccess::requestStorageAccessQuirk(RegistrableDomain&& reques
         }
 
         if (shouldPreserveUserGesture) {
-            protectedThis->protectedDocument()->checkedEventLoop()->queueMicrotask([weakThis] {
+            protect(protectedThis->protectedDocument()->eventLoop())->queueMicrotask([weakThis] {
                 if (RefPtr protectedThis = weakThis.get())
                     protectedThis->consumeTemporaryTimeUserGesture();
             });

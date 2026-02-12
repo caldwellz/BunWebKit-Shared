@@ -104,7 +104,7 @@ DataCue::~DataCue() = default;
 RefPtr<ArrayBuffer> DataCue::data() const
 {
     if (m_platformValue)
-        return protectedPlatformValue()->data();
+        return protect(platformValue())->data();
 
     if (!m_data)
         return nullptr;
@@ -135,7 +135,7 @@ bool DataCue::cueContentsMatch(const TextTrackCue& cue) const
     RefPtr otherPlatformValue = dataCue->platformValue();
     if ((otherPlatformValue && !m_platformValue) || (!otherPlatformValue && m_platformValue))
         return false;
-    if (m_platformValue && !protectedPlatformValue()->isEqual(*otherPlatformValue))
+    if (m_platformValue && !protect(platformValue())->isEqual(*otherPlatformValue))
         return false;
 
     JSC::JSValue thisValue = valueOrNull();
@@ -151,7 +151,7 @@ bool DataCue::cueContentsMatch(const TextTrackCue& cue) const
 JSC::JSValue DataCue::value(JSC::JSGlobalObject& state) const
 {
     if (m_platformValue)
-        return protectedPlatformValue()->deserialize(&state);
+        return protect(platformValue())->deserialize(&state);
 
     if (m_value)
         return m_value.get();

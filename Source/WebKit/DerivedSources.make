@@ -392,6 +392,11 @@ GENERATED_MESSAGES_FILES_AS_PATTERNS := $(call to-pattern, $(GENERATED_MESSAGES_
 MESSAGES_IN_FILES := $(addsuffix .messages.in,$(MESSAGE_RECEIVERS))
 
 SANDBOX_IMPORT_DIR=$(SDKROOT)/usr/local/share/sandbox/profiles/embedded/imports
+ifeq ($(RC_XBS),YES)
+	RC_XBS_PREPROCESSOR_FLAG=-DRC_XBS=1
+else
+	RC_XBS_PREPROCESSOR_FLAG=-DRC_XBS=0
+endif
 
 .PHONY : all
 
@@ -477,7 +482,7 @@ NOTIFICATION_ALLOW_LISTS = \
 
 %.sb : %.sb.in $(NOTIFICATION_ALLOW_LISTS)
 	@echo Pre-processing $* sandbox profile...
-	grep -o '^[^;]*' $< | $(CC) $(SANITIZE_FLAGS) $(SDK_FLAGS) $(TARGET_TRIPLE_FLAGS) $(SANDBOX_DEFINES) $(TEXT_PREPROCESSOR_FLAGS) $(FRAMEWORK_FLAGS) $(HEADER_FLAGS) $(EXTERNAL_FLAGS) -include "wtf/Platform.h" - > $@.tmp
+	grep -o '^[^;]*' $< | $(CC) $(RC_XBS_PREPROCESSOR_FLAG) $(SANITIZE_FLAGS) $(SDK_FLAGS) $(TARGET_TRIPLE_FLAGS) $(SANDBOX_DEFINES) $(TEXT_PREPROCESSOR_FLAGS) $(FRAMEWORK_FLAGS) $(HEADER_FLAGS) $(EXTERNAL_FLAGS) -include "wtf/Platform.h" - > $@.tmp
 	$(WebKit2)/Scripts/compile-sandbox.sh $@.tmp $* $(SDK_NAME) $(SANDBOX_IMPORT_DIR)
 	mv $@.tmp $@
 
@@ -674,9 +679,12 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	Shared/Cocoa/CoreIPCPassKit.serialization.in \
 	Shared/Cocoa/CoreIPCPersonNameComponents.serialization.in \
 	Shared/Cocoa/CoreIPCPKDateComponentsRange.serialization.in \
+	Shared/Cocoa/CoreIPCPKPayment.serialization.in \
 	Shared/Cocoa/CoreIPCPKPaymentMerchantSession.serialization.in \
+	Shared/Cocoa/CoreIPCPKPaymentMethod.serialization.in \
 	Shared/Cocoa/CoreIPCPKPaymentSetupFeature.serialization.in \
 	Shared/Cocoa/CoreIPCPKPaymentToken.serialization.in \
+	Shared/Cocoa/CoreIPCPKShippingMethod.serialization.in \
 	Shared/Cocoa/CoreIPCPlist.serialization.in \
 	Shared/Cocoa/CoreIPCPresentationIntent.serialization.in \
 	Shared/Cocoa/CoreIPCSecureCoding.serialization.in \
@@ -684,9 +692,12 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	Shared/Cocoa/CoreIPCStringSet.serialization.in \
 	Shared/Cocoa/CoreIPCURL.serialization.in \
 	Shared/Cocoa/CoreIPCCFCharacterSet.serialization.in \
+	Shared/Cocoa/CursorContext.serialization.in \
 	Shared/Cocoa/DataDetectionResult.serialization.in \
 	Shared/Cocoa/GestureTypes.serialization.in \
 	Shared/Cocoa/InsertTextOptions.serialization.in \
+	Shared/Cocoa/InteractionInformationAtPosition.serialization.in \
+	Shared/Cocoa/InteractionInformationRequest.serialization.in \
 	Shared/Cocoa/RemoteObjectInvocation.serialization.in \
 	Shared/Cocoa/RevealItem.serialization.in \
 	Shared/Cocoa/SharedCARingBuffer.serialization.in \
@@ -736,11 +747,8 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	Shared/ImageOptions.serialization.in \
 	Shared/InspectorExtensionTypes.serialization.in \
 	Shared/IPCTester.serialization.in \
-	Shared/ios/CursorContext.serialization.in \
 	Shared/ios/DynamicViewportSizeUpdate.serialization.in \
 	Shared/ios/HardwareKeyboardState.serialization.in \
-	Shared/ios/InteractionInformationAtPosition.serialization.in \
-	Shared/ios/InteractionInformationRequest.serialization.in \
 	Shared/ios/DragInitiationResult.serialization.in \
 	Shared/ios/WebAutocorrectionContext.serialization.in \
 	Shared/ios/WebAutocorrectionData.serialization.in \
@@ -755,6 +763,7 @@ SERIALIZATION_DESCRIPTION_FILES = \
 	Shared/NavigationActionData.serialization.in \
 	Shared/NetworkProcessConnectionParameters.serialization.in \
 	Shared/NodeHitTestResult.serialization.in \
+	Shared/PDFDisplayMode.serialization.in \
 	Shared/Pasteboard.serialization.in \
 	Shared/PlatformPopupMenuData.serialization.in \
 	Shared/PolicyDecision.serialization.in \
@@ -941,7 +950,6 @@ SERIALIZATION_DESCRIPTION_FILES = \
 WEBCORE_SERIALIZATION_DESCRIPTION_FILES = \
 	HTTPHeaderNames.serialization.in \
 	ActivityState.serialization.in \
-	WebModel.serialization.in \
 	DocumentSyncData.serialization.in \
 	DragActions.serialization.in \
 	FrameTreeSyncData.serialization.in \
@@ -1047,6 +1055,7 @@ all : JSWebExtensionAPIUnified.mm $(EXTENSION_INTERFACES:%=JS%.h) $(EXTENSION_IN
 ifeq ($(USE_INTERNAL_SDK),YES)
 WEBKIT_ADDITIONS_SWIFT_FILES = \
 	UIWindowScene+Extras.swift \
+	WKWebView+WKBannerViewOverlay.swift \
 	WKWebView+SystemTextExtraction.swift \
 #
 

@@ -55,6 +55,7 @@ namespace WebCore {
 class CachedPage;
 class Document;
 class FormData;
+class FrameTree;
 class HistoryItem;
 class Image;
 class ResourceRequest;
@@ -109,7 +110,7 @@ public:
     std::optional<FrameIdentifier> frameID() const { return m_frameID; }
     bool isTargetItem() const { return m_isTargetItem; }
     
-    WEBCORE_EXPORT FormData* formData();
+    WEBCORE_EXPORT FormData* NODELETE formData();
     WEBCORE_EXPORT String formContentType() const;
     
     bool lastVisitWasFailure() const { return m_lastVisitWasFailure; }
@@ -164,9 +165,10 @@ public:
     WEBCORE_EXPORT HistoryItem* childItemWithTarget(const AtomString&);
     WEBCORE_EXPORT HistoryItem* childItemWithFrameID(FrameIdentifier);
     HistoryItem* childItemWithDocumentSequenceNumber(long long number);
+    HistoryItem* childItemForFrame(LocalFrame&);
     WEBCORE_EXPORT const Vector<Ref<HistoryItem>>& children() const;
     void clearChildren();
-    
+
     bool shouldDoSameDocumentNavigationTo(HistoryItem& otherItem) const;
 
     bool isCurrentDocument(Document&) const;

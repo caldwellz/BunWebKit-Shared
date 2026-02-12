@@ -799,7 +799,7 @@ void HTMLVideoElement::serviceRequestVideoFrameCallbacks(ReducedResolutionSecond
     if (!videoFrameMetadata || !document().window())
         return;
 
-    processVideoFrameMetadataTimestamps(*videoFrameMetadata, document().window()->protectedPerformance());
+    processVideoFrameMetadataTimestamps(*videoFrameMetadata, protect(document().window()->performance()));
 
     Ref protectedThis { *this };
 

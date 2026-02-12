@@ -60,16 +60,17 @@ public:
     void ref() const final { RefCounted::ref(); }
     void deref() const final { RefCounted::deref(); }
 
-    using CanvasImageSource = Variant<RefPtr<HTMLImageElement>
-        , RefPtr<SVGImageElement>
-        , RefPtr<HTMLCanvasElement>
-        , RefPtr<ImageBitmap>
-        , RefPtr<CSSStyleImageValue>
+    using CanvasImageSource = Variant<
+          Ref<HTMLImageElement>
+        , Ref<SVGImageElement>
+        , Ref<HTMLCanvasElement>
+        , Ref<ImageBitmap>
+        , Ref<CSSStyleImageValue>
 #if ENABLE(OFFSCREEN_CANVAS)
-        , RefPtr<OffscreenCanvas>
+        , Ref<OffscreenCanvas>
 #endif
 #if ENABLE(VIDEO)
-        , RefPtr<HTMLVideoElement>
+        , Ref<HTMLVideoElement>
 #endif
     >;
 

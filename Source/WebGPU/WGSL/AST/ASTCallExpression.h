@@ -26,6 +26,7 @@
 #pragma once
 
 #include "ASTExpression.h"
+#include "Overload.h"
 #include "Types.h"
 #include <wtf/OptionSet.h>
 
@@ -96,6 +97,8 @@ public:
 
     const String& resolvedTarget() const { return m_resolvedTarget; }
 
+    ValidationFunction validationFunction() const { return m_validationFunction; }
+
 private:
     CallExpression(SourceSpan span, Expression::Ref&& target, Expression::List&& arguments)
         : Expression(span)
@@ -113,6 +116,7 @@ private:
 
     bool m_isConstructor { false };
     OptionSet<ShaderStage> m_visibility { ShaderStage::Compute, ShaderStage::Vertex, ShaderStage::Fragment };
+    ValidationFunction m_validationFunction { nullptr };
 };
 
 } // namespace AST

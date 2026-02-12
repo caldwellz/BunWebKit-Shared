@@ -123,7 +123,7 @@ ExceptionOr<bool> NavigatorBeacon::sendBeacon(Document& document, const String& 
     if (!document.frame())
         return false;
 
-    if (!document.shouldBypassMainWorldContentSecurityPolicy() && !document.checkedContentSecurityPolicy()->allowConnectToSource(parsedUrl)) {
+    if (!document.shouldBypassMainWorldContentSecurityPolicy() && !protect(document.contentSecurityPolicy())->allowConnectToSource(parsedUrl)) {
         // We simulate a network error so we return true here. This is consistent with Blink.
         return true;
     }

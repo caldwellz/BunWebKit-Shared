@@ -130,8 +130,8 @@ void DOMWindow::close()
     if (!frame->isMainFrame())
         return;
 
-    if (!(page->openedByDOM() || page->checkedBackForward()->count() <= 1)) {
-        checkedConsole()->addMessage(MessageSource::JS, MessageLevel::Warning, "Can't close the window since it was not opened by JavaScript"_s);
+    if (!(page->openedByDOM() || protect(page->backForward())->count() <= 1)) {
+        protect(console())->addMessage(MessageSource::JS, MessageLevel::Warning, "Can't close the window since it was not opened by JavaScript"_s);
         return;
     }
 
@@ -149,11 +149,6 @@ FrameConsoleClient* DOMWindow::console() const
 {
     RefPtr frame = dynamicDowncast<LocalFrame>(this->frame());
     return frame ? &frame->console() : nullptr;
-}
-
-CheckedPtr<FrameConsoleClient> DOMWindow::checkedConsole() const
-{
-    return console();
 }
 
 RefPtr<Frame> DOMWindow::protectedFrame() const

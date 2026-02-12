@@ -6,8 +6,8 @@ PASS sending ten chunks on demand should work
 PASS transferring a stream should relieve backpressure
 PASS transferring a stream should add one chunk to the queue size
 PASS the extra queue from transferring is counted in chunks
-FAIL cancel should be propagated to the original assert_array_equals: cancel() should have been called lengths differ, expected array ["pull", "cancel", "message"] length 3, got ["pull", "pull", "cancel", "message"] length 4
-FAIL cancel should abort a pending read() assert_array_equals: events should match lengths differ, expected array ["pull", "cancel", "done"] length 3, got ["pull", "pull", "cancel", "done"] length 4
+PASS cancel should be propagated to the original
+PASS cancel should abort a pending read()
 PASS stream cancel should not wait for underlying source cancel
 PASS serialization should not happen until the value is read
 PASS transferring a non-serializable chunk should error both sides

@@ -52,7 +52,7 @@ public:
     static URL archiveResourceURL(const String&);
 
     WEBCORE_EXPORT URL blobURL() const;
-    WEBCORE_EXPORT File* file() const;
+    WEBCORE_EXPORT File* NODELETE file() const;
 
     enum class UpdateDisplayAttributes : bool { No, Yes };
     void setFile(RefPtr<File>&&, UpdateDisplayAttributes = UpdateDisplayAttributes::No);
@@ -95,7 +95,7 @@ public:
 
     bool isWideLayout() const { return m_implementation == Implementation::WideLayout; }
     HTMLElement* wideLayoutShadowContainer() const { return m_containerElement.get(); }
-    HTMLElement* wideLayoutImageElement() const;
+    HTMLElement* NODELETE wideLayoutImageElement() const;
     WEBCORE_EXPORT static String shadowUserAgentStyleSheetText();
 
     enum class HighlightState : uint8_t {

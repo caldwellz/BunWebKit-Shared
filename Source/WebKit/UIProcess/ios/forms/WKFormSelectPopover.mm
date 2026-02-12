@@ -104,10 +104,11 @@ static RetainPtr<NSString> stringWithWritingDirection(NSString *string, NSWritin
 {
     if (!(self = [super initWithStyle:UITableViewStylePlain]))
         return nil;
-    
+
     _contentView = view;
-    Vector<OptionItem>& selectOptions = [_contentView.get() focusedSelectElementOptions];
-    _allowsMultipleSelection = [_contentView.get() focusedElementInformation].isMultiSelect;
+    RetainPtr contentView = _contentView.get();
+    Vector<OptionItem>& selectOptions = [contentView focusedSelectElementOptions];
+    _allowsMultipleSelection = [contentView focusedElementInformation].isMultiSelect;
     
     // Even if the select is empty, there is at least one tableview section.
     _numberOfSections = 1;
@@ -167,12 +168,13 @@ static RetainPtr<NSString> stringWithWritingDirection(NSString *string, NSWritin
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    if ([_contentView.get() focusedSelectElementOptions].isEmpty())
+    RetainPtr contentView = _contentView.get();
+    if ([contentView focusedSelectElementOptions].isEmpty())
         return 1;
-    
+
     int rowCount = 0;
-    for (size_t i = 0; i < [_contentView.get() focusedSelectElementOptions].size(); ++i) {
-        const OptionItem& item = [_contentView.get() focusedSelectElementOptions][i];
+    for (size_t i = 0; i < [contentView focusedSelectElementOptions].size(); ++i) {
+        const OptionItem& item = [contentView focusedSelectElementOptions][i];
         if (item.isGroup)
             continue;
         if (item.parentGroupID == section)
@@ -188,10 +190,11 @@ static RetainPtr<NSString> stringWithWritingDirection(NSString *string, NSWritin
     // The first section never has a header. It is for selects without groups.
     if (section == 0)
         return nil;
-    
+
+    RetainPtr contentView = _contentView.get();
     int groupCount = 0;
-    for (size_t i = 0; i < [_contentView.get() focusedSelectElementOptions].size(); ++i) {
-        const OptionItem& item = [_contentView.get() focusedSelectElementOptions][i];
+    for (size_t i = 0; i < [contentView focusedSelectElementOptions].size(); ++i) {
+        const OptionItem& item = [contentView focusedSelectElementOptions][i];
         if (!item.isGroup)
             continue;
         groupCount++;
@@ -216,11 +219,12 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 {
     ASSERT(indexPath.row >= 0);
     ASSERT(indexPath.section <= _numberOfSections);
-    
+
+    RetainPtr contentView = _contentView.get();
     int optionIndex = 0;
     int rowIndex = 0;
-    for (size_t i = 0; i < [_contentView.get() focusedSelectElementOptions].size(); ++i) {
-        const OptionItem& item = [_contentView.get() focusedSelectElementOptions][i];
+    for (size_t i = 0; i < [contentView focusedSelectElementOptions].size(); ++i) {
+        const OptionItem& item = [contentView focusedSelectElementOptions][i];
         if (item.isGroup) {
             rowIndex = 0;
             continue;
@@ -238,9 +242,10 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     ASSERT(indexPath.row >= 0);
     ASSERT(indexPath.section <= _numberOfSections);
 
+    RetainPtr contentView = _contentView.get();
     int index = 0;
-    for (size_t i = 0; i < [_contentView.get() focusedSelectElementOptions].size(); ++i) {
-        OptionItem& item = [_contentView.get() focusedSelectElementOptions][i];
+    for (size_t i = 0; i < [contentView focusedSelectElementOptions].size(); ++i) {
+        OptionItem& item = [contentView focusedSelectElementOptions][i];
         if (item.isGroup || item.parentGroupID != indexPath.section)
             continue;
         if (index == indexPath.row)
@@ -252,31 +257,33 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    auto cell = retainPtr([tableView dequeueReusableCellWithIdentifier:WKPopoverTableViewCellReuseIdentifier]);
+    RetainPtr identifier = WKPopoverTableViewCellReuseIdentifier;
+    auto cell = retainPtr([tableView dequeueReusableCellWithIdentifier:identifier.get()]);
     if (!cell)
-        cell = adoptNS([[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:WKPopoverTableViewCellReuseIdentifier]);
-    
+        cell = adoptNS([[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:identifier.get()]);
+
     [cell setSemanticContentAttribute:self.view.semanticContentAttribute];
     [cell textLabel].textAlignment = _textAlignment;
-    
-    if ([_contentView.get() focusedElementInformation].selectOptions.isEmpty()) {
+
+    RetainPtr contentView = _contentView.get();
+    if ([contentView focusedElementInformation].selectOptions.isEmpty()) {
         [cell textLabel].enabled = NO;
         [cell textLabel].text = WEB_UI_STRING_KEY("No Options", "No Options Select Popover", "Empty select list").createNSString().get();
         [cell setAccessoryType:UITableViewCellAccessoryNone];
         [cell setSelectionStyle:UITableViewCellSelectionStyleNone];
         return cell.autorelease();
     }
-    
+
     CGRect textRect = [cell textRectForContentRect:[cell contentRectForBounds:[cell bounds]]];
     ASSERT_IMPLIES(CGRectGetWidth(tableView.bounds) > 0, textRect.size.width > 0);
-    
+
     // Assume all cells have the same available text width.
     UIFont *font = [cell textLabel].font;
     CGFloat initialFontSize = font.pointSize;
     ASSERT(initialFontSize);
     if (textRect.size.width != _maximumTextWidth || _fontSize == 0) {
         _maximumTextWidth = textRect.size.width;
-        _fontSize = adjustedFontSize(_maximumTextWidth, font, initialFontSize, [_contentView.get() focusedElementInformation].selectOptions);
+        _fontSize = adjustedFontSize(_maximumTextWidth, font, initialFontSize, [contentView focusedElementInformation].selectOptions);
     }
     
     const OptionItem* item = [self findItemAt:indexPath];
@@ -291,15 +298,16 @@ ALLOW_DEPRECATED_DECLARATIONS_END
 
 - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
 {
-    if ([_contentView.get() focusedElementInformation].selectOptions.isEmpty())
+    RetainPtr contentView = _contentView.get();
+    if ([contentView focusedElementInformation].selectOptions.isEmpty())
         return;
-    
+
     NSInteger itemIndex = [self findItemIndexAt:indexPath];
     ASSERT(itemIndex != NSNotFound);
-    
+
     if (_allowsMultipleSelection) {
         [tableView deselectRowAtIndexPath:[tableView indexPathForSelectedRow] animated:NO];
-        
+
         UITableViewCell *cell = [tableView cellForRowAtIndexPath:indexPath];
 ALLOW_DEPRECATED_DECLARATIONS_BEGIN
         // FIXME: <rdar://131638865> UITableViewCell.textLabel is deprecated.
@@ -308,20 +316,20 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
 ALLOW_DEPRECATED_DECLARATIONS_END
 
         BOOL newStateIsSelected = (cell.accessoryType == UITableViewCellAccessoryNone);
-        
+
         cell.accessoryType = newStateIsSelected ? UITableViewCellAccessoryCheckmark : UITableViewCellAccessoryNone;
-        
+
         ASSERT(itemIndex != NSNotFound);
-        
+
         // To trigger onchange events programmatically we need to go through this
         // SPI which mimics a user action on the <select>. Normally programmatic
         // changes do not trigger "change" events on such selects.
-        [_contentView.get() updateFocusedElementSelectedIndex:itemIndex allowsMultipleSelection:true];
-        OptionItem& item = [_contentView.get() focusedSelectElementOptions][itemIndex];
+        [contentView updateFocusedElementSelectedIndex:itemIndex allowsMultipleSelection:true];
+        OptionItem& item = [contentView focusedSelectElementOptions][itemIndex];
         item.isSelected = newStateIsSelected;
     } else {
         [tableView deselectRowAtIndexPath:indexPath animated:NO];
-        
+
         // It is possible for there to be no selection, for example with <select size="2">.
         NSIndexPath *oldIndexPath = nil;
         if (_singleSelectionIndex != NSNotFound) {
@@ -331,9 +339,9 @@ ALLOW_DEPRECATED_DECLARATIONS_END
                 return;
             }
         }
-        
+
         UITableViewCell *newCell = [tableView cellForRowAtIndexPath:indexPath];
-        
+
 ALLOW_DEPRECATED_DECLARATIONS_BEGIN
         // FIXME: <rdar://131638865> UITableViewCell.textLabel is deprecated.
         if (!newCell.textLabel.enabled)
@@ -345,31 +353,31 @@ ALLOW_DEPRECATED_DECLARATIONS_END
             if (oldCell && oldCell.accessoryType == UITableViewCellAccessoryCheckmark)
                 oldCell.accessoryType = UITableViewCellAccessoryNone;
         }
-        
+
         if (newCell && newCell.accessoryType == UITableViewCellAccessoryNone) {
             newCell.accessoryType = UITableViewCellAccessoryCheckmark;
-            
+
             _singleSelectionIndex = indexPath.row;
             _singleSelectionSection = indexPath.section;
 
-            [_contentView.get() updateFocusedElementSelectedIndex:itemIndex allowsMultipleSelection:false];
-            OptionItem& newItem = [_contentView.get() focusedSelectElementOptions][itemIndex];
+            [contentView updateFocusedElementSelectedIndex:itemIndex allowsMultipleSelection:false];
+            OptionItem& newItem = [contentView focusedSelectElementOptions][itemIndex];
             newItem.isSelected = true;
         }
-        
+
         // Need to update the model even if there isn't a cell.
         if (oldIndexPath) {
             if (OptionItem* oldItem = [self findItemAt:oldIndexPath])
                 oldItem->isSelected = false;
         }
-        
+
         [_popover.get() _userActionDismissedPopover:nil];
     }
 }
 
 - (BOOL)shouldDismissWithAnimation
 {
-    return _contentView.getAutoreleased()._shouldUseLegacySelectPopoverDismissalBehavior;
+    return [_contentView.get() _shouldUseLegacySelectPopoverDismissalBehavior];
 }
 
 - (WKSelectPopover *)popover

@@ -56,7 +56,6 @@ public:
     ~LegacyTileGrid();
 
     LegacyTileCache& tileCache() const { return m_tileCache; }
-    Ref<LegacyTileCache> protectedTileCache() const { return tileCache(); }
 
     CALayer *tileHostLayer() const;
     IntRect bounds() const;

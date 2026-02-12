@@ -391,7 +391,7 @@ void JSTestMapLikeOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* contex
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestMapLike = static_cast<JSTestMapLike*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestMapLike->protectedWrapped().ptr(), jsTestMapLike);
+    uncacheWrapper(world, protect(jsTestMapLike->wrapped()).ptr(), jsTestMapLike);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

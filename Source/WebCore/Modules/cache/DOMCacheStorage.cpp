@@ -294,9 +294,9 @@ void DOMCacheStorage::doRemove(const String& name, DOMPromiseDeferred<IDLBoolean
         return;
     }
 
-    protectedScriptExecutionContext()->enqueueTaskWhenSettled(m_connection->remove(m_caches[position]->identifier()), TaskSource::DOMManipulation, [this, promise = WTF::move(promise), pendingActivity = makePendingActivity(*this)](const auto& result) mutable {
+    protect(scriptExecutionContext())->enqueueTaskWhenSettled(m_connection->remove(m_caches[position]->identifier()), TaskSource::DOMManipulation, [this, promise = WTF::move(promise), pendingActivity = makePendingActivity(*this)](const auto& result) mutable {
         if (!result)
-            promise.reject(DOMCacheEngine::convertToExceptionAndLog(protectedScriptExecutionContext().get(), result.error()));
+            promise.reject(DOMCacheEngine::convertToExceptionAndLog(protect(scriptExecutionContext()).get(), result.error()));
         else
             promise.resolve(result.value());
     });

@@ -34,6 +34,7 @@
 #import "AXNotifications.h"
 #import "AXObjectCacheInlines.h"
 #import "AXSearchManager.h"
+#import "AXUtilities.h"
 #import "AccessibilityObject.h"
 #import "CocoaAccessibilityConstants.h"
 #import "DeprecatedGlobalSettings.h"
@@ -693,7 +694,7 @@ void AXObjectCache::frameLoadingEventPlatformNotification(RenderView* renderView
     }
 }
 
-void AXObjectCache::platformHandleFocusedUIElementChanged(Element*, Element*)
+void AXObjectCache::platformHandleFocusedUIElementChanged(AccessibilityObject*, AccessibilityObject*)
 {
     NSAccessibilityHandleFocusChanged();
     // AXFocusChanged is a test specific notification name and not something a real AT will be listening for

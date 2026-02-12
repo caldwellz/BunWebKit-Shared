@@ -61,9 +61,9 @@ using JSSharedWorkerGlobalScopeDOMConstructor = JSDOMConstructorNotConstructable
 
 static const struct CompactHashIndex JSSharedWorkerGlobalScopeTableIndex[5] = {
     { -1, -1 },
-    { -1, -1 },
-    { -1, -1 },
     { 0, 4 },
+    { -1, -1 },
+    { -1, -1 },
     { 1, -1 },
 };
 

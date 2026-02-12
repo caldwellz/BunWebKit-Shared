@@ -386,6 +386,7 @@
     [NeedsReview] StructureParam WebKit::CoreIPCPKPaymentMerchantSessionData.signature
     [NeedsReview] StructureParam WebKit::CoreIPCPKPaymentMerchantSessionData.ampEnrollmentPinning
     [NeedsReview] StructureParam WebKit::CoreIPCPKPaymentTokenData.paymentData
+    [NeedsReview] StructureParam WebKit::CoreIPCPKPaymentData.credential
 }
 
 [UnsafeWrapper] std::span<const char> {

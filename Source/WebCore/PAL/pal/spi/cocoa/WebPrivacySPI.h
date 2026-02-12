@@ -220,11 +220,16 @@ typedef NS_OPTIONS(NSUInteger, WPScriptAccessCategories) {
     WPScriptAccessCategoryScreenOrViewport      = 1 << 8,
     WPScriptAccessCategorySpeech                = 1 << 9,
     WPScriptAccessCategoryFormControls          = 1 << 10,
+    WPScriptAccessCategoryNetworkRequests       = 1 << 11,
 };
 
 @interface WPFingerprintingScript (Staging_155749047)
 @property (nonatomic, readonly) WPScriptAccessCategories allowedCategories;
 @end
+
+#elif !defined(WP_SUPPORTS_SCRIPT_ACCESS_CATEGORY_NETWORK)
+
+#define WPScriptAccessCategoryNetworkRequests (1 << 11)
 
 #endif // !defined(WP_SUPPORTS_SCRIPT_ACCESS_CATEGORY)
 

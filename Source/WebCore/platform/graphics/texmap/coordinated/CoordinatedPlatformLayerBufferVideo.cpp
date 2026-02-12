@@ -85,13 +85,28 @@ std::unique_ptr<CoordinatedPlatformLayerBuffer> CoordinatedPlatformLayerBufferVi
 std::unique_ptr<CoordinatedPlatformLayerBuffer> CoordinatedPlatformLayerBufferVideo::createBufferIfNeeded(bool gstGLEnabled)
 {
     auto buffer = gst_sample_get_buffer(m_videoFrame->sample());
-#if USE(GBM) && GST_CHECK_VERSION(1, 24, 0)
-    if (gst_is_dmabuf_memory(gst_buffer_peek_memory(buffer, 0)))
+    auto memory = gst_buffer_peek_memory(buffer, 0);
+
+#if USE(GBM)
+    if (gst_is_fd_memory(memory) && m_videoDecoderPlatform && *m_videoDecoderPlatform == GstVideoDecoderPlatform::Qualcomm) {
+        // The buffers produced by the Qualcomm decoder contain a single GstMemory which stores the
+        // GBM FD pointing to the decoded frame. The frame format is YUV (NV12). As this is stored
+        // in a single memory the existing DMABuf/YUV layer buffers cannot be used for rendering. So
+        // we rely on the EXT_YUV_target OpenGL ES extension to convert it to a RGB texture for
+        // rendering.
+        auto dmabufFormat = m_videoFrame->dmaBufFormat();
+        RELEASE_ASSERT(dmabufFormat);
+        return CoordinatedPlatformLayerBufferExternalOES::create(GRefPtr(buffer), dmabufFormat->first, m_size, m_flags);
+    }
+
+#if GST_CHECK_VERSION(1, 24, 0)
+    if (gst_is_dmabuf_memory(memory))
         return createBufferFromDMABufMemory();
-#endif
+#endif // GST_CHECK_VERSION(1, 24, 0)
+#endif // USE(GBM)
 
 #if USE(GSTREAMER_GL)
-    if (gstGLEnabled && gst_is_gl_memory(gst_buffer_peek_memory(buffer, 0)))
+    if (gstGLEnabled && gst_is_gl_memory(memory))
         return createBufferFromGLMemory();
 #else
     UNUSED_PARAM(gstGLEnabled);

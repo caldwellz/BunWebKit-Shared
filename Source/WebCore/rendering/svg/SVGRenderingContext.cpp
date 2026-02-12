@@ -121,21 +121,23 @@ void SVGRenderingContext::prepareToRenderSVGContent(RenderElement& renderer, Pai
             isolateMaskForBlending = graphicsElement->shouldIsolateBlending();
     }
 
-    if (opacity < 1 || hasBlendMode || isolateMaskForBlending || hasIsolation) {
-        FloatRect repaintRect = m_renderer->repaintRectInLocalCoordinates();
-        m_paintInfo->context().clip(repaintRect);
-
+    if (!(renderer.document().settings().layerBasedSVGEngineEnabled() && is<RenderSVGText>(renderer))) {
         if (opacity < 1 || hasBlendMode || isolateMaskForBlending || hasIsolation) {
+            FloatRect repaintRect = m_renderer->repaintRectInLocalCoordinates();
+            m_paintInfo->context().clip(repaintRect);
 
-            if (hasBlendMode)
-                m_paintInfo->context().setCompositeOperation(m_paintInfo->context().compositeOperation(), style.blendMode());
+            if (opacity < 1 || hasBlendMode || isolateMaskForBlending || hasIsolation) {
 
-            m_paintInfo->context().beginTransparencyLayer(opacity);
+                if (hasBlendMode)
+                    m_paintInfo->context().setCompositeOperation(m_paintInfo->context().compositeOperation(), style.blendMode());
 
-            if (hasBlendMode)
-                m_paintInfo->context().setCompositeOperation(m_paintInfo->context().compositeOperation(), BlendMode::Normal);
+                m_paintInfo->context().beginTransparencyLayer(opacity);
 
-            m_renderingFlags |= EndOpacityLayer;
+                if (hasBlendMode)
+                    m_paintInfo->context().setCompositeOperation(m_paintInfo->context().compositeOperation(), BlendMode::Normal);
+
+                m_renderingFlags |= EndOpacityLayer;
+            }
         }
     }
 

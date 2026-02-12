@@ -127,7 +127,7 @@ RemoteLayerTreeEventDispatcher::~RemoteLayerTreeEventDispatcher()
 // This must be called to break the cycle between RemoteLayerTreeEventDispatcherDisplayLinkClient and this.
 void RemoteLayerTreeEventDispatcher::invalidate()
 {
-    checkedDisplayLinkClient()->invalidate();
+    protect(m_displayLinkClient)->invalidate();
 
     removeDisplayLinkClient();
 
@@ -160,11 +160,6 @@ RefPtr<RemoteScrollingTree> RemoteLayerTreeEventDispatcher::scrollingTree()
     }
     
     return result;
-}
-
-CheckedPtr<RemoteLayerTreeEventDispatcherDisplayLinkClient> RemoteLayerTreeEventDispatcher::checkedDisplayLinkClient()
-{
-    return m_displayLinkClient.get();
 }
 
 void RemoteLayerTreeEventDispatcher::wheelEventHysteresisUpdated(PAL::HysteresisState state)
@@ -426,7 +421,7 @@ void RemoteLayerTreeEventDispatcher::startDisplayLinkObserver()
 
     m_displayRefreshObserverID = DisplayLinkObserverID::generate();
     // This display link always runs at the display update frequency (e.g. 120Hz).
-    displayLink->addObserver(*checkedDisplayLinkClient(), *m_displayRefreshObserverID, displayLink->nominalFramesPerSecond());
+    displayLink->addObserver(*protect(m_displayLinkClient), *m_displayRefreshObserverID, displayLink->nominalFramesPerSecond());
 }
 
 void RemoteLayerTreeEventDispatcher::stopDisplayLinkObserver()
@@ -440,7 +435,7 @@ void RemoteLayerTreeEventDispatcher::stopDisplayLinkObserver()
 
     LOG_WITH_STREAM(DisplayLink, stream << "[UI ] RemoteLayerTreeEventDispatcher::stopDisplayLinkObserver");
 
-    displayLink->removeObserver(*checkedDisplayLinkClient(), *m_displayRefreshObserverID);
+    displayLink->removeObserver(*protect(m_displayLinkClient), *m_displayRefreshObserverID);
     m_displayRefreshObserverID = { };
 }
 
@@ -451,7 +446,7 @@ void RemoteLayerTreeEventDispatcher::removeDisplayLinkClient()
         return;
 
     LOG_WITH_STREAM(DisplayLink, stream << "[UI ] RemoteLayerTreeEventDispatcher::removeDisplayLinkClient");
-    displayLink->removeClient(*checkedDisplayLinkClient());
+    displayLink->removeClient(*protect(m_displayLinkClient));
     m_displayRefreshObserverID = { };
 }
 

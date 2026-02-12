@@ -27,27 +27,31 @@
 
 #if ENABLE(GPU_PROCESS)
 
+#include "Mesh.h"
 #include "RemoteDeviceProxy.h"
 #include "WebModelIdentifier.h"
-#include <WebCore/Mesh.h>
-#include <WebCore/WebModel.h>
 #include <wtf/HashMap.h>
 #include <wtf/TZoneMalloc.h>
 
 #if PLATFORM(COCOA)
-#include <WebGPU/Float4x4.h>
+#include "Float4x4.h"
+#include "ModelTypes.h"
 #include <simd/simd.h>
 #endif
 
 namespace WebModel {
+struct ImageAsset;
 struct Float4x4;
+struct UpdateMeshDescriptor;
+struct UpdateTextureDescriptor;
+struct UpdateMaterialDescriptor;
 }
 
 namespace WebKit {
 
 class ModelConvertToBackingContext;
 
-class RemoteMeshProxy final : public WebCore::Mesh {
+class RemoteMeshProxy final : public Mesh {
     WTF_MAKE_TZONE_ALLOCATED(RemoteMeshProxy);
 public:
     static Ref<RemoteMeshProxy> create(Ref<RemoteGPUProxy>&& root, ModelConvertToBackingContext& convertToBackingContext, WebModelIdentifier identifier)
@@ -119,7 +123,7 @@ private:
 }
 
 SPECIALIZE_TYPE_TRAITS_BEGIN(WebKit::RemoteMeshProxy)
-    static bool isType(const WebCore::Mesh& mesh) { return mesh.isRemoteMeshProxy(); }
+    static bool isType(const WebKit::Mesh& mesh) { return mesh.isRemoteMeshProxy(); }
 SPECIALIZE_TYPE_TRAITS_END()
 
 #endif // ENABLE(GPU_PROCESS)

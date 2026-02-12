@@ -101,7 +101,7 @@ messages -> WebPageProxy {
     SetCanShortCircuitHorizontalWheelEvents(bool canShortCircuitHorizontalWheelEvents)
 
 #if ENABLE(MODEL_ELEMENT_IMMERSIVE)
-    [EnabledBy=ModelElementImmersiveEnabled] AllowImmersiveElementFromURL(URL url) -> (bool allow)
+    [EnabledBy=ModelElementImmersiveEnabled] AllowImmersiveElement() -> (bool allow)
     [EnabledBy=ModelElementImmersiveEnabled] PresentImmersiveElement(WebCore::LayerHostingContextIdentifier contextID) -> (bool success)
     [EnabledBy=ModelElementImmersiveEnabled] DismissImmersiveElement() -> ()
 #endif
@@ -189,9 +189,12 @@ messages -> WebPageProxy {
     # Forms messages
     WillSubmitForm(struct WebKit::FrameInfoData frame, struct WebKit::FrameInfoData sourceFrame, Vector<std::pair<String, String>> textFieldValues, WebKit::UserData userData, URL requestURL, String method) -> ()
 
+#if PLATFORM(COCOA)
+    DidReceivePositionInformation(struct WebKit::InteractionInformationAtPosition information) CanDispatchOutOfOrder
+#endif
+
 #if PLATFORM(IOS_FAMILY)
     InterpretKeyEvent(struct WebKit::EditorState state, struct WebKit::KeyEventInterpretationContext context) -> (bool handled) Synchronous
-    DidReceivePositionInformation(struct WebKit::InteractionInformationAtPosition information) CanDispatchOutOfOrder
     SaveImageToLibrary(WebCore::SharedMemory::Handle handle, String authorizationToken)
     ShowPlaybackTargetPicker(bool hasVideo, WebCore::IntRect elementRect, enum:uint8_t WebCore::RouteSharingPolicy policy, String routingContextUID)
     CommitPotentialTapFailed()
@@ -434,9 +437,6 @@ messages -> WebPageProxy {
 #endif
 
     DidChangeInspectorFrontendCount(uint32_t count)
-
-    CreateInspectorTarget(String targetId, enum:uint8_t Inspector::InspectorTargetType type)
-    DestroyInspectorTarget(String targetId)
     SendMessageToInspectorFrontend(String targetId, String message)
 
     # Search popup menus
@@ -565,6 +565,10 @@ messages -> WebPageProxy {
     UpdatePDFPageNumberIndicatorLocation(WebKit::PDFPluginIdentifier identifier, WebCore::IntRect boundingBox)
     UpdatePDFPageNumberIndicatorCurrentPage(WebKit::PDFPluginIdentifier identifier, uint64_t pageIndex)
     RemovePDFPageNumberIndicator(WebKit::PDFPluginIdentifier identifier)
+#endif
+
+#if PLATFORM(IOS_FAMILY) && ENABLE(UNIFIED_PDF)
+    SetPDFDisplayMode(enum:uint8_t WebKit::PDFDisplayMode mode)
 #endif
 
     ConfigureLoggingChannel(String channelName, enum:uint8_t WTFLogChannelState state, enum:uint8_t WTFLogLevel level)

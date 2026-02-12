@@ -584,7 +584,7 @@ void RemoteLayerTreePropertyApplier::applyProperties(RemoteLayerTreeNode& node, 
         node.setEventRegion(properties.eventRegion);
     updateMask(node, properties, relatedLayers);
 
-#if ENABLE(GAZE_GLOW_FOR_INTERACTION_REGIONS) || HAVE(CORE_ANIMATION_SEPARATED_LAYERS)
+#if ENABLE(GAZE_GLOW_FOR_INTERACTION_REGIONS) || HAVE(CORE_ANIMATION_SEPARATED_LAYERS) || ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
     if (properties.changedProperties & LayerChange::VisibleRectChanged)
         node.setVisibleRect(properties.visibleRect);
 #endif
@@ -607,13 +607,18 @@ void RemoteLayerTreePropertyApplier::applyProperties(RemoteLayerTreeNode& node, 
     }
 #endif
 
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    if (properties.changedProperties & LayerChange::VisibleRectChanged)
+        node.visibleRectChangedForOverlayRegions();
+#endif
+
 #if ENABLE(SCROLLING_THREAD)
     if (properties.changedProperties & LayerChange::ScrollingNodeIDChanged)
         node.setScrollingNodeID(properties.scrollingNodeID);
 #endif
 
 #if PLATFORM(IOS_FAMILY)
-    applyPropertiesToUIView(node.uiView(), properties, relatedLayers);
+    applyPropertiesToUIView(protect(node.uiView()).get(), properties, relatedLayers);
 #endif
 
     END_BLOCK_OBJC_EXCEPTIONS
@@ -628,7 +633,8 @@ void RemoteLayerTreePropertyApplier::applyHierarchyUpdates(RemoteLayerTreeNode& 
 
 #if PLATFORM(IOS_FAMILY)
     auto hasViewChildren = [&] {
-        if (node.uiView() && [[node.uiView() subviews] count])
+        RetainPtr uiView = node.uiView();
+        if (uiView && [[uiView subviews] count])
             return true;
         if (properties.children.isEmpty())
             return false;
@@ -657,6 +663,9 @@ void RemoteLayerTreePropertyApplier::applyHierarchyUpdates(RemoteLayerTreeNode& 
 #if ENABLE(GAZE_GLOW_FOR_INTERACTION_REGIONS)
         node.updateInteractionRegionAfterHierarchyChange();
 #endif
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+        node.updateOverlayRegionAfterHierarchyChange();
+#endif
         return;
     }
 #endif
@@ -677,6 +686,10 @@ void RemoteLayerTreePropertyApplier::applyHierarchyUpdates(RemoteLayerTreeNode& 
 #endif
         return childNode->layer();
     }).get()];
+
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    node.updateOverlayRegionAfterHierarchyChange();
+#endif
 
     END_BLOCK_OBJC_EXCEPTIONS
 }

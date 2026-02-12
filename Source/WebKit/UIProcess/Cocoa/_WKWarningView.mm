@@ -638,7 +638,7 @@ static RetainPtr<ViewType> makeLabel(NSAttributedString *attributedString)
     [retainPtr(self.layoutManager) ensureLayoutForTextContainer:retainPtr(self.textContainer).get()];
     return { NSViewNoIntrinsicMetric, [retainPtr(self.layoutManager) usedRectForTextContainer:retainPtr(self.textContainer).get()].size.height };
 #elif HAVE(SAFE_BROWSING)
-    auto width = std::min<CGFloat>(maxWidth, [_warning frame].size.width) - 2 * marginSize;
+    auto width = std::min<CGFloat>(maxWidth, [_warning.get() frame].size.width) - 2 * marginSize;
     constexpr auto noHeightConstraint = CGFLOAT_MAX;
     return { width, [self sizeThatFits: { width, noHeightConstraint }].height };
 #else

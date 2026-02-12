@@ -155,6 +155,10 @@ public:
     virtual void scrollingTreeNodeDidEndScrollSnapping(ScrollingNodeID) { }
 
     virtual void stickyScrollingTreeNodeBeganSticking(ScrollingNodeID) { }
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    virtual void stickyScrollingTreeNodeEndedSticking(ScrollingNodeID) { }
+    virtual void scrollingTreeNodeWillBeRemoved(ScrollingNodeID) { }
+#endif
 
     WEBCORE_EXPORT TrackingType eventTrackingTypeForPoint(EventTrackingRegions::EventType, IntPoint);
 

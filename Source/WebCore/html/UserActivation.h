@@ -40,7 +40,7 @@ public:
     static Ref<UserActivation> create(Navigator&);
     ~UserActivation();
 
-    Navigator* navigator();
+    Navigator* NODELETE navigator();
 
     bool hasBeenActive() const;
     bool isActive() const;

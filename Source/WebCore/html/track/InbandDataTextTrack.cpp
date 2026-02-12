@@ -93,8 +93,8 @@ void InbandDataTextTrack::addDataCue(const MediaTime& start, const MediaTime& en
 
 RefPtr<DataCue> InbandDataTextTrack::findIncompleteCue(const SerializedPlatformDataCue& cueToFind)
 {
-    auto index = m_incompleteCueMap.findIf([&](const auto& cue) {
-        return cueToFind.isEqual(Ref { *cue->protectedPlatformValue() });
+    auto index = m_incompleteCueMap.findIf([&](const Ref<DataCue>& cue) {
+        return cueToFind.isEqual(*protect(cue->platformValue()));
     });
 
     if (index == notFound)

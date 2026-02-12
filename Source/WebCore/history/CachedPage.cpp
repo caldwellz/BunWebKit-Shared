@@ -63,7 +63,7 @@ WTF_MAKE_TZONE_ALLOCATED_IMPL(CachedPage);
 CachedPage::CachedPage(Page& page)
     : m_page(page)
     , m_expirationTime(MonotonicTime::now() + page.settings().backForwardCacheExpirationInterval())
-    , m_cachedMainFrame(makeUnique<CachedFrame>(page.protectedMainFrame()))
+    , m_cachedMainFrame(makeUnique<CachedFrame>(protect(page.mainFrame())))
     , m_loadedSubresourceDomains([&] {
         RefPtr localFrame = page.localMainFrame();
         return localFrame ? localFrame->loader().client().loadedSubresourceDomains() : Vector<RegistrableDomain>();
@@ -157,7 +157,7 @@ void CachedPage::restore(Page& page)
         if (frameView)
             frameView->setProhibitsScrolling(hadProhibitsScrolling);
         if (localMainFrame)
-            localMainFrame->checkedSelection()->restoreScrolling();
+            protect(localMainFrame->selection())->restoreScrolling();
 #endif
     }
 
@@ -230,11 +230,6 @@ void CachedPage::clear()
 bool CachedPage::hasExpired() const
 {
     return MonotonicTime::now() > m_expirationTime;
-}
-
-RefPtr<DocumentLoader> CachedPage::protectedDocumentLoader() const
-{
-    return documentLoader();
 }
 
 } // namespace WebCore

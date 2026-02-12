@@ -114,7 +114,11 @@ public:
     const RemoteLayerTreeHost* layerTreeHost() const;
     WebPageProxy& webPageProxy() const;
 
-    void stickyScrollingTreeNodeBeganSticking(WebCore::ScrollingNodeID);
+    virtual void stickyScrollingTreeNodeBeganSticking(WebCore::ScrollingNodeID);
+#if ENABLE(OVERLAY_REGIONS_REMOTE_EFFECT)
+    virtual void stickyScrollingTreeNodeEndedSticking(WebCore::ScrollingNodeID) { };
+    virtual void scrollingTreeNodeWillBeRemoved(WebCore::ScrollingNodeID) { };
+#endif
 
     std::optional<WebCore::RequestedScrollData> commitScrollingTreeState(IPC::Connection&, const RemoteScrollingCoordinatorTransaction&, std::optional<WebCore::LayerHostingContextIdentifier> = std::nullopt);
 

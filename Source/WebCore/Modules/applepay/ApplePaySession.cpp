@@ -495,7 +495,7 @@ ExceptionOr<Ref<ApplePaySession>> ApplePaySession::create(Document& document, un
     if (!document.page())
         return Exception { ExceptionCode::InvalidAccessError, "Frame is detached"_s };
 
-    auto convertedPaymentRequest = convertAndValidate(document, version, WTF::move(paymentRequest), protect(document.page())->protectedPaymentCoordinator().get());
+    auto convertedPaymentRequest = convertAndValidate(document, version, WTF::move(paymentRequest), protect(protect(document.page())->paymentCoordinator()).get());
     if (convertedPaymentRequest.hasException())
         return convertedPaymentRequest.releaseException();
 
@@ -527,7 +527,7 @@ ExceptionOr<bool> ApplePaySession::supportsVersion(Document& document, unsigned 
     if (!page)
         return Exception { ExceptionCode::InvalidAccessError };
 
-    return page->protectedPaymentCoordinator()->supportsVersion(document, version);
+    return protect(page->paymentCoordinator())->supportsVersion(document, version);
 }
 
 static bool shouldDiscloseApplePayCapability(Document& document)
@@ -549,7 +549,7 @@ ExceptionOr<bool> ApplePaySession::canMakePayments(Document& document)
     if (!page)
         return Exception { ExceptionCode::InvalidAccessError };
 
-    return page->protectedPaymentCoordinator()->canMakePayments();
+    return protect(page->paymentCoordinator())->canMakePayments();
 }
 
 ExceptionOr<void> ApplePaySession::canMakePaymentsWithActiveCard(Document& document, const String& merchantIdentifier, Ref<DeferredPromise>&& passedPromise)
@@ -564,7 +564,7 @@ ExceptionOr<void> ApplePaySession::canMakePaymentsWithActiveCard(Document& docum
         if (!page)
             return Exception { ExceptionCode::InvalidAccessError };
 
-        bool canMakePayments = page->protectedPaymentCoordinator()->canMakePayments();
+        bool canMakePayments = protect(page->paymentCoordinator())->canMakePayments();
 
         RunLoop::mainSingleton().dispatch([promise, canMakePayments]() mutable {
             promise->resolve<IDLBoolean>(canMakePayments);
@@ -576,7 +576,7 @@ ExceptionOr<void> ApplePaySession::canMakePaymentsWithActiveCard(Document& docum
     if (!page)
         return Exception { ExceptionCode::InvalidAccessError };
 
-    page->protectedPaymentCoordinator()->canMakePaymentsWithActiveCard(document, merchantIdentifier, [promise](bool canMakePayments) mutable {
+    protect(page->paymentCoordinator())->canMakePaymentsWithActiveCard(document, merchantIdentifier, [promise](bool canMakePayments) mutable {
         promise->resolve<IDLBoolean>(canMakePayments);
     });
     return { };
@@ -596,7 +596,7 @@ ExceptionOr<void> ApplePaySession::openPaymentSetup(Document& document, const St
         return Exception { ExceptionCode::InvalidAccessError };
 
     RefPtr<DeferredPromise> promise(WTF::move(passedPromise));
-    page->protectedPaymentCoordinator()->openPaymentSetup(document, merchantIdentifier, [promise](bool result) mutable {
+    protect(page->paymentCoordinator())->openPaymentSetup(document, merchantIdentifier, [promise](bool result) mutable {
         promise->resolve<IDLBoolean>(result);
     });
 

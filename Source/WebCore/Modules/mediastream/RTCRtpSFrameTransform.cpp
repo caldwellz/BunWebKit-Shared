@@ -207,7 +207,7 @@ template<typename Frame>
 void transformFrame(Frame& frame, JSDOMGlobalObject& globalObject, RTCRtpSFrameTransformer& transformer, SimpleReadableStreamSource& source, ScriptExecutionContextIdentifier identifier, const ThreadSafeWeakPtr<RTCRtpSFrameTransform>& weakTransform)
 {
     Ref vm = globalObject.vm();
-    auto rtcFrame = frame.rtcFrame(vm, RTCEncodedFrame::ShouldNeuter::No);
+    auto rtcFrame = frame->rtcFrame(vm, RTCEncodedFrame::ShouldNeuter::No);
     auto chunk = rtcFrame->data();
     auto result = processFrame(chunk, transformer, identifier, weakTransform);
     std::span<const uint8_t> transformedChunk;
@@ -219,7 +219,7 @@ void transformFrame(Frame& frame, JSDOMGlobalObject& globalObject, RTCRtpSFrameT
 
 ExceptionOr<void> RTCRtpSFrameTransform::createStreams()
 {
-    auto* globalObject = scriptExecutionContext() ? JSC::jsCast<JSDOMGlobalObject*>(protectedScriptExecutionContext()->globalObject()) : nullptr;
+    auto* globalObject = scriptExecutionContext() ? JSC::jsCast<JSDOMGlobalObject*>(protect(scriptExecutionContext())->globalObject()) : nullptr;
     if (!globalObject)
         return Exception { ExceptionCode::InvalidStateError };
 
@@ -240,15 +240,20 @@ ExceptionOr<void> RTCRtpSFrameTransform::createStreams()
         auto frame = frameConversionResult.releaseReturnValue();
 
         // We do not want to throw any exception in the transform to make sure we do not error the transform.
-        WTF::switchOn(frame, [&](RefPtr<RTCEncodedAudioFrame>& value) {
-            transformFrame(*value, globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
-        }, [&](RefPtr<RTCEncodedVideoFrame>& value) {
-            transformFrame(*value, globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
-        }, [&](RefPtr<ArrayBuffer>& value) {
-            transformFrame(value->span(), globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
-        }, [&](RefPtr<ArrayBufferView>& value) {
-            transformFrame(value->span(), globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
-        });
+        WTF::switchOn(frame,
+            [&](Ref<RTCEncodedAudioFrame>& value) {
+                transformFrame(value, globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
+            },
+            [&](Ref<RTCEncodedVideoFrame>& value) {
+                transformFrame(value, globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
+            },
+            [&](RefPtr<ArrayBuffer>& value) {
+                transformFrame(value->span(), globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
+            },
+            [&](RefPtr<ArrayBufferView>& value) {
+                transformFrame(value->span(), globalObject, transformer.get(), *readableStreamSource, context.identifier(), weakThis);
+            }
+        );
         return { };
     }));
     if (writable.hasException())

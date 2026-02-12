@@ -855,7 +855,7 @@ void XMLDocumentParser::startElementNs(const xmlChar* xmlLocalName, const xmlCha
 
     if (willConstructCustomElement) [[unlikely]] {
         markupInsertionCountIncrementer.emplace(*document);
-        document->checkedEventLoop()->performMicrotaskCheckpoint();
+        protect(document->eventLoop())->performMicrotaskCheckpoint();
         customElementReactionStack.emplace(document->globalObject());
     }
 
@@ -894,7 +894,7 @@ void XMLDocumentParser::startElementNs(const xmlChar* xmlLocalName, const xmlCha
         return;
 
     if (RefPtr templateElement = dynamicDowncast<HTMLTemplateElement>(newElement))
-        pushCurrentNode(&templateElement->protectedContent().get());
+        pushCurrentNode(&protect(templateElement->content()).get());
     else
         pushCurrentNode(newElement.ptr());
 

@@ -52,6 +52,7 @@ dictionary TextExtractionTestOptions {
     boolean includeEventListeners = false;
     boolean includeAccessibilityAttributes = false;
     boolean includeTextInAutoFilledControls = false;
+    boolean includeOffscreenPasswordFields = false;
     boolean mergeParagraphs = false;
     boolean skipNearlyTransparentContent = false;
     DOMString outputFormat;

@@ -218,7 +218,7 @@ private:
         Lexer(std::span<const CharType> characters, ParserMode mode)
             : m_mode(mode)
             , m_ptr(characters.data())
-            , m_end(characters.data() + characters.size())
+            , m_end(std::to_address(characters.end()))
             , m_start(characters.data())
         {
         }

@@ -63,11 +63,6 @@ inline RenderBox* Node::renderBox() const
     return dynamicDowncast<RenderBox>(renderer());
 }
 
-inline CheckedPtr<RenderBox> Node::checkedRenderBox() const
-{
-    return renderBox();
-}
-
 inline RenderBoxModelObject* Node::renderBoxModelObject() const
 {
     return dynamicDowncast<RenderBoxModelObject>(renderer());
@@ -84,11 +79,6 @@ inline NamedNodeMap* Node::attributesMap() const
     if (auto* element = dynamicDowncast<Element>(*this))
         return &element->attributesMap();
     return nullptr;
-}
-
-CheckedPtr<RenderObject> Node::checkedRenderer() const
-{
-    return renderer();
 }
 
 inline void Node::setRenderer(RenderObject* renderer)

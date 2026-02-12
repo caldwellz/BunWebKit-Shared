@@ -392,6 +392,7 @@ RetainPtr<_WKTextExtractionConfiguration> createTextExtractionConfiguration(WKWe
     [configuration setIncludeEventListeners:options && options->includeEventListeners];
     [configuration setIncludeAccessibilityAttributes:options && options->includeAccessibilityAttributes];
     [configuration setIncludeTextInAutoFilledControls:options && options->includeTextInAutoFilledControls];
+    [configuration setIncludeOffscreenPasswordFields:options && options->includeOffscreenPasswordFields];
 
     auto outputFormat = [&] -> std::optional<_WKTextExtractionOutputFormat> {
         if (!options)

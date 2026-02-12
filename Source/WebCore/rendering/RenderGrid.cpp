@@ -700,7 +700,7 @@ void RenderGrid::layoutMasonry(RelayoutChildren relayoutChildren)
 
         m_trackSizingAlgorithm.reset();
 
-        computeOverflow(contentOverflowRect());
+        computeOverflow(contentOverflowRect(), ComputeOverflowOptions::MarginsExtendLayoutOverflow);
 
         updateDescendantTransformsAfterLayout();
     }
@@ -810,6 +810,20 @@ LayoutUnit RenderGrid::guttersSize(Style::GridTrackSizingDirection direction, un
 
 void RenderGrid::computeIntrinsicLogicalWidths(LayoutUnit& minLogicalWidth, LayoutUnit& maxLogicalWidth) const
 {
+    if (LayoutIntegration::canUseForGridLayout(*this)) {
+        // const_cast is safe here: computeIntrinsicWidths() only reads grid properties
+        // and does not mutate RenderGrid state, matching the legacy path pattern below.
+        auto gridLayout = LayoutIntegration::GridLayout { const_cast<RenderGrid&>(*this) };
+        gridLayout.updateFormattingContextGeometries();
+        std::tie(minLogicalWidth, maxLogicalWidth) = gridLayout.computeIntrinsicWidths();
+
+        // Add scrollbar width
+        LayoutUnit scrollbarWidth = intrinsicScrollbarLogicalWidthIncludingGutter();
+        minLogicalWidth += scrollbarWidth;
+        maxLogicalWidth += scrollbarWidth;
+        return;
+    }
+
     RenderGridLayoutState gridLayoutState;
 
     LayoutUnit gridItemMinWidth;

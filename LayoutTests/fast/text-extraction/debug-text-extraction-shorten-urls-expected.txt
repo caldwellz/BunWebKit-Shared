@@ -18,6 +18,7 @@ root
 		link,url='example.com','Plain link'
 		link,url='example.com/2','Plain link (2)'
 		link,url='example.com/3','Plain link (3)'
+		link,url='/test/cat.png','Local file'
 	section
 		image,src='image',alt='SVG data URL'
 		image,src='image2',alt='PNG data URL'
@@ -46,6 +47,7 @@ root
 [Plain link](example.com)
 [Plain link \(2\)](example.com/2)
 [Plain link \(3\)](example.com/3)
+[Local file](/test/cat.png)
 ![SVG data URL](image)
 ![PNG data URL](image2)
 ![Long image path](vacation-2024-summer-beach.jpg)

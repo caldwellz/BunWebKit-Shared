@@ -305,6 +305,13 @@ TEST(TextExtractionTests, InteractionDebugDescription)
         EXPECT_WK_STREQ(expectedString.get(), description);
         EXPECT_NULL(error);
     }
+    {
+        RetainPtr interaction = adoptNS([[_WKTextExtractionInteraction alloc] initWithAction:_WKTextExtractionActionClick]);
+        [interaction setText:@"Subject"];
+        description = [interaction debugDescriptionInWebView:webView.get() error:&error];
+        EXPECT_WK_STREQ("Click on “Subject” in child node of editable h3 labeled “Heading”, with rendered text “Subject”", description);
+        EXPECT_NULL(error);
+    }
 }
 
 TEST(TextExtractionTests, TargetNodeAndClientAttributes)
@@ -791,6 +798,24 @@ TEST(TextExtractionTests, InjectedBundle)
     EXPECT_TRUE([handle.get().frame._documentIdentifier isEqual:decodedHandle.get().frame._documentIdentifier]);
     EXPECT_TRUE([handle.get().frame._documentIdentifier isEqual:[webView mainFrame].info._documentIdentifier]);
     EXPECT_TRUE([handle.get().frame _isSameFrame:[webView mainFrame].info]);
+}
+
+TEST(TextExtractionTests, ClickInteractionWithTextOnly)
+{
+    RetainPtr configuration = adoptNS([[WKWebViewConfiguration alloc] init]);
+    [[configuration preferences] _setTextExtractionEnabled:YES];
+
+    RetainPtr webView = adoptNS([[TestWKWebView alloc] initWithFrame:CGRectMake(0, 0, 800, 600) configuration:configuration.get()]);
+    [webView synchronouslyLoadTestPageNamed:@"debug-text-extraction"];
+
+    EXPECT_WK_STREQ("0", [webView stringByEvaluatingJavaScript:@"clickCount.textContent"]);
+
+    RetainPtr click = adoptNS([[_WKTextExtractionInteraction alloc] initWithAction:_WKTextExtractionActionClick]);
+    [click setText:@"Test"];
+
+    RetainPtr result = [webView synchronouslyPerformInteraction:click.get()];
+    EXPECT_NULL([result error]);
+    EXPECT_WK_STREQ("1", [webView stringByEvaluatingJavaScript:@"clickCount.textContent"]);
 }
 
 TEST(TextExtractionTests, ClickInteractionWhileInBackground)

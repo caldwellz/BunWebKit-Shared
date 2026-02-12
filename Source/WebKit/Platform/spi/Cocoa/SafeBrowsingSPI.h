@@ -31,6 +31,18 @@ DECLARE_SYSTEM_HEADER
 
 #import <Foundation/Foundation.h>
 
+#if __has_include(<WebKitAdditions/SafeBrowsingAdditions.h>)
+#include <WebKitAdditions/SafeBrowsingAdditions.h>
+#endif
+
+#if !defined(SAFE_BROWSING_PROVIDER_ADDITIONS)
+#define SAFE_BROWSING_PROVIDER_ADDITIONS
+#endif
+
+#if !defined(SAFE_BROWSING_SERVICE_LOOKUP_RESULT_ADDITIONS)
+#define SAFE_BROWSING_SERVICE_LOOKUP_RESULT_ADDITIONS
+#endif
+
 #if 0 && USE(APPLE_INTERNAL_SDK)
 
 #import <SafariSafeBrowsing/SafariSafeBrowsing.h>
@@ -45,6 +57,7 @@ WTF_EXTERN_C_BEGIN
 extern SSBProvider const SSBProviderGoogle;
 extern SSBProvider const SSBProviderTencent;
 extern SSBProvider const SSBProviderApple;
+SAFE_BROWSING_PROVIDER_ADDITIONS
 
 WTF_EXTERN_C_END
 
@@ -61,6 +74,8 @@ WTF_EXTERN_C_END
 @property (nonatomic, readonly) NSString *reportAnErrorBaseURLString;
 @property (nonatomic, readonly) NSString *localizedProviderDisplayName;
 @property (nonatomic, readonly) NSString *localizedProviderShortName;
+
+SAFE_BROWSING_SERVICE_LOOKUP_RESULT_ADDITIONS
 
 @end
 

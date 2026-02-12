@@ -121,7 +121,7 @@ JSObject* JSLazyEventListener::initializeJSFunction(ScriptExecutionContext& exec
         return nullptr;
 
     RefPtr element = dynamicDowncast<Element>(m_originalNode.get());
-    if (!document->checkedContentSecurityPolicy()->allowInlineEventHandlers(m_sourceURL.string(), m_sourcePosition.m_line, m_code, element.get()))
+    if (!protect(document->contentSecurityPolicy())->allowInlineEventHandlers(m_sourceURL.string(), m_sourcePosition.m_line, m_code, element.get()))
         return nullptr;
 
     RefPtr frame = document->frame();

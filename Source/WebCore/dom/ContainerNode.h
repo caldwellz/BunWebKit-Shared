@@ -2,7 +2,7 @@
  * Copyright (C) 1999 Lars Knoll (knoll@kde.org)
  *           (C) 1999 Antti Koivisto (koivisto@kde.org)
  *           (C) 2001 Dirk Mueller (mueller@kde.org)
- * Copyright (C) 2004-2018 Apple Inc. All rights reserved.
+ * Copyright (C) 2004-2026 Apple Inc. All rights reserved.
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Library General Public
@@ -121,7 +121,6 @@ public:
     void disconnectDescendantFrames();
 
     inline RenderElement* renderer() const; // Defined in ContainerNodeInlines.h.
-    inline CheckedPtr<RenderElement> checkedRenderer() const; // Defined in ContainerNodeInlines.h.
 
     // Return a bounding box in absolute coordinates enclosing this node and all its descendants.
     // This gives the area within which events may get handled by a hander registered on this node.
@@ -144,6 +143,7 @@ public:
     ExceptionOr<void> prepend(FixedVector<NodeOrString>&&);
 
     ExceptionOr<void> replaceChildren(FixedVector<NodeOrString>&&);
+    void replaceChildrenWithoutValidityCheck(NodeVector&&);
 
     ExceptionOr<void> ensurePreInsertionValidity(Node& newChild, Node* refChild);
     ExceptionOr<void> ensurePreInsertionValidityForPhantomDocumentFragment(NodeVector& newChildren, Node* refChild = nullptr);

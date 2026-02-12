@@ -918,17 +918,17 @@ std::tuple<float, float> DocumentMarkerController::markerYPositionAndHeightForFo
 
 void addMarker(const SimpleRange& range, DocumentMarkerType type, const DocumentMarker::Data& data)
 {
-    protect(range.start.document())->checkedMarkers()->addMarker(range, type, data);
+    protect(protect(range.start.document())->markers())->addMarker(range, type, data);
 }
 
 void addMarker(Node& node, unsigned startOffset, unsigned length, DocumentMarkerType type, DocumentMarker::Data&& data)
 {
-    protect(node.document())->checkedMarkers()->addMarker(node, startOffset, length, type, WTF::move(data));
+    protect(protect(node.document())->markers())->addMarker(node, startOffset, length, type, WTF::move(data));
 }
 
 void removeMarkers(const SimpleRange& range, OptionSet<DocumentMarkerType> types, RemovePartiallyOverlappingMarker policy)
 {
-    protect(range.start.document())->checkedMarkers()->removeMarkers(range, types, policy);
+    protect(protect(range.start.document())->markers())->removeMarkers(range, types, policy);
 }
 
 SimpleRange makeSimpleRange(Node& node, const DocumentMarker& marker)

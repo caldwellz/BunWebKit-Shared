@@ -306,7 +306,7 @@ JSC_DEFINE_CUSTOM_GETTER(jsTestDefaultToJSON_enabledByConditionalAttribute, (JSG
 static inline JSValue jsTestDefaultToJSON_eventHandlerAttributeGetter(JSGlobalObject& lexicalGlobalObject, JSTestDefaultToJSON& thisObject)
 {
     UNUSED_PARAM(lexicalGlobalObject);
-    return eventHandlerAttribute(thisObject.protectedWrapped(), eventNames().entHandlerAttributeEvent, protectedWorldForDOMObject(thisObject));
+    return eventHandlerAttribute(protect(thisObject.wrapped()), eventNames().entHandlerAttributeEvent, protectedWorldForDOMObject(thisObject));
 }
 
 JSC_DEFINE_CUSTOM_GETTER(jsTestDefaultToJSON_eventHandlerAttribute, (JSGlobalObject* lexicalGlobalObject, EncodedJSValue thisValue, PropertyName attributeName))
@@ -318,7 +318,7 @@ static inline bool setJSTestDefaultToJSON_eventHandlerAttributeSetter(JSGlobalOb
 {
     SUPPRESS_UNCOUNTED_LOCAL auto& vm = JSC::getVM(&lexicalGlobalObject);
     UNUSED_PARAM(vm);
-    setEventHandlerAttribute<JSEventListener>(thisObject.protectedWrapped(), eventNames().entHandlerAttributeEvent, value, thisObject);
+    setEventHandlerAttribute<JSEventListener>(protect(thisObject.wrapped()), eventNames().entHandlerAttributeEvent, value, thisObject);
     vm.writeBarrier(&thisObject, value);
     ensureStillAliveHere(value);
 
@@ -857,7 +857,7 @@ void JSTestDefaultToJSONOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* 
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestDefaultToJSON = static_cast<JSTestDefaultToJSON*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestDefaultToJSON->protectedWrapped().ptr(), jsTestDefaultToJSON);
+    uncacheWrapper(world, protect(jsTestDefaultToJSON->wrapped()).ptr(), jsTestDefaultToJSON);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

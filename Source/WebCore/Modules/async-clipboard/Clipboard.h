@@ -50,7 +50,7 @@ public:
     ScriptExecutionContext* scriptExecutionContext() const final;
 
     LocalFrame* frame() const;
-    Navigator* navigator();
+    Navigator* NODELETE navigator();
 
     using RefCounted::ref;
     using RefCounted::deref;

@@ -143,11 +143,6 @@ Vector<AtomString> Storage::supportedPropertyNames() const
     });
 }
 
-Ref<StorageArea> Storage::protectedArea() const
-{
-    return m_storageArea;
-}
-
 bool Storage::requiresScriptTrackingPrivacyProtection() const
 {
     RefPtr document = window() ? protect(window())->document() : nullptr;

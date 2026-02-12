@@ -154,7 +154,7 @@
 
     if (_innerFrames.size()) {
         auto corePath = WebCore::PathUtilities::pathWithShrinkWrappedRects(_innerFrames, _cornerRadii);
-        [path appendPath:[UIBezierPath bezierPathWithCGPath:corePath.platformPath()]];
+        [path appendPath:[UIBezierPath bezierPathWithCGPath:protect<CGPathRef>(corePath.platformPath()).get()]];
     } else {
         for (auto& quad : _innerQuads) {
             UIBezierPath *subpath = [UIBezierPath bezierPath];
@@ -175,13 +175,13 @@
 
     CGContextSetLineJoin(context.get(), kCGLineJoinRound);
 
-    auto alpha = CGColorGetAlpha([_color CGColor]);
+    auto alpha = CGColorGetAlpha(protect<CGColorRef>([_color CGColor]));
 
     [[_color colorWithAlphaComponent:1] set];
 
     CGContextSetAlpha(context.get(), alpha);
     CGContextBeginTransparencyLayer(context.get(), nil);
-    CGContextAddPath(context.get(), path.CGPath);
+    CGContextAddPath(context.get(), protect<CGPathRef>(path.CGPath));
     CGContextDrawPath(context.get(), kCGPathFillStroke);
     CGContextEndTransparencyLayer(context.get());
 

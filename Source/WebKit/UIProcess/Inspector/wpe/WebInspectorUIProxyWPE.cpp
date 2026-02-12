@@ -33,6 +33,7 @@
 #include "APIPageConfiguration.h"
 #include "WPEWebViewPlatform.h"
 #include "WebFramePolicyListenerProxy.h"
+#include "WebInspectorUIProxyGLib.h"
 #include "WebPageGroup.h"
 #include "WebPageProxy.h"
 #include "WebPreferences.h"
@@ -46,6 +47,7 @@
 #include <wtf/FileSystem.h>
 #include <wtf/glib/GRefPtr.h>
 #include <wtf/glib/GUniquePtr.h>
+#include <wtf/text/MakeString.h>
 #include <wtf/text/WTFString.h>
 
 namespace WebKit {
@@ -230,9 +232,45 @@ void WebInspectorUIProxy::platformShowCertificate(const WebCore::CertificateInfo
     notImplemented();
 }
 
-void WebInspectorUIProxy::platformSave(Vector<WebCore::InspectorFrontendClient::SaveData>&&, bool /* forceSaveAs */)
+static String computeContentHash(const String& content, bool base64Encoded)
 {
-    notImplemented();
+    GUniquePtr<char> digest;
+    if (base64Encoded) {
+        auto decoded = base64Decode(content);
+        if (decoded)
+            digest.reset(g_compute_checksum_for_data(G_CHECKSUM_SHA256, decoded->span().data(), decoded->size()));
+    } else {
+        CString utf8 = content.utf8();
+        digest.reset(g_compute_checksum_for_string(G_CHECKSUM_SHA256, utf8.data(), utf8.length()));
+    }
+
+    return String::fromUTF8(digest.get());
+}
+
+void WebInspectorUIProxy::platformSave(Vector<WebCore::InspectorFrontendClient::SaveData>&& saveDatas, bool forceSaveAs)
+{
+    ASSERT(saveDatas.size() == 1);
+    UNUSED_PARAM(forceSaveAs);
+
+    // Some inspector views (Audits for instance) use a custom URI scheme, such
+    // as web-inspector. So we can't rely on the URL being a valid file:/// URL
+    // unfortunately.
+    URL url { saveDatas[0].url };
+    auto filename = url.path().substring(1).utf8();
+
+    const gchar* downloadsDir = g_get_user_special_dir(G_USER_DIRECTORY_DOWNLOAD);
+    if (!downloadsDir) {
+        // If we don't have XDG user dirs info, set just to HOME.
+        downloadsDir = g_get_home_dir();
+    }
+
+    auto hash = computeContentHash(saveDatas[0].content, saveDatas[0].base64Encoded);
+
+    auto updatedFilename = makeString(filename, "-"_s, hash.left(8)).utf8();
+
+    GRefPtr<GFile> file = adoptGRef(g_file_new_build_filename(downloadsDir, updatedFilename.data(), nullptr));
+
+    platformSaveDataToFile(WTF::move(file), saveDatas[0].content, saveDatas[0].base64Encoded);
 }
 
 void WebInspectorUIProxy::platformLoad(const String&, CompletionHandler<void(const String&)>&& completionHandler)

@@ -423,7 +423,7 @@ void JSTestNamedAndIndexedSetterThrowingExceptionOwner::finalize(JSC::Handle<JSC
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestNamedAndIndexedSetterThrowingException = static_cast<JSTestNamedAndIndexedSetterThrowingException*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestNamedAndIndexedSetterThrowingException->protectedWrapped().ptr(), jsTestNamedAndIndexedSetterThrowingException);
+    uncacheWrapper(world, protect(jsTestNamedAndIndexedSetterThrowingException->wrapped()).ptr(), jsTestNamedAndIndexedSetterThrowingException);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

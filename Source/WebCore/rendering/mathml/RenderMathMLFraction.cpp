@@ -77,7 +77,7 @@ LayoutUnit RenderMathMLFraction::defaultLineThickness() const
 {
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData())
-        return LayoutUnit(mathData->getMathConstant(primaryFont, OpenTypeMathData::FractionRuleThickness));
+        return LayoutUnit(mathData->getMathConstant(primaryFont, OpenTypeMathData::MathConstant::FractionRuleThickness));
     return ruleThicknessFallback();
 }
 
@@ -105,10 +105,10 @@ RenderMathMLFraction::FractionParameters RenderMathMLFraction::fractionParameter
     bool display = style().mathStyle() == MathStyle::Normal;
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData()) {
-        numeratorGapMin = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::FractionNumDisplayStyleGapMin : OpenTypeMathData::FractionNumeratorGapMin);
-        denominatorGapMin = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::FractionDenomDisplayStyleGapMin : OpenTypeMathData::FractionDenominatorGapMin);
-        numeratorMinShiftUp = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::FractionNumeratorDisplayStyleShiftUp : OpenTypeMathData::FractionNumeratorShiftUp);
-        denominatorMinShiftDown = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::FractionDenominatorDisplayStyleShiftDown : OpenTypeMathData::FractionDenominatorShiftDown);
+        numeratorGapMin = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::FractionNumDisplayStyleGapMin : OpenTypeMathData::MathConstant::FractionNumeratorGapMin);
+        denominatorGapMin = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::FractionDenomDisplayStyleGapMin : OpenTypeMathData::MathConstant::FractionDenominatorGapMin);
+        numeratorMinShiftUp = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::FractionNumeratorDisplayStyleShiftUp : OpenTypeMathData::MathConstant::FractionNumeratorShiftUp);
+        denominatorMinShiftDown = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::FractionDenominatorDisplayStyleShiftDown : OpenTypeMathData::MathConstant::FractionDenominatorShiftDown);
     } else {
         // The MATH table specification suggests default rule thickness or (in displaystyle) 3 times default rule thickness for the gaps.
         numeratorGapMin = display ? 3 * ruleThicknessFallback() : ruleThicknessFallback();
@@ -143,9 +143,9 @@ RenderMathMLFraction::FractionParameters RenderMathMLFraction::stackParameters()
     bool display = style().mathStyle() == MathStyle::Normal;
     Ref primaryFont = style().fontCascade().primaryFont();
     if (RefPtr mathData = primaryFont->mathData()) {
-        gapMin = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::StackDisplayStyleGapMin : OpenTypeMathData::StackGapMin);
-        parameters.numeratorShiftUp = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::StackTopDisplayStyleShiftUp : OpenTypeMathData::StackTopShiftUp);
-        parameters.denominatorShiftDown = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::StackBottomDisplayStyleShiftDown : OpenTypeMathData::StackBottomShiftDown);
+        gapMin = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::StackDisplayStyleGapMin : OpenTypeMathData::MathConstant::StackGapMin);
+        parameters.numeratorShiftUp = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::StackTopDisplayStyleShiftUp : OpenTypeMathData::MathConstant::StackTopShiftUp);
+        parameters.denominatorShiftDown = mathData->getMathConstant(primaryFont, display ? OpenTypeMathData::MathConstant::StackBottomDisplayStyleShiftDown : OpenTypeMathData::MathConstant::StackBottomShiftDown);
     } else {
         // We use the values suggested in the MATH table specification.
         gapMin = display ? 7 * ruleThicknessFallback() : 3 * ruleThicknessFallback();

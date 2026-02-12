@@ -125,7 +125,7 @@ static unsigned incrementingTouchIdentifier = 1;
     _lastTouchesBeganTime = 0;
     _lastTouchesBeganLocation = std::nullopt;
 
-    [_contentView _touchEventsGestureRecognizerReset];
+    [protect(_contentView) _touchEventsGestureRecognizerReset];
 }
 
 - (void)cancel
@@ -456,7 +456,7 @@ static WebKit::WKTouchEventType lastExpectedWKEventTypeForTouches(NSSet *touches
 
 - (void)performAction
 {
-    [_contentView _touchEventsRecognized];
+    [protect(_contentView) _touchEventsRecognized];
 }
 
 - (BOOL)_hasActiveTouchesForEvent:(UIEvent *)event

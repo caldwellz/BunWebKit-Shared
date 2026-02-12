@@ -36,6 +36,7 @@
 #include "FrameDestructionObserverInlines.h"
 #include "FrameLoader.h"
 #include "HistoryController.h"
+#include "HistoryItem.h"
 #include "JSDOMGlobalObject.h"
 #include "LocalDOMWindow.h"
 #include "Navigation.h"
@@ -49,7 +50,7 @@ namespace WebCore {
 WTF_MAKE_TZONE_ALLOCATED_IMPL(NavigationHistoryEntry);
 
 NavigationHistoryEntry::NavigationHistoryEntry(Navigation& navigation, const DocumentState& originalDocumentState, Ref<HistoryItem>&& historyItem, String urlString, WTF::UUID key, RefPtr<SerializedScriptValue>&& state, WTF::UUID id)
-    : ActiveDOMObject(navigation.protectedScriptExecutionContext().get())
+    : ActiveDOMObject(protect(navigation.scriptExecutionContext()).get())
     , m_navigation(navigation)
     , m_urlString(urlString)
     , m_key(key)
@@ -62,7 +63,7 @@ NavigationHistoryEntry::NavigationHistoryEntry(Navigation& navigation, const Doc
 
 Ref<NavigationHistoryEntry> NavigationHistoryEntry::create(Navigation& navigation, Ref<HistoryItem>&& historyItem)
 {
-    Ref entry = adoptRef(*new NavigationHistoryEntry(navigation, DocumentState::fromContext(navigation.protectedScriptExecutionContext().get()), WTF::move(historyItem), historyItem->urlString(), historyItem->uuidIdentifier()));
+    Ref entry = adoptRef(*new NavigationHistoryEntry(navigation, DocumentState::fromContext(protect(navigation.scriptExecutionContext()).get()), WTF::move(historyItem), historyItem->urlString(), historyItem->uuidIdentifier()));
     entry->suspendIfNeeded();
     return entry;
 }
@@ -73,7 +74,7 @@ Ref<NavigationHistoryEntry> NavigationHistoryEntry::create(Navigation& navigatio
     RefPtr state = historyItem->navigationAPIStateObject();
     if (!state)
         state = other.m_state;
-    Ref entry = adoptRef(*new NavigationHistoryEntry(navigation, DocumentState::fromContext(other.protectedScriptExecutionContext().get()), WTF::move(historyItem), other.m_urlString, other.m_key, WTF::move(state), other.m_id));
+    Ref entry = adoptRef(*new NavigationHistoryEntry(navigation, DocumentState::fromContext(protect(other.scriptExecutionContext()).get()), WTF::move(historyItem), other.m_urlString, other.m_key, WTF::move(state), other.m_id));
     entry->suspendIfNeeded();
     return entry;
 }

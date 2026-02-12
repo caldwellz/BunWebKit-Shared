@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2022-2023 Apple Inc. All rights reserved.
+ * Copyright (C) 2022-2026 Apple Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -118,11 +118,15 @@
 
 @end
 
+@interface SCContentSharingPickerConfiguration (WK_SCContentSharingPickerConfiguration)
+@property (nonatomic, assign) BOOL showsMicrophoneControl;
+@end
+
 namespace WebCore {
 
 bool ScreenCaptureKitSharingSessionManager::isAvailable()
 {
-    return PAL::getSCContentSharingPickerClassSingleton() && PAL::getSCContentSharingPickerConfigurationClassSingleton();
+    return PAL::getSCContentSharingPickerClassSingleton();
 }
 
 ScreenCaptureKitSharingSessionManager& ScreenCaptureKitSharingSessionManager::singleton()
@@ -184,6 +188,8 @@ void ScreenCaptureKitSharingSessionManager::completeDeviceSelection(SCContentFil
     m_pendingContentFilter = contentFilter;
 
     std::optional<CaptureDevice> device;
+
+#if HAVE(WINDOW_CAPTURE)
     switch (contentFilter.style) {
     case SCShareableContentStyleWindow: {
         RetainPtr windows = retainPtr(contentFilter.includedWindows);
@@ -210,6 +216,9 @@ void ScreenCaptureKitSharingSessionManager::completeDeviceSelection(SCContentFil
         ASSERT_NOT_REACHED();
         return;
     }
+#else
+    device = CaptureDevice("1"_str, CaptureDevice::DeviceType::Screen, "Screen "_str, emptyString(), true);
+#endif
 
     auto completionHandler = std::exchange(m_completionHandler, nullptr);
     completionHandler(device);
@@ -289,6 +298,8 @@ void ScreenCaptureKitSharingSessionManager::promptForGetDisplayMedia(DisplayCapt
 bool ScreenCaptureKitSharingSessionManager::promptWithSCContentSharingPicker(DisplayCapturePromptType promptType)
 {
     auto configuration = adoptNS([PAL::allocSCContentSharingPickerConfigurationInstance() init]);
+
+#if HAVE(WINDOW_CAPTURE)
     SCShareableContentStyle shareableContentStyle = SCShareableContentStyleNone;
     switch (promptType) {
     case DisplayCapturePromptType::Window:
@@ -304,15 +315,26 @@ bool ScreenCaptureKitSharingSessionManager::promptWithSCContentSharingPicker(Dis
         shareableContentStyle = SCShareableContentStyleNone;
         break;
     }
+#else
+    UNUSED_PARAM(promptType);
+#endif
 
     RetainPtr picker = [PAL::getSCContentSharingPickerClassSingleton() sharedPicker];
-    [picker setDefaultConfiguration:configuration.get()];
-    [picker setMaximumStreamCount:@(std::numeric_limits<unsigned>::max())];
     [m_promptHelper startObservingPicker:picker.get()];
 
+IGNORE_CLANG_WARNINGS_BEGIN("unguarded-availability-new")
+    if ([configuration respondsToSelector:@selector(setShowsMicrophoneControl:)])
+        [configuration setShowsMicrophoneControl:NO];
+IGNORE_CLANG_WARNINGS_END
+
+    [picker setDefaultConfiguration:configuration.get()];
+
+#if HAVE(WINDOW_CAPTURE)
+    [picker setMaximumStreamCount:@(std::numeric_limits<unsigned>::max())];
     if (shareableContentStyle != SCShareableContentStyleNone)
         [picker presentPickerUsingContentStyle:shareableContentStyle];
     else
+#endif
         [picker present];
 
     return true;
@@ -338,6 +360,7 @@ static bool operator==(const SCContentFilter* filter, const CaptureDevice& devic
     if (!deviceID)
         return false;
 
+#if HAVE(WINDOW_CAPTURE)
     if (device.type() == CaptureDevice::DeviceType::Screen) {
         if (filter.style != SCShareableContentStyleDisplay)
             return false;
@@ -360,6 +383,10 @@ static bool operator==(const SCContentFilter* filter, const CaptureDevice& devic
 
         return windows.get()[0].windowID == deviceID;
     }
+#else
+    UNUSED_PARAM(filter);
+    return true;
+#endif
 
     ASSERT_NOT_REACHED();
     return false;

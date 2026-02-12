@@ -61,11 +61,6 @@ RefPtr<HistoryItem> BackForwardController::forwardItem(std::optional<FrameIdenti
     return itemAtIndex(1, frameID);
 }
 
-Ref<Page> BackForwardController::protectedPage() const
-{
-    return m_page;
-}
-
 bool BackForwardController::canGoBackOrForward(int distance) const
 {
     if (!distance)
@@ -96,7 +91,7 @@ void BackForwardController::goBackOrForward(int distance)
     if (!historyItem)
         return;
 
-    Ref page { protectedPage() };
+    Ref page = m_page;
     RefPtr localMainFrame = page->localMainFrame();
     if (!localMainFrame)
         return;
@@ -110,7 +105,7 @@ bool BackForwardController::goBack()
     if (!historyItem)
         return false;
 
-    Ref page { protectedPage() };
+    Ref page = m_page;
     RefPtr localMainFrame = page->localMainFrame();
     if (!localMainFrame)
         return false;
@@ -125,7 +120,7 @@ bool BackForwardController::goForward()
     if (!historyItem)
         return false;
 
-    Ref page { protectedPage() };
+    Ref page = m_page;
     RefPtr localMainFrame = page->localMainFrame();
     if (!localMainFrame)
         return false;

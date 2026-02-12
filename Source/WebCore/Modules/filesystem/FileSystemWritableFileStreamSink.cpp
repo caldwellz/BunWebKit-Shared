@@ -73,38 +73,40 @@ static void fetchDataBytesForWrite(const std::optional<FileSystemWritableFileStr
     if (!data)
         return completionHandler(Exception { ExceptionCode::TypeError });
 
-    WTF::switchOn(*data, [&](const RefPtr<JSC::ArrayBufferView>& bufferView) {
-        if (!bufferView || bufferView->isDetached())
-            return completionHandler(Exception { ExceptionCode::TypeError });
+    WTF::switchOn(*data,
+        [&](const RefPtr<JSC::ArrayBufferView>& bufferView) {
+            if (!bufferView || bufferView->isDetached())
+                return completionHandler(Exception { ExceptionCode::TypeError });
 
-        RefPtr buffer = bufferView->possiblySharedBuffer();
-        if (!buffer)
-            return completionHandler(Exception { ExceptionCode::TypeError });
-
-        completionHandler(buffer->span());
-    }, [&](const RefPtr<JSC::ArrayBuffer>& buffer) {
-        if (!buffer || buffer->isDetached())
-            return completionHandler(Exception { ExceptionCode::TypeError });
-
-        completionHandler(buffer->span());
-    }, [&](const RefPtr<Blob>& blob) {
-        if (!blob)
-            return completionHandler(Exception { ExceptionCode::TypeError });
-
-        // FIXME: For optimization, we may just send blob URL to backend and let it fetch data instead of fetching data here.
-        blob->getArrayBuffer([completionHandler = WTF::move(completionHandler)](auto&& result) mutable {
-            if (result.hasException())
-                return completionHandler(result.releaseException());
-
-            Ref buffer = result.releaseReturnValue();
-            if (buffer->isDetached())
+            RefPtr buffer = bufferView->possiblySharedBuffer();
+            if (!buffer)
                 return completionHandler(Exception { ExceptionCode::TypeError });
 
             completionHandler(buffer->span());
-        });
-    }, [&](const String& string) {
-        completionHandler(byteCast<uint8_t>(string.utf8().span()));
-    });
+        },
+        [&](const RefPtr<JSC::ArrayBuffer>& buffer) {
+            if (!buffer || buffer->isDetached())
+                return completionHandler(Exception { ExceptionCode::TypeError });
+
+            completionHandler(buffer->span());
+        },
+        [&](const Ref<Blob>& blob) {
+            // FIXME: For optimization, we may just send blob URL to backend and let it fetch data instead of fetching data here.
+            blob->getArrayBuffer([completionHandler = WTF::move(completionHandler)](auto&& result) mutable {
+                if (result.hasException())
+                    return completionHandler(result.releaseException());
+
+                Ref buffer = result.releaseReturnValue();
+                if (buffer->isDetached())
+                    return completionHandler(Exception { ExceptionCode::TypeError });
+
+                completionHandler(buffer->span());
+            });
+        },
+        [&](const String& string) {
+            completionHandler(byteCast<uint8_t>(string.utf8().span()));
+        }
+    );
 }
 
 ExceptionOr<Ref<FileSystemWritableFileStreamSink>> FileSystemWritableFileStreamSink::create(FileSystemWritableFileStreamIdentifier identifier, FileSystemFileHandle& source)

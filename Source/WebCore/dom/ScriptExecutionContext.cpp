@@ -646,7 +646,7 @@ JSC::JSGlobalObject* ScriptExecutionContext::globalObject() const
 {
     if (auto* document = dynamicDowncast<Document>(*this)) {
         RefPtr frame = document->frame();
-        return frame ? frame->checkedScript()->globalObject(mainThreadNormalWorldSingleton()) : nullptr;
+        return frame ? protect(frame->script())->globalObject(mainThreadNormalWorldSingleton()) : nullptr;
     }
 
     if (auto* globalScope = dynamicDowncast<WorkerOrWorkletGlobalScope>(*this)) {
@@ -964,9 +964,6 @@ bool ScriptExecutionContext::requiresScriptTrackingPrivacyProtection(ScriptTrack
     if (!vm->topCallFrame)
         return false;
 
-    if (!shouldEnableScriptTrackingPrivacy(category, advancedPrivacyProtections()))
-        return false;
-
     auto [taintedness, taintedURL] = JSC::sourceTaintedOriginFromStack(*vm, vm->topCallFrame);
     switch (taintedness) {
     case JSC::SourceTaintedOrigin::Untainted:
@@ -988,7 +985,11 @@ bool ScriptExecutionContext::requiresScriptTrackingPrivacyProtection(ScriptTrack
     if (category == ScriptTrackingPrivacyCategory::NetworkRequests && !page->settings().scriptTrackingPrivacyNetworkRequestBlockingEnabled())
         return false;
 
-    bool shouldApplyConsistently = category == ScriptTrackingPrivacyCategory::QueryParameters && document->quirks().needsConsistentQueryParameterFilteringQuirk(taintedURL);
+    bool shouldApplyConsistently = (category == ScriptTrackingPrivacyCategory::QueryParameters && document->quirks().needsConsistentQueryParameterFilteringQuirk(taintedURL))
+        || document->quirks().mayBenefitFromFingerprintingProtectionQuirk(taintedURL);
+    if (!shouldEnableScriptTrackingPrivacy(category, advancedPrivacyProtections(), shouldApplyConsistently))
+        return false;
+
     if (page->shouldAllowScriptAccess(taintedURL, protect(topOrigin()), category) && !shouldApplyConsistently)
         return false;
 

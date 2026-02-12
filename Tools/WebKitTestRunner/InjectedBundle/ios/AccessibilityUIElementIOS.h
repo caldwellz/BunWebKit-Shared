@@ -63,6 +63,7 @@ public:
     JSValueRef errorMessageElements(JSContextRef) override;
     RefPtr<AccessibilityUIElement> ariaOwnsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaFlowToElementAtIndex(unsigned) override;
+    RefPtr<AccessibilityUIElement> ariaActionsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaControlsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaDetailsElementAtIndex(unsigned) override;
     RefPtr<AccessibilityUIElement> ariaErrorMessageElementAtIndex(unsigned) override;
@@ -274,6 +275,7 @@ public:
     void showMenu() override;
     void press() override;
     bool dismiss() override;
+    bool invokeCustomActionAtIndex(unsigned) override;
 
     // Focus and selection actions
     void takeFocus() override;

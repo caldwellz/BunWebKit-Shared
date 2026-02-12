@@ -151,9 +151,7 @@ public:
     const RenderStyle& currentStyle() const final;
     bool triggersStackingContext() const { return m_triggersStackingContext; }
     bool isRunningAccelerated() const;
-
-    // FIXME: These ignore the fact that some timing functions can prevent acceleration.
-    bool isAboutToRunAccelerated() const { return m_acceleratedPropertiesState != AcceleratedProperties::None && m_lastRecordedAcceleratedAction != AcceleratedAction::Stop; }
+    bool isAboutToRunAccelerated() const;
 
     std::optional<unsigned> transformFunctionListPrefix() const override;
 
@@ -249,6 +247,7 @@ private:
     void computeHasSizeDependentTransform();
     void analyzeAcceleratedProperties();
     void updateIsAssociatedWithProgressBasedTimeline();
+    bool isRunningAccountingForSuspension() const;
 
     void abilityToBeAcceleratedDidChange();
     void updateAcceleratedAnimationIfNecessary();

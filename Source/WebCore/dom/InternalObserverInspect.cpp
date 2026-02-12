@@ -65,7 +65,7 @@ public:
             }
 
             if (RefPtr subscribe = m_inspector.subscribe) {
-                auto* globalObject = protectedScriptExecutionContext()->globalObject();
+                auto* globalObject = protect(scriptExecutionContext())->globalObject();
                 ASSERT(globalObject);
 
                 Ref vm = globalObject->vm();
@@ -200,7 +200,7 @@ private:
 
     JSC::VM& vm() const
     {
-        auto* globalObject = protectedScriptExecutionContext()->globalObject();
+        auto* globalObject = protect(scriptExecutionContext())->globalObject();
         ASSERT(globalObject);
         return globalObject->vm();
     }

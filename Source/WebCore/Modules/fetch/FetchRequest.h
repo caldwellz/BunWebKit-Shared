@@ -49,7 +49,7 @@ template<typename> class ExceptionOr;
 class FetchRequest final : public FetchBodyOwner {
 public:
     using Init = FetchRequestInit;
-    using Info = Variant<RefPtr<FetchRequest>, String>;
+    using Info = Variant<Ref<FetchRequest>, String>;
 
     using Cache = FetchOptions::Cache;
     using Credentials = FetchOptions::Credentials;

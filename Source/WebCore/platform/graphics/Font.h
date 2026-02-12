@@ -161,11 +161,8 @@ public:
     bool variantCapsSupportedForSynthesis(FontVariantCaps) const;
 
     const Font& verticalRightOrientationFont() const;
-    Ref<const Font> protectedVerticalRightOrientationFont() const { return verticalRightOrientationFont(); }
     const Font& uprightOrientationFont() const;
-    Ref<const Font> protectedUprightOrientationFont() const { return uprightOrientationFont(); }
     const Font& invisibleFont() const;
-    Ref<const Font> protectedInvisibleFont() const { return invisibleFont(); }
 
     bool hasVerticalGlyphs() const { return m_hasVerticalGlyphs; }
     bool isTextOrientationFallback() const { return m_attributes.isTextOrientationFallback == IsOrientationFallback::Yes; }

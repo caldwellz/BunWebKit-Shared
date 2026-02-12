@@ -63,6 +63,13 @@ SOFT_LINK_CONSTANT(AXRuntime, UIAccessibilityTokenAttachment, NSString *);
 
 namespace WebCore {
 
+RetainPtr<id> AXCoreObject::platformElement() const
+{
+    if (isRemoteFrame()) [[unlikely]]
+        return remoteFramePlatformElement();
+    return wrapper();
+}
+
 String AXCoreObject::speechHint() const
 {
     auto speakAs = this->speakAs();
@@ -77,17 +84,6 @@ String AXCoreObject::speechHint() const
         builder.append(" no-punctuation"_s);
 
     return builder.toString();
-}
-
-// FIXME: We should create an AXCoreObjectInline.h file and move protectedWrapper() and protectedPlatformWidget() into it.
-RetainPtr<AccessibilityObjectWrapper> AXCoreObject::protectedWrapper() const
-{
-    return m_wrapper.get();
-}
-
-RetainPtr<PlatformWidget> AXCoreObject::protectedPlatformWidget() const
-{
-    return platformWidget();
 }
 
 // When modifying attributed strings, the range can come from a source which may provide faulty information (e.g. the spell checker).

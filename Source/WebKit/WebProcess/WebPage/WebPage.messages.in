@@ -67,6 +67,7 @@ messages -> WebPage WantsAsyncDispatchMessage {
 
 #if PLATFORM(COCOA)
     SelectWithGesture(WebCore::IntPoint point, enum:uint8_t WebKit::GestureType gestureType, enum:uint8_t WebKit::GestureRecognizerState gestureState, bool isInteractingWithFocusedElement) -> (WebCore::IntPoint point, enum:uint8_t WebKit::GestureType gestureType, enum:uint8_t WebKit::GestureRecognizerState gestureState, OptionSet<WebKit::SelectionFlags> flags)
+    RequestPositionInformation(struct WebKit::InteractionInformationRequest request)
 #endif
 
 #if PLATFORM(IOS_FAMILY)
@@ -118,7 +119,6 @@ messages -> WebPage WantsAsyncDispatchMessage {
     SyncApplyAutocorrection(String correction, String originalText, bool isCandidate) -> (bool autocorrectionApplied) Synchronous
     HandleAutocorrectionContextRequest()
     RequestEvasionRectsAboveSelection() -> (Vector<WebCore::FloatRect> rects)
-    RequestPositionInformation(struct WebKit::InteractionInformationRequest request)
     StartInteractionWithElementContextOrPosition(struct std::optional<WebCore::ElementContext> elementContext, WebCore::IntPoint point)
     StopInteraction()
     PerformActionOnElement(uint32_t action, String authenticationToken) -> ()
@@ -127,6 +127,7 @@ messages -> WebPage WantsAsyncDispatchMessage {
     AutofillLoginCredentials(String username, String password)
     SetFocusedElementValue(struct WebCore::ElementContext context, String value)
     SetFocusedElementSelectedIndex(struct WebCore::ElementContext context, uint32_t index, bool allowMultipleSelection)
+    SetSelectElementIsOpen(struct WebCore::ElementContext context, bool isOpen)
     ApplicationWillResignActive()
     ApplicationDidEnterBackground(bool isSuspendedUnderLock)
     ApplicationDidFinishSnapshottingAfterEnteringBackground()
@@ -219,6 +220,10 @@ messages -> WebPage WantsAsyncDispatchMessage {
     AllFrameTreeSyncDataChangedInAnotherProcess(WebCore::FrameIdentifier frameID, Ref<WebCore::FrameTreeSyncData> frameTreeSyncData)
 
     GetPDFFirstPageSize(WebCore::FrameIdentifier frameID) -> (WebCore::FloatSize size)
+
+#if PLATFORM(IOS_FAMILY) && ENABLE(UNIFIED_PDF)
+    RequestPDFDisplayMode(enum:uint8_t WebKit::PDFDisplayMode mode)
+#endif
 
     Reload(WebCore::NavigationIdentifier navigationID, OptionSet<WebCore::ReloadOption> reloadOptions, WebKit::SandboxExtensionHandle sandboxExtensionHandle)
     StopLoading()

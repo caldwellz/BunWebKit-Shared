@@ -78,6 +78,7 @@ TextExtractionTestOptions* toTextExtractionTestOptions(JSContextRef context, JSV
     options.includeEventListeners = booleanProperty(context, (JSObjectRef)argument, "includeEventListeners", false);
     options.includeAccessibilityAttributes = booleanProperty(context, (JSObjectRef)argument, "includeAccessibilityAttributes", false);
     options.includeTextInAutoFilledControls = booleanProperty(context, (JSObjectRef)argument, "includeTextInAutoFilledControls", false);
+    options.includeOffscreenPasswordFields = booleanProperty(context, (JSObjectRef)argument, "includeOffscreenPasswordFields", false);
     options.wordLimit = static_cast<unsigned>(numericProperty(context, (JSObjectRef)argument, "wordLimit"));
     options.mergeParagraphs = booleanProperty(context, (JSObjectRef)argument, "mergeParagraphs", false);
     options.skipNearlyTransparentContent = booleanProperty(context, (JSObjectRef)argument, "skipNearlyTransparentContent", false);

@@ -219,7 +219,7 @@ ExceptionOr<Ref<Database>> DatabaseManager::openDatabase(Document& document, con
     if (database->isNew() && creationCallback.get()) {
         LOG(StorageAPI, "Scheduling DatabaseCreationCallbackTask for database %p\n", database.get());
         database->setHasPendingCreationEvent(true);
-        database->m_document->checkedEventLoop()->queueTask(TaskSource::Networking, [creationCallback, database] {
+        protect(database->m_document->eventLoop())->queueTask(TaskSource::Networking, [creationCallback, database] {
             creationCallback->invoke(*database);
             database->setHasPendingCreationEvent(false);
         });

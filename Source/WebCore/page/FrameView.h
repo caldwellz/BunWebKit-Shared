@@ -42,7 +42,6 @@ public:
     virtual Type viewType() const = 0;
     virtual void writeRenderTreeAsText(TextStream&, OptionSet<RenderAsTextFlag>) = 0;
     virtual Frame& frame() const = 0;
-    Ref<Frame> protectedFrame() const;
 
     WEBCORE_EXPORT int headerHeight() const final;
     WEBCORE_EXPORT int footerHeight() const final;
@@ -99,12 +98,6 @@ public:
     WEBCORE_EXPORT DoublePoint convertFromContainingViewToRenderer(const RenderElement*, DoublePoint) const;
     WEBCORE_EXPORT IntRect convertFromContainingViewToRenderer(const RenderElement*, const IntRect&) const;
     WEBCORE_EXPORT FloatRect convertFromContainingViewToRenderer(const RenderElement*, const FloatRect&) const;
-
-    WEBCORE_EXPORT FloatPoint absoluteToLayoutViewportPoint(FloatPoint) const;
-    FloatPoint layoutViewportToAbsolutePoint(FloatPoint) const;
-
-    WEBCORE_EXPORT FloatRect absoluteToLayoutViewportRect(FloatRect) const;
-    FloatRect layoutViewportToAbsoluteRect(FloatRect) const;
 
     // Override ScrollView methods to do point conversion via renderers, in order to take transforms into account.
     IntPoint convertToContainingView(IntPoint) const final;

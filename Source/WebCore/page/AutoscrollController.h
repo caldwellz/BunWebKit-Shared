@@ -60,7 +60,7 @@ class AutoscrollController final : public CanMakeCheckedPtr<AutoscrollController
     WTF_OVERRIDE_DELETE_FOR_CHECKED_PTR(AutoscrollController);
 public:
     AutoscrollController();
-    RenderBox* autoscrollRenderer() const;
+    RenderBox* NODELETE autoscrollRenderer() const;
     bool autoscrollInProgress() const;
     bool panScrollInProgress() const;
     void startAutoscrollForSelection(RenderObject*);

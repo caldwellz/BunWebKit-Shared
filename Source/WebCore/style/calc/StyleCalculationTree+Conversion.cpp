@@ -226,7 +226,7 @@ auto toStyle(const CSSCalc::Random::Sharing& randomSharing, const ToStyleConvers
                 ASSERT(options.evaluation.conversionData->styleBuilderState()->element());
             }
 
-            auto baseValue = options.evaluation.conversionData->protectedStyleBuilderState()->lookupCSSRandomBaseValue(
+            auto baseValue = protect(options.evaluation.conversionData->styleBuilderState())->lookupCSSRandomBaseValue(
                 sharingOptions.identifier,
                 sharingOptions.elementShared
             );
@@ -239,7 +239,7 @@ auto toStyle(const CSSCalc::Random::Sharing& randomSharing, const ToStyleConvers
                     return Random::Fixed { raw.value };
                 },
                 [&](const CSS::Number<CSS::ClosedUnitRange>::Calc& calc) -> Random::Fixed {
-                    return Random::Fixed { calc.evaluate(CSS::Category::Number, *options.evaluation.conversionData->protectedStyleBuilderState()) };
+                    return Random::Fixed { calc.evaluate(CSS::Category::Number, *protect(options.evaluation.conversionData->styleBuilderState())) };
                 }
             );
         }

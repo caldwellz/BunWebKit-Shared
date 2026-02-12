@@ -102,11 +102,11 @@
     if (keyEvent.get()._inputFlags & kUIKeyboardInputModifierFlagsChanged)
         return NO;
     if (_editing && (keyEvent.get()._keyCode == kHIDUsage_KeyboardEscape || [keyEvent.get()._unmodifiedInput isEqualToString:UIKeyInputEscape])) {
-        [_view accessoryDone];
+        [_view.get() accessoryDone];
         return YES;
     }
     if (!_editing && keyEvent.get()._keyCode == kHIDUsage_KeyboardSpacebar) {
-        [_view accessoryOpen];
+        [_view.get() accessoryOpen];
         return YES;
     }
     return NO;

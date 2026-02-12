@@ -377,7 +377,7 @@ void JSTestSetLikeWithOverriddenOperationsOwner::finalize(JSC::Handle<JSC::Unkno
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestSetLikeWithOverriddenOperations = static_cast<JSTestSetLikeWithOverriddenOperations*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestSetLikeWithOverriddenOperations->protectedWrapped().ptr(), jsTestSetLikeWithOverriddenOperations);
+    uncacheWrapper(world, protect(jsTestSetLikeWithOverriddenOperations->wrapped()).ptr(), jsTestSetLikeWithOverriddenOperations);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

@@ -60,7 +60,7 @@ public:
     ~JSDOMWindowBase();
     void updateDocument();
 
-    DOMWindow& wrapped() const;
+    DOMWindow& NODELETE wrapped() const;
     Document* scriptExecutionContext() const;
 
     // Called just before removing this window from the JSWindowProxy.
@@ -89,7 +89,7 @@ public:
     static void fireFrameClearedWatchpointsForWindow(LocalDOMWindow*);
 
     void setCurrentEvent(Event*);
-    Event* currentEvent() const;
+    Event* NODELETE currentEvent() const;
 
 protected:
     JSDOMWindowBase(JSC::VM&, JSC::Structure*, RefPtr<DOMWindow>&&, JSWindowProxy*);

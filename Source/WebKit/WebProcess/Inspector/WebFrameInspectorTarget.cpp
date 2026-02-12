@@ -65,7 +65,7 @@ void WebFrameInspectorTarget::connect(Inspector::FrontendChannel::ConnectionType
     m_channel = makeUnique<WebFrameInspectorTargetFrontendChannel>(frame, identifier(), connectionType);
 
     if (RefPtr coreFrame = frame->coreLocalFrame())
-        coreFrame->protectedInspectorController()->connectFrontend(*m_channel);
+        protect(coreFrame->inspectorController())->connectFrontend(*m_channel);
 }
 
 void WebFrameInspectorTarget::disconnect()
@@ -74,7 +74,7 @@ void WebFrameInspectorTarget::disconnect()
         return;
 
     if (RefPtr coreFrame = protectedFrame()->coreLocalFrame())
-        coreFrame->protectedInspectorController()->disconnectFrontend(*m_channel);
+        protect(coreFrame->inspectorController())->disconnectFrontend(*m_channel);
 
     m_channel.reset();
 }
@@ -82,7 +82,7 @@ void WebFrameInspectorTarget::disconnect()
 void WebFrameInspectorTarget::sendMessageToTargetBackend(const String& message)
 {
     if (RefPtr coreFrame = protectedFrame()->coreLocalFrame())
-        coreFrame->protectedInspectorController()->dispatchMessageFromFrontend(message);
+        protect(coreFrame->inspectorController())->dispatchMessageFromFrontend(message);
 }
 
 String WebFrameInspectorTarget::toTargetID(WebCore::FrameIdentifier frameID)

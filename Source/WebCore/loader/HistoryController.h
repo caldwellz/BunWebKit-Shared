@@ -31,7 +31,7 @@
 
 #include <WebCore/BackForwardItemIdentifier.h>
 #include <WebCore/FrameLoader.h>
-#include <WebCore/ProcessSwapDisposition.h>
+#include <WebCore/ShouldTreatAsContinuingLoad.h>
 
 namespace WebCore {
 
@@ -105,9 +105,9 @@ public:
 private:
     friend class Page;
     bool shouldStopLoadingForHistoryItem(HistoryItem&) const;
-    void goToItem(HistoryItem&, FrameLoadType, ShouldTreatAsContinuingLoad, ProcessSwapDisposition processSwapDisposition = ProcessSwapDisposition::None);
+    void goToItem(HistoryItem&, FrameLoadType, ShouldTreatAsContinuingLoad);
     void goToItemForNavigationAPI(HistoryItem&, FrameLoadType, LocalFrame& triggeringFrame, NavigationAPIMethodTracker*);
-    void goToItemShared(HistoryItem&, CompletionHandler<void(ShouldGoToHistoryItem)>&&, ProcessSwapDisposition processSwapDisposition = ProcessSwapDisposition::None);
+    void goToItemShared(HistoryItem&, CompletionHandler<void(ShouldGoToHistoryItem)>&&, ShouldTreatAsContinuingLoad = ShouldTreatAsContinuingLoad::No);
 
     void initializeItem(HistoryItem&, RefPtr<DocumentLoader>);
     Ref<HistoryItem> createItem(HistoryItemClient&, BackForwardItemIdentifier);

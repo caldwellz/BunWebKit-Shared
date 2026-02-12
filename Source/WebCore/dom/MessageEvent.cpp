@@ -41,6 +41,13 @@ using namespace JSC;
 
 WTF_MAKE_TZONE_ALLOCATED_IMPL(MessageEvent);
 
+static Variant<String, Ref<SecurityOrigin>> toOriginVariant(RefPtr<SecurityOrigin>&& origin)
+{
+    if (origin)
+        return origin.releaseNonNull();
+    return emptyString();
+}
+
 MessageEvent::MessageEvent()
     : Event(EventInterfaceType::MessageEvent)
 {
@@ -60,7 +67,7 @@ inline MessageEvent::MessageEvent(const AtomString& type, Init&& initializer, Is
 inline MessageEvent::MessageEvent(const AtomString& type, DataType&& data, RefPtr<SecurityOrigin>&& origin, const String& lastEventId, std::optional<MessageEventSource>&& source, Vector<Ref<MessagePort>>&& ports)
     : Event(EventInterfaceType::MessageEvent, type, CanBubble::No, IsCancelable::No)
     , m_data(WTF::move(data))
-    , m_origin(WTF::move(origin))
+    , m_origin(toOriginVariant(WTF::move(origin)))
     , m_lastEventId(lastEventId)
     , m_source(WTF::move(source))
     , m_ports(WTF::move(ports))
@@ -112,18 +119,26 @@ MessageEvent::~MessageEvent() = default;
 
 String MessageEvent::origin() const
 {
-    return WTF::switchOn(m_origin, [](const RefPtr<SecurityOrigin>& origin) {
-        return origin ? origin->toString() : emptyString();
-    },
-    [](const String& origin) {
-        return origin;
-    });
+    return WTF::switchOn(m_origin,
+        [](const Ref<SecurityOrigin>& origin) {
+            return origin->toString();
+        },
+        [](const String& origin) {
+            return origin;
+        }
+    );
 }
 
 const RefPtr<SecurityOrigin> MessageEvent::securityOrigin() const
 {
-    auto* origin = std::get_if<RefPtr<SecurityOrigin>>(&m_origin);
-    return origin ? *origin : nullptr;
+    return WTF::switchOn(m_origin,
+        [](const Ref<SecurityOrigin>& origin) -> RefPtr<SecurityOrigin> {
+            return origin.ptr();
+        },
+        [](const String&) -> RefPtr<SecurityOrigin> {
+            return nullptr;
+        }
+    );
 }
 
 void MessageEvent::initMessageEvent(const AtomString& type, bool canBubble, bool cancelable, JSValue data, const String& origin, const String& lastEventId, std::optional<MessageEventSource>&& source, Vector<Ref<MessagePort>>&& ports)

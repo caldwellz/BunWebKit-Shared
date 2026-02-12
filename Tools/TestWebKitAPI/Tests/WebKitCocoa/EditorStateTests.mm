@@ -626,13 +626,21 @@ TEST(EditorStateTests, UnionRectInVisibleSelectedRangeAndDocumentVisibleRect)
     [webView stringByEvaluatingJavaScript:@"document.execCommand('selectAll', true)"];
     [webView waitForNextPresentationUpdate];
 
-    auto isInDocumentVisibleRect = [&](NSRect rect) {
-        return NSContainsRect([webView documentVisibleRect], rect);
+    auto isInDocumentVisibleRect = [&](NSRect rectInScreen) {
+        return NSContainsRect([webView documentVisibleRect], rectInScreen);
+    };
+
+    auto isInView = [&](NSRect rectInScreen) {
+        RetainPtr window = [webView window];
+        auto rectInWindow = [window convertRectFromScreen:rectInScreen];
+        auto rectInView = [webView convertRect:rectInWindow fromView:nil];
+        return NSContainsRect([webView bounds], rectInView);
     };
 
     EXPECT_TRUE(isInDocumentVisibleRect([webView unionRectInVisibleSelectedRange]));
     EXPECT_FALSE(NSIsEmptyRect([webView unionRectInVisibleSelectedRange]));
     EXPECT_GT(didUpdateSelectionCount, 0u);
+    EXPECT_TRUE(isInView([webView unionRectInVisibleSelectedRange]));
 
     [webView stringByEvaluatingJavaScript:@"scrollBy(0, 2000)"];
     [webView waitForNextPresentationUpdate];
@@ -641,6 +649,7 @@ TEST(EditorStateTests, UnionRectInVisibleSelectedRangeAndDocumentVisibleRect)
     Util::run(&didEndScrollingOrZooming);
     EXPECT_FALSE(isInDocumentVisibleRect([webView unionRectInVisibleSelectedRange]));
     EXPECT_FALSE(NSIsEmptyRect([webView unionRectInVisibleSelectedRange]));
+    EXPECT_FALSE(isInView([webView unionRectInVisibleSelectedRange]));
 
     [webView stringByEvaluatingJavaScript:@"getSelection().removeAllRanges()"];
     [webView waitForNextPresentationUpdate];

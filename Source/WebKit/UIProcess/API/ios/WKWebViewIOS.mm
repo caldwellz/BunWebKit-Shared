@@ -71,6 +71,7 @@
 #import "WebProcessPool.h"
 #import "_WKActivatedElementInfoInternal.h"
 #import "_WKWarningView.h"
+#import <CoreGraphics/CGColor.h>
 #import <WebCore/BoxSides.h>
 #import <WebCore/ColorCocoa.h>
 #import <WebCore/ContentsFormatCocoa.h>
@@ -316,7 +317,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (!_page || !_page->videoPresentationManager())
         return false;
 
-    return _page->videoPresentationManager()->hasMode(WebCore::HTMLMediaElementEnums::VideoFullscreenModePictureInPicture);
+    return protect(_page->videoPresentationManager())->hasMode(WebCore::HTMLMediaElementEnums::VideoFullscreenModePictureInPicture);
 #else
     return false;
 #endif
@@ -328,7 +329,7 @@ ALLOW_DEPRECATED_DECLARATIONS_END
     if (!_page || !_page->videoPresentationManager())
         return false;
 
-    return _page->videoPresentationManager()->mayAutomaticallyShowVideoPictureInPicture();
+    return protect(_page->videoPresentationManager())->mayAutomaticallyShowVideoPictureInPicture();
 #else
     return false;
 #endif
@@ -648,7 +649,7 @@ enum class AllowPageBackgroundColorOverride : bool { No, Yes };
 static WebCore::Color baseScrollViewBackgroundColor(WKWebView *webView, AllowPageBackgroundColorOverride allowPageBackgroundColorOverride)
 {
     if (webView->_customContentView)
-        return WebCore::roundAndClampToSRGBALossy([webView->_customContentView backgroundColor].CGColor);
+        return WebCore::roundAndClampToSRGBALossy(protect<CGColorRef>([webView->_customContentView backgroundColor].CGColor));
 
     if (webView->_gestureController) {
         WebCore::Color color = webView->_gestureController->backgroundColorForCurrentSnapshot();
@@ -668,14 +669,14 @@ static WebCore::Color scrollViewBackgroundColor(WKWebView *webView, AllowPageBac
         return WebCore::Color::transparentBlack;
 
     WebCore::Color color;
-    [WebCore::traitCollectionWithAdjustedIdiomForSystemColors(webView.traitCollection) performAsCurrentTraitCollection:[&, webView = RetainPtr { webView }] {
+    [protect(WebCore::traitCollectionWithAdjustedIdiomForSystemColors(webView.traitCollection)) performAsCurrentTraitCollection:[&, webView = RetainPtr { webView }] {
         color = baseScrollViewBackgroundColor(webView.get(), allowPageBackgroundColorOverride);
 
         if (!color.isValid() && webView->_contentView)
-            color = WebCore::roundAndClampToSRGBALossy([webView->_contentView backgroundColor].CGColor);
+            color = WebCore::roundAndClampToSRGBALossy(protect<CGColorRef>([webView->_contentView backgroundColor].CGColor));
 
         if (!color.isValid())
-            color = WebCore::roundAndClampToSRGBALossy(UIColor.systemBackgroundColor.CGColor);
+            color = WebCore::roundAndClampToSRGBALossy(protect<CGColorRef>(UIColor.systemBackgroundColor.CGColor));
     }];
 
     return color;
@@ -863,7 +864,7 @@ static WebCore::Color scrollViewBackgroundColor(WKWebView *webView, AllowPageBac
 #endif
 
     if (_gestureController)
-        _gestureController->disconnectFromProcess();
+        protect(_gestureController)->disconnectFromProcess();
 
     _perProcessState = { };
 }
@@ -892,12 +893,12 @@ static WebCore::Color scrollViewBackgroundColor(WKWebView *webView, AllowPageBac
     _perProcessState.hasScheduledVisibleRectUpdate = NO;
     _viewStabilityWhenVisibleContentRectUpdateScheduled = { };
     if (_gestureController)
-        _gestureController->connectToProcess();
+        protect(_gestureController)->connectToProcess();
 }
 
 - (void)_didCommitLoadForMainFrame
 {
-    _perProcessState.resetViewStateAfterTransactionID = downcast<WebKit::RemoteLayerTreeDrawingAreaProxy>(*_page->drawingArea()).nextMainFrameLayerTreeTransactionID();
+    _perProcessState.resetViewStateAfterTransactionID = protect(downcast<WebKit::RemoteLayerTreeDrawingAreaProxy>(*_page->drawingArea()))->nextMainFrameLayerTreeTransactionID();
 
     _perProcessState.hasCommittedLoadForMainFrame = YES;
 
@@ -1020,13 +1021,15 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     [_scrollView setMinimumZoomScale:minimumScaleFactor];
     [_scrollView setMaximumZoomScale:maximumScaleFactor];
     [_scrollView _setZoomEnabledInternal:allowsUserScaling && self._allowsMagnification];
+
+    CheckedPtr scrollingCoordinator = _page->scrollingCoordinatorProxy();
     if ([_scrollView showsHorizontalScrollIndicator] && [_scrollView showsVerticalScrollIndicator]) {
-        [_scrollView setShowsHorizontalScrollIndicator:(_page->scrollingCoordinatorProxy()->mainFrameScrollbarWidth() != WebCore::ScrollbarWidth::None)];
-        [_scrollView setShowsVerticalScrollIndicator:(_page->scrollingCoordinatorProxy()->mainFrameScrollbarWidth() != WebCore::ScrollbarWidth::None)];
+        [_scrollView setShowsHorizontalScrollIndicator:(scrollingCoordinator->mainFrameScrollbarWidth() != WebCore::ScrollbarWidth::None)];
+        [_scrollView setShowsVerticalScrollIndicator:(scrollingCoordinator->mainFrameScrollbarWidth() != WebCore::ScrollbarWidth::None)];
     }
 
 #if HAVE(UIKIT_SCROLLBAR_COLOR_SPI)
-    auto scrollbarColor = _page->scrollingCoordinatorProxy()->mainFrameScrollbarColor();
+    auto scrollbarColor = scrollingCoordinator->mainFrameScrollbarColor();
     if (scrollbarColor) {
         RetainPtr thumbColor = cocoaColor(scrollbarColor->thumbColor);
         [_scrollView _setHorizontalScrollIndicatorColor:thumbColor.get()];
@@ -1036,8 +1039,8 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
         [_scrollView _setVerticalScrollIndicatorColor:nil];
     }
 #endif
-    auto horizontalOverscrollBehavior = _page->scrollingCoordinatorProxy()->mainFrameHorizontalOverscrollBehavior();
-    auto verticalOverscrollBehavior = _page->scrollingCoordinatorProxy()->mainFrameVerticalOverscrollBehavior();
+    auto horizontalOverscrollBehavior = scrollingCoordinator->mainFrameHorizontalOverscrollBehavior();
+    auto verticalOverscrollBehavior = scrollingCoordinator->mainFrameVerticalOverscrollBehavior();
     
     WebKit::ScrollingTreeScrollingNodeDelegateIOS::updateScrollViewForOverscrollBehavior(_scrollView.get(), horizontalOverscrollBehavior, verticalOverscrollBehavior, WebKit::ScrollingTreeScrollingNodeDelegateIOS::AllowOverscrollToPreventScrollPropagation::No);
 
@@ -1045,14 +1048,14 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     bool isZoomed = !WebKit::scalesAreEssentiallyEqual(pageScaleFactor, mainFrameData.initialScaleFactor) && (pageScaleFactor > mainFrameData.initialScaleFactor);
 
     bool scrollingNeededToRevealUI = false;
-    if (_overriddenLayoutParameters && _page->preferences().automaticallyForceEnableScrollingIfNeededToRevealUI()) {
+    if (_overriddenLayoutParameters && protect(_page->preferences())->automaticallyForceEnableScrollingIfNeededToRevealUI()) {
         auto unobscuredContentRect = _page->unobscuredContentRect();
         auto maxUnobscuredSize = _page->maximumUnobscuredSize();
         auto minUnobscuredSize = _page->minimumUnobscuredSize();
         scrollingNeededToRevealUI = minUnobscuredSize != maxUnobscuredSize && maxUnobscuredSize == unobscuredContentRect.size();
     }
 
-    bool scrollingEnabled = _page->scrollingCoordinatorProxy()->hasScrollableOrZoomedMainFrame() || hasDockedInputView || isZoomed || scrollingNeededToRevealUI;
+    bool scrollingEnabled = scrollingCoordinator->hasScrollableOrZoomedMainFrame() || hasDockedInputView || isZoomed || scrollingNeededToRevealUI;
 
     // FIXME: <rdar://99001670> Get the default list of allowed touch types from UIKit instead of caching the returned value.
     [_scrollView panGestureRecognizer].allowedTouchTypes = scrollingEnabled ? _scrollViewDefaultAllowedTouchTypes.get() : @[ ];
@@ -1136,7 +1139,7 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     }
 
     if (_gestureController)
-        _gestureController->didRestoreScrollPosition();
+        protect(_gestureController)->didRestoreScrollPosition();
     
     return needUpdateVisibleContentRects;
 }
@@ -1229,7 +1232,7 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
         [self _setAvoidsUnsafeArea:mainFrameCommitData.avoidsUnsafeArea];
 
         if (_gestureController)
-            _gestureController->setRenderTreeSize(pageData.renderTreeSize);
+            protect(_gestureController)->setRenderTreeSize(pageData.renderTreeSize);
 
         if (_perProcessState.resetViewStateAfterTransactionID && transactionID.greaterThanOrEqualSameProcess(*_perProcessState.resetViewStateAfterTransactionID)) {
             _perProcessState.resetViewStateAfterTransactionID = std::nullopt;
@@ -1277,7 +1280,7 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     // restored, tell the gestureController it was restored so that it no longer waits
     // for it.
     if (_gestureController)
-        _gestureController->didRestoreScrollPosition();
+        protect(_gestureController)->didRestoreScrollPosition();
 }
 
 - (void)_restorePageScrollPosition:(std::optional<WebCore::FloatPoint>)scrollPosition scrollOrigin:(WebCore::FloatPoint)scrollOrigin previousObscuredInset:(WebCore::FloatBoxExtent)obscuredInsets scale:(double)scale
@@ -1294,7 +1297,7 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     if (![self usesStandardContentView])
         return;
 
-    _perProcessState.firstTransactionIDAfterPageRestore = downcast<WebKit::RemoteLayerTreeDrawingAreaProxy>(*_page->drawingArea()).nextMainFrameLayerTreeTransactionID();
+    _perProcessState.firstTransactionIDAfterPageRestore = protect(downcast<WebKit::RemoteLayerTreeDrawingAreaProxy>(*_page->drawingArea()))->nextMainFrameLayerTreeTransactionID();
     if (scrollPosition)
         _perProcessState.scrollOffsetToRestore = WebCore::ScrollableArea::scrollOffsetFromPosition(WebCore::FloatPoint(scrollPosition.value()), WebCore::toFloatSize(scrollOrigin));
     else
@@ -1318,7 +1321,7 @@ static void changeContentOffsetBoundedInValidRange(UIScrollView *scrollView, Web
     if (![self usesStandardContentView])
         return;
 
-    _perProcessState.firstTransactionIDAfterPageRestore = downcast<WebKit::RemoteLayerTreeDrawingAreaProxy>(*_page->drawingArea()).nextMainFrameLayerTreeTransactionID();
+    _perProcessState.firstTransactionIDAfterPageRestore = protect(downcast<WebKit::RemoteLayerTreeDrawingAreaProxy>(*_page->drawingArea()))->nextMainFrameLayerTreeTransactionID();
     _perProcessState.unobscuredCenterToRestore = center;
 
     _scaleToRestore = scale;
@@ -1440,13 +1443,13 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
     return contentOffset.constrainedBetween(minimumContentOffset, WebCore::FloatPoint(maximumContentOffset));
 }
 
-- (void)_scrollToContentScrollPosition:(WebCore::FloatPoint)scrollPosition scrollOrigin:(WebCore::IntPoint)scrollOrigin animated:(BOOL)animated
+- (void)_scrollToContentScrollPosition:(WebCore::FloatPoint)scrollPosition scrollOrigin:(WebCore::IntPoint)scrollOrigin animated:(BOOL)animated interruptAnimation:(BOOL)interruptAnimation
 {
     if (_perProcessState.commitDidRestoreScrollPosition || self._shouldDeferGeometryUpdates)
         return;
 
     // Don't allow content to do programmatic scrolls for non-scrollable pages when zoomed.
-    if (!_page->scrollingCoordinatorProxy()->hasScrollableMainFrame() && !WebKit::scalesAreEssentiallyEqual([_scrollView zoomScale], [_scrollView minimumZoomScale])) {
+    if (!protect(_page->scrollingCoordinatorProxy())->hasScrollableMainFrame() && !WebKit::scalesAreEssentiallyEqual([_scrollView zoomScale], [_scrollView minimumZoomScale])) {
         [self _scheduleForcedVisibleContentRectUpdate];
         return;
     }
@@ -1459,7 +1462,10 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
 
     CGPoint contentOffsetInScrollViewCoordinates = [self _contentOffsetAdjustedForObscuredInset:scaledOffset];
     contentOffsetInScrollViewCoordinates = contentOffsetBoundedInValidRange(_scrollView.get(), contentOffsetInScrollViewCoordinates);
-    [_scrollView _wk_stopScrollingAndZooming];
+
+    if (interruptAnimation)
+        [_scrollView _wk_stopScrollingAndZooming];
+
     CGPoint scrollViewContentOffset = [_scrollView contentOffset];
 
     if (!CGPointEqualToPoint(contentOffsetInScrollViewCoordinates, scrollViewContentOffset)) {
@@ -1469,9 +1475,14 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
         if (WTF::areEssentiallyEqual<float>(scrollPosition.y(), 0) && scrollViewContentOffset.y < 0)
             contentOffsetInScrollViewCoordinates.y = scrollViewContentOffset.y;
 
-        [_scrollView setContentOffset:contentOffsetInScrollViewCoordinates animated:animated];
+        if (interruptAnimation)
+            [_scrollView setContentOffset:contentOffsetInScrollViewCoordinates animated:animated];
+        else
+            [_scrollView setContentOffset:contentOffsetInScrollViewCoordinates];
+
         if (!animated)
             [self _didFinishScrolling:_scrollView.get()];
+
     } else if (!_perProcessState.didDeferUpdateVisibleContentRectsForAnyReason) {
         // If we haven't changed anything, and are not deferring updates, there would not be any VisibleContentRect update sent to the content.
         // The WebProcess would keep the invalid contentOffset as its scroll position.
@@ -2443,7 +2454,7 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
     if (!_page)
         return false;
 
-    if (!_page->preferences().automaticLiveResizeEnabled())
+    if (!protect(_page->preferences())->automaticLiveResizeEnabled())
         return false;
 
     if (![self usesStandardContentView])
@@ -2580,7 +2591,7 @@ static WebCore::FloatPoint constrainContentOffset(WebCore::FloatPoint contentOff
 
 - (void)_acquireResizeAssertionForReason:(NSString *)reason
 {
-    if (_page && _page->preferences().automaticLiveResizeEnabled())
+    if (_page && protect(_page->preferences())->automaticLiveResizeEnabled())
         return;
 
     UIWindowScene *windowScene = self.window.windowScene;
@@ -2986,7 +2997,7 @@ static bool scrollViewCanScroll(UIScrollView *scrollView)
 - (void)_didStartProvisionalLoadForMainFrame
 {
     if (_gestureController)
-        _gestureController->didStartProvisionalLoadForMainFrame();
+        protect(_gestureController)->didStartProvisionalLoadForMainFrame();
 }
 
 static WebCore::FloatSize activeMinimumUnobscuredSize(WKWebView *webView, const CGRect& bounds)
@@ -3145,13 +3156,13 @@ static WebCore::IntDegrees activeOrientation(WKWebView *webView)
 - (void)_didFinishNavigation:(API::Navigation*)navigation
 {
     if (_gestureController)
-        _gestureController->didFinishNavigation(navigation);
+        protect(_gestureController)->didFinishNavigation(navigation);
 }
 
 - (void)_didFailNavigation:(API::Navigation*)navigation
 {
     if (_gestureController)
-        _gestureController->didFailNavigation(navigation);
+        protect(_gestureController)->didFailNavigation(navigation);
 }
 
 - (void)_didSameDocumentNavigationForMainFrame:(WebKit::SameDocumentNavigationType)navigationType
@@ -3159,7 +3170,7 @@ static WebCore::IntDegrees activeOrientation(WKWebView *webView)
     [_customContentView web_didSameDocumentNavigation:toAPI(navigationType)];
 
     if (_gestureController)
-        _gestureController->didSameDocumentNavigationForMainFrame(navigationType);
+        protect(_gestureController)->didSameDocumentNavigationForMainFrame(navigationType);
 }
 
 - (void)_keyboardChangedWithInfo:(NSDictionary *)keyboardInfo adjustScrollView:(BOOL)adjustScrollView
@@ -3277,7 +3288,7 @@ static WebCore::IntDegrees activeOrientation(WKWebView *webView)
 {
     if (!_gestureController)
         return NO;
-    return _gestureController->isNavigationSwipeGestureRecognizer(recognizer);
+    return protect(_gestureController)->isNavigationSwipeGestureRecognizer(recognizer);
 }
 
 - (void)_navigationGestureDidBegin
@@ -3749,7 +3760,7 @@ static bool isLockdownModeWarningNeeded()
             SUPPRESS_UNRETAINED_ARG RetainPtr title = adoptNS([[NSString alloc] initWithFormat:WEB_UI_NSSTRING(@"Lockdown Mode is Turned On For “%@“", "Lockdown Mode alert title"), appDisplayName]);
             auto alert = WebKit::createUIAlertController(title.get(), message.get());
 
-            [alert addAction:[UIAlertAction actionWithTitle:WEB_UI_NSSTRING(@"OK", "Lockdown Mode alert OK button") style:UIAlertActionStyleDefault handler:nil]];
+            [alert addAction:[UIAlertAction actionWithTitle:protect(WEB_UI_NSSTRING(@"OK", "Lockdown Mode alert OK button")) style:UIAlertActionStyleDefault handler:nil]];
 
             auto presentationViewController = [protectedSelf _wk_viewControllerForFullScreenPresentation];
             [presentationViewController presentViewController:alert.get() animated:YES completion:nil];
@@ -4601,7 +4612,7 @@ static bool isLockdownModeWarningNeeded()
         CGContextScaleCTM(context.get(), imageScale, imageScale);
         [customContentView.get().layer renderInContext:context.get()];
 
-        completionHandler([UIGraphicsGetImageFromCurrentImageContext() CGImage]);
+        completionHandler([protect(UIGraphicsGetImageFromCurrentImageContext()) CGImage]);
 
         UIGraphicsEndImageContext();
         return;
@@ -4688,7 +4699,7 @@ static std::optional<WebCore::ViewportArguments> viewportArgumentsFromDictionary
     if (!_page)
         return;
 
-    _page->setOverrideViewportArguments(viewportArgumentsFromDictionary(arguments, _page->preferences().metaViewportInteractiveWidgetEnabled()));
+    _page->setOverrideViewportArguments(viewportArgumentsFromDictionary(arguments, protect(_page->preferences())->metaViewportInteractiveWidgetEnabled()));
 }
 
 - (UIView *)_viewForFindUI
@@ -4732,7 +4743,7 @@ static std::optional<WebCore::ViewportArguments> viewportArgumentsFromDictionary
 - (id)_snapshotLayerContentsForBackForwardListItem:(WKBackForwardListItem *)item
 {
     if (_page->backForwardList().currentItem() == &item._item)
-        _page->recordNavigationSnapshot(*_page->backForwardList().currentItem());
+        _page->recordNavigationSnapshot(*protect(_page->backForwardList().currentItem()));
 
     if (RefPtr viewSnapshot = item._item.snapshot())
         return viewSnapshot->asLayerContents();

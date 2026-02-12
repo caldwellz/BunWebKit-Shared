@@ -97,9 +97,7 @@ public:
 
     // This is null for anonymous renderers.
     inline Element* element() const; // Defined in RenderElementInlines.h
-    inline RefPtr<Element> protectedElement() const; // Defined in RenderElementInlines.h
     inline Element* nonPseudoElement() const; // Defined in RenderElementInlines.h
-    inline RefPtr<Element> protectedNonPseudoElement() const; // Defined in RenderElementInlines.h
     inline Element* generatingElement() const; // Defined in RenderElementInlines.h
 
     RenderObject* firstChild() const { return m_firstChild.get(); }
@@ -239,6 +237,9 @@ public:
 
     bool didContibuteToVisuallyNonEmptyPixelCount() const { return m_didContributeToVisuallyNonEmptyPixelCount; }
     void setDidContibuteToVisuallyNonEmptyPixelCount() { m_didContributeToVisuallyNonEmptyPixelCount = true; }
+
+    bool scrollAnchoringSuppressionStyleChanged() const { return m_scrollAnchoringSuppressionStyleChanged; }
+    void setScrollAnchoringSuppressionStyleChanged(bool b) { m_scrollAnchoringSuppressionStyleChanged = b; }
 
     bool allowsAnimation() const final;
     bool repaintForPausedImageAnimationsIfNeeded(const IntRect& visibleRect, CachedImage&);
@@ -471,7 +472,8 @@ private:
     unsigned m_isRegisteredForVisibleInViewportCallback : 1;
     unsigned m_visibleInViewportState : 2;
     unsigned m_didContributeToVisuallyNonEmptyPixelCount : 1;
-    // 12 bits free.
+    unsigned m_scrollAnchoringSuppressionStyleChanged : 1 { false };
+    // 11 bits free.
 
     RenderStyle m_style;
 };

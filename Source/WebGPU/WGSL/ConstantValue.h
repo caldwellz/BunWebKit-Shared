@@ -31,6 +31,7 @@
 #include <wtf/CheckedArithmetic.h>
 #include <wtf/FixedVector.h>
 #include <wtf/HashMap.h>
+#include <wtf/StringPrintStream.h>
 #include <wtf/text/StringHash.h>
 #include <wtf/text/WTFString.h>
 
@@ -402,3 +403,29 @@ static bool convertValueImpl(const SourceSpan& span, const Type* type, ConstantV
 }
 
 } // namespace WGSL
+
+namespace WTF {
+
+template<> class StringTypeAdapter<WGSL::ConstantValue> {
+public:
+    StringTypeAdapter(const WGSL::ConstantValue& value)
+    {
+        StringPrintStream valueString;
+        value.dump(valueString);
+        m_string = valueString.toString();
+    }
+
+    unsigned length() const { return m_string.length(); }
+    bool is8Bit() const { return m_string.is8Bit(); }
+    template<typename CharacterType>
+    void writeTo(std::span<CharacterType> destination) const
+    {
+        StringView { m_string }.getCharacters(destination);
+        WTF_STRINGTYPEADAPTER_COPIED_WTF_STRING();
+    }
+
+private:
+    String m_string;
+};
+
+} // namespace WTF

@@ -91,11 +91,6 @@ SVGTextElement& RenderSVGText::textElement() const
     return downcast<SVGTextElement>(RenderSVGBlock::graphicsElement());
 }
 
-Ref<SVGTextElement> RenderSVGText::protectedTextElement() const
-{
-    return textElement();
-}
-
 bool RenderSVGText::isChildAllowed(const RenderObject& child, const RenderStyle&) const
 {
     auto isEmptySVGInlineText = [](const RenderObject* object) {
@@ -754,7 +749,7 @@ bool RenderSVGText::hitTestInlineChildren(const HitTestRequest& request, HitTest
                     continue;
 
                 renderer.updateHitTestResult(result, locationInContainer.point() - toLayoutSize(accumulatedOffset));
-                if (result.addNodeToListBasedTestResult(renderer.protectedNodeForHitTest().get(), request, locationInContainer, rect) == HitTestProgress::Stop)
+                if (result.addNodeToListBasedTestResult(protect(renderer.nodeForHitTest()).get(), request, locationInContainer, rect) == HitTestProgress::Stop)
                     return true;
             }
         }
@@ -773,7 +768,7 @@ bool RenderSVGText::hitTestInlineChildren(const HitTestRequest& request, HitTest
 void RenderSVGText::applyTransform(TransformationMatrix& transform, const RenderStyle& style, const FloatRect& boundingBox, OptionSet<Style::TransformResolverOption> options) const
 {
     ASSERT(document().settings().layerBasedSVGEngineEnabled());
-    applySVGTransform(transform, protectedTextElement(), style, boundingBox, std::nullopt, std::nullopt, options);
+    applySVGTransform(transform, protect(textElement()), style, boundingBox, std::nullopt, std::nullopt, options);
 }
 
 PositionWithAffinity RenderSVGText::positionForPoint(const LayoutPoint& pointInContents, HitTestSource source, const RenderFragmentContainer* fragment)

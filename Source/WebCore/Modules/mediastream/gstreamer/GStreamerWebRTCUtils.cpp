@@ -88,7 +88,7 @@ ExceptionOr<GUniquePtr<GstStructure>> fromRTCEncodingParameters(const RTCRtpEnco
         gst_structure_set(rtcParameters.get(), "max-bitrate", G_TYPE_UINT, *parameters.maxBitrate, nullptr);
 
     if (parameters.maxFramerate)
-        gst_structure_set(rtcParameters.get(), "max-framerate", G_TYPE_UINT, *parameters.maxFramerate, nullptr);
+        gst_structure_set(rtcParameters.get(), "max-framerate", G_TYPE_DOUBLE, *parameters.maxFramerate, nullptr);
 
     if (parameters.scaleResolutionDownBy && kind == "video"_s)
         gst_structure_set(rtcParameters.get(), "scale-resolution-down-by", G_TYPE_DOUBLE, *parameters.scaleResolutionDownBy, nullptr);

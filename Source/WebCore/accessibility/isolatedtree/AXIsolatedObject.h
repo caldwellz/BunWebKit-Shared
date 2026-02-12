@@ -274,7 +274,7 @@ private:
     bool isChecked() const final { return boolAttributeValue(AXProperty::IsChecked); }
     bool isEnabled() const final { return boolAttributeValue(AXProperty::IsEnabled); }
     bool isSelected() const final { return boolAttributeValue(AXProperty::IsSelected); }
-    bool isFocused() const final { return tree()->focusedNodeID() == objectID(); }
+    bool isFocused() const final;
     bool isMultiSelectable() const final { return boolAttributeValue(AXProperty::IsMultiSelectable); }
     bool isVisited() const final { return boolAttributeValue(AXProperty::IsVisited); }
     bool isRequired() const final { return boolAttributeValue(AXProperty::IsRequired); }

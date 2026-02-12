@@ -30,6 +30,7 @@
 #include "ISO8601.h"
 #include "IntlCache.h"
 #include "IntlObjectInlines.h"
+#include "IntlPartObject.h"
 #include "JSBoundFunction.h"
 #include "JSCInlines.h"
 #include "JSDateMath.h"
@@ -1367,11 +1368,9 @@ JSValue IntlDateTimeFormat::formatToParts(JSGlobalObject* globalObject, double v
 
         if (previousEndIndex < beginIndex) {
             auto value = jsString(vm, resultStringView.substring(previousEndIndex, beginIndex - previousEndIndex));
-            JSObject* part = constructEmptyObject(globalObject);
-            part->putDirect(vm, vm.propertyNames->type, literalString);
-            part->putDirect(vm, vm.propertyNames->value, value);
-            if (sourceType)
-                part->putDirect(vm, vm.propertyNames->source, sourceType);
+            JSObject* part = sourceType
+                ? createIntlPartObjectWithSource(globalObject, literalString, value, sourceType)
+                : createIntlPartObject(globalObject, literalString, value);
             parts->push(globalObject, part);
             RETURN_IF_EXCEPTION(scope, { });
         }
@@ -1380,11 +1379,9 @@ JSValue IntlDateTimeFormat::formatToParts(JSGlobalObject* globalObject, double v
         if (fieldType >= 0) {
             auto type = jsNontrivialString(vm, partTypeString(UDateFormatField(fieldType)));
             auto value = jsString(vm, resultStringView.substring(beginIndex, endIndex - beginIndex));
-            JSObject* part = constructEmptyObject(globalObject);
-            part->putDirect(vm, vm.propertyNames->type, type);
-            part->putDirect(vm, vm.propertyNames->value, value);
-            if (sourceType)
-                part->putDirect(vm, vm.propertyNames->source, sourceType);
+            JSObject* part = sourceType
+                ? createIntlPartObjectWithSource(globalObject, type, value, sourceType)
+                : createIntlPartObject(globalObject, type, value);
             parts->push(globalObject, part);
             RETURN_IF_EXCEPTION(scope, { });
         }
@@ -1704,11 +1701,7 @@ JSValue IntlDateTimeFormat::formatRangeToParts(JSGlobalObject* globalObject, dou
         };
 
         auto value = jsString(vm, resultStringView.substring(beginIndex, length));
-        JSObject* part = constructEmptyObject(globalObject);
-        part->putDirect(vm, vm.propertyNames->type, type);
-        part->putDirect(vm, vm.propertyNames->value, value);
-        part->putDirect(vm, vm.propertyNames->source, sourceType(beginIndex));
-        return part;
+        return createIntlPartObjectWithSource(globalObject, type, value, sourceType(beginIndex));
     };
 
     int32_t resultLength = resultStringView.length();

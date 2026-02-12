@@ -108,6 +108,11 @@ JSValue JSElementInternals::ariaControlsElements(JSGlobalObject& lexicalGlobalOb
     return getElementsArrayAttribute(lexicalGlobalObject, *this, WebCore::HTMLNames::aria_controlsAttr);
 }
 
+JSValue JSElementInternals::ariaActionsElements(JSGlobalObject& lexicalGlobalObject) const
+{
+    return getElementsArrayAttribute(lexicalGlobalObject, *this, WebCore::HTMLNames::aria_actionsAttr);
+}
+
 JSValue JSElementInternals::ariaDescribedByElements(JSGlobalObject& lexicalGlobalObject) const
 {
     return getElementsArrayAttribute(lexicalGlobalObject, *this, WebCore::HTMLNames::aria_describedbyAttr);

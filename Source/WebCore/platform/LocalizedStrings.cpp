@@ -533,19 +533,9 @@ String contextMenuItemPDFOpenWithDefaultViewer(const String& appName)
 #endif
 
 #if ENABLE(PDFJS) || ENABLE(UNIFIED_PDF)
-String contextMenuItemPDFSinglePage()
-{
-    return WEB_UI_STRING_WITH_MNEMONIC("Single Page", "_Single Page", "Single Page context menu item");
-}
-
 String contextMenuItemPDFSinglePageContinuous()
 {
     return WEB_UI_STRING_WITH_MNEMONIC("Single Page Continuous", "_Single Page Continuous", "Single Page Continuous context menu item");
-}
-
-String contextMenuItemPDFTwoPages()
-{
-    return WEB_UI_STRING_WITH_MNEMONIC("Two Pages", "_Two Pages", "Two Pages context menu item");
 }
 
 String contextMenuItemPDFTwoPagesContinuous()
@@ -585,6 +575,18 @@ String contextMenuItemPDFPreviousPage()
 #endif
 
 #endif // ENABLE(CONTEXT_MENUS)
+
+#if ENABLE(PDFJS) || ENABLE(UNIFIED_PDF)
+String contextMenuItemPDFSinglePage()
+{
+    return WEB_UI_STRING_WITH_MNEMONIC("Single Page", "_Single Page", "Single Page context menu item");
+}
+
+String contextMenuItemPDFTwoPages()
+{
+    return WEB_UI_STRING_WITH_MNEMONIC("Two Pages", "_Two Pages", "Two Pages context menu item");
+}
+#endif
 
 #if !PLATFORM(COCOA)
 String pdfDocumentTypeDescription()

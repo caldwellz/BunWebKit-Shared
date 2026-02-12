@@ -188,7 +188,7 @@ ALLOW_DEPRECATED_DECLARATIONS_BEGIN
     self.view.frame = UIScreen.mainScreen.bounds;
 ALLOW_DEPRECATED_DECLARATIONS_END
     self.view.backgroundColor = [UIColor blackColor];
-    [_avPlayerViewController view].autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+    [_avPlayerViewController.get() view].autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
 }
 
 #if !PLATFORM(VISION)
@@ -388,7 +388,7 @@ UIViewController *VideoPresentationModelContext::presentingViewController()
     if (!m_manager || !m_manager->m_page)
         return nullptr;
 
-    if (RefPtr pageClient = protect(m_manager)->m_page->pageClient())
+    if (RefPtr pageClient = protect(protect(m_manager)->m_page)->pageClient())
         return pageClient->presentingViewController();
     return nullptr;
 }

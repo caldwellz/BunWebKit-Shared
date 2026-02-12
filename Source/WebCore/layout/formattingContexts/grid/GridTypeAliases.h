@@ -57,8 +57,10 @@ using PlacedGridItems = Vector<PlacedGridItem>;
 using PlacedGridItemSpanList = Vector<WTF::Range<size_t>>;
 using TrackSizes = Vector<LayoutUnit>;
 using TrackSizingFunctionsList = Vector<TrackSizingFunctions>;
+using TrackSizingGridItemConstraintList = Vector<LayoutUnit>;
 using UnsizedTracks = Vector<UnsizedTrack>;
 using UsedBlockSizes = Vector<LayoutUnit>;
+using UsedBorderAndPaddingList = Vector<LayoutUnit>;
 using UsedInlineSizes = Vector<LayoutUnit>;
 } // namespace Layout
 } // namespace WebCore

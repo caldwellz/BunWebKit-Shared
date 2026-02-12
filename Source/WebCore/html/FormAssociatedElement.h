@@ -40,7 +40,6 @@ public:
     virtual void formWillBeDestroyed() { m_form = nullptr; }
 
     HTMLFormElement* form() const { return m_form; }
-    RefPtr<HTMLFormElement> protectedForm() const { return m_form; }
     virtual RefPtr<HTMLFormElement> formForBindings() const;
 
     void setForm(RefPtr<HTMLFormElement>&&);

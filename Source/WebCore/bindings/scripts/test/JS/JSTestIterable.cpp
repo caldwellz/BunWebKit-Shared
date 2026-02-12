@@ -310,7 +310,7 @@ void JSTestIterableOwner::finalize(JSC::Handle<JSC::Unknown> handle, void* conte
 {
     SUPPRESS_MEMORY_UNSAFE_CAST auto* jsTestIterable = static_cast<JSTestIterable*>(handle.slot()->asCell());
     auto& world = *static_cast<DOMWrapperWorld*>(context);
-    uncacheWrapper(world, jsTestIterable->protectedWrapped().ptr(), jsTestIterable);
+    uncacheWrapper(world, protect(jsTestIterable->wrapped()).ptr(), jsTestIterable);
 }
 
 WTF_ALLOW_UNSAFE_BUFFER_USAGE_BEGIN

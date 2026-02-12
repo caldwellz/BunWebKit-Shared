@@ -1694,7 +1694,7 @@ void HTMLTreeBuilder::callTheAdoptionAgency(AtomHTMLToken& token)
             // 4.13.5.
             auto* nodeEntry = m_tree.activeFormattingElements().find(node->element());
             if (!nodeEntry) {
-                m_tree.openElements().remove(node->protectedElement());
+                m_tree.openElements().remove(protect(node->element()));
                 node = nullptr;
                 continue;
             }

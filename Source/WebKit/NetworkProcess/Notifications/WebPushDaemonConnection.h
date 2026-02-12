@@ -49,6 +49,13 @@ template<> struct AsyncReplyError<Expected<WebCore::PushSubscriptionData, WebCor
     }
 };
 
+template<> struct AsyncReplyError<Expected<std::optional<WebCore::PushSubscriptionData>, WebCore::ExceptionData>> {
+    static Expected<std::optional<WebCore::PushSubscriptionData>, WebCore::ExceptionData> create()
+    {
+        return makeUnexpected(WebCore::ExceptionData { WebCore::ExceptionCode::AbortError, "Connection to web push daemon failed"_s });
+    }
+};
+
 }
 
 namespace WebKit {

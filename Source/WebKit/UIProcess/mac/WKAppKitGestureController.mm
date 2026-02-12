@@ -269,8 +269,8 @@ ALLOW_NEW_API_WITHOUT_GUARDS_END
     RetainPtr mouseDown = [NSEvent mouseEventWithType:NSEventTypeLeftMouseDown location:location modifierFlags:modifierFlags timestamp:timestamp windowNumber:windowNumber context:NULL eventNumber:0 clickCount:1 pressure:1.0];
     RetainPtr mouseUp = [NSEvent mouseEventWithType:NSEventTypeLeftMouseUp location:location modifierFlags:modifierFlags timestamp:timestamp windowNumber:windowNumber context:NULL eventNumber:0 clickCount:1 pressure:0.0];
 
-    viewImpl->mouseDown(mouseDown.get());
-    viewImpl->mouseUp(mouseUp.get());
+    viewImpl->mouseDown(mouseDown.get(), WebKit::WebMouseEventInputSource::Automation);
+    viewImpl->mouseUp(mouseUp.get(), WebKit::WebMouseEventInputSource::Automation);
 }
 
 - (void)doubleClickGestureRecognized:(NSGestureRecognizer *)gesture

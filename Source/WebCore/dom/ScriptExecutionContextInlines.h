@@ -49,11 +49,6 @@ inline DOMTimer* ScriptExecutionContext::findTimeout(int timeoutId)
     return m_timeouts.get(timeoutId);
 }
 
-inline CheckedRef<EventLoopTaskGroup> ScriptExecutionContext::checkedEventLoop()
-{
-    return eventLoop();
-}
-
 template<typename... Arguments>
 inline void ScriptExecutionContext::postCrossThreadTask(Arguments&&... arguments)
 {

@@ -146,6 +146,12 @@ static bool shouldUseBackForwardCache(const std::string& pathOrURL)
         || pathContains(pathOrURL, "websockets/back-forward-cache");
 }
 
+static bool shouldDisableMutationEvents(const std::string& pathOrURL)
+{
+    return pathContains(pathOrURL, "html/syntax/parsing/")
+        || pathContains(pathOrURL, "html/semantics/forms/the-select-element/");
+}
+
 TestFeatures hardcodedFeaturesBasedOnPathForTest(const TestCommand& command)
 {
     TestFeatures features;
@@ -175,6 +181,8 @@ TestFeatures hardcodedFeaturesBasedOnPathForTest(const TestCommand& command)
         features.boolTestRunnerFeatures.insert({ "enhancedSecurityEnabled", true });
     if (shouldUseBackForwardCache(command.pathOrURL))
         features.boolWebPreferenceFeatures.insert({ "UsesBackForwardCache", true });
+    if (shouldDisableMutationEvents(command.pathOrURL))
+        features.boolWebPreferenceFeatures.insert({ "MutationEventsEnabled", false });
 
     return features;
 }
